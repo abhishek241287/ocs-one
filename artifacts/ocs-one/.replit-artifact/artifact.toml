@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "OCS One — Manufacturing ERP"
+version = "1.0.0"
+id = "artifacts/ocs-one"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21966
+
+[services.development]
+run = "pnpm --filter @workspace/ocs-one run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ocs-one", "run", "build" ]
+publicDir = "artifacts/ocs-one/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21966"
+BASE_PATH = "/"
