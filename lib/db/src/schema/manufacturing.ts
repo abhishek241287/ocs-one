@@ -8,6 +8,8 @@ import {
   timestamp,
   date,
   jsonb,
+  decimal,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { masterProductsTable } from "./master-products";
 import { cellMatchesTable } from "./cell-grading";
@@ -43,9 +45,16 @@ export const mfgOrderPriorityEnum = pgEnum("mfg_order_priority", [
 export const mfgStageStatusEnum = pgEnum("mfg_stage_status", [
   "pending",
   "in_progress",
+  "paused",
   "completed",
   "approved",
   "rejected",
+]);
+
+export const mfgChargerStatusEnum = pgEnum("mfg_charger_status", [
+  "available",
+  "busy",
+  "maintenance",
 ]);
 
 // ─── Stage order map (for state-machine guards) ───────────────────────────────
@@ -64,12 +73,28 @@ export const STAGE_ORDER: Record<string, number> = {
 
 // ─── Tables ──────────────────────────────────────────────────────────────────
 
+export const mfgChargerUnitsTable = pgTable("mfg_charger_units", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  chargerCode: varchar("charger_code", { length: 50 }).notNull().unique(),
+  model: varchar("model", { length: 255 }).notNull(),
+  manufacturer: varchar("manufacturer", { length: 255 }).notNull(),
+  serialNumber: varchar("serial_number", { length: 255 }).notNull().unique(),
+  outputVoltageV: decimal("output_voltage_v"),
+  maxCurrentA: decimal("max_current_a"),
+  status: mfgChargerStatusEnum("status").notNull().default("available"),
+  currentOrderId: uuid("current_order_id"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
 export const mfgProductionOrdersTable = pgTable("mfg_production_orders", {
   id: uuid("id").primaryKey().defaultRandom(),
   orderNumber: varchar("order_number", { length: 50 }).notNull().unique(),
   batteryNumber: varchar("battery_number", { length: 50 }).notNull().unique(),
   productId: uuid("product_id").references(() => masterProductsTable.id),
   cellMatchId: uuid("cell_match_id").references(() => cellMatchesTable.id),
+  chargerUnitId: uuid("charger_unit_id").references(() => mfgChargerUnitsTable.id),
   factoryManager: text("factory_manager").notNull(),
   currentStage: mfgStagetypeEnum("current_stage"),
   status: mfgOrderStatusEnum("status").notNull().default("draft"),
@@ -92,6 +117,8 @@ export const mfgOrderStagesTable = pgTable("mfg_order_stages", {
   operatorName: text("operator_name"),
   supervisorName: text("supervisor_name"),
   startedAt: timestamp("started_at", { withTimezone: true }),
+  pausedAt: timestamp("paused_at", { withTimezone: true }),
+  resumedAt: timestamp("resumed_at", { withTimezone: true }),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
   notes: text("notes"),
@@ -128,6 +155,36 @@ export const mfgBatteryTimelineTable = pgTable("mfg_battery_timeline", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const mfgFormationReportsTable = pgTable("mfg_formation_reports", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productionOrderId: uuid("production_order_id")
+    .notNull()
+    .references(() => mfgProductionOrdersTable.id, { onDelete: "cascade" }),
+  chargerUnitId: uuid("charger_unit_id").references(() => mfgChargerUnitsTable.id),
+  chargerCode: varchar("charger_code", { length: 50 }),
+  operator: text("operator").notNull(),
+  chargeStartAt: timestamp("charge_start_at", { withTimezone: true }),
+  chargeEndAt: timestamp("charge_end_at", { withTimezone: true }),
+  chargeTimeMin: decimal("charge_time_min"),
+  energyKwh: decimal("energy_kwh"),
+  chargingCurrentA: decimal("charging_current_a"),
+  startVoltageV: decimal("start_voltage_v"),
+  finalVoltageV: decimal("final_voltage_v"),
+  finalCurrentA: decimal("final_current_a"),
+  ambientTempC: decimal("ambient_temp_c"),
+  batteryTempC: decimal("battery_temp_c"),
+  topBalancingRequired: boolean("top_balancing_required").notNull().default(false),
+  topBalancingStartAt: timestamp("top_balancing_start_at", { withTimezone: true }),
+  topBalancingEndAt: timestamp("top_balancing_end_at", { withTimezone: true }),
+  finalCellVoltageSpreadMv: decimal("final_cell_voltage_spread_mv"),
+  maxCellVoltageV: decimal("max_cell_voltage_v"),
+  minCellVoltageV: decimal("min_cell_voltage_v"),
+  voltageDiffMv: decimal("voltage_diff_mv"),
+  balancingStatus: varchar("balancing_status", { length: 20 }),
+  remarks: text("remarks"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type MfgProductionOrder = typeof mfgProductionOrdersTable.$inferSelect;
@@ -141,3 +198,9 @@ export type InsertMfgBatteryGenealogy = typeof mfgBatteryGenealogyTable.$inferIn
 
 export type MfgBatteryTimeline = typeof mfgBatteryTimelineTable.$inferSelect;
 export type InsertMfgBatteryTimeline = typeof mfgBatteryTimelineTable.$inferInsert;
+
+export type MfgChargerUnit = typeof mfgChargerUnitsTable.$inferSelect;
+export type InsertMfgChargerUnit = typeof mfgChargerUnitsTable.$inferInsert;
+
+export type MfgFormationReport = typeof mfgFormationReportsTable.$inferSelect;
+export type InsertMfgFormationReport = typeof mfgFormationReportsTable.$inferInsert;

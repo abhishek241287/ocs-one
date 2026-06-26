@@ -2305,10 +2305,12 @@ export const CreateProductionOrderResponse = zod.object({
   "productionOrderId": zod.string().uuid(),
   "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
-  "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
+  "status": zod.enum(['pending', 'in_progress', 'paused', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
   "supervisorName": zod.string().nullish(),
   "startedAt": zod.coerce.date().nullish(),
+  "pausedAt": zod.coerce.date().nullish(),
+  "resumedAt": zod.coerce.date().nullish(),
   "completedAt": zod.coerce.date().nullish(),
   "approvedAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
@@ -2353,10 +2355,12 @@ export const GetProductionOrderResponse = zod.object({
   "productionOrderId": zod.string().uuid(),
   "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
-  "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
+  "status": zod.enum(['pending', 'in_progress', 'paused', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
   "supervisorName": zod.string().nullish(),
   "startedAt": zod.coerce.date().nullish(),
+  "pausedAt": zod.coerce.date().nullish(),
+  "resumedAt": zod.coerce.date().nullish(),
   "completedAt": zod.coerce.date().nullish(),
   "approvedAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
@@ -2410,10 +2414,12 @@ export const UpdateProductionOrderResponse = zod.object({
   "productionOrderId": zod.string().uuid(),
   "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
-  "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
+  "status": zod.enum(['pending', 'in_progress', 'paused', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
   "supervisorName": zod.string().nullish(),
   "startedAt": zod.coerce.date().nullish(),
+  "pausedAt": zod.coerce.date().nullish(),
+  "resumedAt": zod.coerce.date().nullish(),
   "completedAt": zod.coerce.date().nullish(),
   "approvedAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
@@ -2443,10 +2449,12 @@ export const ListOrderStagesResponse = zod.object({
   "productionOrderId": zod.string().uuid(),
   "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
-  "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
+  "status": zod.enum(['pending', 'in_progress', 'paused', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
   "supervisorName": zod.string().nullish(),
   "startedAt": zod.coerce.date().nullish(),
+  "pausedAt": zod.coerce.date().nullish(),
+  "resumedAt": zod.coerce.date().nullish(),
   "completedAt": zod.coerce.date().nullish(),
   "approvedAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
@@ -2476,10 +2484,12 @@ export const GetOrderStageResponse = zod.object({
   "productionOrderId": zod.string().uuid(),
   "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
-  "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
+  "status": zod.enum(['pending', 'in_progress', 'paused', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
   "supervisorName": zod.string().nullish(),
   "startedAt": zod.coerce.date().nullish(),
+  "pausedAt": zod.coerce.date().nullish(),
+  "resumedAt": zod.coerce.date().nullish(),
   "completedAt": zod.coerce.date().nullish(),
   "approvedAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
@@ -2513,10 +2523,12 @@ export const UpdateOrderStageResponse = zod.object({
   "productionOrderId": zod.string().uuid(),
   "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
-  "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
+  "status": zod.enum(['pending', 'in_progress', 'paused', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
   "supervisorName": zod.string().nullish(),
   "startedAt": zod.coerce.date().nullish(),
+  "pausedAt": zod.coerce.date().nullish(),
+  "resumedAt": zod.coerce.date().nullish(),
   "completedAt": zod.coerce.date().nullish(),
   "approvedAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
@@ -2542,7 +2554,8 @@ export const StartStageParams = zod.object({
 
 export const StartStageBody = zod.object({
   "operatorName": zod.string(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "stageData": zod.record(zod.string(), zod.unknown()).optional()
 })
 
 export const StartStageResponse = zod.object({
@@ -2550,10 +2563,12 @@ export const StartStageResponse = zod.object({
   "productionOrderId": zod.string().uuid(),
   "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
-  "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
+  "status": zod.enum(['pending', 'in_progress', 'paused', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
   "supervisorName": zod.string().nullish(),
   "startedAt": zod.coerce.date().nullish(),
+  "pausedAt": zod.coerce.date().nullish(),
+  "resumedAt": zod.coerce.date().nullish(),
   "completedAt": zod.coerce.date().nullish(),
   "approvedAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
@@ -2588,10 +2603,12 @@ export const CompleteStageResponse = zod.object({
   "productionOrderId": zod.string().uuid(),
   "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
-  "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
+  "status": zod.enum(['pending', 'in_progress', 'paused', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
   "supervisorName": zod.string().nullish(),
   "startedAt": zod.coerce.date().nullish(),
+  "pausedAt": zod.coerce.date().nullish(),
+  "resumedAt": zod.coerce.date().nullish(),
   "completedAt": zod.coerce.date().nullish(),
   "approvedAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
@@ -2625,10 +2642,12 @@ export const ApproveStageResponse = zod.object({
   "productionOrderId": zod.string().uuid(),
   "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
-  "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
+  "status": zod.enum(['pending', 'in_progress', 'paused', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
   "supervisorName": zod.string().nullish(),
   "startedAt": zod.coerce.date().nullish(),
+  "pausedAt": zod.coerce.date().nullish(),
+  "resumedAt": zod.coerce.date().nullish(),
   "completedAt": zod.coerce.date().nullish(),
   "approvedAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
@@ -2662,10 +2681,12 @@ export const RejectStageResponse = zod.object({
   "productionOrderId": zod.string().uuid(),
   "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
-  "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
+  "status": zod.enum(['pending', 'in_progress', 'paused', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
   "supervisorName": zod.string().nullish(),
   "startedAt": zod.coerce.date().nullish(),
+  "pausedAt": zod.coerce.date().nullish(),
+  "resumedAt": zod.coerce.date().nullish(),
   "completedAt": zod.coerce.date().nullish(),
   "approvedAt": zod.coerce.date().nullish(),
   "notes": zod.string().nullish(),
@@ -2676,6 +2697,278 @@ export const RejectStageResponse = zod.object({
   "uploadedAt": zod.coerce.date()
 })).optional(),
   "stageData": zod.record(zod.string(), zod.unknown()).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Pause an in-progress stage (in_progress → paused)
+ */
+export const PauseStageParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "stage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing'])
+})
+
+export const PauseStageBody = zod.object({
+  "operatorName": zod.string(),
+  "notes": zod.string().nullish()
+})
+
+export const PauseStageResponse = zod.object({
+  "id": zod.string().uuid(),
+  "productionOrderId": zod.string().uuid(),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
+  "stageOrder": zod.number(),
+  "status": zod.enum(['pending', 'in_progress', 'paused', 'completed', 'approved', 'rejected']),
+  "operatorName": zod.string().nullish(),
+  "supervisorName": zod.string().nullish(),
+  "startedAt": zod.coerce.date().nullish(),
+  "pausedAt": zod.coerce.date().nullish(),
+  "resumedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "approvedAt": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "photos": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "stageData": zod.record(zod.string(), zod.unknown()).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Resume a paused stage (paused → in_progress)
+ */
+export const ResumeStageParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "stage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing'])
+})
+
+export const ResumeStageBody = zod.object({
+  "operatorName": zod.string(),
+  "notes": zod.string().nullish()
+})
+
+export const ResumeStageResponse = zod.object({
+  "id": zod.string().uuid(),
+  "productionOrderId": zod.string().uuid(),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
+  "stageOrder": zod.number(),
+  "status": zod.enum(['pending', 'in_progress', 'paused', 'completed', 'approved', 'rejected']),
+  "operatorName": zod.string().nullish(),
+  "supervisorName": zod.string().nullish(),
+  "startedAt": zod.coerce.date().nullish(),
+  "pausedAt": zod.coerce.date().nullish(),
+  "resumedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "approvedAt": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "photos": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "stageData": zod.record(zod.string(), zod.unknown()).optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get formation report for a production order
+ */
+export const GetFormationReportParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetFormationReportResponse = zod.object({
+  "id": zod.string().uuid(),
+  "productionOrderId": zod.string().uuid(),
+  "chargerUnitId": zod.string().uuid().nullish(),
+  "chargerCode": zod.string().nullish(),
+  "operator": zod.string(),
+  "chargeStartAt": zod.coerce.date().nullish(),
+  "chargeEndAt": zod.coerce.date().nullish(),
+  "chargeTimeMin": zod.number().nullish(),
+  "energyKwh": zod.number().nullish(),
+  "chargingCurrentA": zod.number().nullish(),
+  "startVoltageV": zod.number().nullish(),
+  "finalVoltageV": zod.number().nullish(),
+  "finalCurrentA": zod.number().nullish(),
+  "ambientTempC": zod.number().nullish(),
+  "batteryTempC": zod.number().nullish(),
+  "topBalancingRequired": zod.boolean().optional(),
+  "topBalancingStartAt": zod.coerce.date().nullish(),
+  "topBalancingEndAt": zod.coerce.date().nullish(),
+  "finalCellVoltageSpreadMv": zod.number().nullish(),
+  "maxCellVoltageV": zod.number().nullish(),
+  "minCellVoltageV": zod.number().nullish(),
+  "voltageDiffMv": zod.number().nullish(),
+  "balancingStatus": zod.string().nullish(),
+  "remarks": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List operational charger units
+ */
+export const listChargerUnitsQueryPageSizeDefault = 50;
+export const listChargerUnitsQueryPageDefault = 1;
+
+export const ListChargerUnitsQueryParams = zod.object({
+  "status": zod.enum(['available', 'busy', 'maintenance']).optional(),
+  "pageSize": zod.coerce.number().default(listChargerUnitsQueryPageSizeDefault),
+  "page": zod.coerce.number().default(listChargerUnitsQueryPageDefault)
+})
+
+export const ListChargerUnitsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "chargerCode": zod.string(),
+  "model": zod.string(),
+  "manufacturer": zod.string(),
+  "serialNumber": zod.string(),
+  "outputVoltageV": zod.number().nullish(),
+  "maxCurrentA": zod.number().nullish(),
+  "status": zod.enum(['available', 'busy', 'maintenance']),
+  "currentOrderId": zod.string().uuid().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "total": zod.number()
+})
+
+
+/**
+ * @summary Register a new charger unit
+ */
+export const CreateChargerUnitBody = zod.object({
+  "chargerCode": zod.string(),
+  "model": zod.string(),
+  "manufacturer": zod.string(),
+  "serialNumber": zod.string(),
+  "outputVoltageV": zod.number().nullish(),
+  "maxCurrentA": zod.number().nullish(),
+  "status": zod.enum(['available', 'busy', 'maintenance']).optional(),
+  "notes": zod.string().nullish()
+})
+
+export const CreateChargerUnitResponse = zod.object({
+  "id": zod.string().uuid(),
+  "chargerCode": zod.string(),
+  "model": zod.string(),
+  "manufacturer": zod.string(),
+  "serialNumber": zod.string(),
+  "outputVoltageV": zod.number().nullish(),
+  "maxCurrentA": zod.number().nullish(),
+  "status": zod.enum(['available', 'busy', 'maintenance']),
+  "currentOrderId": zod.string().uuid().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Live charging floor dashboard KPIs
+ */
+export const GetChargingDashboardResponse = zod.object({
+  "chargersAvailable": zod.number(),
+  "chargersBusy": zod.number(),
+  "chargersMaintenance": zod.number(),
+  "totalChargers": zod.number(),
+  "batteriesCharging": zod.number(),
+  "batteriesWaiting": zod.number(),
+  "todayCompletedCharges": zod.number(),
+  "avgChargeTimeMin": zod.number().nullable()
+})
+
+
+/**
+ * @summary Get a single charger unit
+ */
+export const GetChargerUnitParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetChargerUnitResponse = zod.object({
+  "id": zod.string().uuid(),
+  "chargerCode": zod.string(),
+  "model": zod.string(),
+  "manufacturer": zod.string(),
+  "serialNumber": zod.string(),
+  "outputVoltageV": zod.number().nullish(),
+  "maxCurrentA": zod.number().nullish(),
+  "status": zod.enum(['available', 'busy', 'maintenance']),
+  "currentOrderId": zod.string().uuid().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update charger unit details
+ */
+export const UpdateChargerUnitParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateChargerUnitBody = zod.object({
+  "model": zod.string().optional(),
+  "manufacturer": zod.string().optional(),
+  "serialNumber": zod.string().optional(),
+  "outputVoltageV": zod.number().nullish(),
+  "maxCurrentA": zod.number().nullish(),
+  "notes": zod.string().nullish()
+})
+
+export const UpdateChargerUnitResponse = zod.object({
+  "id": zod.string().uuid(),
+  "chargerCode": zod.string(),
+  "model": zod.string(),
+  "manufacturer": zod.string(),
+  "serialNumber": zod.string(),
+  "outputVoltageV": zod.number().nullish(),
+  "maxCurrentA": zod.number().nullish(),
+  "status": zod.enum(['available', 'busy', 'maintenance']),
+  "currentOrderId": zod.string().uuid().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Change a charger unit's operational status
+ */
+export const UpdateChargerUnitStatusParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateChargerUnitStatusBody = zod.object({
+  "status": zod.enum(['available', 'busy', 'maintenance'])
+})
+
+export const UpdateChargerUnitStatusResponse = zod.object({
+  "id": zod.string().uuid(),
+  "chargerCode": zod.string(),
+  "model": zod.string(),
+  "manufacturer": zod.string(),
+  "serialNumber": zod.string(),
+  "outputVoltageV": zod.number().nullish(),
+  "maxCurrentA": zod.number().nullish(),
+  "status": zod.enum(['available', 'busy', 'maintenance']),
+  "currentOrderId": zod.string().uuid().nullish(),
+  "notes": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

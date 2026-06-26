@@ -5,11 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { StageStartInputStageData } from './stageStartInputStageData';
 
-export interface StageStartInput {
+export interface StagePauseInput {
   operatorName: string;
   /** @nullable */
   notes?: string | null;
-  stageData?: StageStartInputStageData;
 }

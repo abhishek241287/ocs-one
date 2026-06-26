@@ -462,6 +462,7 @@ export type OrderStageStatus = typeof OrderStageStatus[keyof typeof OrderStageSt
 export const OrderStageStatus = {
   pending: 'pending',
   in_progress: 'in_progress',
+  paused: 'paused',
   completed: 'completed',
   approved: 'approved',
   rejected: 'rejected',
@@ -482,6 +483,10 @@ export interface OrderStage {
   /** @nullable */
   startedAt?: string | null;
   /** @nullable */
+  pausedAt?: string | null;
+  /** @nullable */
+  resumedAt?: string | null;
+  /** @nullable */
   completedAt?: string | null;
   /** @nullable */
   approvedAt?: string | null;
@@ -501,10 +506,13 @@ export interface StageUpdate {
   stageData?: StageUpdateStageData;
 }
 
+export type StageStartInputStageData = { [key: string]: unknown };
+
 export interface StageStartInput {
   operatorName: string;
   /** @nullable */
   notes?: string | null;
+  stageData?: StageStartInputStageData;
 }
 
 export type StageCompleteInputStageData = { [key: string]: unknown };
@@ -648,6 +656,154 @@ export interface ProductionOrder {
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface StagePauseInput {
+  operatorName: string;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface StageResumeInput {
+  operatorName: string;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export type ChargerUnitStatus = typeof ChargerUnitStatus[keyof typeof ChargerUnitStatus];
+
+
+export const ChargerUnitStatus = {
+  available: 'available',
+  busy: 'busy',
+  maintenance: 'maintenance',
+} as const;
+
+export interface ChargerUnit {
+  id: string;
+  chargerCode: string;
+  model: string;
+  manufacturer: string;
+  serialNumber: string;
+  /** @nullable */
+  outputVoltageV?: number | null;
+  /** @nullable */
+  maxCurrentA?: number | null;
+  status: ChargerUnitStatus;
+  /** @nullable */
+  currentOrderId?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ChargerUnitInputStatus = typeof ChargerUnitInputStatus[keyof typeof ChargerUnitInputStatus];
+
+
+export const ChargerUnitInputStatus = {
+  available: 'available',
+  busy: 'busy',
+  maintenance: 'maintenance',
+} as const;
+
+export interface ChargerUnitInput {
+  chargerCode: string;
+  model: string;
+  manufacturer: string;
+  serialNumber: string;
+  /** @nullable */
+  outputVoltageV?: number | null;
+  /** @nullable */
+  maxCurrentA?: number | null;
+  status?: ChargerUnitInputStatus;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface ChargerUnitUpdate {
+  model?: string;
+  manufacturer?: string;
+  serialNumber?: string;
+  /** @nullable */
+  outputVoltageV?: number | null;
+  /** @nullable */
+  maxCurrentA?: number | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export type ChargerUnitStatusInputStatus = typeof ChargerUnitStatusInputStatus[keyof typeof ChargerUnitStatusInputStatus];
+
+
+export const ChargerUnitStatusInputStatus = {
+  available: 'available',
+  busy: 'busy',
+  maintenance: 'maintenance',
+} as const;
+
+export interface ChargerUnitStatusInput {
+  status: ChargerUnitStatusInputStatus;
+}
+
+export interface ChargingDashboard {
+  chargersAvailable: number;
+  chargersBusy: number;
+  chargersMaintenance: number;
+  totalChargers: number;
+  batteriesCharging: number;
+  batteriesWaiting: number;
+  todayCompletedCharges: number;
+  /** @nullable */
+  avgChargeTimeMin: number | null;
+}
+
+export interface FormationReport {
+  id: string;
+  productionOrderId: string;
+  /** @nullable */
+  chargerUnitId?: string | null;
+  /** @nullable */
+  chargerCode?: string | null;
+  operator: string;
+  /** @nullable */
+  chargeStartAt?: string | null;
+  /** @nullable */
+  chargeEndAt?: string | null;
+  /** @nullable */
+  chargeTimeMin?: number | null;
+  /** @nullable */
+  energyKwh?: number | null;
+  /** @nullable */
+  chargingCurrentA?: number | null;
+  /** @nullable */
+  startVoltageV?: number | null;
+  /** @nullable */
+  finalVoltageV?: number | null;
+  /** @nullable */
+  finalCurrentA?: number | null;
+  /** @nullable */
+  ambientTempC?: number | null;
+  /** @nullable */
+  batteryTempC?: number | null;
+  topBalancingRequired?: boolean;
+  /** @nullable */
+  topBalancingStartAt?: string | null;
+  /** @nullable */
+  topBalancingEndAt?: string | null;
+  /** @nullable */
+  finalCellVoltageSpreadMv?: number | null;
+  /** @nullable */
+  maxCellVoltageV?: number | null;
+  /** @nullable */
+  minCellVoltageV?: number | null;
+  /** @nullable */
+  voltageDiffMv?: number | null;
+  /** @nullable */
+  balancingStatus?: string | null;
+  /** @nullable */
+  remarks?: string | null;
+  createdAt: string;
 }
 
 export interface AllocatedCellItem {
@@ -1132,6 +1288,26 @@ export type ListProductionOrders200 = {
 
 export type ListOrderStages200 = {
   items: OrderStage[];
+};
+
+export type ListChargerUnitsParams = {
+status?: ListChargerUnitsStatus;
+pageSize?: number;
+page?: number;
+};
+
+export type ListChargerUnitsStatus = typeof ListChargerUnitsStatus[keyof typeof ListChargerUnitsStatus];
+
+
+export const ListChargerUnitsStatus = {
+  available: 'available',
+  busy: 'busy',
+  maintenance: 'maintenance',
+} as const;
+
+export type ListChargerUnits200 = {
+  items: ChargerUnit[];
+  total: number;
 };
 
 export type GetOrderTimeline200 = {

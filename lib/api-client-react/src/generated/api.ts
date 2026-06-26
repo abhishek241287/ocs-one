@@ -48,9 +48,15 @@ import type {
   ChargerMaster,
   ChargerMasterInput,
   ChargerMasterUpdate,
+  ChargerUnit,
+  ChargerUnitInput,
+  ChargerUnitStatusInput,
+  ChargerUnitUpdate,
+  ChargingDashboard,
   ConnectorMaster,
   ConnectorMasterInput,
   ConnectorMasterUpdate,
+  FormationReport,
   GenealogyInput,
   GenealogyRecord,
   GetAllocatedCells200,
@@ -75,6 +81,8 @@ import type {
   ListCellsParams,
   ListChargerMasters200,
   ListChargerMastersParams,
+  ListChargerUnits200,
+  ListChargerUnitsParams,
   ListConnectorMasters200,
   ListConnectorMastersParams,
   ListOrderStages200,
@@ -95,7 +103,9 @@ import type {
   ProductionOrderUpdate,
   StageApproveInput,
   StageCompleteInput,
+  StagePauseInput,
   StageRejectInput,
+  StageResumeInput,
   StageStartInput,
   StageUpdate,
   TestEquipmentMaster,
@@ -4119,6 +4129,679 @@ export const useRejectStage = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getRejectStageMutationOptions(options));
+    }
+
+export const getPauseStageUrl = (id: string,
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/stages/${stage}/pause`
+}
+
+/**
+ * @summary Pause an in-progress stage (in_progress → paused)
+ */
+export const pauseStage = async (id: string,
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',
+    stagePauseInput: StagePauseInput, options?: RequestInit): Promise<OrderStage> => {
+
+  return customFetch<OrderStage>(getPauseStageUrl(id,stage),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stagePauseInput)
+  }
+);}
+
+
+
+
+export const getPauseStageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pauseStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StagePauseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pauseStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StagePauseInput>}, TContext> => {
+
+const mutationKey = ['pauseStage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pauseStage>>, {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StagePauseInput>}> = (props) => {
+          const {id,stage,data} = props ?? {};
+
+          return  pauseStage(id,stage,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PauseStageMutationResult = NonNullable<Awaited<ReturnType<typeof pauseStage>>>
+    export type PauseStageMutationBody = BodyType<StagePauseInput>
+    export type PauseStageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Pause an in-progress stage (in_progress → paused)
+ */
+export const usePauseStage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pauseStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StagePauseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof pauseStage>>,
+        TError,
+        {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StagePauseInput>},
+        TContext
+      > => {
+      return useMutation(getPauseStageMutationOptions(options));
+    }
+
+export const getResumeStageUrl = (id: string,
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/stages/${stage}/resume`
+}
+
+/**
+ * @summary Resume a paused stage (paused → in_progress)
+ */
+export const resumeStage = async (id: string,
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',
+    stageResumeInput: StageResumeInput, options?: RequestInit): Promise<OrderStage> => {
+
+  return customFetch<OrderStage>(getResumeStageUrl(id,stage),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stageResumeInput)
+  }
+);}
+
+
+
+
+export const getResumeStageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageResumeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resumeStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageResumeInput>}, TContext> => {
+
+const mutationKey = ['resumeStage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resumeStage>>, {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageResumeInput>}> = (props) => {
+          const {id,stage,data} = props ?? {};
+
+          return  resumeStage(id,stage,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResumeStageMutationResult = NonNullable<Awaited<ReturnType<typeof resumeStage>>>
+    export type ResumeStageMutationBody = BodyType<StageResumeInput>
+    export type ResumeStageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Resume a paused stage (paused → in_progress)
+ */
+export const useResumeStage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageResumeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resumeStage>>,
+        TError,
+        {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageResumeInput>},
+        TContext
+      > => {
+      return useMutation(getResumeStageMutationOptions(options));
+    }
+
+export const getGetFormationReportUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/formation-report`
+}
+
+/**
+ * @summary Get formation report for a production order
+ */
+export const getFormationReport = async (id: string, options?: RequestInit): Promise<FormationReport> => {
+
+  return customFetch<FormationReport>(getGetFormationReportUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFormationReportQueryKey = (id: string,) => {
+    return [
+    `/api/manufacturing/orders/${id}/formation-report`
+    ] as const;
+    }
+
+
+export const getGetFormationReportQueryOptions = <TData = Awaited<ReturnType<typeof getFormationReport>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFormationReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFormationReportQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFormationReport>>> = ({ signal }) => getFormationReport(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFormationReport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFormationReportQueryResult = NonNullable<Awaited<ReturnType<typeof getFormationReport>>>
+export type GetFormationReportQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get formation report for a production order
+ */
+
+export function useGetFormationReport<TData = Awaited<ReturnType<typeof getFormationReport>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFormationReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFormationReportQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListChargerUnitsUrl = (params?: ListChargerUnitsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/manufacturing/charger-units?${stringifiedParams}` : `/api/manufacturing/charger-units`
+}
+
+/**
+ * @summary List operational charger units
+ */
+export const listChargerUnits = async (params?: ListChargerUnitsParams, options?: RequestInit): Promise<ListChargerUnits200> => {
+
+  return customFetch<ListChargerUnits200>(getListChargerUnitsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListChargerUnitsQueryKey = (params?: ListChargerUnitsParams,) => {
+    return [
+    `/api/manufacturing/charger-units`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListChargerUnitsQueryOptions = <TData = Awaited<ReturnType<typeof listChargerUnits>>, TError = ErrorType<unknown>>(params?: ListChargerUnitsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listChargerUnits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListChargerUnitsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listChargerUnits>>> = ({ signal }) => listChargerUnits(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listChargerUnits>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListChargerUnitsQueryResult = NonNullable<Awaited<ReturnType<typeof listChargerUnits>>>
+export type ListChargerUnitsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List operational charger units
+ */
+
+export function useListChargerUnits<TData = Awaited<ReturnType<typeof listChargerUnits>>, TError = ErrorType<unknown>>(
+ params?: ListChargerUnitsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listChargerUnits>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListChargerUnitsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateChargerUnitUrl = () => {
+
+
+
+
+  return `/api/manufacturing/charger-units`
+}
+
+/**
+ * @summary Register a new charger unit
+ */
+export const createChargerUnit = async (chargerUnitInput: ChargerUnitInput, options?: RequestInit): Promise<ChargerUnit> => {
+
+  return customFetch<ChargerUnit>(getCreateChargerUnitUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(chargerUnitInput)
+  }
+);}
+
+
+
+
+export const getCreateChargerUnitMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createChargerUnit>>, TError,{data: BodyType<ChargerUnitInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createChargerUnit>>, TError,{data: BodyType<ChargerUnitInput>}, TContext> => {
+
+const mutationKey = ['createChargerUnit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createChargerUnit>>, {data: BodyType<ChargerUnitInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createChargerUnit(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateChargerUnitMutationResult = NonNullable<Awaited<ReturnType<typeof createChargerUnit>>>
+    export type CreateChargerUnitMutationBody = BodyType<ChargerUnitInput>
+    export type CreateChargerUnitMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Register a new charger unit
+ */
+export const useCreateChargerUnit = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createChargerUnit>>, TError,{data: BodyType<ChargerUnitInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createChargerUnit>>,
+        TError,
+        {data: BodyType<ChargerUnitInput>},
+        TContext
+      > => {
+      return useMutation(getCreateChargerUnitMutationOptions(options));
+    }
+
+export const getGetChargingDashboardUrl = () => {
+
+
+
+
+  return `/api/manufacturing/charger-units/dashboard`
+}
+
+/**
+ * @summary Live charging floor dashboard KPIs
+ */
+export const getChargingDashboard = async ( options?: RequestInit): Promise<ChargingDashboard> => {
+
+  return customFetch<ChargingDashboard>(getGetChargingDashboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetChargingDashboardQueryKey = () => {
+    return [
+    `/api/manufacturing/charger-units/dashboard`
+    ] as const;
+    }
+
+
+export const getGetChargingDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getChargingDashboard>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChargingDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChargingDashboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChargingDashboard>>> = ({ signal }) => getChargingDashboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChargingDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetChargingDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getChargingDashboard>>>
+export type GetChargingDashboardQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Live charging floor dashboard KPIs
+ */
+
+export function useGetChargingDashboard<TData = Awaited<ReturnType<typeof getChargingDashboard>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChargingDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetChargingDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetChargerUnitUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/charger-units/${id}`
+}
+
+/**
+ * @summary Get a single charger unit
+ */
+export const getChargerUnit = async (id: string, options?: RequestInit): Promise<ChargerUnit> => {
+
+  return customFetch<ChargerUnit>(getGetChargerUnitUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetChargerUnitQueryKey = (id: string,) => {
+    return [
+    `/api/manufacturing/charger-units/${id}`
+    ] as const;
+    }
+
+
+export const getGetChargerUnitQueryOptions = <TData = Awaited<ReturnType<typeof getChargerUnit>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChargerUnit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChargerUnitQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChargerUnit>>> = ({ signal }) => getChargerUnit(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChargerUnit>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetChargerUnitQueryResult = NonNullable<Awaited<ReturnType<typeof getChargerUnit>>>
+export type GetChargerUnitQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a single charger unit
+ */
+
+export function useGetChargerUnit<TData = Awaited<ReturnType<typeof getChargerUnit>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChargerUnit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetChargerUnitQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateChargerUnitUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/charger-units/${id}`
+}
+
+/**
+ * @summary Update charger unit details
+ */
+export const updateChargerUnit = async (id: string,
+    chargerUnitUpdate: ChargerUnitUpdate, options?: RequestInit): Promise<ChargerUnit> => {
+
+  return customFetch<ChargerUnit>(getUpdateChargerUnitUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(chargerUnitUpdate)
+  }
+);}
+
+
+
+
+export const getUpdateChargerUnitMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateChargerUnit>>, TError,{id: string;data: BodyType<ChargerUnitUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateChargerUnit>>, TError,{id: string;data: BodyType<ChargerUnitUpdate>}, TContext> => {
+
+const mutationKey = ['updateChargerUnit'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateChargerUnit>>, {id: string;data: BodyType<ChargerUnitUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateChargerUnit(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateChargerUnitMutationResult = NonNullable<Awaited<ReturnType<typeof updateChargerUnit>>>
+    export type UpdateChargerUnitMutationBody = BodyType<ChargerUnitUpdate>
+    export type UpdateChargerUnitMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update charger unit details
+ */
+export const useUpdateChargerUnit = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateChargerUnit>>, TError,{id: string;data: BodyType<ChargerUnitUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateChargerUnit>>,
+        TError,
+        {id: string;data: BodyType<ChargerUnitUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateChargerUnitMutationOptions(options));
+    }
+
+export const getUpdateChargerUnitStatusUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/charger-units/${id}/status`
+}
+
+/**
+ * @summary Change a charger unit's operational status
+ */
+export const updateChargerUnitStatus = async (id: string,
+    chargerUnitStatusInput: ChargerUnitStatusInput, options?: RequestInit): Promise<ChargerUnit> => {
+
+  return customFetch<ChargerUnit>(getUpdateChargerUnitStatusUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(chargerUnitStatusInput)
+  }
+);}
+
+
+
+
+export const getUpdateChargerUnitStatusMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateChargerUnitStatus>>, TError,{id: string;data: BodyType<ChargerUnitStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateChargerUnitStatus>>, TError,{id: string;data: BodyType<ChargerUnitStatusInput>}, TContext> => {
+
+const mutationKey = ['updateChargerUnitStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateChargerUnitStatus>>, {id: string;data: BodyType<ChargerUnitStatusInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateChargerUnitStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateChargerUnitStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateChargerUnitStatus>>>
+    export type UpdateChargerUnitStatusMutationBody = BodyType<ChargerUnitStatusInput>
+    export type UpdateChargerUnitStatusMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Change a charger unit's operational status
+ */
+export const useUpdateChargerUnitStatus = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateChargerUnitStatus>>, TError,{id: string;data: BodyType<ChargerUnitStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateChargerUnitStatus>>,
+        TError,
+        {id: string;data: BodyType<ChargerUnitStatusInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateChargerUnitStatusMutationOptions(options));
     }
 
 export const getGetOrderTimelineUrl = (id: string,) => {

@@ -75,6 +75,8 @@ const navSections: NavSection[] = [
         icon: Factory,
         items: [
           { label: "Production Orders", href: "/manufacturing/orders", icon: Factory },
+          { label: "Charger Management", href: "/manufacturing/chargers", icon: BatteryCharging },
+          { label: "Charging Dashboard", href: "/manufacturing/charging-dashboard", icon: Zap },
         ],
       },
     ],

@@ -23,6 +23,10 @@ export interface OrderStage {
   /** @nullable */
   startedAt?: Date | null;
   /** @nullable */
+  pausedAt?: Date | null;
+  /** @nullable */
+  resumedAt?: Date | null;
+  /** @nullable */
   completedAt?: Date | null;
   /** @nullable */
   approvedAt?: Date | null;

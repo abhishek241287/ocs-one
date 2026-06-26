@@ -16,6 +16,8 @@ import ChargerMasterPage from "@/features/masters/pages/ChargerMasterPage";
 import TestEquipmentMasterPage from "@/features/masters/pages/TestEquipmentMasterPage";
 import OrdersListPage from "@/features/manufacturing/pages/OrdersListPage";
 import OrderDetailPage from "@/features/manufacturing/pages/OrderDetailPage";
+import ChargerManagementPage from "@/features/manufacturing/pages/ChargerManagementPage";
+import ChargingDashboardPage from "@/features/manufacturing/pages/ChargingDashboardPage";
 import CellReceivingPage from "@/features/cells/pages/CellReceivingPage";
 import CellGradingPage from "@/features/cells/pages/CellGradingPage";
 import CellInventoryPage from "@/features/cells/pages/CellInventoryPage";
@@ -46,6 +48,8 @@ function Router() {
       </Route>
       <Route path="/manufacturing/orders" component={OrdersListPage} />
       <Route path="/manufacturing/orders/:id" component={OrderDetailPage} />
+      <Route path="/manufacturing/chargers" component={ChargerManagementPage} />
+      <Route path="/manufacturing/charging-dashboard" component={ChargingDashboardPage} />
       <Route path="/cells/receiving" component={CellReceivingPage} />
       <Route path="/cells/grading" component={CellGradingPage} />
       <Route path="/cells/inventory" component={CellInventoryPage} />

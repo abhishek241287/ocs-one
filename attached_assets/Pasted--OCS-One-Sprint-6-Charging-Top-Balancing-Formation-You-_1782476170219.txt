@@ -1,0 +1,178 @@
+# OCS One – Sprint 6
+
+## Charging, Top Balancing & Formation
+
+You are the Lead Manufacturing Software Engineer for OCS One.
+
+Extend the existing Battery Manufacturing Engine.
+
+Do not redesign existing modules.
+
+---
+
+# Objective
+
+After BMS Programming, every battery enters the Charging & Formation stage.
+
+This stage records the complete charging history and becomes part of the Digital Battery Passport.
+
+No battery can proceed to testing until charging is successfully completed.
+
+---
+
+# Module 1 – Charger Management
+
+Create a Charger Management page.
+
+Each charger has:
+
+* Charger ID
+* Model
+* Manufacturer
+* Serial Number
+* Output Voltage
+* Maximum Current
+* Status (Available / Busy / Maintenance)
+
+When charging starts, automatically reserve the charger.
+
+When charging completes, automatically release it.
+
+---
+
+# Module 2 – Charging Stage
+
+Inside Battery Workspace create a Charging Stage Card.
+
+Fields:
+
+* Charger ID (dropdown)
+* Operator
+* Charging Start Time
+* Charging End Time
+* Charging Current (default 30A)
+* Start Voltage
+* Final Voltage
+* Ambient Temperature
+* Battery Temperature
+* Remarks
+
+Buttons:
+
+Start Charging
+
+Pause Charging
+
+Resume Charging
+
+Complete Charging
+
+---
+
+# Module 3 – Top Balancing
+
+Record:
+
+* Top Balancing Required (Yes/No)
+* Top Balancing Start
+* Top Balancing End
+* Final Cell Voltage Spread
+* Maximum Cell Voltage
+* Minimum Cell Voltage
+
+Automatically calculate:
+
+Voltage Difference (mV)
+
+Status:
+
+Pass
+
+Warning
+
+Fail
+
+Store results permanently.
+
+---
+
+# Module 4 – Formation Report
+
+Generate a Formation Report containing:
+
+* Battery Number
+* Production Order
+* Charger Used
+* Operator
+* Charge Time
+* Energy Supplied (kWh)
+* Final Voltage
+* Final Current
+* Temperature
+* Top Balancing Result
+
+Store this report in the Battery Passport.
+
+---
+
+# Module 5 – Live Charging Dashboard
+
+Create a dashboard showing:
+
+* Chargers Available
+* Chargers Busy
+* Batteries Charging
+* Batteries Waiting for Charging
+* Average Charge Time
+* Today's Completed Charges
+
+---
+
+# Integration
+
+When charging completes:
+
+Battery Status:
+
+Charging Complete
+
+Timeline:
+
+Charging Started
+
+Charging Paused
+
+Charging Resumed
+
+Charging Completed
+
+Formation Completed
+
+Update the Digital Passport automatically.
+
+---
+
+# Rules
+
+* One charger can charge only one battery at a time.
+* Charging cannot start without an installed BMS.
+* Formation must complete before Testing unlocks.
+* Every event is recorded in the audit log.
+
+---
+
+# Deliverables
+
+* Charger Management
+* Charging Stage
+* Top Balancing
+* Formation Report
+* Live Charging Dashboard
+* Updated Digital Passport
+* API Documentation
+* Database Migration
+* Passing TypeScript checks
+
+Stop after Charging & Formation.
+
+Do not implement Capacity Testing or QC in this sprint.

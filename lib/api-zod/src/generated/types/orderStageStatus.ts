@@ -12,6 +12,7 @@ export type OrderStageStatus = typeof OrderStageStatus[keyof typeof OrderStageSt
 export const OrderStageStatus = {
   pending: 'pending',
   in_progress: 'in_progress',
+  paused: 'paused',
   completed: 'completed',
   approved: 'approved',
   rejected: 'rejected',

@@ -4,6 +4,8 @@ import {
   mfgOrderStagesTable,
   mfgProductionOrdersTable,
   mfgBatteryGenealogyTable,
+  mfgChargerUnitsTable,
+  mfgFormationReportsTable,
   cellMatchesTable,
   cellMatchItemsTable,
   cellsTable,
@@ -24,6 +26,10 @@ import {
   ApproveStageBody,
   RejectStageParams,
   RejectStageBody,
+  PauseStageParams,
+  PauseStageBody,
+  ResumeStageParams,
+  ResumeStageBody,
 } from "@workspace/api-zod";
 import { logEvent, getNextStage, type StageTypeValue } from "./helpers";
 
@@ -45,6 +51,25 @@ async function getStageOrFail(
     )
     .limit(1);
   return stage;
+}
+
+// ─── Stage-specific side effects on start ────────────────────────────────────
+
+async function onChargingStart(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  orderId: string,
+  stageData: Record<string, unknown>
+): Promise<void> {
+  const chargerUnitId = stageData?.chargerUnitId as string | undefined;
+  if (!chargerUnitId) return;
+  await tx
+    .update(mfgChargerUnitsTable)
+    .set({ status: "busy", currentOrderId: orderId })
+    .where(eq(mfgChargerUnitsTable.id, chargerUnitId));
+  await tx
+    .update(mfgProductionOrdersTable)
+    .set({ chargerUnitId })
+    .where(eq(mfgProductionOrdersTable.id, orderId));
 }
 
 // ─── Stage-specific side effects on complete ────────────────────────────────
@@ -124,6 +149,101 @@ async function onAssemblyComplete(
       quantity: 1,
       serialNumber: c.name,
     });
+  }
+}
+
+async function onChargingComplete(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  orderId: string,
+  stageData: Record<string, unknown>
+): Promise<void> {
+  const chargerUnitId = stageData?.chargerUnitId as string | undefined;
+
+  // Release charger
+  if (chargerUnitId) {
+    await tx
+      .update(mfgChargerUnitsTable)
+      .set({ status: "available", currentOrderId: null })
+      .where(eq(mfgChargerUnitsTable.id, chargerUnitId));
+  }
+
+  // Calculate charge time if we have start/end
+  let chargeTimeMin: string | null = null;
+  const chargeStart = stageData?.chargeStartTime as string | undefined;
+  const chargeEnd = stageData?.chargeEndTime as string | undefined;
+  if (chargeStart && chargeEnd) {
+    const diffMs = new Date(chargeEnd).getTime() - new Date(chargeStart).getTime();
+    chargeTimeMin = String(Math.round(diffMs / 60000));
+  }
+
+  // Auto-calculate voltage diff for top balancing
+  const maxCell = parseFloat((stageData?.maxCellVoltageV as string | undefined) ?? "0");
+  const minCell = parseFloat((stageData?.minCellVoltageV as string | undefined) ?? "0");
+  const voltageDiffMv = maxCell > 0 && minCell > 0 ? String(Math.round((maxCell - minCell) * 1000)) : null;
+
+  // Determine balancing status
+  const diffMv = parseFloat(voltageDiffMv ?? "0");
+  let balancingStatus: string | null = null;
+  if (stageData?.topBalancingRequired) {
+    if (diffMv <= 20) balancingStatus = "pass";
+    else if (diffMv <= 50) balancingStatus = "warning";
+    else balancingStatus = "fail";
+  }
+
+  // Calculate energy supplied (kWh): I * V * t / 3600 (rough estimate)
+  const chargingCurrentA = parseFloat((stageData?.chargingCurrentA as string | undefined) ?? "0");
+  const finalVoltageV = parseFloat((stageData?.finalVoltageV as string | undefined) ?? "0");
+  const timeMin = parseFloat(chargeTimeMin ?? "0");
+  let energyKwh: string | null = null;
+  if (chargingCurrentA > 0 && finalVoltageV > 0 && timeMin > 0) {
+    energyKwh = String(Math.round(((chargingCurrentA * finalVoltageV * timeMin) / 60000) * 100) / 100);
+  }
+
+  // Write formation report
+  await tx.insert(mfgFormationReportsTable).values({
+    productionOrderId: orderId,
+    chargerUnitId: chargerUnitId ?? null,
+    chargerCode: (stageData?.chargerCode as string | undefined) ?? null,
+    operator: (stageData?.operatorName as string | undefined) ?? "unknown",
+    chargeStartAt: chargeStart ? new Date(chargeStart) : null,
+    chargeEndAt: chargeEnd ? new Date(chargeEnd) : null,
+    chargeTimeMin,
+    energyKwh,
+    chargingCurrentA: chargingCurrentA > 0 ? String(chargingCurrentA) : null,
+    startVoltageV: (stageData?.startVoltageV as string | undefined) ?? null,
+    finalVoltageV: finalVoltageV > 0 ? String(finalVoltageV) : null,
+    finalCurrentA: (stageData?.finalCurrentA as string | undefined) ?? null,
+    ambientTempC: (stageData?.ambientTempC as string | undefined) ?? null,
+    batteryTempC: (stageData?.batteryTempC as string | undefined) ?? null,
+    topBalancingRequired: !!(stageData?.topBalancingRequired),
+    topBalancingStartAt: stageData?.topBalancingStartAt ? new Date(stageData.topBalancingStartAt as string) : null,
+    topBalancingEndAt: stageData?.topBalancingEndAt ? new Date(stageData.topBalancingEndAt as string) : null,
+    finalCellVoltageSpreadMv: (stageData?.finalCellVoltageSpreadMv as string | undefined) ?? null,
+    maxCellVoltageV: maxCell > 0 ? String(maxCell) : null,
+    minCellVoltageV: minCell > 0 ? String(minCell) : null,
+    voltageDiffMv,
+    balancingStatus,
+    remarks: (stageData?.remarks as string | undefined) ?? null,
+  });
+
+  // Genealogy entry for charger
+  if (chargerUnitId) {
+    const [charger] = await tx
+      .select()
+      .from(mfgChargerUnitsTable)
+      .where(eq(mfgChargerUnitsTable.id, chargerUnitId))
+      .limit(1);
+    if (charger) {
+      await tx.insert(mfgBatteryGenealogyTable).values({
+        productionOrderId: orderId,
+        componentType: "charger",
+        componentId: chargerUnitId,
+        componentName: `${charger.manufacturer} ${charger.model} (${charger.chargerCode})`,
+        quantity: 1,
+        serialNumber: charger.serialNumber,
+        notes: `Charging completed — formation report generated`,
+      });
+    }
   }
 }
 
@@ -238,6 +358,8 @@ router.post("/:stage/start", async (req, res) => {
     }
   }
 
+  const startData = (body.stageData as Record<string, unknown>) ?? {};
+
   await db.transaction(async (tx) => {
     await tx
       .update(mfgOrderStagesTable)
@@ -246,6 +368,7 @@ router.post("/:stage/start", async (req, res) => {
         operatorName: body.operatorName,
         startedAt: new Date(),
         notes: body.notes ?? found.notes,
+        stageData: { ...(found.stageData ?? {}), ...startData },
       })
       .where(eq(mfgOrderStagesTable.id, found.id));
 
@@ -260,12 +383,20 @@ router.post("/:stage/start", async (req, res) => {
         )
       );
 
+    // Charging-specific: reserve charger
+    if (stage === "charging") {
+      await onChargingStart(tx, id, { ...startData, operatorName: body.operatorName });
+    }
+
     await logEvent(tx, {
       productionOrderId: id,
       eventType: "stage_started",
       stageType: stage as StageTypeValue,
       actor: body.operatorName,
-      description: `Stage ${stage.replace(/_/g, " ")} started`,
+      description: stage === "charging"
+        ? `Charging started${startData.chargerCode ? ` — Charger ${startData.chargerCode}` : ""}`
+        : `Stage ${stage.replace(/_/g, " ")} started`,
+      metadata: startData,
     });
   });
 
@@ -283,8 +414,8 @@ router.post("/:stage/complete", async (req, res) => {
     res.status(404).json({ error: "Stage not found" });
     return;
   }
-  if (found.status !== "in_progress") {
-    res.status(409).json({ error: `Stage must be in_progress to complete (currently ${found.status})` });
+  if (found.status !== "in_progress" && found.status !== "paused") {
+    res.status(409).json({ error: `Stage must be in_progress or paused to complete (currently ${found.status})` });
     return;
   }
 
@@ -311,6 +442,8 @@ router.post("/:stage/complete", async (req, res) => {
       await onAssemblyComplete(tx, id, mergedStageData);
     } else if (stage === "bms_allocation") {
       await onBmsAllocationComplete(tx, id, mergedStageData);
+    } else if (stage === "charging") {
+      await onChargingComplete(tx, id, { ...mergedStageData, operatorName: body.operatorName });
     }
 
     await logEvent(tx, {
@@ -320,6 +453,68 @@ router.post("/:stage/complete", async (req, res) => {
       actor: body.operatorName,
       description: `Stage ${stage.replace(/_/g, " ")} completed — awaiting supervisor approval`,
       metadata: mergedStageData,
+    });
+  });
+
+  const updated = await getStageOrFail(id, stage, res);
+  res.json(updated);
+});
+
+// POST /manufacturing/orders/:id/stages/:stage/pause — in_progress → paused
+router.post("/:stage/pause", async (req, res) => {
+  const { id, stage } = PauseStageParams.parse(req.params);
+  const body = PauseStageBody.parse(req.body);
+
+  const found = await getStageOrFail(id, stage, res);
+  if (!found) { res.status(404).json({ error: "Stage not found" }); return; }
+  if (found.status !== "in_progress") {
+    res.status(409).json({ error: `Stage must be in_progress to pause (currently ${found.status})` });
+    return;
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(mfgOrderStagesTable)
+      .set({ status: "paused", pausedAt: new Date(), notes: body.notes ?? found.notes })
+      .where(eq(mfgOrderStagesTable.id, found.id));
+
+    await logEvent(tx, {
+      productionOrderId: id,
+      eventType: "charging_paused",
+      stageType: stage as StageTypeValue,
+      actor: body.operatorName,
+      description: `Charging paused${body.notes ? ` — ${body.notes}` : ""}`,
+    });
+  });
+
+  const updated = await getStageOrFail(id, stage, res);
+  res.json(updated);
+});
+
+// POST /manufacturing/orders/:id/stages/:stage/resume — paused → in_progress
+router.post("/:stage/resume", async (req, res) => {
+  const { id, stage } = ResumeStageParams.parse(req.params);
+  const body = ResumeStageBody.parse(req.body);
+
+  const found = await getStageOrFail(id, stage, res);
+  if (!found) { res.status(404).json({ error: "Stage not found" }); return; }
+  if (found.status !== "paused") {
+    res.status(409).json({ error: `Stage must be paused to resume (currently ${found.status})` });
+    return;
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(mfgOrderStagesTable)
+      .set({ status: "in_progress", resumedAt: new Date(), notes: body.notes ?? found.notes })
+      .where(eq(mfgOrderStagesTable.id, found.id));
+
+    await logEvent(tx, {
+      productionOrderId: id,
+      eventType: "charging_resumed",
+      stageType: stage as StageTypeValue,
+      actor: body.operatorName,
+      description: `Charging resumed`,
     });
   });
 

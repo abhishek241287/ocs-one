@@ -1103,6 +1103,182 @@ paths:
               schema:
                 $ref: "#/components/schemas/OrderStage"
 
+  /manufacturing/orders/{id}/stages/{stage}/pause:
+    post:
+      operationId: pauseStage
+      tags: [manufacturing]
+      summary: Pause an in-progress stage (in_progress → paused)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - $ref: "#/components/parameters/StageParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StagePauseInput"
+      responses:
+        "200":
+          description: Stage paused
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStage"
+
+  /manufacturing/orders/{id}/stages/{stage}/resume:
+    post:
+      operationId: resumeStage
+      tags: [manufacturing]
+      summary: Resume a paused stage (paused → in_progress)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - $ref: "#/components/parameters/StageParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StageResumeInput"
+      responses:
+        "200":
+          description: Stage resumed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStage"
+
+  # ── Manufacturing — Formation Report ──────────────────────────────────────
+  /manufacturing/orders/{id}/formation-report:
+    get:
+      operationId: getFormationReport
+      tags: [manufacturing]
+      summary: Get formation report for a production order
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Formation report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormationReport"
+
+  # ── Manufacturing — Charger Units ─────────────────────────────────────────
+  /manufacturing/charger-units:
+    get:
+      operationId: listChargerUnits
+      tags: [manufacturing]
+      summary: List operational charger units
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [available, busy, maintenance] }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+      responses:
+        "200":
+          description: Charger units list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ChargerUnit"
+                  total: { type: integer }
+    post:
+      operationId: createChargerUnit
+      tags: [manufacturing]
+      summary: Register a new charger unit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChargerUnitInput"
+      responses:
+        "201":
+          description: Charger unit created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChargerUnit"
+
+  /manufacturing/charger-units/dashboard:
+    get:
+      operationId: getChargingDashboard
+      tags: [manufacturing]
+      summary: Live charging floor dashboard KPIs
+      responses:
+        "200":
+          description: Charging dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChargingDashboard"
+
+  /manufacturing/charger-units/{id}:
+    get:
+      operationId: getChargerUnit
+      tags: [manufacturing]
+      summary: Get a single charger unit
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Charger unit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChargerUnit"
+    patch:
+      operationId: updateChargerUnit
+      tags: [manufacturing]
+      summary: Update charger unit details
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChargerUnitUpdate"
+      responses:
+        "200":
+          description: Updated charger unit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChargerUnit"
+
+  /manufacturing/charger-units/{id}/status:
+    patch:
+      operationId: updateChargerUnitStatus
+      tags: [manufacturing]
+      summary: Change a charger unit's operational status
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChargerUnitStatusInput"
+      responses:
+        "200":
+          description: Updated charger unit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChargerUnit"
+
   # ── Manufacturing — Timeline ──────────────────────────────────────────────
   /manufacturing/orders/{id}/timeline:
     get:
@@ -2109,10 +2285,12 @@ components:
         stageOrder: { type: integer }
         status:
           type: string
-          enum: [pending, in_progress, completed, approved, rejected]
+          enum: [pending, in_progress, paused, completed, approved, rejected]
         operatorName: { type: ["string", "null"] }
         supervisorName: { type: ["string", "null"] }
         startedAt: { type: ["string", "null"], format: date-time }
+        pausedAt: { type: ["string", "null"], format: date-time }
+        resumedAt: { type: ["string", "null"], format: date-time }
         completedAt: { type: ["string", "null"], format: date-time }
         approvedAt: { type: ["string", "null"], format: date-time }
         notes: { type: ["string", "null"] }
@@ -2140,6 +2318,9 @@ components:
       properties:
         operatorName: { type: string }
         notes: { type: ["string", "null"] }
+        stageData:
+          type: object
+          additionalProperties: true
 
     StageCompleteInput:
       type: object
@@ -2231,6 +2412,109 @@ components:
         notes: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+
+    StagePauseInput:
+      type: object
+      required: [operatorName]
+      properties:
+        operatorName: { type: string }
+        notes: { type: ["string", "null"] }
+
+    StageResumeInput:
+      type: object
+      required: [operatorName]
+      properties:
+        operatorName: { type: string }
+        notes: { type: ["string", "null"] }
+
+    ChargerUnit:
+      type: object
+      required: [id, chargerCode, model, manufacturer, serialNumber, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        chargerCode: { type: string }
+        model: { type: string }
+        manufacturer: { type: string }
+        serialNumber: { type: string }
+        outputVoltageV: { type: ["number", "null"] }
+        maxCurrentA: { type: ["number", "null"] }
+        status: { type: string, enum: [available, busy, maintenance] }
+        currentOrderId: { type: ["string", "null"], format: uuid }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    ChargerUnitInput:
+      type: object
+      required: [chargerCode, model, manufacturer, serialNumber]
+      properties:
+        chargerCode: { type: string }
+        model: { type: string }
+        manufacturer: { type: string }
+        serialNumber: { type: string }
+        outputVoltageV: { type: ["number", "null"] }
+        maxCurrentA: { type: ["number", "null"] }
+        status: { type: string, enum: [available, busy, maintenance] }
+        notes: { type: ["string", "null"] }
+
+    ChargerUnitUpdate:
+      type: object
+      properties:
+        model: { type: string }
+        manufacturer: { type: string }
+        serialNumber: { type: string }
+        outputVoltageV: { type: ["number", "null"] }
+        maxCurrentA: { type: ["number", "null"] }
+        notes: { type: ["string", "null"] }
+
+    ChargerUnitStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [available, busy, maintenance] }
+
+    ChargingDashboard:
+      type: object
+      required: [chargersAvailable, chargersBusy, chargersMaintenance, totalChargers, batteriesCharging, batteriesWaiting, todayCompletedCharges, avgChargeTimeMin]
+      properties:
+        chargersAvailable: { type: integer }
+        chargersBusy: { type: integer }
+        chargersMaintenance: { type: integer }
+        totalChargers: { type: integer }
+        batteriesCharging: { type: integer }
+        batteriesWaiting: { type: integer }
+        todayCompletedCharges: { type: integer }
+        avgChargeTimeMin: { type: ["number", "null"] }
+
+    FormationReport:
+      type: object
+      required: [id, productionOrderId, operator, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        productionOrderId: { type: string, format: uuid }
+        chargerUnitId: { type: ["string", "null"], format: uuid }
+        chargerCode: { type: ["string", "null"] }
+        operator: { type: string }
+        chargeStartAt: { type: ["string", "null"], format: date-time }
+        chargeEndAt: { type: ["string", "null"], format: date-time }
+        chargeTimeMin: { type: ["number", "null"] }
+        energyKwh: { type: ["number", "null"] }
+        chargingCurrentA: { type: ["number", "null"] }
+        startVoltageV: { type: ["number", "null"] }
+        finalVoltageV: { type: ["number", "null"] }
+        finalCurrentA: { type: ["number", "null"] }
+        ambientTempC: { type: ["number", "null"] }
+        batteryTempC: { type: ["number", "null"] }
+        topBalancingRequired: { type: boolean }
+        topBalancingStartAt: { type: ["string", "null"], format: date-time }
+        topBalancingEndAt: { type: ["string", "null"], format: date-time }
+        finalCellVoltageSpreadMv: { type: ["number", "null"] }
+        maxCellVoltageV: { type: ["number", "null"] }
+        minCellVoltageV: { type: ["number", "null"] }
+        voltageDiffMv: { type: ["number", "null"] }
+        balancingStatus: { type: ["string", "null"] }
+        remarks: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
 
     AllocatedCellItem:
       type: object
