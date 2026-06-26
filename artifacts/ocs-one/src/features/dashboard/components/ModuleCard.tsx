@@ -20,7 +20,7 @@ export function ModuleCard({ title, icon: Icon, stats, href }: ModuleCardProps) 
             </div>
             <h3 className="font-semibold text-lg tracking-tight">{title}</h3>
           </div>
-          
+
           <div className="space-y-4 flex-1">
             {stats.map((stat, idx) => (
               <div key={idx} className="flex justify-between items-end">

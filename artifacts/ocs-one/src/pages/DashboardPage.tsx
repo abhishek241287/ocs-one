@@ -1,8 +1,6 @@
 import { Factory, Package, ShieldCheck, Truck, Wrench, ChevronRight } from "lucide-react";
 import AppLayout from "@/layouts/AppLayout";
-import { ModuleCard } from "@/components/dashboard/ModuleCard";
-import { StatTile } from "@/components/dashboard/StatTile";
-import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
+import { ModuleCard, StatTile, ActivityFeed } from "@/features/dashboard";
 import { motion } from "framer-motion";
 
 const STAGGER = 0.1;
