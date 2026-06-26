@@ -15,6 +15,8 @@ export interface ProductionOrder {
   batteryNumber: string;
   /** @nullable */
   productId?: string | null;
+  /** @nullable */
+  cellMatchId?: string | null;
   factoryManager: string;
   /** @nullable */
   currentStage?: ProductionOrderCurrentStage;

@@ -446,9 +446,10 @@ export type OrderStageStageType = typeof OrderStageStageType[keyof typeof OrderS
 
 export const OrderStageStageType = {
   cell_allocation: 'cell_allocation',
-  bms_allocation: 'bms_allocation',
   assembly: 'assembly',
   compression: 'compression',
+  bms_allocation: 'bms_allocation',
+  bms_programming: 'bms_programming',
   charging: 'charging',
   testing: 'testing',
   quality_control: 'quality_control',
@@ -534,9 +535,10 @@ export type TimelineEventStageType = typeof TimelineEventStageType[keyof typeof 
 
 export const TimelineEventStageType = {
   cell_allocation: 'cell_allocation',
-  bms_allocation: 'bms_allocation',
   assembly: 'assembly',
   compression: 'compression',
+  bms_allocation: 'bms_allocation',
+  bms_programming: 'bms_programming',
   charging: 'charging',
   testing: 'testing',
   quality_control: 'quality_control',
@@ -594,9 +596,10 @@ export type ProductionOrderCurrentStage = typeof ProductionOrderCurrentStage[key
 
 export const ProductionOrderCurrentStage = {
   cell_allocation: 'cell_allocation',
-  bms_allocation: 'bms_allocation',
   assembly: 'assembly',
   compression: 'compression',
+  bms_allocation: 'bms_allocation',
+  bms_programming: 'bms_programming',
   charging: 'charging',
   testing: 'testing',
   quality_control: 'quality_control',
@@ -630,6 +633,8 @@ export interface ProductionOrder {
   batteryNumber: string;
   /** @nullable */
   productId?: string | null;
+  /** @nullable */
+  cellMatchId?: string | null;
   factoryManager: string;
   /** @nullable */
   currentStage?: ProductionOrderCurrentStage;
@@ -643,6 +648,39 @@ export interface ProductionOrder {
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AllocatedCellItem {
+  position: number;
+  id?: string;
+  cellId: string;
+  status: string;
+  /** @nullable */
+  grade: string | null;
+  /** @nullable */
+  capacityAh: number | null;
+  /** @nullable */
+  internalResistanceMohm: number | null;
+  /** @nullable */
+  voltageV: number | null;
+  /** @nullable */
+  gradedBy?: string | null;
+  /** @nullable */
+  lotNumber?: string | null;
+}
+
+export interface ManufacturingDashboard {
+  totalOrders: number;
+  ordersInProgress: number;
+  ordersCompleted: number;
+  ordersDraft: number;
+  batteriesUnderAssembly: number;
+  compressionPending: number;
+  bmsPending: number;
+  programmingPending: number;
+  cellsAllocatedTotal: number;
+  /** @nullable */
+  avgAssemblyTimeHrs: number | null;
 }
 
 export type ProductionOrderDetail = ProductionOrder & {
@@ -1102,6 +1140,14 @@ export type GetOrderTimeline200 = {
 
 export type GetOrderGenealogy200 = {
   items: GenealogyRecord[];
+};
+
+export type GetAllocatedCells200 = {
+  /** @nullable */
+  matchId: string | null;
+  /** @nullable */
+  matchScore: number | null;
+  items: AllocatedCellItem[];
 };
 
 export type ListCellLotsParams = {

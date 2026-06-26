@@ -40,11 +40,13 @@ export async function generateBatteryNumber(tx: Tx): Promise<string> {
 
 export type StageTypeValue = (typeof mfgStagetypeEnum.enumValues)[number];
 
+// Sprint 5 stage sequence: Cell Allocation → Assembly → Compression → BMS Install → BMS Programming → (future)
 export const STAGE_SEQUENCE: StageTypeValue[] = [
   "cell_allocation",
-  "bms_allocation",
   "assembly",
   "compression",
+  "bms_allocation",
+  "bms_programming",
   "charging",
   "testing",
   "quality_control",

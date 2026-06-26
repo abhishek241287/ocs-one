@@ -10,14 +10,16 @@ import {
   jsonb,
 } from "drizzle-orm/pg-core";
 import { masterProductsTable } from "./master-products";
+import { cellMatchesTable } from "./cell-grading";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
 export const mfgStagetypeEnum = pgEnum("mfg_stage_type", [
   "cell_allocation",
-  "bms_allocation",
   "assembly",
   "compression",
+  "bms_allocation",
+  "bms_programming",
   "charging",
   "testing",
   "quality_control",
@@ -50,13 +52,14 @@ export const mfgStageStatusEnum = pgEnum("mfg_stage_status", [
 
 export const STAGE_ORDER: Record<string, number> = {
   cell_allocation: 1,
-  bms_allocation: 2,
-  assembly: 3,
-  compression: 4,
-  charging: 5,
-  testing: 6,
-  quality_control: 7,
-  packing: 8,
+  assembly: 2,
+  compression: 3,
+  bms_allocation: 4,
+  bms_programming: 5,
+  charging: 6,
+  testing: 7,
+  quality_control: 8,
+  packing: 9,
 };
 
 // ─── Tables ──────────────────────────────────────────────────────────────────
@@ -66,6 +69,7 @@ export const mfgProductionOrdersTable = pgTable("mfg_production_orders", {
   orderNumber: varchar("order_number", { length: 50 }).notNull().unique(),
   batteryNumber: varchar("battery_number", { length: 50 }).notNull().unique(),
   productId: uuid("product_id").references(() => masterProductsTable.id),
+  cellMatchId: uuid("cell_match_id").references(() => cellMatchesTable.id),
   factoryManager: text("factory_manager").notNull(),
   currentStage: mfgStagetypeEnum("current_stage"),
   status: mfgOrderStatusEnum("status").notNull().default("draft"),

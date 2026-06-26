@@ -3,6 +3,12 @@ import {
   db,
   mfgOrderStagesTable,
   mfgProductionOrdersTable,
+  mfgBatteryGenealogyTable,
+  cellMatchesTable,
+  cellMatchItemsTable,
+  cellsTable,
+  cellLotsTable,
+  masterBmsTable,
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import {
@@ -39,6 +45,118 @@ async function getStageOrFail(
     )
     .limit(1);
   return stage;
+}
+
+// ─── Stage-specific side effects on complete ────────────────────────────────
+
+async function onCellAllocationComplete(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  orderId: string,
+  stageData: Record<string, unknown>
+): Promise<void> {
+  const matchId = stageData?.matchId as string | undefined;
+  if (!matchId) return;
+
+  // Link match to production order
+  await tx
+    .update(mfgProductionOrdersTable)
+    .set({ cellMatchId: matchId })
+    .where(eq(mfgProductionOrdersTable.id, orderId));
+
+  // Mark match as allocated
+  await tx
+    .update(cellMatchesTable)
+    .set({ status: "allocated" })
+    .where(eq(cellMatchesTable.id, matchId));
+
+  // Get all cells in this match and set them to allocated
+  const matchItems = await tx
+    .select({
+      cellDbId: cellMatchItemsTable.cellId,
+      position: cellMatchItemsTable.position,
+      cellCode: cellsTable.cellId,
+      capacityAh: cellsTable.capacityAh,
+      internalResistanceMohm: cellsTable.internalResistanceMohm,
+      voltageV: cellsTable.voltageV,
+      grade: cellsTable.grade,
+      lotNumber: cellLotsTable.lotNumber,
+    })
+    .from(cellMatchItemsTable)
+    .innerJoin(cellsTable, eq(cellMatchItemsTable.cellId, cellsTable.id))
+    .leftJoin(cellLotsTable, eq(cellsTable.lotId, cellLotsTable.id))
+    .where(eq(cellMatchItemsTable.matchId, matchId));
+
+  for (const item of matchItems) {
+    await tx
+      .update(cellsTable)
+      .set({ status: "allocated", allocationOrderId: orderId })
+      .where(eq(cellsTable.id, item.cellDbId));
+
+    // Auto-write genealogy for each cell
+    await tx.insert(mfgBatteryGenealogyTable).values({
+      productionOrderId: orderId,
+      componentType: "cell",
+      componentId: item.cellDbId,
+      componentName: `Cell ${item.cellCode} (Grade ${item.grade ?? "?"}, ${item.capacityAh?.toFixed(2) ?? "—"} Ah)`,
+      quantity: 1,
+      serialNumber: item.cellCode,
+      notes: `Position ${item.position} — ${item.lotNumber ?? "unknown lot"}`,
+    });
+  }
+}
+
+async function onAssemblyComplete(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  orderId: string,
+  stageData: Record<string, unknown>
+): Promise<void> {
+  const components = [
+    { type: "cabinet", name: stageData.cabinetSerialNumber as string | undefined, label: "Cabinet" },
+    { type: "busbar", name: stageData.busbarBatch as string | undefined, label: "Busbar Batch" },
+    { type: "connector", name: stageData.connectorBatch as string | undefined, label: "Connector Batch" },
+  ];
+  for (const c of components) {
+    if (!c.name) continue;
+    await tx.insert(mfgBatteryGenealogyTable).values({
+      productionOrderId: orderId,
+      componentType: c.type,
+      componentName: c.label + ": " + c.name,
+      quantity: 1,
+      serialNumber: c.name,
+    });
+  }
+}
+
+async function onBmsAllocationComplete(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  orderId: string,
+  stageData: Record<string, unknown>
+): Promise<void> {
+  const bmsId = stageData?.bmsId as string | undefined;
+  const bmsSerial = stageData?.bmsSerialNumber as string | undefined;
+  const bmsModel = stageData?.bmsModel as string | undefined;
+
+  if (!bmsModel && !bmsId) return;
+
+  let name = bmsModel ?? "BMS";
+  if (bmsId) {
+    const [bms] = await tx
+      .select()
+      .from(masterBmsTable)
+      .where(eq(masterBmsTable.id, bmsId))
+      .limit(1);
+    if (bms) name = `${bms.manufacturer} ${bms.model}`;
+  }
+
+  await tx.insert(mfgBatteryGenealogyTable).values({
+    productionOrderId: orderId,
+    componentType: "bms",
+    componentId: bmsId ?? null,
+    componentName: name,
+    quantity: 1,
+    serialNumber: bmsSerial ?? null,
+    notes: stageData?.firmwareVersion ? `FW: ${stageData.firmwareVersion}` : null,
+  });
 }
 
 // GET /manufacturing/orders/:id/stages
@@ -131,7 +249,7 @@ router.post("/:stage/start", async (req, res) => {
       })
       .where(eq(mfgOrderStagesTable.id, found.id));
 
-    // Auto-advance order status if still draft
+    // Auto-advance order status if still draft/released
     await tx
       .update(mfgProductionOrdersTable)
       .set({ status: "in_progress", currentStage: stage as StageTypeValue })
@@ -170,6 +288,11 @@ router.post("/:stage/complete", async (req, res) => {
     return;
   }
 
+  const mergedStageData = {
+    ...(found.stageData ?? {}),
+    ...((body.stageData as Record<string, unknown>) ?? {}),
+  };
+
   await db.transaction(async (tx) => {
     await tx
       .update(mfgOrderStagesTable)
@@ -177,9 +300,18 @@ router.post("/:stage/complete", async (req, res) => {
         status: "completed",
         completedAt: new Date(),
         notes: body.notes ?? found.notes,
-        stageData: (body.stageData as Record<string, unknown>) ?? found.stageData,
+        stageData: mergedStageData,
       })
       .where(eq(mfgOrderStagesTable.id, found.id));
+
+    // Stage-specific side effects
+    if (stage === "cell_allocation") {
+      await onCellAllocationComplete(tx, id, mergedStageData);
+    } else if (stage === "assembly") {
+      await onAssemblyComplete(tx, id, mergedStageData);
+    } else if (stage === "bms_allocation") {
+      await onBmsAllocationComplete(tx, id, mergedStageData);
+    }
 
     await logEvent(tx, {
       productionOrderId: id,
@@ -187,6 +319,7 @@ router.post("/:stage/complete", async (req, res) => {
       stageType: stage as StageTypeValue,
       actor: body.operatorName,
       description: `Stage ${stage.replace(/_/g, " ")} completed — awaiting supervisor approval`,
+      metadata: mergedStageData,
     });
   });
 
@@ -227,7 +360,6 @@ router.post("/:stage/approve", async (req, res) => {
         .set({ currentStage: nextStage })
         .where(eq(mfgProductionOrdersTable.id, id));
     } else {
-      // Last stage approved — order complete
       await tx
         .update(mfgProductionOrdersTable)
         .set({ status: "completed", currentStage: stage as StageTypeValue })

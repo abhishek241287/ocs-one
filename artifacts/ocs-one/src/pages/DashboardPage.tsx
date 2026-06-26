@@ -1,19 +1,53 @@
-import { Factory, Package, ShieldCheck, Truck, Wrench, ChevronRight } from "lucide-react";
+import { Factory, Package, ShieldCheck, Truck, Wrench, ChevronRight, Battery, Cpu, Gauge, Code2, Clock, Loader2 } from "lucide-react";
 import AppLayout from "@/layouts/AppLayout";
 import { ModuleCard, StatTile, ActivityFeed } from "@/features/dashboard";
 import { motion } from "framer-motion";
+import { useGetManufacturingDashboard } from "@workspace/api-client-react";
+import { Link } from "wouter";
 
 const STAGGER = 0.1;
 
+function MfgKpiCard({
+  label,
+  value,
+  icon: Icon,
+  color,
+  loading,
+}: {
+  label: string;
+  value: string | number | null | undefined;
+  icon: React.FC<{ className?: string }>;
+  color: string;
+  loading?: boolean;
+}) {
+  return (
+    <div className={`rounded-xl border-2 ${color} p-4 flex items-center gap-3`}>
+      <div className="shrink-0">
+        <Icon className="h-8 w-8 opacity-70" />
+      </div>
+      <div>
+        <p className="text-xs font-medium opacity-70 uppercase tracking-wider">{label}</p>
+        {loading ? (
+          <Loader2 className="h-5 w-5 animate-spin mt-1 opacity-50" />
+        ) : (
+          <p className="text-2xl font-bold">{value ?? "—"}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
+  const { data: mfgDash, isLoading: mfgLoading } = useGetManufacturingDashboard();
+
   const modules = [
     {
       title: "Production",
       icon: Factory,
-      href: "#",
+      href: "/manufacturing",
       stats: [
-        { label: "Batches Active", value: "12" },
-        { label: "Units Completed Today", value: "840" },
+        { label: "Orders In Progress", value: mfgLoading ? "…" : String(mfgDash?.ordersInProgress ?? 0) },
+        { label: "Completed", value: mfgLoading ? "…" : String(mfgDash?.ordersCompleted ?? 0) },
       ],
     },
     {
@@ -55,10 +89,10 @@ export default function DashboardPage() {
   ];
 
   const quickStats = [
-    { label: "Total Units Produced", value: "124,592" },
-    { label: "Revenue MTD", value: "₹42.8M" },
-    { label: "Active Work Orders", value: "56" },
-    { label: "Staff On-Floor", value: "241" },
+    { label: "Total Production Orders", value: mfgLoading ? "…" : String(mfgDash?.totalOrders ?? 0) },
+    { label: "Cells Allocated", value: mfgLoading ? "…" : String(mfgDash?.cellsAllocatedTotal ?? 0) },
+    { label: "Active Work Orders", value: mfgLoading ? "…" : String(mfgDash?.ordersInProgress ?? 0) },
+    { label: "Avg Assembly Time", value: mfgLoading ? "…" : mfgDash?.avgAssemblyTimeHrs != null ? `${mfgDash.avgAssemblyTimeHrs}h` : "N/A" },
   ];
 
   const activities = [
@@ -95,6 +129,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <div className="lg:col-span-2 space-y-8">
+          {/* Quick stats */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -106,17 +141,74 @@ export default function DashboardPage() {
             ))}
           </motion.div>
 
+          {/* Live Manufacturing Pipeline */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: (modules.length + 1) * STAGGER }}
-            className="bg-primary/5 border border-primary/20 rounded-lg p-4 flex items-center justify-between"
           >
-            <div>
-              <h4 className="font-semibold text-primary">More modules coming soon</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                Manufacturing, Reports, and AI Assistant are under active development.
-              </p>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Factory className="h-4 w-4 text-orange-600" />
+                Live Manufacturing Pipeline
+              </h3>
+              <Link href="/manufacturing/orders" className="text-xs text-orange-600 hover:underline font-medium">
+                View all orders →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <MfgKpiCard
+                label="Under Assembly"
+                value={mfgDash?.batteriesUnderAssembly}
+                icon={Wrench}
+                color="border-blue-200 bg-blue-50 text-blue-900"
+                loading={mfgLoading}
+              />
+              <MfgKpiCard
+                label="Compression"
+                value={mfgDash?.compressionPending}
+                icon={Gauge}
+                color="border-purple-200 bg-purple-50 text-purple-900"
+                loading={mfgLoading}
+              />
+              <MfgKpiCard
+                label="BMS Pending"
+                value={mfgDash?.bmsPending}
+                icon={Cpu}
+                color="border-teal-200 bg-teal-50 text-teal-900"
+                loading={mfgLoading}
+              />
+              <MfgKpiCard
+                label="Programming"
+                value={mfgDash?.programmingPending}
+                icon={Code2}
+                color="border-orange-200 bg-orange-50 text-orange-900"
+                loading={mfgLoading}
+              />
+            </div>
+          </motion.div>
+
+          {/* Order status breakdown */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: (modules.length + 2) * STAGGER }}
+            className="rounded-xl border border-gray-200 bg-gray-50 p-4"
+          >
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">Order Status Breakdown</h4>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-500">{mfgLoading ? "…" : mfgDash?.ordersDraft ?? 0}</p>
+                <p className="text-xs text-gray-400 mt-0.5">Draft</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">{mfgLoading ? "…" : mfgDash?.ordersInProgress ?? 0}</p>
+                <p className="text-xs text-gray-400 mt-0.5">In Progress</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600">{mfgLoading ? "…" : mfgDash?.ordersCompleted ?? 0}</p>
+                <p className="text-xs text-gray-400 mt-0.5">Completed</p>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -124,7 +216,7 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: (modules.length + 2) * STAGGER }}
+          transition={{ delay: (modules.length + 3) * STAGGER }}
           className="h-full"
         >
           <ActivityFeed activities={activities} />

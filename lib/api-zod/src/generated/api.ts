@@ -2250,8 +2250,9 @@ export const ListProductionOrdersResponse = zod.object({
   "orderNumber": zod.string(),
   "batteryNumber": zod.string(),
   "productId": zod.string().uuid().nullish(),
+  "cellMatchId": zod.string().uuid().nullish(),
   "factoryManager": zod.string(),
-  "currentStage": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
+  "currentStage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
   "priority": zod.enum(['low', 'medium', 'high']),
   "status": zod.enum(['draft', 'released', 'in_progress', 'completed', 'cancelled']),
   "plannedStartDate": zod.string().nullish(),
@@ -2288,8 +2289,9 @@ export const CreateProductionOrderResponse = zod.object({
   "orderNumber": zod.string(),
   "batteryNumber": zod.string(),
   "productId": zod.string().uuid().nullish(),
+  "cellMatchId": zod.string().uuid().nullish(),
   "factoryManager": zod.string(),
-  "currentStage": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
+  "currentStage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
   "priority": zod.enum(['low', 'medium', 'high']),
   "status": zod.enum(['draft', 'released', 'in_progress', 'completed', 'cancelled']),
   "plannedStartDate": zod.string().nullish(),
@@ -2301,7 +2303,7 @@ export const CreateProductionOrderResponse = zod.object({
   "stages": zod.array(zod.object({
   "id": zod.string().uuid(),
   "productionOrderId": zod.string().uuid(),
-  "stageType": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing']),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
@@ -2335,8 +2337,9 @@ export const GetProductionOrderResponse = zod.object({
   "orderNumber": zod.string(),
   "batteryNumber": zod.string(),
   "productId": zod.string().uuid().nullish(),
+  "cellMatchId": zod.string().uuid().nullish(),
   "factoryManager": zod.string(),
-  "currentStage": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
+  "currentStage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
   "priority": zod.enum(['low', 'medium', 'high']),
   "status": zod.enum(['draft', 'released', 'in_progress', 'completed', 'cancelled']),
   "plannedStartDate": zod.string().nullish(),
@@ -2348,7 +2351,7 @@ export const GetProductionOrderResponse = zod.object({
   "stages": zod.array(zod.object({
   "id": zod.string().uuid(),
   "productionOrderId": zod.string().uuid(),
-  "stageType": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing']),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
@@ -2391,8 +2394,9 @@ export const UpdateProductionOrderResponse = zod.object({
   "orderNumber": zod.string(),
   "batteryNumber": zod.string(),
   "productId": zod.string().uuid().nullish(),
+  "cellMatchId": zod.string().uuid().nullish(),
   "factoryManager": zod.string(),
-  "currentStage": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
+  "currentStage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
   "priority": zod.enum(['low', 'medium', 'high']),
   "status": zod.enum(['draft', 'released', 'in_progress', 'completed', 'cancelled']),
   "plannedStartDate": zod.string().nullish(),
@@ -2404,7 +2408,7 @@ export const UpdateProductionOrderResponse = zod.object({
   "stages": zod.array(zod.object({
   "id": zod.string().uuid(),
   "productionOrderId": zod.string().uuid(),
-  "stageType": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing']),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
@@ -2437,7 +2441,7 @@ export const ListOrderStagesResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string().uuid(),
   "productionOrderId": zod.string().uuid(),
-  "stageType": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing']),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
@@ -2464,13 +2468,13 @@ export const ListOrderStagesResponse = zod.object({
  */
 export const GetOrderStageParams = zod.object({
   "id": zod.coerce.string().uuid(),
-  "stage": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing'])
+  "stage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing'])
 })
 
 export const GetOrderStageResponse = zod.object({
   "id": zod.string().uuid(),
   "productionOrderId": zod.string().uuid(),
-  "stageType": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing']),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
@@ -2496,7 +2500,7 @@ export const GetOrderStageResponse = zod.object({
  */
 export const UpdateOrderStageParams = zod.object({
   "id": zod.coerce.string().uuid(),
-  "stage": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing'])
+  "stage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing'])
 })
 
 export const UpdateOrderStageBody = zod.object({
@@ -2507,7 +2511,7 @@ export const UpdateOrderStageBody = zod.object({
 export const UpdateOrderStageResponse = zod.object({
   "id": zod.string().uuid(),
   "productionOrderId": zod.string().uuid(),
-  "stageType": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing']),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
@@ -2533,7 +2537,7 @@ export const UpdateOrderStageResponse = zod.object({
  */
 export const StartStageParams = zod.object({
   "id": zod.coerce.string().uuid(),
-  "stage": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing'])
+  "stage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing'])
 })
 
 export const StartStageBody = zod.object({
@@ -2544,7 +2548,7 @@ export const StartStageBody = zod.object({
 export const StartStageResponse = zod.object({
   "id": zod.string().uuid(),
   "productionOrderId": zod.string().uuid(),
-  "stageType": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing']),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
@@ -2570,7 +2574,7 @@ export const StartStageResponse = zod.object({
  */
 export const CompleteStageParams = zod.object({
   "id": zod.coerce.string().uuid(),
-  "stage": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing'])
+  "stage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing'])
 })
 
 export const CompleteStageBody = zod.object({
@@ -2582,7 +2586,7 @@ export const CompleteStageBody = zod.object({
 export const CompleteStageResponse = zod.object({
   "id": zod.string().uuid(),
   "productionOrderId": zod.string().uuid(),
-  "stageType": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing']),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
@@ -2608,7 +2612,7 @@ export const CompleteStageResponse = zod.object({
  */
 export const ApproveStageParams = zod.object({
   "id": zod.coerce.string().uuid(),
-  "stage": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing'])
+  "stage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing'])
 })
 
 export const ApproveStageBody = zod.object({
@@ -2619,7 +2623,7 @@ export const ApproveStageBody = zod.object({
 export const ApproveStageResponse = zod.object({
   "id": zod.string().uuid(),
   "productionOrderId": zod.string().uuid(),
-  "stageType": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing']),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
@@ -2645,7 +2649,7 @@ export const ApproveStageResponse = zod.object({
  */
 export const RejectStageParams = zod.object({
   "id": zod.coerce.string().uuid(),
-  "stage": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing'])
+  "stage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing'])
 })
 
 export const RejectStageBody = zod.object({
@@ -2656,7 +2660,7 @@ export const RejectStageBody = zod.object({
 export const RejectStageResponse = zod.object({
   "id": zod.string().uuid(),
   "productionOrderId": zod.string().uuid(),
-  "stageType": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing']),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']),
   "stageOrder": zod.number(),
   "status": zod.enum(['pending', 'in_progress', 'completed', 'approved', 'rejected']),
   "operatorName": zod.string().nullish(),
@@ -2689,7 +2693,7 @@ export const GetOrderTimelineResponse = zod.object({
   "id": zod.string().uuid(),
   "productionOrderId": zod.string().uuid(),
   "eventType": zod.string(),
-  "stageType": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
+  "stageType": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
   "actor": zod.string(),
   "description": zod.string(),
   "metadata": zod.record(zod.string(), zod.unknown()).optional(),
@@ -2749,6 +2753,48 @@ export const AddGenealogyRecordResponse = zod.object({
   "serialNumber": zod.string().nullish(),
   "notes": zod.string().nullish(),
   "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get the cells allocated to a production order
+ */
+export const GetAllocatedCellsParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetAllocatedCellsResponse = zod.object({
+  "matchId": zod.string().uuid().nullable(),
+  "matchScore": zod.number().nullable(),
+  "items": zod.array(zod.object({
+  "position": zod.number(),
+  "id": zod.string().uuid().optional(),
+  "cellId": zod.string(),
+  "status": zod.string(),
+  "grade": zod.string().nullable(),
+  "capacityAh": zod.number().nullable(),
+  "internalResistanceMohm": zod.number().nullable(),
+  "voltageV": zod.number().nullable(),
+  "gradedBy": zod.string().nullish(),
+  "lotNumber": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Manufacturing dashboard KPI summary
+ */
+export const GetManufacturingDashboardResponse = zod.object({
+  "totalOrders": zod.number(),
+  "ordersInProgress": zod.number(),
+  "ordersCompleted": zod.number(),
+  "ordersDraft": zod.number(),
+  "batteriesUnderAssembly": zod.number(),
+  "compressionPending": zod.number(),
+  "bmsPending": zod.number(),
+  "programmingPending": zod.number(),
+  "cellsAllocatedTotal": zod.number(),
+  "avgAssemblyTimeHrs": zod.number().nullable()
 })
 
 

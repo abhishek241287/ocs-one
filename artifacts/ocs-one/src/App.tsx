@@ -41,6 +41,9 @@ function Router() {
       <Route path="/masters/busbars" component={BusbarMasterPage} />
       <Route path="/masters/chargers" component={ChargerMasterPage} />
       <Route path="/masters/test-equipment" component={TestEquipmentMasterPage} />
+      <Route path="/manufacturing">
+        <Redirect to="/manufacturing/orders" />
+      </Route>
       <Route path="/manufacturing/orders" component={OrdersListPage} />
       <Route path="/manufacturing/orders/:id" component={OrderDetailPage} />
       <Route path="/cells/receiving" component={CellReceivingPage} />

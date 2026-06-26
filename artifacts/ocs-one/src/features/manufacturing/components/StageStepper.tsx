@@ -2,9 +2,10 @@ import { CheckCircle2, Circle, Clock, XCircle, PlayCircle } from "lucide-react";
 
 export const STAGE_SEQUENCE = [
   { key: "cell_allocation", label: "Cell\nAllocation" },
-  { key: "bms_allocation", label: "BMS\nAllocation" },
   { key: "assembly", label: "Assembly" },
   { key: "compression", label: "Compression" },
+  { key: "bms_allocation", label: "BMS\nInstall" },
+  { key: "bms_programming", label: "BMS\nProgram" },
   { key: "charging", label: "Charging" },
   { key: "testing", label: "Testing" },
   { key: "quality_control", label: "Quality\nControl" },

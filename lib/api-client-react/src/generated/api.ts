@@ -53,6 +53,7 @@ import type {
   ConnectorMasterUpdate,
   GenealogyInput,
   GenealogyRecord,
+  GetAllocatedCells200,
   GetOrderGenealogy200,
   GetOrderTimeline200,
   HealthStatus,
@@ -83,6 +84,7 @@ import type {
   ListProductionOrdersParams,
   ListTestEquipmentMasters200,
   ListTestEquipmentMastersParams,
+  ManufacturingDashboard,
   MasterStatusToggle,
   OrderStage,
   ProductMaster,
@@ -3673,7 +3675,7 @@ export function useListOrderStages<TData = Awaited<ReturnType<typeof listOrderSt
 
 
 export const getGetOrderStageUrl = (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
 
 
 
@@ -3685,7 +3687,7 @@ export const getGetOrderStageUrl = (id: string,
  * @summary Get a specific stage
  */
 export const getOrderStage = async (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing', options?: RequestInit): Promise<OrderStage> => {
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing', options?: RequestInit): Promise<OrderStage> => {
 
   return customFetch<OrderStage>(getGetOrderStageUrl(id,stage),
   {
@@ -3701,7 +3703,7 @@ export const getOrderStage = async (id: string,
 
 
 export const getGetOrderStageQueryKey = (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
     return [
     `/api/manufacturing/orders/${id}/stages/${stage}`
     ] as const;
@@ -3709,7 +3711,7 @@ export const getGetOrderStageQueryKey = (id: string,
 
 
 export const getGetOrderStageQueryOptions = <TData = Awaited<ReturnType<typeof getOrderStage>>, TError = ErrorType<unknown>>(id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderStage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderStage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3737,7 +3739,7 @@ export type GetOrderStageQueryError = ErrorType<unknown>
 
 export function useGetOrderStage<TData = Awaited<ReturnType<typeof getOrderStage>>, TError = ErrorType<unknown>>(
  id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderStage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderStage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
@@ -3755,7 +3757,7 @@ export function useGetOrderStage<TData = Awaited<ReturnType<typeof getOrderStage
 
 
 export const getUpdateOrderStageUrl = (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
 
 
 
@@ -3767,7 +3769,7 @@ export const getUpdateOrderStageUrl = (id: string,
  * @summary Save stage form data (notes, stageData) without transitioning status
  */
 export const updateOrderStage = async (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',
     stageUpdate: StageUpdate, options?: RequestInit): Promise<OrderStage> => {
 
   return customFetch<OrderStage>(getUpdateOrderStageUrl(id,stage),
@@ -3783,8 +3785,8 @@ export const updateOrderStage = async (id: string,
 
 
 export const getUpdateOrderStageMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOrderStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateOrderStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOrderStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateOrderStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>}, TContext> => {
 
 const mutationKey = ['updateOrderStage'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -3796,7 +3798,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateOrderStage>>, {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateOrderStage>>, {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>}> = (props) => {
           const {id,stage,data} = props ?? {};
 
           return  updateOrderStage(id,stage,data,requestOptions)
@@ -3817,18 +3819,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Save stage form data (notes, stageData) without transitioning status
  */
 export const useUpdateOrderStage = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOrderStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOrderStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateOrderStage>>,
         TError,
-        {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>},
+        {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>},
         TContext
       > => {
       return useMutation(getUpdateOrderStageMutationOptions(options));
     }
 
 export const getStartStageUrl = (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
 
 
 
@@ -3840,7 +3842,7 @@ export const getStartStageUrl = (id: string,
  * @summary Start a stage (pending → in_progress)
  */
 export const startStage = async (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',
     stageStartInput: StageStartInput, options?: RequestInit): Promise<OrderStage> => {
 
   return customFetch<OrderStage>(getStartStageUrl(id,stage),
@@ -3856,8 +3858,8 @@ export const startStage = async (id: string,
 
 
 export const getStartStageMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof startStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>}, TContext> => {
 
 const mutationKey = ['startStage'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -3869,7 +3871,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startStage>>, {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startStage>>, {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>}> = (props) => {
           const {id,stage,data} = props ?? {};
 
           return  startStage(id,stage,data,requestOptions)
@@ -3890,18 +3892,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Start a stage (pending → in_progress)
  */
 export const useStartStage = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof startStage>>,
         TError,
-        {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>},
+        {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>},
         TContext
       > => {
       return useMutation(getStartStageMutationOptions(options));
     }
 
 export const getCompleteStageUrl = (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
 
 
 
@@ -3913,7 +3915,7 @@ export const getCompleteStageUrl = (id: string,
  * @summary Complete a stage (in_progress → completed)
  */
 export const completeStage = async (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',
     stageCompleteInput: StageCompleteInput, options?: RequestInit): Promise<OrderStage> => {
 
   return customFetch<OrderStage>(getCompleteStageUrl(id,stage),
@@ -3929,8 +3931,8 @@ export const completeStage = async (id: string,
 
 
 export const getCompleteStageMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof completeStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>}, TContext> => {
 
 const mutationKey = ['completeStage'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -3942,7 +3944,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeStage>>, {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeStage>>, {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>}> = (props) => {
           const {id,stage,data} = props ?? {};
 
           return  completeStage(id,stage,data,requestOptions)
@@ -3963,18 +3965,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Complete a stage (in_progress → completed)
  */
 export const useCompleteStage = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof completeStage>>,
         TError,
-        {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>},
+        {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>},
         TContext
       > => {
       return useMutation(getCompleteStageMutationOptions(options));
     }
 
 export const getApproveStageUrl = (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
 
 
 
@@ -3986,7 +3988,7 @@ export const getApproveStageUrl = (id: string,
  * @summary Approve a completed stage (completed → approved)
  */
 export const approveStage = async (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',
     stageApproveInput: StageApproveInput, options?: RequestInit): Promise<OrderStage> => {
 
   return customFetch<OrderStage>(getApproveStageUrl(id,stage),
@@ -4002,8 +4004,8 @@ export const approveStage = async (id: string,
 
 
 export const getApproveStageMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof approveStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>}, TContext> => {
 
 const mutationKey = ['approveStage'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -4015,7 +4017,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveStage>>, {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveStage>>, {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>}> = (props) => {
           const {id,stage,data} = props ?? {};
 
           return  approveStage(id,stage,data,requestOptions)
@@ -4036,18 +4038,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Approve a completed stage (completed → approved)
  */
 export const useApproveStage = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof approveStage>>,
         TError,
-        {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>},
+        {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>},
         TContext
       > => {
       return useMutation(getApproveStageMutationOptions(options));
     }
 
 export const getRejectStageUrl = (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
 
 
 
@@ -4059,7 +4061,7 @@ export const getRejectStageUrl = (id: string,
  * @summary Reject a completed stage (completed → rejected)
  */
 export const rejectStage = async (id: string,
-    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',
+    stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing',
     stageRejectInput: StageRejectInput, options?: RequestInit): Promise<OrderStage> => {
 
   return customFetch<OrderStage>(getRejectStageUrl(id,stage),
@@ -4075,8 +4077,8 @@ export const rejectStage = async (id: string,
 
 
 export const getRejectStageMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof rejectStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>}, TContext> => {
 
 const mutationKey = ['rejectStage'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -4088,7 +4090,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectStage>>, {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectStage>>, {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>}> = (props) => {
           const {id,stage,data} = props ?? {};
 
           return  rejectStage(id,stage,data,requestOptions)
@@ -4109,11 +4111,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Reject a completed stage (completed → rejected)
  */
 export const useRejectStage = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectStage>>, TError,{id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof rejectStage>>,
         TError,
-        {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>},
+        {id: string;stage: 'cell_allocation' | 'assembly' | 'compression' | 'bms_allocation' | 'bms_programming' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>},
         TContext
       > => {
       return useMutation(getRejectStageMutationOptions(options));
@@ -4343,6 +4345,160 @@ export const useAddGenealogyRecord = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getAddGenealogyRecordMutationOptions(options));
     }
+
+export const getGetAllocatedCellsUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/allocated-cells`
+}
+
+/**
+ * @summary Get the cells allocated to a production order
+ */
+export const getAllocatedCells = async (id: string, options?: RequestInit): Promise<GetAllocatedCells200> => {
+
+  return customFetch<GetAllocatedCells200>(getGetAllocatedCellsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAllocatedCellsQueryKey = (id: string,) => {
+    return [
+    `/api/manufacturing/orders/${id}/allocated-cells`
+    ] as const;
+    }
+
+
+export const getGetAllocatedCellsQueryOptions = <TData = Awaited<ReturnType<typeof getAllocatedCells>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAllocatedCells>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAllocatedCellsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllocatedCells>>> = ({ signal }) => getAllocatedCells(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAllocatedCells>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAllocatedCellsQueryResult = NonNullable<Awaited<ReturnType<typeof getAllocatedCells>>>
+export type GetAllocatedCellsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the cells allocated to a production order
+ */
+
+export function useGetAllocatedCells<TData = Awaited<ReturnType<typeof getAllocatedCells>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAllocatedCells>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAllocatedCellsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetManufacturingDashboardUrl = () => {
+
+
+
+
+  return `/api/manufacturing/dashboard`
+}
+
+/**
+ * @summary Manufacturing dashboard KPI summary
+ */
+export const getManufacturingDashboard = async ( options?: RequestInit): Promise<ManufacturingDashboard> => {
+
+  return customFetch<ManufacturingDashboard>(getGetManufacturingDashboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetManufacturingDashboardQueryKey = () => {
+    return [
+    `/api/manufacturing/dashboard`
+    ] as const;
+    }
+
+
+export const getGetManufacturingDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getManufacturingDashboard>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getManufacturingDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetManufacturingDashboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getManufacturingDashboard>>> = ({ signal }) => getManufacturingDashboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getManufacturingDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetManufacturingDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getManufacturingDashboard>>>
+export type GetManufacturingDashboardQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Manufacturing dashboard KPI summary
+ */
+
+export function useGetManufacturingDashboard<TData = Awaited<ReturnType<typeof getManufacturingDashboard>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getManufacturingDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetManufacturingDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetCellGradeConfigUrl = () => {
 

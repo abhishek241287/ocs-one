@@ -14,9 +14,10 @@ export type ProductionOrderCurrentStage = typeof ProductionOrderCurrentStage[key
 
 export const ProductionOrderCurrentStage = {
   cell_allocation: 'cell_allocation',
-  bms_allocation: 'bms_allocation',
   assembly: 'assembly',
   compression: 'compression',
+  bms_allocation: 'bms_allocation',
+  bms_programming: 'bms_programming',
   charging: 'charging',
   testing: 'testing',
   quality_control: 'quality_control',
