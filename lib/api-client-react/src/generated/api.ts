@@ -32,9 +32,19 @@ import type {
   CableMaster,
   CableMasterInput,
   CableMasterUpdate,
+  Cell,
+  CellDetail,
+  CellGradeConfig,
+  CellGradeConfigInput,
+  CellGradeInput,
+  CellInventorySummary,
+  CellLotDetail,
+  CellLotInput,
   CellMaster,
   CellMasterInput,
   CellMasterUpdate,
+  CellMatchDetail,
+  CellMatchInput,
   ChargerMaster,
   ChargerMasterInput,
   ChargerMasterUpdate,
@@ -54,8 +64,14 @@ import type {
   ListCabinetMastersParams,
   ListCableMasters200,
   ListCableMastersParams,
+  ListCellLots200,
+  ListCellLotsParams,
   ListCellMasters200,
   ListCellMastersParams,
+  ListCellMatches200,
+  ListCellMatchesParams,
+  ListCells200,
+  ListCellsParams,
   ListChargerMasters200,
   ListChargerMastersParams,
   ListConnectorMasters200,
@@ -4327,4 +4343,1370 @@ export const useAddGenealogyRecord = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getAddGenealogyRecordMutationOptions(options));
     }
+
+export const getGetCellGradeConfigUrl = () => {
+
+
+
+
+  return `/api/cells/config`
+}
+
+/**
+ * @summary Get grade tolerance configuration
+ */
+export const getCellGradeConfig = async ( options?: RequestInit): Promise<CellGradeConfig> => {
+
+  return customFetch<CellGradeConfig>(getGetCellGradeConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCellGradeConfigQueryKey = () => {
+    return [
+    `/api/cells/config`
+    ] as const;
+    }
+
+
+export const getGetCellGradeConfigQueryOptions = <TData = Awaited<ReturnType<typeof getCellGradeConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCellGradeConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCellGradeConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCellGradeConfig>>> = ({ signal }) => getCellGradeConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCellGradeConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCellGradeConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getCellGradeConfig>>>
+export type GetCellGradeConfigQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get grade tolerance configuration
+ */
+
+export function useGetCellGradeConfig<TData = Awaited<ReturnType<typeof getCellGradeConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCellGradeConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCellGradeConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateCellGradeConfigUrl = () => {
+
+
+
+
+  return `/api/cells/config`
+}
+
+/**
+ * @summary Update grade tolerance configuration
+ */
+export const updateCellGradeConfig = async (cellGradeConfigInput: CellGradeConfigInput, options?: RequestInit): Promise<CellGradeConfig> => {
+
+  return customFetch<CellGradeConfig>(getUpdateCellGradeConfigUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cellGradeConfigInput)
+  }
+);}
+
+
+
+
+export const getUpdateCellGradeConfigMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCellGradeConfig>>, TError,{data: BodyType<CellGradeConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCellGradeConfig>>, TError,{data: BodyType<CellGradeConfigInput>}, TContext> => {
+
+const mutationKey = ['updateCellGradeConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCellGradeConfig>>, {data: BodyType<CellGradeConfigInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateCellGradeConfig(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCellGradeConfigMutationResult = NonNullable<Awaited<ReturnType<typeof updateCellGradeConfig>>>
+    export type UpdateCellGradeConfigMutationBody = BodyType<CellGradeConfigInput>
+    export type UpdateCellGradeConfigMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update grade tolerance configuration
+ */
+export const useUpdateCellGradeConfig = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCellGradeConfig>>, TError,{data: BodyType<CellGradeConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCellGradeConfig>>,
+        TError,
+        {data: BodyType<CellGradeConfigInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateCellGradeConfigMutationOptions(options));
+    }
+
+export const getGetCellInventoryUrl = () => {
+
+
+
+
+  return `/api/cells/inventory`
+}
+
+/**
+ * @summary Cell inventory summary stats
+ */
+export const getCellInventory = async ( options?: RequestInit): Promise<CellInventorySummary> => {
+
+  return customFetch<CellInventorySummary>(getGetCellInventoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCellInventoryQueryKey = () => {
+    return [
+    `/api/cells/inventory`
+    ] as const;
+    }
+
+
+export const getGetCellInventoryQueryOptions = <TData = Awaited<ReturnType<typeof getCellInventory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCellInventory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCellInventoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCellInventory>>> = ({ signal }) => getCellInventory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCellInventory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCellInventoryQueryResult = NonNullable<Awaited<ReturnType<typeof getCellInventory>>>
+export type GetCellInventoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Cell inventory summary stats
+ */
+
+export function useGetCellInventory<TData = Awaited<ReturnType<typeof getCellInventory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCellInventory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCellInventoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListCellLotsUrl = (params?: ListCellLotsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/cells/lots?${stringifiedParams}` : `/api/cells/lots`
+}
+
+/**
+ * @summary List cell receiving lots
+ */
+export const listCellLots = async (params?: ListCellLotsParams, options?: RequestInit): Promise<ListCellLots200> => {
+
+  return customFetch<ListCellLots200>(getListCellLotsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCellLotsQueryKey = (params?: ListCellLotsParams,) => {
+    return [
+    `/api/cells/lots`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCellLotsQueryOptions = <TData = Awaited<ReturnType<typeof listCellLots>>, TError = ErrorType<unknown>>(params?: ListCellLotsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCellLots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCellLotsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCellLots>>> = ({ signal }) => listCellLots(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCellLots>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCellLotsQueryResult = NonNullable<Awaited<ReturnType<typeof listCellLots>>>
+export type ListCellLotsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List cell receiving lots
+ */
+
+export function useListCellLots<TData = Awaited<ReturnType<typeof listCellLots>>, TError = ErrorType<unknown>>(
+ params?: ListCellLotsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCellLots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCellLotsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCellLotUrl = () => {
+
+
+
+
+  return `/api/cells/lots`
+}
+
+/**
+ * @summary Receive a new cell lot (auto-generates individual cell records)
+ */
+export const createCellLot = async (cellLotInput: CellLotInput, options?: RequestInit): Promise<CellLotDetail> => {
+
+  return customFetch<CellLotDetail>(getCreateCellLotUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cellLotInput)
+  }
+);}
+
+
+
+
+export const getCreateCellLotMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCellLot>>, TError,{data: BodyType<CellLotInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCellLot>>, TError,{data: BodyType<CellLotInput>}, TContext> => {
+
+const mutationKey = ['createCellLot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCellLot>>, {data: BodyType<CellLotInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCellLot(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCellLotMutationResult = NonNullable<Awaited<ReturnType<typeof createCellLot>>>
+    export type CreateCellLotMutationBody = BodyType<CellLotInput>
+    export type CreateCellLotMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Receive a new cell lot (auto-generates individual cell records)
+ */
+export const useCreateCellLot = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCellLot>>, TError,{data: BodyType<CellLotInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCellLot>>,
+        TError,
+        {data: BodyType<CellLotInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCellLotMutationOptions(options));
+    }
+
+export const getGetCellLotUrl = (id: string,) => {
+
+
+
+
+  return `/api/cells/lots/${id}`
+}
+
+/**
+ * @summary Get cell lot detail with cell stats
+ */
+export const getCellLot = async (id: string, options?: RequestInit): Promise<CellLotDetail> => {
+
+  return customFetch<CellLotDetail>(getGetCellLotUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCellLotQueryKey = (id: string,) => {
+    return [
+    `/api/cells/lots/${id}`
+    ] as const;
+    }
+
+
+export const getGetCellLotQueryOptions = <TData = Awaited<ReturnType<typeof getCellLot>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCellLot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCellLotQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCellLot>>> = ({ signal }) => getCellLot(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCellLot>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCellLotQueryResult = NonNullable<Awaited<ReturnType<typeof getCellLot>>>
+export type GetCellLotQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get cell lot detail with cell stats
+ */
+
+export function useGetCellLot<TData = Awaited<ReturnType<typeof getCellLot>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCellLot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCellLotQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListCellMatchesUrl = (params?: ListCellMatchesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/cells/matches?${stringifiedParams}` : `/api/cells/matches`
+}
+
+/**
+ * @summary List cell matching sessions
+ */
+export const listCellMatches = async (params?: ListCellMatchesParams, options?: RequestInit): Promise<ListCellMatches200> => {
+
+  return customFetch<ListCellMatches200>(getListCellMatchesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCellMatchesQueryKey = (params?: ListCellMatchesParams,) => {
+    return [
+    `/api/cells/matches`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCellMatchesQueryOptions = <TData = Awaited<ReturnType<typeof listCellMatches>>, TError = ErrorType<unknown>>(params?: ListCellMatchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCellMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCellMatchesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCellMatches>>> = ({ signal }) => listCellMatches(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCellMatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCellMatchesQueryResult = NonNullable<Awaited<ReturnType<typeof listCellMatches>>>
+export type ListCellMatchesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List cell matching sessions
+ */
+
+export function useListCellMatches<TData = Awaited<ReturnType<typeof listCellMatches>>, TError = ErrorType<unknown>>(
+ params?: ListCellMatchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCellMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCellMatchesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCellMatchUrl = () => {
+
+
+
+
+  return `/api/cells/matches`
+}
+
+/**
+ * @summary Run intelligent cell matching algorithm
+ */
+export const createCellMatch = async (cellMatchInput: CellMatchInput, options?: RequestInit): Promise<CellMatchDetail> => {
+
+  return customFetch<CellMatchDetail>(getCreateCellMatchUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cellMatchInput)
+  }
+);}
+
+
+
+
+export const getCreateCellMatchMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCellMatch>>, TError,{data: BodyType<CellMatchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCellMatch>>, TError,{data: BodyType<CellMatchInput>}, TContext> => {
+
+const mutationKey = ['createCellMatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCellMatch>>, {data: BodyType<CellMatchInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCellMatch(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCellMatchMutationResult = NonNullable<Awaited<ReturnType<typeof createCellMatch>>>
+    export type CreateCellMatchMutationBody = BodyType<CellMatchInput>
+    export type CreateCellMatchMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Run intelligent cell matching algorithm
+ */
+export const useCreateCellMatch = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCellMatch>>, TError,{data: BodyType<CellMatchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCellMatch>>,
+        TError,
+        {data: BodyType<CellMatchInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCellMatchMutationOptions(options));
+    }
+
+export const getGetCellMatchUrl = (id: string,) => {
+
+
+
+
+  return `/api/cells/matches/${id}`
+}
+
+/**
+ * @summary Get match detail with cells per battery slot
+ */
+export const getCellMatch = async (id: string, options?: RequestInit): Promise<CellMatchDetail> => {
+
+  return customFetch<CellMatchDetail>(getGetCellMatchUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCellMatchQueryKey = (id: string,) => {
+    return [
+    `/api/cells/matches/${id}`
+    ] as const;
+    }
+
+
+export const getGetCellMatchQueryOptions = <TData = Awaited<ReturnType<typeof getCellMatch>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCellMatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCellMatchQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCellMatch>>> = ({ signal }) => getCellMatch(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCellMatch>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCellMatchQueryResult = NonNullable<Awaited<ReturnType<typeof getCellMatch>>>
+export type GetCellMatchQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get match detail with cells per battery slot
+ */
+
+export function useGetCellMatch<TData = Awaited<ReturnType<typeof getCellMatch>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCellMatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCellMatchQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAcceptCellMatchUrl = (id: string,) => {
+
+
+
+
+  return `/api/cells/matches/${id}/accept`
+}
+
+/**
+ * @summary Accept match and reserve all selected cells
+ */
+export const acceptCellMatch = async (id: string, options?: RequestInit): Promise<CellMatchDetail> => {
+
+  return customFetch<CellMatchDetail>(getAcceptCellMatchUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAcceptCellMatchMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptCellMatch>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptCellMatch>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['acceptCellMatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptCellMatch>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  acceptCellMatch(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptCellMatchMutationResult = NonNullable<Awaited<ReturnType<typeof acceptCellMatch>>>
+
+    export type AcceptCellMatchMutationError = ErrorType<void>
+
+    /**
+ * @summary Accept match and reserve all selected cells
+ */
+export const useAcceptCellMatch = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptCellMatch>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptCellMatch>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getAcceptCellMatchMutationOptions(options));
+    }
+
+export const getRegenerateCellMatchUrl = (id: string,) => {
+
+
+
+
+  return `/api/cells/matches/${id}/regenerate`
+}
+
+/**
+ * @summary Delete current match items and re-run the algorithm
+ */
+export const regenerateCellMatch = async (id: string, options?: RequestInit): Promise<CellMatchDetail> => {
+
+  return customFetch<CellMatchDetail>(getRegenerateCellMatchUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRegenerateCellMatchMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof regenerateCellMatch>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof regenerateCellMatch>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['regenerateCellMatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof regenerateCellMatch>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  regenerateCellMatch(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegenerateCellMatchMutationResult = NonNullable<Awaited<ReturnType<typeof regenerateCellMatch>>>
+
+    export type RegenerateCellMatchMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete current match items and re-run the algorithm
+ */
+export const useRegenerateCellMatch = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof regenerateCellMatch>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof regenerateCellMatch>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getRegenerateCellMatchMutationOptions(options));
+    }
+
+export const getListCellsUrl = (params?: ListCellsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/cells?${stringifiedParams}` : `/api/cells`
+}
+
+/**
+ * @summary List individual cells with filters
+ */
+export const listCells = async (params?: ListCellsParams, options?: RequestInit): Promise<ListCells200> => {
+
+  return customFetch<ListCells200>(getListCellsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCellsQueryKey = (params?: ListCellsParams,) => {
+    return [
+    `/api/cells`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCellsQueryOptions = <TData = Awaited<ReturnType<typeof listCells>>, TError = ErrorType<unknown>>(params?: ListCellsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCells>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCellsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCells>>> = ({ signal }) => listCells(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCells>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCellsQueryResult = NonNullable<Awaited<ReturnType<typeof listCells>>>
+export type ListCellsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List individual cells with filters
+ */
+
+export function useListCells<TData = Awaited<ReturnType<typeof listCells>>, TError = ErrorType<unknown>>(
+ params?: ListCellsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCells>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCellsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCellUrl = (id: string,) => {
+
+
+
+
+  return `/api/cells/${id}`
+}
+
+/**
+ * @summary Get cell detail with traceability
+ */
+export const getCell = async (id: string, options?: RequestInit): Promise<CellDetail> => {
+
+  return customFetch<CellDetail>(getGetCellUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCellQueryKey = (id: string,) => {
+    return [
+    `/api/cells/${id}`
+    ] as const;
+    }
+
+
+export const getGetCellQueryOptions = <TData = Awaited<ReturnType<typeof getCell>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCell>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCellQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCell>>> = ({ signal }) => getCell(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCell>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCellQueryResult = NonNullable<Awaited<ReturnType<typeof getCell>>>
+export type GetCellQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get cell detail with traceability
+ */
+
+export function useGetCell<TData = Awaited<ReturnType<typeof getCell>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCell>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCellQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGradeCellUrl = (id: string,) => {
+
+
+
+
+  return `/api/cells/${id}/grade`
+}
+
+/**
+ * @summary Record grading measurements and auto-calculate grade
+ */
+export const gradeCell = async (id: string,
+    cellGradeInput: CellGradeInput, options?: RequestInit): Promise<Cell> => {
+
+  return customFetch<Cell>(getGradeCellUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cellGradeInput)
+  }
+);}
+
+
+
+
+export const getGradeCellMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof gradeCell>>, TError,{id: string;data: BodyType<CellGradeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof gradeCell>>, TError,{id: string;data: BodyType<CellGradeInput>}, TContext> => {
+
+const mutationKey = ['gradeCell'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof gradeCell>>, {id: string;data: BodyType<CellGradeInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  gradeCell(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GradeCellMutationResult = NonNullable<Awaited<ReturnType<typeof gradeCell>>>
+    export type GradeCellMutationBody = BodyType<CellGradeInput>
+    export type GradeCellMutationError = ErrorType<void>
+
+    /**
+ * @summary Record grading measurements and auto-calculate grade
+ */
+export const useGradeCell = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof gradeCell>>, TError,{id: string;data: BodyType<CellGradeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof gradeCell>>,
+        TError,
+        {id: string;data: BodyType<CellGradeInput>},
+        TContext
+      > => {
+      return useMutation(getGradeCellMutationOptions(options));
+    }
+
+export const getReportCellReceivingUrl = () => {
+
+
+
+
+  return `/api/cells/reports/receiving`
+}
+
+/**
+ * @summary CSV — Cell Receiving Register
+ */
+export const reportCellReceiving = async ( options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getReportCellReceivingUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReportCellReceivingQueryKey = () => {
+    return [
+    `/api/cells/reports/receiving`
+    ] as const;
+    }
+
+
+export const getReportCellReceivingQueryOptions = <TData = Awaited<ReturnType<typeof reportCellReceiving>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof reportCellReceiving>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReportCellReceivingQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportCellReceiving>>> = ({ signal }) => reportCellReceiving({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reportCellReceiving>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ReportCellReceivingQueryResult = NonNullable<Awaited<ReturnType<typeof reportCellReceiving>>>
+export type ReportCellReceivingQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary CSV — Cell Receiving Register
+ */
+
+export function useReportCellReceiving<TData = Awaited<ReturnType<typeof reportCellReceiving>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof reportCellReceiving>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getReportCellReceivingQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReportCellGradingUrl = () => {
+
+
+
+
+  return `/api/cells/reports/grading`
+}
+
+/**
+ * @summary CSV — Cell Grading Report
+ */
+export const reportCellGrading = async ( options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getReportCellGradingUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReportCellGradingQueryKey = () => {
+    return [
+    `/api/cells/reports/grading`
+    ] as const;
+    }
+
+
+export const getReportCellGradingQueryOptions = <TData = Awaited<ReturnType<typeof reportCellGrading>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof reportCellGrading>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReportCellGradingQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportCellGrading>>> = ({ signal }) => reportCellGrading({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reportCellGrading>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ReportCellGradingQueryResult = NonNullable<Awaited<ReturnType<typeof reportCellGrading>>>
+export type ReportCellGradingQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary CSV — Cell Grading Report
+ */
+
+export function useReportCellGrading<TData = Awaited<ReturnType<typeof reportCellGrading>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof reportCellGrading>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getReportCellGradingQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReportCellInventoryUrl = () => {
+
+
+
+
+  return `/api/cells/reports/inventory`
+}
+
+/**
+ * @summary CSV — Cell Inventory Report
+ */
+export const reportCellInventory = async ( options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getReportCellInventoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReportCellInventoryQueryKey = () => {
+    return [
+    `/api/cells/reports/inventory`
+    ] as const;
+    }
+
+
+export const getReportCellInventoryQueryOptions = <TData = Awaited<ReturnType<typeof reportCellInventory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof reportCellInventory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReportCellInventoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportCellInventory>>> = ({ signal }) => reportCellInventory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reportCellInventory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ReportCellInventoryQueryResult = NonNullable<Awaited<ReturnType<typeof reportCellInventory>>>
+export type ReportCellInventoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary CSV — Cell Inventory Report
+ */
+
+export function useReportCellInventory<TData = Awaited<ReturnType<typeof reportCellInventory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof reportCellInventory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getReportCellInventoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReportCellMatchingUrl = () => {
+
+
+
+
+  return `/api/cells/reports/matching`
+}
+
+/**
+ * @summary CSV — Cell Matching Report
+ */
+export const reportCellMatching = async ( options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getReportCellMatchingUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getReportCellMatchingQueryKey = () => {
+    return [
+    `/api/cells/reports/matching`
+    ] as const;
+    }
+
+
+export const getReportCellMatchingQueryOptions = <TData = Awaited<ReturnType<typeof reportCellMatching>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof reportCellMatching>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReportCellMatchingQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportCellMatching>>> = ({ signal }) => reportCellMatching({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reportCellMatching>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ReportCellMatchingQueryResult = NonNullable<Awaited<ReturnType<typeof reportCellMatching>>>
+export type ReportCellMatchingQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary CSV — Cell Matching Report
+ */
+
+export function useReportCellMatching<TData = Awaited<ReturnType<typeof reportCellMatching>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof reportCellMatching>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getReportCellMatchingQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

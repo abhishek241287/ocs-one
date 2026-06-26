@@ -23,10 +23,21 @@ import {
   Minus,
   BatteryCharging,
   FlaskConical,
+  Archive,
+  Settings,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const navSections = [
+type NavItem = { label: string; href: string; icon: any };
+type NavSection = {
+  title: string;
+  items?: NavItem[];
+  groups?: { label: string; icon: any; items: NavItem[] }[];
+};
+
+const navSections: NavSection[] = [
   {
     title: "Overview",
     items: [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
@@ -46,12 +57,26 @@ const navSections = [
     ],
   },
   {
-    title: "Operations",
-    items: [
-      { label: "Production Orders", href: "/manufacturing/orders", icon: Factory },
-      { label: "Inventory", href: "#inventory", icon: Package },
-      { label: "Cell Grading", href: "#cell-grading", icon: Battery },
-      { label: "Quality Control", href: "#qc", icon: ShieldCheck },
+    title: "Manufacturing",
+    groups: [
+      {
+        label: "Cell Lifecycle",
+        icon: Battery,
+        items: [
+          { label: "Cell Receiving", href: "/cells/receiving", icon: Package },
+          { label: "Cell Grading", href: "/cells/grading", icon: FlaskConical },
+          { label: "Cell Inventory", href: "/cells/inventory", icon: Archive },
+          { label: "Cell Matching", href: "/cells/matching", icon: BrainCircuit },
+          { label: "Grade Config", href: "/cells/config", icon: Settings },
+        ],
+      },
+      {
+        label: "Production",
+        icon: Factory,
+        items: [
+          { label: "Production Orders", href: "/manufacturing/orders", icon: Factory },
+        ],
+      },
     ],
   },
   {
@@ -76,6 +101,86 @@ const navSections = [
     ],
   },
 ];
+
+function GroupedSection({
+  group,
+  collapsed,
+  location,
+}: {
+  group: { label: string; icon: any; items: NavItem[] };
+  collapsed: boolean;
+  location: string;
+}) {
+  const hasActive = group.items.some((i) => location === i.href || location.startsWith(i.href + "/"));
+  const [open, setOpen] = useState(hasActive);
+  const GroupIcon = group.icon;
+
+  if (collapsed) {
+    return (
+      <ul className="space-y-1 px-2">
+        {group.items.map((item) => {
+          const Icon = item.icon;
+          const isActive = location === item.href || location.startsWith(item.href + "/");
+          return (
+            <li key={item.label}>
+              <Link href={item.href}>
+                <span
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer justify-center px-0",
+                    isActive
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                  title={item.label}
+                >
+                  <Icon size={20} className={cn("shrink-0", isActive ? "text-primary" : "")} />
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 w-full px-5 py-1.5 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground/80 transition-colors"
+      >
+        <GroupIcon size={13} />
+        <span className="uppercase tracking-wider font-semibold flex-1 text-left">{group.label}</span>
+        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+      </button>
+      {open && (
+        <ul className="space-y-1 px-2">
+          {group.items.map((item) => {
+            const Icon = item.icon;
+            const isActive = location === item.href || location.startsWith(item.href + "/");
+            return (
+              <li key={item.label}>
+                <Link href={item.href}>
+                  <span
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer",
+                      isActive
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    )}
+                  >
+                    <Icon size={18} className={cn("shrink-0 ml-1", isActive ? "text-primary" : "")} />
+                    <span className="truncate text-sm">{item.label}</span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed: (val: boolean) => void }) {
   const [location] = useLocation();
@@ -108,31 +213,45 @@ export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCo
                 {section.title}
               </h4>
             )}
-            <ul className="space-y-1 px-2">
-              {section.items.map((item) => {
-                const isActive = location === item.href;
-                const Icon = item.icon;
-                return (
-                  <li key={item.label}>
-                    <Link href={item.href}>
-                      <span
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer group",
-                          isActive
-                            ? "bg-primary/10 text-primary font-medium"
-                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                          collapsed && "justify-center px-0"
-                        )}
-                        title={collapsed ? item.label : undefined}
-                      >
-                        <Icon size={20} className={cn("shrink-0", isActive ? "text-primary" : "")} />
-                        {!collapsed && <span className="truncate">{item.label}</span>}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+
+            {section.groups ? (
+              <div className="space-y-2">
+                {section.groups.map((group) => (
+                  <GroupedSection
+                    key={group.label}
+                    group={group}
+                    collapsed={collapsed}
+                    location={location}
+                  />
+                ))}
+              </div>
+            ) : (
+              <ul className="space-y-1 px-2">
+                {(section.items ?? []).map((item) => {
+                  const isActive = location === item.href || location.startsWith(item.href + "/");
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.label}>
+                      <Link href={item.href}>
+                        <span
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer group",
+                            isActive
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                            collapsed && "justify-center px-0"
+                          )}
+                          title={collapsed ? item.label : undefined}
+                        >
+                          <Icon size={20} className={cn("shrink-0", isActive ? "text-primary" : "")} />
+                          {!collapsed && <span className="truncate">{item.label}</span>}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         ))}
       </div>

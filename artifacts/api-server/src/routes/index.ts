@@ -28,4 +28,7 @@ router.use("/masters/test-equipment", testEquipmentMasterRouter);
 import manufacturingRouter from "./manufacturing/index";
 router.use("/manufacturing", manufacturingRouter);
 
+import cellsRouter from "./cells/index";
+router.use("/cells", cellsRouter);
+
 export default router;

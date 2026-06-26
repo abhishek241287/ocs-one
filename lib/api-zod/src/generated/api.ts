@@ -2752,3 +2752,594 @@ export const AddGenealogyRecordResponse = zod.object({
 })
 
 
+/**
+ * @summary Get grade tolerance configuration
+ */
+export const GetCellGradeConfigResponse = zod.object({
+  "id": zod.number(),
+  "gradeAMinCapacityPct": zod.number(),
+  "gradeAMaxIrMult": zod.number(),
+  "gradeBMinCapacityPct": zod.number(),
+  "gradeBMaxIrMult": zod.number(),
+  "gradeCMinCapacityPct": zod.number(),
+  "gradeCMaxIrMult": zod.number(),
+  "maxCapacityDiffAh": zod.number(),
+  "maxIrDiffMohm": zod.number(),
+  "maxVoltageDiffMv": zod.number(),
+  "nominalIrMohm": zod.number(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update grade tolerance configuration
+ */
+export const UpdateCellGradeConfigBody = zod.object({
+  "gradeAMinCapacityPct": zod.number().optional(),
+  "gradeAMaxIrMult": zod.number().optional(),
+  "gradeBMinCapacityPct": zod.number().optional(),
+  "gradeBMaxIrMult": zod.number().optional(),
+  "gradeCMinCapacityPct": zod.number().optional(),
+  "gradeCMaxIrMult": zod.number().optional(),
+  "maxCapacityDiffAh": zod.number().optional(),
+  "maxIrDiffMohm": zod.number().optional(),
+  "maxVoltageDiffMv": zod.number().optional(),
+  "nominalIrMohm": zod.number().optional()
+})
+
+export const UpdateCellGradeConfigResponse = zod.object({
+  "id": zod.number(),
+  "gradeAMinCapacityPct": zod.number(),
+  "gradeAMaxIrMult": zod.number(),
+  "gradeBMinCapacityPct": zod.number(),
+  "gradeBMaxIrMult": zod.number(),
+  "gradeCMinCapacityPct": zod.number(),
+  "gradeCMaxIrMult": zod.number(),
+  "maxCapacityDiffAh": zod.number(),
+  "maxIrDiffMohm": zod.number(),
+  "maxVoltageDiffMv": zod.number(),
+  "nominalIrMohm": zod.number(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Cell inventory summary stats
+ */
+export const GetCellInventoryResponse = zod.object({
+  "total": zod.number(),
+  "received": zod.number(),
+  "approved": zod.number(),
+  "rejected": zod.number(),
+  "quarantine": zod.number(),
+  "reserved": zod.number(),
+  "allocated": zod.number(),
+  "available": zod.number(),
+  "gradedToday": zod.number(),
+  "receivedToday": zod.number(),
+  "approvedPct": zod.number(),
+  "rejectedPct": zod.number()
+})
+
+
+/**
+ * @summary List cell receiving lots
+ */
+export const listCellLotsQueryPageDefault = 1;
+export const listCellLotsQueryPageSizeDefault = 25;
+
+export const ListCellLotsQueryParams = zod.object({
+  "page": zod.coerce.number().default(listCellLotsQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listCellLotsQueryPageSizeDefault),
+  "search": zod.coerce.string().optional()
+})
+
+export const ListCellLotsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "supplier": zod.string(),
+  "manufacturer": zod.string(),
+  "cellModel": zod.string(),
+  "cellChemistry": zod.string(),
+  "nominalCapacityAh": zod.number(),
+  "lotNumber": zod.string(),
+  "invoiceNumber": zod.string().nullish(),
+  "dateReceived": zod.string(),
+  "quantityReceived": zod.number(),
+  "receivedBy": zod.string(),
+  "remarks": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+})
+
+
+/**
+ * @summary Receive a new cell lot (auto-generates individual cell records)
+ */
+export const createCellLotBodyCellChemistryDefault = `LiFePO4`;
+
+
+export const CreateCellLotBody = zod.object({
+  "supplier": zod.string(),
+  "manufacturer": zod.string(),
+  "cellModel": zod.string(),
+  "cellChemistry": zod.string().default(createCellLotBodyCellChemistryDefault),
+  "nominalCapacityAh": zod.number(),
+  "lotNumber": zod.string(),
+  "invoiceNumber": zod.string().nullish(),
+  "dateReceived": zod.string(),
+  "quantityReceived": zod.number().min(1),
+  "receivedBy": zod.string(),
+  "remarks": zod.string().nullish()
+})
+
+export const CreateCellLotResponse = zod.object({
+  "id": zod.string().uuid(),
+  "supplier": zod.string(),
+  "manufacturer": zod.string(),
+  "cellModel": zod.string(),
+  "cellChemistry": zod.string(),
+  "nominalCapacityAh": zod.number(),
+  "lotNumber": zod.string(),
+  "invoiceNumber": zod.string().nullish(),
+  "dateReceived": zod.string(),
+  "quantityReceived": zod.number(),
+  "receivedBy": zod.string(),
+  "remarks": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "stats": zod.object({
+  "total": zod.number().optional(),
+  "received": zod.number().optional(),
+  "approved": zod.number().optional(),
+  "rejected": zod.number().optional(),
+  "quarantine": zod.number().optional(),
+  "reserved": zod.number().optional(),
+  "allocated": zod.number().optional()
+}).optional()
+}))
+
+
+/**
+ * @summary Get cell lot detail with cell stats
+ */
+export const GetCellLotParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetCellLotResponse = zod.object({
+  "id": zod.string().uuid(),
+  "supplier": zod.string(),
+  "manufacturer": zod.string(),
+  "cellModel": zod.string(),
+  "cellChemistry": zod.string(),
+  "nominalCapacityAh": zod.number(),
+  "lotNumber": zod.string(),
+  "invoiceNumber": zod.string().nullish(),
+  "dateReceived": zod.string(),
+  "quantityReceived": zod.number(),
+  "receivedBy": zod.string(),
+  "remarks": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "stats": zod.object({
+  "total": zod.number().optional(),
+  "received": zod.number().optional(),
+  "approved": zod.number().optional(),
+  "rejected": zod.number().optional(),
+  "quarantine": zod.number().optional(),
+  "reserved": zod.number().optional(),
+  "allocated": zod.number().optional()
+}).optional()
+}))
+
+
+/**
+ * @summary List cell matching sessions
+ */
+export const listCellMatchesQueryPageDefault = 1;
+export const listCellMatchesQueryPageSizeDefault = 25;
+
+export const ListCellMatchesQueryParams = zod.object({
+  "page": zod.coerce.number().default(listCellMatchesQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listCellMatchesQueryPageSizeDefault),
+  "status": zod.enum(['draft', 'reserved', 'allocated', 'cancelled']).optional()
+})
+
+export const ListCellMatchesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid().nullish(),
+  "batteryModel": zod.string(),
+  "cellsPerBattery": zod.number(),
+  "quantity": zod.number(),
+  "status": zod.enum(['draft', 'reserved', 'allocated', 'cancelled']),
+  "matchScore": zod.number().nullish(),
+  "createdBy": zod.string(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+})
+
+
+/**
+ * @summary Run intelligent cell matching algorithm
+ */
+export const createCellMatchBodyCellsPerBatteryDefault = 16;
+
+
+export const CreateCellMatchBody = zod.object({
+  "productId": zod.string().uuid().nullish(),
+  "batteryModel": zod.string(),
+  "cellsPerBattery": zod.number().default(createCellMatchBodyCellsPerBatteryDefault),
+  "quantity": zod.number().min(1),
+  "createdBy": zod.string(),
+  "notes": zod.string().nullish()
+})
+
+export const CreateCellMatchResponse = zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid().nullish(),
+  "batteryModel": zod.string(),
+  "cellsPerBattery": zod.number(),
+  "quantity": zod.number(),
+  "status": zod.enum(['draft', 'reserved', 'allocated', 'cancelled']),
+  "matchScore": zod.number().nullish(),
+  "createdBy": zod.string(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "batteries": zod.array(zod.object({
+  "slot": zod.number(),
+  "cells": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "cellId": zod.string(),
+  "lotId": zod.string().uuid(),
+  "status": zod.enum(['received', 'grading', 'approved', 'rejected', 'quarantine', 'reserved', 'allocated']),
+  "grade": zod.enum(['A', 'B', 'C', 'reject', 'null']).nullish(),
+  "voltageV": zod.number().nullish(),
+  "capacityAh": zod.number().nullish(),
+  "internalResistanceMohm": zod.number().nullish(),
+  "temperatureC": zod.number().nullish(),
+  "gradingMachineId": zod.string().nullish(),
+  "gradedBy": zod.string().nullish(),
+  "gradedAt": zod.coerce.date().nullish(),
+  "gradingNotes": zod.string().nullish(),
+  "matchId": zod.string().uuid().nullish(),
+  "allocationOrderId": zod.string().uuid().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "avgCapacityAh": zod.number(),
+  "maxCapacityDiff": zod.number(),
+  "avgIrMohm": zod.number(),
+  "maxIrDiff": zod.number(),
+  "matchScore": zod.number()
+})).optional()
+}))
+
+
+/**
+ * @summary Get match detail with cells per battery slot
+ */
+export const GetCellMatchParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetCellMatchResponse = zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid().nullish(),
+  "batteryModel": zod.string(),
+  "cellsPerBattery": zod.number(),
+  "quantity": zod.number(),
+  "status": zod.enum(['draft', 'reserved', 'allocated', 'cancelled']),
+  "matchScore": zod.number().nullish(),
+  "createdBy": zod.string(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "batteries": zod.array(zod.object({
+  "slot": zod.number(),
+  "cells": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "cellId": zod.string(),
+  "lotId": zod.string().uuid(),
+  "status": zod.enum(['received', 'grading', 'approved', 'rejected', 'quarantine', 'reserved', 'allocated']),
+  "grade": zod.enum(['A', 'B', 'C', 'reject', 'null']).nullish(),
+  "voltageV": zod.number().nullish(),
+  "capacityAh": zod.number().nullish(),
+  "internalResistanceMohm": zod.number().nullish(),
+  "temperatureC": zod.number().nullish(),
+  "gradingMachineId": zod.string().nullish(),
+  "gradedBy": zod.string().nullish(),
+  "gradedAt": zod.coerce.date().nullish(),
+  "gradingNotes": zod.string().nullish(),
+  "matchId": zod.string().uuid().nullish(),
+  "allocationOrderId": zod.string().uuid().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "avgCapacityAh": zod.number(),
+  "maxCapacityDiff": zod.number(),
+  "avgIrMohm": zod.number(),
+  "maxIrDiff": zod.number(),
+  "matchScore": zod.number()
+})).optional()
+}))
+
+
+/**
+ * @summary Accept match and reserve all selected cells
+ */
+export const AcceptCellMatchParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const AcceptCellMatchResponse = zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid().nullish(),
+  "batteryModel": zod.string(),
+  "cellsPerBattery": zod.number(),
+  "quantity": zod.number(),
+  "status": zod.enum(['draft', 'reserved', 'allocated', 'cancelled']),
+  "matchScore": zod.number().nullish(),
+  "createdBy": zod.string(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "batteries": zod.array(zod.object({
+  "slot": zod.number(),
+  "cells": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "cellId": zod.string(),
+  "lotId": zod.string().uuid(),
+  "status": zod.enum(['received', 'grading', 'approved', 'rejected', 'quarantine', 'reserved', 'allocated']),
+  "grade": zod.enum(['A', 'B', 'C', 'reject', 'null']).nullish(),
+  "voltageV": zod.number().nullish(),
+  "capacityAh": zod.number().nullish(),
+  "internalResistanceMohm": zod.number().nullish(),
+  "temperatureC": zod.number().nullish(),
+  "gradingMachineId": zod.string().nullish(),
+  "gradedBy": zod.string().nullish(),
+  "gradedAt": zod.coerce.date().nullish(),
+  "gradingNotes": zod.string().nullish(),
+  "matchId": zod.string().uuid().nullish(),
+  "allocationOrderId": zod.string().uuid().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "avgCapacityAh": zod.number(),
+  "maxCapacityDiff": zod.number(),
+  "avgIrMohm": zod.number(),
+  "maxIrDiff": zod.number(),
+  "matchScore": zod.number()
+})).optional()
+}))
+
+
+/**
+ * @summary Delete current match items and re-run the algorithm
+ */
+export const RegenerateCellMatchParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const RegenerateCellMatchResponse = zod.object({
+  "id": zod.string().uuid(),
+  "productId": zod.string().uuid().nullish(),
+  "batteryModel": zod.string(),
+  "cellsPerBattery": zod.number(),
+  "quantity": zod.number(),
+  "status": zod.enum(['draft', 'reserved', 'allocated', 'cancelled']),
+  "matchScore": zod.number().nullish(),
+  "createdBy": zod.string(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "batteries": zod.array(zod.object({
+  "slot": zod.number(),
+  "cells": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "cellId": zod.string(),
+  "lotId": zod.string().uuid(),
+  "status": zod.enum(['received', 'grading', 'approved', 'rejected', 'quarantine', 'reserved', 'allocated']),
+  "grade": zod.enum(['A', 'B', 'C', 'reject', 'null']).nullish(),
+  "voltageV": zod.number().nullish(),
+  "capacityAh": zod.number().nullish(),
+  "internalResistanceMohm": zod.number().nullish(),
+  "temperatureC": zod.number().nullish(),
+  "gradingMachineId": zod.string().nullish(),
+  "gradedBy": zod.string().nullish(),
+  "gradedAt": zod.coerce.date().nullish(),
+  "gradingNotes": zod.string().nullish(),
+  "matchId": zod.string().uuid().nullish(),
+  "allocationOrderId": zod.string().uuid().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "avgCapacityAh": zod.number(),
+  "maxCapacityDiff": zod.number(),
+  "avgIrMohm": zod.number(),
+  "maxIrDiff": zod.number(),
+  "matchScore": zod.number()
+})).optional()
+}))
+
+
+/**
+ * @summary List individual cells with filters
+ */
+export const listCellsQueryPageDefault = 1;
+export const listCellsQueryPageSizeDefault = 25;
+
+export const ListCellsQueryParams = zod.object({
+  "page": zod.coerce.number().default(listCellsQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listCellsQueryPageSizeDefault),
+  "search": zod.coerce.string().optional(),
+  "status": zod.enum(['received', 'grading', 'approved', 'rejected', 'quarantine', 'reserved', 'allocated']).optional(),
+  "grade": zod.enum(['A', 'B', 'C', 'reject']).optional(),
+  "lotId": zod.coerce.string().uuid().optional()
+})
+
+export const ListCellsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "cellId": zod.string(),
+  "lotId": zod.string().uuid(),
+  "status": zod.enum(['received', 'grading', 'approved', 'rejected', 'quarantine', 'reserved', 'allocated']),
+  "grade": zod.enum(['A', 'B', 'C', 'reject', 'null']).nullish(),
+  "voltageV": zod.number().nullish(),
+  "capacityAh": zod.number().nullish(),
+  "internalResistanceMohm": zod.number().nullish(),
+  "temperatureC": zod.number().nullish(),
+  "gradingMachineId": zod.string().nullish(),
+  "gradedBy": zod.string().nullish(),
+  "gradedAt": zod.coerce.date().nullish(),
+  "gradingNotes": zod.string().nullish(),
+  "matchId": zod.string().uuid().nullish(),
+  "allocationOrderId": zod.string().uuid().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+})
+
+
+/**
+ * @summary Get cell detail with traceability
+ */
+export const GetCellParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetCellResponse = zod.object({
+  "id": zod.string().uuid(),
+  "cellId": zod.string(),
+  "lotId": zod.string().uuid(),
+  "status": zod.enum(['received', 'grading', 'approved', 'rejected', 'quarantine', 'reserved', 'allocated']),
+  "grade": zod.enum(['A', 'B', 'C', 'reject', 'null']).nullish(),
+  "voltageV": zod.number().nullish(),
+  "capacityAh": zod.number().nullish(),
+  "internalResistanceMohm": zod.number().nullish(),
+  "temperatureC": zod.number().nullish(),
+  "gradingMachineId": zod.string().nullish(),
+  "gradedBy": zod.string().nullish(),
+  "gradedAt": zod.coerce.date().nullish(),
+  "gradingNotes": zod.string().nullish(),
+  "matchId": zod.string().uuid().nullish(),
+  "allocationOrderId": zod.string().uuid().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "lot": zod.object({
+  "id": zod.string().uuid(),
+  "supplier": zod.string(),
+  "manufacturer": zod.string(),
+  "cellModel": zod.string(),
+  "cellChemistry": zod.string(),
+  "nominalCapacityAh": zod.number(),
+  "lotNumber": zod.string(),
+  "invoiceNumber": zod.string().nullish(),
+  "dateReceived": zod.string(),
+  "quantityReceived": zod.number(),
+  "receivedBy": zod.string(),
+  "remarks": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).optional(),
+  "usedInOrders": zod.array(zod.object({
+  "orderId": zod.string().uuid().optional(),
+  "orderNumber": zod.string().optional(),
+  "batteryNumber": zod.string().optional()
+})).optional()
+}))
+
+
+/**
+ * @summary Record grading measurements and auto-calculate grade
+ */
+export const GradeCellParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GradeCellBody = zod.object({
+  "voltageV": zod.number(),
+  "capacityAh": zod.number(),
+  "internalResistanceMohm": zod.number(),
+  "temperatureC": zod.number().nullish(),
+  "gradingMachineId": zod.string().nullish(),
+  "gradedBy": zod.string(),
+  "gradingNotes": zod.string().nullish(),
+  "overrideStatus": zod.enum(['approved', 'rejected', 'quarantine', 'null']).nullish()
+})
+
+export const GradeCellResponse = zod.object({
+  "id": zod.string().uuid(),
+  "cellId": zod.string(),
+  "lotId": zod.string().uuid(),
+  "status": zod.enum(['received', 'grading', 'approved', 'rejected', 'quarantine', 'reserved', 'allocated']),
+  "grade": zod.enum(['A', 'B', 'C', 'reject', 'null']).nullish(),
+  "voltageV": zod.number().nullish(),
+  "capacityAh": zod.number().nullish(),
+  "internalResistanceMohm": zod.number().nullish(),
+  "temperatureC": zod.number().nullish(),
+  "gradingMachineId": zod.string().nullish(),
+  "gradedBy": zod.string().nullish(),
+  "gradedAt": zod.coerce.date().nullish(),
+  "gradingNotes": zod.string().nullish(),
+  "matchId": zod.string().uuid().nullish(),
+  "allocationOrderId": zod.string().uuid().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary CSV — Cell Receiving Register
+ */
+export const ReportCellReceivingResponse = zod.unknown()
+
+
+/**
+ * @summary CSV — Cell Grading Report
+ */
+export const ReportCellGradingResponse = zod.unknown()
+
+
+/**
+ * @summary CSV — Cell Inventory Report
+ */
+export const ReportCellInventoryResponse = zod.unknown()
+
+
+/**
+ * @summary CSV — Cell Matching Report
+ */
+export const ReportCellMatchingResponse = zod.unknown()
+
+

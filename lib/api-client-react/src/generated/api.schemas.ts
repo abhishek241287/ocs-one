@@ -703,6 +703,249 @@ export interface ProductionOrderUpdate {
   notes?: string | null;
 }
 
+export interface CellLot {
+  id: string;
+  supplier: string;
+  manufacturer: string;
+  cellModel: string;
+  cellChemistry: string;
+  nominalCapacityAh: number;
+  lotNumber: string;
+  /** @nullable */
+  invoiceNumber?: string | null;
+  dateReceived: string;
+  quantityReceived: number;
+  receivedBy: string;
+  /** @nullable */
+  remarks?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CellLotDetailStats = {
+  total?: number;
+  received?: number;
+  approved?: number;
+  rejected?: number;
+  quarantine?: number;
+  reserved?: number;
+  allocated?: number;
+};
+
+export type CellLotDetail = CellLot & {
+  stats?: CellLotDetailStats;
+};
+
+export interface CellLotInput {
+  supplier: string;
+  manufacturer: string;
+  cellModel: string;
+  cellChemistry?: string;
+  nominalCapacityAh: number;
+  lotNumber: string;
+  /** @nullable */
+  invoiceNumber?: string | null;
+  dateReceived: string;
+  /** @minimum 1 */
+  quantityReceived: number;
+  receivedBy: string;
+  /** @nullable */
+  remarks?: string | null;
+}
+
+export type CellStatus = typeof CellStatus[keyof typeof CellStatus];
+
+
+export const CellStatus = {
+  received: 'received',
+  grading: 'grading',
+  approved: 'approved',
+  rejected: 'rejected',
+  quarantine: 'quarantine',
+  reserved: 'reserved',
+  allocated: 'allocated',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CellGrade = typeof CellGrade[keyof typeof CellGrade] | null;
+
+
+export const CellGrade = {
+  A: 'A',
+  B: 'B',
+  C: 'C',
+  reject: 'reject',
+  null: 'null',
+} as const;
+
+export interface Cell {
+  id: string;
+  cellId: string;
+  lotId: string;
+  status: CellStatus;
+  /** @nullable */
+  grade?: CellGrade;
+  /** @nullable */
+  voltageV?: number | null;
+  /** @nullable */
+  capacityAh?: number | null;
+  /** @nullable */
+  internalResistanceMohm?: number | null;
+  /** @nullable */
+  temperatureC?: number | null;
+  /** @nullable */
+  gradingMachineId?: string | null;
+  /** @nullable */
+  gradedBy?: string | null;
+  /** @nullable */
+  gradedAt?: string | null;
+  /** @nullable */
+  gradingNotes?: string | null;
+  /** @nullable */
+  matchId?: string | null;
+  /** @nullable */
+  allocationOrderId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CellDetailUsedInOrdersItem = {
+  orderId?: string;
+  orderNumber?: string;
+  batteryNumber?: string;
+};
+
+export type CellDetail = Cell & {
+  lot?: CellLot;
+  usedInOrders?: CellDetailUsedInOrdersItem[];
+};
+
+/**
+ * @nullable
+ */
+export type CellGradeInputOverrideStatus = typeof CellGradeInputOverrideStatus[keyof typeof CellGradeInputOverrideStatus] | null;
+
+
+export const CellGradeInputOverrideStatus = {
+  approved: 'approved',
+  rejected: 'rejected',
+  quarantine: 'quarantine',
+  null: 'null',
+} as const;
+
+export interface CellGradeInput {
+  voltageV: number;
+  capacityAh: number;
+  internalResistanceMohm: number;
+  /** @nullable */
+  temperatureC?: number | null;
+  /** @nullable */
+  gradingMachineId?: string | null;
+  gradedBy: string;
+  /** @nullable */
+  gradingNotes?: string | null;
+  /** @nullable */
+  overrideStatus?: CellGradeInputOverrideStatus;
+}
+
+export interface CellInventorySummary {
+  total: number;
+  received: number;
+  approved: number;
+  rejected: number;
+  quarantine: number;
+  reserved: number;
+  allocated: number;
+  available: number;
+  gradedToday: number;
+  receivedToday: number;
+  approvedPct: number;
+  rejectedPct: number;
+}
+
+export type CellMatchStatus = typeof CellMatchStatus[keyof typeof CellMatchStatus];
+
+
+export const CellMatchStatus = {
+  draft: 'draft',
+  reserved: 'reserved',
+  allocated: 'allocated',
+  cancelled: 'cancelled',
+} as const;
+
+export interface CellMatch {
+  id: string;
+  /** @nullable */
+  productId?: string | null;
+  batteryModel: string;
+  cellsPerBattery: number;
+  quantity: number;
+  status: CellMatchStatus;
+  /** @nullable */
+  matchScore?: number | null;
+  createdBy: string;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CellMatchInput {
+  /** @nullable */
+  productId?: string | null;
+  batteryModel: string;
+  cellsPerBattery?: number;
+  /** @minimum 1 */
+  quantity: number;
+  createdBy: string;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface CellMatchBattery {
+  slot: number;
+  cells: Cell[];
+  avgCapacityAh: number;
+  maxCapacityDiff: number;
+  avgIrMohm: number;
+  maxIrDiff: number;
+  matchScore: number;
+}
+
+export type CellMatchDetail = CellMatch & {
+  batteries?: CellMatchBattery[];
+};
+
+export interface CellGradeConfig {
+  id: number;
+  gradeAMinCapacityPct: number;
+  gradeAMaxIrMult: number;
+  gradeBMinCapacityPct: number;
+  gradeBMaxIrMult: number;
+  gradeCMinCapacityPct: number;
+  gradeCMaxIrMult: number;
+  maxCapacityDiffAh: number;
+  maxIrDiffMohm: number;
+  maxVoltageDiffMv: number;
+  nominalIrMohm: number;
+  updatedAt: string;
+}
+
+export interface CellGradeConfigInput {
+  gradeAMinCapacityPct?: number;
+  gradeAMaxIrMult?: number;
+  gradeBMinCapacityPct?: number;
+  gradeBMaxIrMult?: number;
+  gradeCMinCapacityPct?: number;
+  gradeCMaxIrMult?: number;
+  maxCapacityDiffAh?: number;
+  maxIrDiffMohm?: number;
+  maxVoltageDiffMv?: number;
+  nominalIrMohm?: number;
+}
+
 export type SearchParamParameter = string;
 
 export type StatusParamParameter = typeof StatusParamParameter[keyof typeof StatusParamParameter];
@@ -859,5 +1102,74 @@ export type GetOrderTimeline200 = {
 
 export type GetOrderGenealogy200 = {
   items: GenealogyRecord[];
+};
+
+export type ListCellLotsParams = {
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+search?: SearchParamParameter;
+};
+
+export type ListCellLots200 = {
+  items: CellLot[];
+  meta: PaginationMeta;
+};
+
+export type ListCellMatchesParams = {
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+status?: ListCellMatchesStatus;
+};
+
+export type ListCellMatchesStatus = typeof ListCellMatchesStatus[keyof typeof ListCellMatchesStatus];
+
+
+export const ListCellMatchesStatus = {
+  draft: 'draft',
+  reserved: 'reserved',
+  allocated: 'allocated',
+  cancelled: 'cancelled',
+} as const;
+
+export type ListCellMatches200 = {
+  items: CellMatch[];
+  meta: PaginationMeta;
+};
+
+export type ListCellsParams = {
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+search?: SearchParamParameter;
+status?: ListCellsStatus;
+grade?: ListCellsGrade;
+lotId?: string;
+};
+
+export type ListCellsStatus = typeof ListCellsStatus[keyof typeof ListCellsStatus];
+
+
+export const ListCellsStatus = {
+  received: 'received',
+  grading: 'grading',
+  approved: 'approved',
+  rejected: 'rejected',
+  quarantine: 'quarantine',
+  reserved: 'reserved',
+  allocated: 'allocated',
+} as const;
+
+export type ListCellsGrade = typeof ListCellsGrade[keyof typeof ListCellsGrade];
+
+
+export const ListCellsGrade = {
+  A: 'A',
+  B: 'B',
+  C: 'C',
+  reject: 'reject',
+} as const;
+
+export type ListCells200 = {
+  items: Cell[];
+  meta: PaginationMeta;
 };
 

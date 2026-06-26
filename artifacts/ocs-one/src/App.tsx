@@ -16,6 +16,11 @@ import ChargerMasterPage from "@/features/masters/pages/ChargerMasterPage";
 import TestEquipmentMasterPage from "@/features/masters/pages/TestEquipmentMasterPage";
 import OrdersListPage from "@/features/manufacturing/pages/OrdersListPage";
 import OrderDetailPage from "@/features/manufacturing/pages/OrderDetailPage";
+import CellReceivingPage from "@/features/cells/pages/CellReceivingPage";
+import CellGradingPage from "@/features/cells/pages/CellGradingPage";
+import CellInventoryPage from "@/features/cells/pages/CellInventoryPage";
+import CellMatchingPage from "@/features/cells/pages/CellMatchingPage";
+import GradeConfigPage from "@/features/cells/pages/GradeConfigPage";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +43,11 @@ function Router() {
       <Route path="/masters/test-equipment" component={TestEquipmentMasterPage} />
       <Route path="/manufacturing/orders" component={OrdersListPage} />
       <Route path="/manufacturing/orders/:id" component={OrderDetailPage} />
+      <Route path="/cells/receiving" component={CellReceivingPage} />
+      <Route path="/cells/grading" component={CellGradingPage} />
+      <Route path="/cells/inventory" component={CellInventoryPage} />
+      <Route path="/cells/matching" component={CellMatchingPage} />
+      <Route path="/cells/config" component={GradeConfigPage} />
       <Route component={NotFound} />
     </Switch>
   );

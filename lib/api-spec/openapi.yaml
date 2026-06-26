@@ -1166,6 +1166,341 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenealogyRecord"
 
+  # ── Cell Grading — Config ─────────────────────────────────────────────────
+  /cells/config:
+    get:
+      operationId: getCellGradeConfig
+      tags: [cells]
+      summary: Get grade tolerance configuration
+      responses:
+        "200":
+          description: Grade configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellGradeConfig"
+    put:
+      operationId: updateCellGradeConfig
+      tags: [cells]
+      summary: Update grade tolerance configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CellGradeConfigInput"
+      responses:
+        "200":
+          description: Updated configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellGradeConfig"
+
+  # ── Cell Grading — Inventory ──────────────────────────────────────────────
+  /cells/inventory:
+    get:
+      operationId: getCellInventory
+      tags: [cells]
+      summary: Cell inventory summary stats
+      responses:
+        "200":
+          description: Inventory summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellInventorySummary"
+
+  # ── Cell Grading — Lots ───────────────────────────────────────────────────
+  /cells/lots:
+    get:
+      operationId: listCellLots
+      tags: [cells]
+      summary: List cell receiving lots
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SearchParam"
+      responses:
+        "200":
+          description: List of lots
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, meta]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CellLot"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+    post:
+      operationId: createCellLot
+      tags: [cells]
+      summary: Receive a new cell lot (auto-generates individual cell records)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CellLotInput"
+      responses:
+        "201":
+          description: Created lot with stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellLotDetail"
+
+  /cells/lots/{id}:
+    get:
+      operationId: getCellLot
+      tags: [cells]
+      summary: Get cell lot detail with cell stats
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Lot detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellLotDetail"
+        "404":
+          description: Not found
+
+  # ── Cell Grading — Matches ────────────────────────────────────────────────
+  /cells/matches:
+    get:
+      operationId: listCellMatches
+      tags: [cells]
+      summary: List cell matching sessions
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [draft, reserved, allocated, cancelled]
+      responses:
+        "200":
+          description: List of matches
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, meta]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CellMatch"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+    post:
+      operationId: createCellMatch
+      tags: [cells]
+      summary: Run intelligent cell matching algorithm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CellMatchInput"
+      responses:
+        "201":
+          description: Match result with battery slots
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellMatchDetail"
+
+  /cells/matches/{id}:
+    get:
+      operationId: getCellMatch
+      tags: [cells]
+      summary: Get match detail with cells per battery slot
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Match detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellMatchDetail"
+        "404":
+          description: Not found
+
+  /cells/matches/{id}/accept:
+    post:
+      operationId: acceptCellMatch
+      tags: [cells]
+      summary: Accept match and reserve all selected cells
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Reserved match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellMatchDetail"
+        "409":
+          description: Some cells already reserved
+
+  /cells/matches/{id}/regenerate:
+    post:
+      operationId: regenerateCellMatch
+      tags: [cells]
+      summary: Delete current match items and re-run the algorithm
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: New match result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellMatchDetail"
+
+  # ── Cell Grading — Cells ──────────────────────────────────────────────────
+  /cells:
+    get:
+      operationId: listCells
+      tags: [cells]
+      summary: List individual cells with filters
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SearchParam"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [received, grading, approved, rejected, quarantine, reserved, allocated]
+        - name: grade
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [A, B, C, reject]
+        - name: lotId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of cells
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, meta]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Cell"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+
+  /cells/{id}:
+    get:
+      operationId: getCell
+      tags: [cells]
+      summary: Get cell detail with traceability
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Cell detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellDetail"
+        "404":
+          description: Not found
+
+  /cells/{id}/grade:
+    post:
+      operationId: gradeCell
+      tags: [cells]
+      summary: Record grading measurements and auto-calculate grade
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CellGradeInput"
+      responses:
+        "200":
+          description: Graded cell
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cell"
+        "400":
+          description: Cell not in gradeable state
+
+  # ── Cell Grading — Reports ────────────────────────────────────────────────
+  /cells/reports/receiving:
+    get:
+      operationId: reportCellReceiving
+      tags: [cells]
+      summary: CSV — Cell Receiving Register
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema: { type: string }
+
+  /cells/reports/grading:
+    get:
+      operationId: reportCellGrading
+      tags: [cells]
+      summary: CSV — Cell Grading Report
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema: { type: string }
+
+  /cells/reports/inventory:
+    get:
+      operationId: reportCellInventory
+      tags: [cells]
+      summary: CSV — Cell Inventory Report
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema: { type: string }
+
+  /cells/reports/matching:
+    get:
+      operationId: reportCellMatching
+      tags: [cells]
+      summary: CSV — Cell Matching Report
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema: { type: string }
+
 components:
   parameters:
     IdParam:
@@ -1895,3 +2230,215 @@ components:
         plannedStartDate: { type: ["string", "null"] }
         plannedEndDate: { type: ["string", "null"] }
         notes: { type: ["string", "null"] }
+
+    # ── Cell Grading Schemas ──────────────────────────────────────────────────
+
+    CellLot:
+      type: object
+      required: [id, supplier, manufacturer, cellModel, cellChemistry, nominalCapacityAh, lotNumber, dateReceived, quantityReceived, receivedBy, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        supplier: { type: string }
+        manufacturer: { type: string }
+        cellModel: { type: string }
+        cellChemistry: { type: string }
+        nominalCapacityAh: { type: number }
+        lotNumber: { type: string }
+        invoiceNumber: { type: ["string", "null"] }
+        dateReceived: { type: string }
+        quantityReceived: { type: integer }
+        receivedBy: { type: string }
+        remarks: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CellLotDetail:
+      allOf:
+        - $ref: "#/components/schemas/CellLot"
+        - type: object
+          properties:
+            stats:
+              type: object
+              properties:
+                total: { type: integer }
+                received: { type: integer }
+                approved: { type: integer }
+                rejected: { type: integer }
+                quarantine: { type: integer }
+                reserved: { type: integer }
+                allocated: { type: integer }
+
+    CellLotInput:
+      type: object
+      required: [supplier, manufacturer, cellModel, nominalCapacityAh, lotNumber, dateReceived, quantityReceived, receivedBy]
+      properties:
+        supplier: { type: string }
+        manufacturer: { type: string }
+        cellModel: { type: string }
+        cellChemistry: { type: string, default: LiFePO4 }
+        nominalCapacityAh: { type: number }
+        lotNumber: { type: string }
+        invoiceNumber: { type: ["string", "null"] }
+        dateReceived: { type: string }
+        quantityReceived: { type: integer, minimum: 1 }
+        receivedBy: { type: string }
+        remarks: { type: ["string", "null"] }
+
+    Cell:
+      type: object
+      required: [id, cellId, lotId, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        cellId: { type: string }
+        lotId: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [received, grading, approved, rejected, quarantine, reserved, allocated]
+        grade:
+          type: ["string", "null"]
+          enum: [A, B, C, reject, "null"]
+        voltageV: { type: ["number", "null"] }
+        capacityAh: { type: ["number", "null"] }
+        internalResistanceMohm: { type: ["number", "null"] }
+        temperatureC: { type: ["number", "null"] }
+        gradingMachineId: { type: ["string", "null"] }
+        gradedBy: { type: ["string", "null"] }
+        gradedAt: { type: ["string", "null"], format: date-time }
+        gradingNotes: { type: ["string", "null"] }
+        matchId: { type: ["string", "null"], format: uuid }
+        allocationOrderId: { type: ["string", "null"], format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CellDetail:
+      allOf:
+        - $ref: "#/components/schemas/Cell"
+        - type: object
+          properties:
+            lot:
+              $ref: "#/components/schemas/CellLot"
+            usedInOrders:
+              type: array
+              items:
+                type: object
+                properties:
+                  orderId: { type: string, format: uuid }
+                  orderNumber: { type: string }
+                  batteryNumber: { type: string }
+
+    CellGradeInput:
+      type: object
+      required: [voltageV, capacityAh, internalResistanceMohm, gradedBy]
+      properties:
+        voltageV: { type: number }
+        capacityAh: { type: number }
+        internalResistanceMohm: { type: number }
+        temperatureC: { type: ["number", "null"] }
+        gradingMachineId: { type: ["string", "null"] }
+        gradedBy: { type: string }
+        gradingNotes: { type: ["string", "null"] }
+        overrideStatus:
+          type: ["string", "null"]
+          enum: [approved, rejected, quarantine, "null"]
+
+    CellInventorySummary:
+      type: object
+      required: [total, received, approved, rejected, quarantine, reserved, allocated, available, gradedToday, receivedToday, approvedPct, rejectedPct]
+      properties:
+        total: { type: integer }
+        received: { type: integer }
+        approved: { type: integer }
+        rejected: { type: integer }
+        quarantine: { type: integer }
+        reserved: { type: integer }
+        allocated: { type: integer }
+        available: { type: integer }
+        gradedToday: { type: integer }
+        receivedToday: { type: integer }
+        approvedPct: { type: number }
+        rejectedPct: { type: number }
+
+    CellMatch:
+      type: object
+      required: [id, batteryModel, cellsPerBattery, quantity, status, createdBy, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        productId: { type: ["string", "null"], format: uuid }
+        batteryModel: { type: string }
+        cellsPerBattery: { type: integer }
+        quantity: { type: integer }
+        status:
+          type: string
+          enum: [draft, reserved, allocated, cancelled]
+        matchScore: { type: ["number", "null"] }
+        createdBy: { type: string }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CellMatchInput:
+      type: object
+      required: [batteryModel, quantity, createdBy]
+      properties:
+        productId: { type: ["string", "null"], format: uuid }
+        batteryModel: { type: string }
+        cellsPerBattery: { type: integer, default: 16 }
+        quantity: { type: integer, minimum: 1 }
+        createdBy: { type: string }
+        notes: { type: ["string", "null"] }
+
+    CellMatchBattery:
+      type: object
+      required: [slot, cells, avgCapacityAh, maxCapacityDiff, avgIrMohm, maxIrDiff, matchScore]
+      properties:
+        slot: { type: integer }
+        cells:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cell"
+        avgCapacityAh: { type: number }
+        maxCapacityDiff: { type: number }
+        avgIrMohm: { type: number }
+        maxIrDiff: { type: number }
+        matchScore: { type: number }
+
+    CellMatchDetail:
+      allOf:
+        - $ref: "#/components/schemas/CellMatch"
+        - type: object
+          properties:
+            batteries:
+              type: array
+              items:
+                $ref: "#/components/schemas/CellMatchBattery"
+
+    CellGradeConfig:
+      type: object
+      required: [id, gradeAMinCapacityPct, gradeAMaxIrMult, gradeBMinCapacityPct, gradeBMaxIrMult, gradeCMinCapacityPct, gradeCMaxIrMult, maxCapacityDiffAh, maxIrDiffMohm, maxVoltageDiffMv, nominalIrMohm, updatedAt]
+      properties:
+        id: { type: integer }
+        gradeAMinCapacityPct: { type: number }
+        gradeAMaxIrMult: { type: number }
+        gradeBMinCapacityPct: { type: number }
+        gradeBMaxIrMult: { type: number }
+        gradeCMinCapacityPct: { type: number }
+        gradeCMaxIrMult: { type: number }
+        maxCapacityDiffAh: { type: number }
+        maxIrDiffMohm: { type: number }
+        maxVoltageDiffMv: { type: number }
+        nominalIrMohm: { type: number }
+        updatedAt: { type: string, format: date-time }
+
+    CellGradeConfigInput:
+      type: object
+      properties:
+        gradeAMinCapacityPct: { type: number }
+        gradeAMaxIrMult: { type: number }
+        gradeBMinCapacityPct: { type: number }
+        gradeBMaxIrMult: { type: number }
+        gradeCMinCapacityPct: { type: number }
+        gradeCMaxIrMult: { type: number }
+        maxCapacityDiffAh: { type: number }
+        maxIrDiffMohm: { type: number }
+        maxVoltageDiffMv: { type: number }
+        nominalIrMohm: { type: number }
