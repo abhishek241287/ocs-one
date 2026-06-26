@@ -16,6 +16,13 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  BookOpen,
+  Cpu,
+  Box,
+  Plug,
+  Minus,
+  BatteryCharging,
+  FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -23,6 +30,20 @@ const navSections = [
   {
     title: "Overview",
     items: [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
+  },
+  {
+    title: "Engineering Masters",
+    items: [
+      { label: "Product Master", href: "/masters/products", icon: BookOpen },
+      { label: "Cell Master", href: "/masters/cells", icon: Battery },
+      { label: "BMS Master", href: "/masters/bms", icon: Cpu },
+      { label: "Cabinet Master", href: "/masters/cabinets", icon: Box },
+      { label: "Connector Master", href: "/masters/connectors", icon: Plug },
+      { label: "Cable Master", href: "/masters/cables", icon: Zap },
+      { label: "Busbar Master", href: "/masters/busbars", icon: Minus },
+      { label: "Charger Master", href: "/masters/chargers", icon: BatteryCharging },
+      { label: "Test Equipment", href: "/masters/test-equipment", icon: FlaskConical },
+    ],
   },
   {
     title: "Operations",

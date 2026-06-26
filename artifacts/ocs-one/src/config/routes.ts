@@ -20,6 +20,19 @@ export const ROUTES = {
   warranty: "/warranty",
   service: "/service",
 
+  // Masters
+  masters: {
+    products: "/masters/products",
+    cells: "/masters/cells",
+    bms: "/masters/bms",
+    cabinets: "/masters/cabinets",
+    connectors: "/masters/connectors",
+    cables: "/masters/cables",
+    busbars: "/masters/busbars",
+    chargers: "/masters/chargers",
+    testEquipment: "/masters/test-equipment",
+  },
+
   // Analytics
   reports: "/reports",
   aiAssistant: "/ai",

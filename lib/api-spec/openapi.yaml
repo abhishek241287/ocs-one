@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: masters
+    description: Engineering Master Data operations
 paths:
   /healthz:
     get:
@@ -24,7 +26,881 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # Product Masters
+  /masters/products:
+    get:
+      operationId: listProductMasters
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of product masters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ProductMaster"
+    post:
+      operationId: createProductMaster
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductMasterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductMaster"
+
+  /masters/products/{id}:
+    get:
+      operationId: getProductMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single product master
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductMaster"
+    patch:
+      operationId: updateProductMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductMasterUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductMaster"
+
+  /masters/products/{id}/status:
+    patch:
+      operationId: toggleProductMasterStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MasterStatusToggle"
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductMaster"
+
+  # Cell Masters
+  /masters/cells:
+    get:
+      operationId: listCellMasters
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of cell masters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/CellMaster"
+    post:
+      operationId: createCellMaster
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CellMasterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellMaster"
+
+  /masters/cells/{id}:
+    get:
+      operationId: getCellMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single cell master
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellMaster"
+    patch:
+      operationId: updateCellMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CellMasterUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellMaster"
+
+  /masters/cells/{id}/status:
+    patch:
+      operationId: toggleCellMasterStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MasterStatusToggle"
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellMaster"
+
+  # BMS Masters
+  /masters/bms:
+    get:
+      operationId: listBmsMasters
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of BMS masters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/BmsMaster"
+    post:
+      operationId: createBmsMaster
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BmsMasterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BmsMaster"
+
+  /masters/bms/{id}:
+    get:
+      operationId: getBmsMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single BMS master
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BmsMaster"
+    patch:
+      operationId: updateBmsMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BmsMasterUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BmsMaster"
+
+  /masters/bms/{id}/status:
+    patch:
+      operationId: toggleBmsMasterStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MasterStatusToggle"
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BmsMaster"
+
+  # Cabinet Masters
+  /masters/cabinets:
+    get:
+      operationId: listCabinetMasters
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of cabinet masters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/CabinetMaster"
+    post:
+      operationId: createCabinetMaster
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CabinetMasterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CabinetMaster"
+
+  /masters/cabinets/{id}:
+    get:
+      operationId: getCabinetMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single cabinet master
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CabinetMaster"
+    patch:
+      operationId: updateCabinetMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CabinetMasterUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CabinetMaster"
+
+  /masters/cabinets/{id}/status:
+    patch:
+      operationId: toggleCabinetMasterStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MasterStatusToggle"
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CabinetMaster"
+
+  # Connector Masters
+  /masters/connectors:
+    get:
+      operationId: listConnectorMasters
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of connector masters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ConnectorMaster"
+    post:
+      operationId: createConnectorMaster
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectorMasterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectorMaster"
+
+  /masters/connectors/{id}:
+    get:
+      operationId: getConnectorMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single connector master
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectorMaster"
+    patch:
+      operationId: updateConnectorMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectorMasterUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectorMaster"
+
+  /masters/connectors/{id}/status:
+    patch:
+      operationId: toggleConnectorMasterStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MasterStatusToggle"
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectorMaster"
+
+  # Cable Masters
+  /masters/cables:
+    get:
+      operationId: listCableMasters
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of cable masters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/CableMaster"
+    post:
+      operationId: createCableMaster
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CableMasterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CableMaster"
+
+  /masters/cables/{id}:
+    get:
+      operationId: getCableMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single cable master
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CableMaster"
+    patch:
+      operationId: updateCableMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CableMasterUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CableMaster"
+
+  /masters/cables/{id}/status:
+    patch:
+      operationId: toggleCableMasterStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MasterStatusToggle"
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CableMaster"
+
+  # Busbar Masters
+  /masters/busbars:
+    get:
+      operationId: listBusbarMasters
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of busbar masters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/BusbarMaster"
+    post:
+      operationId: createBusbarMaster
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BusbarMasterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusbarMaster"
+
+  /masters/busbars/{id}:
+    get:
+      operationId: getBusbarMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single busbar master
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusbarMaster"
+    patch:
+      operationId: updateBusbarMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BusbarMasterUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusbarMaster"
+
+  /masters/busbars/{id}/status:
+    patch:
+      operationId: toggleBusbarMasterStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MasterStatusToggle"
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusbarMaster"
+
+  # Charger Masters
+  /masters/chargers:
+    get:
+      operationId: listChargerMasters
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of charger masters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ChargerMaster"
+    post:
+      operationId: createChargerMaster
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChargerMasterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChargerMaster"
+
+  /masters/chargers/{id}:
+    get:
+      operationId: getChargerMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single charger master
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChargerMaster"
+    patch:
+      operationId: updateChargerMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChargerMasterUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChargerMaster"
+
+  /masters/chargers/{id}/status:
+    patch:
+      operationId: toggleChargerMasterStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MasterStatusToggle"
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChargerMaster"
+
+  # Test Equipment Masters
+  /masters/test-equipment:
+    get:
+      operationId: listTestEquipmentMasters
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of test equipment masters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TestEquipmentMaster"
+    post:
+      operationId: createTestEquipmentMaster
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestEquipmentMasterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestEquipmentMaster"
+
+  /masters/test-equipment/{id}:
+    get:
+      operationId: getTestEquipmentMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single test equipment master
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestEquipmentMaster"
+    patch:
+      operationId: updateTestEquipmentMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestEquipmentMasterUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestEquipmentMaster"
+
+  /masters/test-equipment/{id}/status:
+    patch:
+      operationId: toggleTestEquipmentMasterStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MasterStatusToggle"
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestEquipmentMaster"
+
 components:
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SearchParam:
+      name: search
+      in: query
+      required: false
+      schema:
+        type: string
+    StatusParam:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [active, inactive]
+    PageParam:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 1
+    PageSizeParam:
+      name: pageSize
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 25
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +910,488 @@ components:
       required:
         - status
 
+    MasterStatus:
+      type: string
+      enum: [active, inactive]
+
+    MasterStatusToggle:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/MasterStatus"
+
+    Attachment:
+      type: object
+      required: [id, name, url, fileType, uploadedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        url: { type: string }
+        fileType: { type: string }
+        uploadedAt: { type: string, format: date-time }
+
+    MasterCommon:
+      type: object
+      required: [id, code, name, status, revision_number, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        description: { type: ["string", "null"] }
+        status: { $ref: "#/components/schemas/MasterStatus" }
+        revision_number: { type: integer }
+        effective_date: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        attachments:
+          type: array
+          items: { $ref: "#/components/schemas/Attachment" }
+        created_by: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_by: { type: ["string", "null"], format: uuid }
+        updated_at: { type: string, format: date-time }
+
+    MasterCommonInput:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        description: { type: ["string", "null"] }
+        effective_date: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        attachments:
+          type: array
+          items: { $ref: "#/components/schemas/Attachment" }
+
+    MasterCommonUpdate:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        description: { type: ["string", "null"] }
+        effective_date: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        attachments:
+          type: array
+          items: { $ref: "#/components/schemas/Attachment" }
+
+    MasterListMeta:
+      type: object
+      required: [total, page, pageSize, totalPages]
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalPages: { type: integer }
+
+    MasterListResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        meta: { $ref: "#/components/schemas/MasterListMeta" }
+
+    # Product Master
+    ProductMaster:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          properties:
+            chemistry: { type: string }
+            category: { type: string }
+            nominal_voltage_v: { type: number }
+            capacity_ah: { type: number }
+            energy_kwh: { type: number }
+            configuration: { type: string }
+            cell_count: { type: integer }
+            bms_master_id: { type: ["string", "null"], format: uuid }
+            cabinet_master_id: { type: ["string", "null"], format: uuid }
+            cell_master_id: { type: ["string", "null"], format: uuid }
+            warranty_period_months: { type: integer }
+            product_image_url: { type: ["string", "null"] }
+
+    ProductMasterInput:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          required: [chemistry, category, nominal_voltage_v, capacity_ah, energy_kwh, configuration, cell_count, warranty_period_months]
+          properties:
+            chemistry: { type: string }
+            category: { type: string }
+            nominal_voltage_v: { type: number }
+            capacity_ah: { type: number }
+            energy_kwh: { type: number }
+            configuration: { type: string }
+            cell_count: { type: integer }
+            bms_master_id: { type: ["string", "null"], format: uuid }
+            cabinet_master_id: { type: ["string", "null"], format: uuid }
+            cell_master_id: { type: ["string", "null"], format: uuid }
+            warranty_period_months: { type: integer }
+            product_image_url: { type: ["string", "null"] }
+
+    ProductMasterUpdate:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            chemistry: { type: string }
+            category: { type: string }
+            nominal_voltage_v: { type: number }
+            capacity_ah: { type: number }
+            energy_kwh: { type: number }
+            configuration: { type: string }
+            cell_count: { type: integer }
+            bms_master_id: { type: ["string", "null"], format: uuid }
+            cabinet_master_id: { type: ["string", "null"], format: uuid }
+            cell_master_id: { type: ["string", "null"], format: uuid }
+            warranty_period_months: { type: integer }
+            product_image_url: { type: ["string", "null"] }
+
+    # Cell Master
+    CellMaster:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          properties:
+            manufacturer: { type: string }
+            model: { type: string }
+            chemistry: { type: string }
+            capacity_mah: { type: number }
+            nominal_voltage_v: { type: number }
+            max_voltage_v: { type: number }
+            min_voltage_v: { type: number }
+            weight_g: { type: number }
+            dimensions: { type: string }
+            internal_resistance_spec_mohm: { type: number }
+            cycle_life: { type: integer }
+            datasheet_url: { type: ["string", "null"] }
+            approved_supplier: { type: ["string", "null"] }
+
+    CellMasterInput:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          required: [manufacturer, model, chemistry, capacity_mah, nominal_voltage_v, max_voltage_v, min_voltage_v, weight_g, dimensions, internal_resistance_spec_mohm, cycle_life]
+          properties:
+            manufacturer: { type: string }
+            model: { type: string }
+            chemistry: { type: string }
+            capacity_mah: { type: number }
+            nominal_voltage_v: { type: number }
+            max_voltage_v: { type: number }
+            min_voltage_v: { type: number }
+            weight_g: { type: number }
+            dimensions: { type: string }
+            internal_resistance_spec_mohm: { type: number }
+            cycle_life: { type: integer }
+            datasheet_url: { type: ["string", "null"] }
+            approved_supplier: { type: ["string", "null"] }
+
+    CellMasterUpdate:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            manufacturer: { type: string }
+            model: { type: string }
+            chemistry: { type: string }
+            capacity_mah: { type: number }
+            nominal_voltage_v: { type: number }
+            max_voltage_v: { type: number }
+            min_voltage_v: { type: number }
+            weight_g: { type: number }
+            dimensions: { type: string }
+            internal_resistance_spec_mohm: { type: number }
+            cycle_life: { type: integer }
+            datasheet_url: { type: ["string", "null"] }
+            approved_supplier: { type: ["string", "null"] }
+
+    # BMS Master
+    BmsMaster:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          properties:
+            manufacturer: { type: string }
+            model: { type: string }
+            current_rating_a: { type: number }
+            min_voltage_v: { type: number }
+            max_voltage_v: { type: number }
+            cell_support_count: { type: integer }
+            has_bluetooth: { type: boolean }
+            has_can: { type: boolean }
+            has_rs485: { type: boolean }
+            has_uart: { type: boolean }
+            firmware_version: { type: ["string", "null"] }
+            datasheet_url: { type: ["string", "null"] }
+
+    BmsMasterInput:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          required: [manufacturer, model, current_rating_a, min_voltage_v, max_voltage_v, cell_support_count]
+          properties:
+            manufacturer: { type: string }
+            model: { type: string }
+            current_rating_a: { type: number }
+            min_voltage_v: { type: number }
+            max_voltage_v: { type: number }
+            cell_support_count: { type: integer }
+            has_bluetooth: { type: boolean, default: false }
+            has_can: { type: boolean, default: false }
+            has_rs485: { type: boolean, default: false }
+            has_uart: { type: boolean, default: false }
+            firmware_version: { type: ["string", "null"] }
+            datasheet_url: { type: ["string", "null"] }
+
+    BmsMasterUpdate:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            manufacturer: { type: string }
+            model: { type: string }
+            current_rating_a: { type: number }
+            min_voltage_v: { type: number }
+            max_voltage_v: { type: number }
+            cell_support_count: { type: integer }
+            has_bluetooth: { type: boolean }
+            has_can: { type: boolean }
+            has_rs485: { type: boolean }
+            has_uart: { type: boolean }
+            firmware_version: { type: ["string", "null"] }
+            datasheet_url: { type: ["string", "null"] }
+
+    # Cabinet Master
+    CabinetMaster:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          properties:
+            model: { type: string }
+            material: { type: string }
+            ip_rating: { type: string }
+            dimensions: { type: string }
+            weight_kg: { type: number }
+            colour: { type: string }
+            mounting_type: { type: string }
+
+    CabinetMasterInput:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          required: [model, material, ip_rating, dimensions, weight_kg, colour, mounting_type]
+          properties:
+            model: { type: string }
+            material: { type: string }
+            ip_rating: { type: string }
+            dimensions: { type: string }
+            weight_kg: { type: number }
+            colour: { type: string }
+            mounting_type: { type: string }
+
+    CabinetMasterUpdate:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            model: { type: string }
+            material: { type: string }
+            ip_rating: { type: string }
+            dimensions: { type: string }
+            weight_kg: { type: number }
+            colour: { type: string }
+            mounting_type: { type: string }
+
+    # Connector Master
+    ConnectorMaster:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          properties:
+            manufacturer: { type: string }
+            model: { type: string }
+            current_rating_a: { type: number }
+            voltage_rating_v: { type: number }
+            connector_type: { type: string }
+            datasheet_url: { type: ["string", "null"] }
+
+    ConnectorMasterInput:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          required: [manufacturer, model, current_rating_a, voltage_rating_v, connector_type]
+          properties:
+            manufacturer: { type: string }
+            model: { type: string }
+            current_rating_a: { type: number }
+            voltage_rating_v: { type: number }
+            connector_type: { type: string }
+            datasheet_url: { type: ["string", "null"] }
+
+    ConnectorMasterUpdate:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            manufacturer: { type: string }
+            model: { type: string }
+            current_rating_a: { type: number }
+            voltage_rating_v: { type: number }
+            connector_type: { type: string }
+            datasheet_url: { type: ["string", "null"] }
+
+    # Cable Master
+    CableMaster:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          properties:
+            size_sqmm: { type: number }
+            colour: { type: string }
+            current_rating_a: { type: number }
+            insulation_type: { type: string }
+            manufacturer: { type: string }
+
+    CableMasterInput:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          required: [size_sqmm, colour, current_rating_a, insulation_type, manufacturer]
+          properties:
+            size_sqmm: { type: number }
+            colour: { type: string }
+            current_rating_a: { type: number }
+            insulation_type: { type: string }
+            manufacturer: { type: string }
+
+    CableMasterUpdate:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            size_sqmm: { type: number }
+            colour: { type: string }
+            current_rating_a: { type: number }
+            insulation_type: { type: string }
+            manufacturer: { type: string }
+
+    # Busbar Master
+    BusbarMaster:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          properties:
+            material: { type: string }
+            thickness_mm: { type: number }
+            width_mm: { type: number }
+            length_mm: { type: number }
+            surface_finish: { type: string }
+
+    BusbarMasterInput:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          required: [material, thickness_mm, width_mm, length_mm, surface_finish]
+          properties:
+            material: { type: string }
+            thickness_mm: { type: number }
+            width_mm: { type: number }
+            length_mm: { type: number }
+            surface_finish: { type: string }
+
+    BusbarMasterUpdate:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            material: { type: string }
+            thickness_mm: { type: number }
+            width_mm: { type: number }
+            length_mm: { type: number }
+            surface_finish: { type: string }
+
+    # Charger Master
+    ChargerMaster:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          properties:
+            manufacturer: { type: string }
+            model: { type: string }
+            output_voltage_v: { type: number }
+            output_current_a: { type: number }
+            power_kw: { type: number }
+            communication_protocol: { type: string }
+            datasheet_url: { type: ["string", "null"] }
+
+    ChargerMasterInput:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          required: [manufacturer, model, output_voltage_v, output_current_a, power_kw, communication_protocol]
+          properties:
+            manufacturer: { type: string }
+            model: { type: string }
+            output_voltage_v: { type: number }
+            output_current_a: { type: number }
+            power_kw: { type: number }
+            communication_protocol: { type: string }
+            datasheet_url: { type: ["string", "null"] }
+
+    ChargerMasterUpdate:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            manufacturer: { type: string }
+            model: { type: string }
+            output_voltage_v: { type: number }
+            output_current_a: { type: number }
+            power_kw: { type: number }
+            communication_protocol: { type: string }
+            datasheet_url: { type: ["string", "null"] }
+
+    # Test Equipment Master
+    TestEquipmentMaster:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          properties:
+            equipment_name: { type: string }
+            manufacturer: { type: string }
+            model: { type: string }
+            serial_number: { type: string }
+            calibration_date: { type: string }
+            next_calibration_due: { type: string }
+            software_version: { type: ["string", "null"] }
+            location: { type: ["string", "null"] }
+
+    TestEquipmentMasterInput:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          required: [equipment_name, manufacturer, model, serial_number, calibration_date, next_calibration_due]
+          properties:
+            equipment_name: { type: string }
+            manufacturer: { type: string }
+            model: { type: string }
+            serial_number: { type: string }
+            calibration_date: { type: string }
+            next_calibration_due: { type: string }
+            software_version: { type: ["string", "null"] }
+            location: { type: ["string", "null"] }
+
+    TestEquipmentMasterUpdate:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            equipment_name: { type: string }
+            manufacturer: { type: string }
+            model: { type: string }
+            serial_number: { type: string }
+            calibration_date: { type: string }
+            next_calibration_due: { type: string }
+            software_version: { type: ["string", "null"] }
+            location: { type: ["string", "null"] }

@@ -1,0 +1,2 @@
+- [Drizzle shared column object constraint naming](drizzle-shared-columns.md) — spreading a shared column object across multiple tables causes unique constraint name collisions; use a factory function with explicit names instead.
+- [API Zod schema naming vs TypeScript types](api-zod-schema-names.md) — Orval generates Zod runtime schemas with operation-shaped names (CreateXxxBody, GetXxxResponse), not component-shaped names; never use component names as runtime validators.
