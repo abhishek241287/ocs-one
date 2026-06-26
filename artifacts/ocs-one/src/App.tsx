@@ -14,6 +14,8 @@ import CableMasterPage from "@/features/masters/pages/CableMasterPage";
 import BusbarMasterPage from "@/features/masters/pages/BusbarMasterPage";
 import ChargerMasterPage from "@/features/masters/pages/ChargerMasterPage";
 import TestEquipmentMasterPage from "@/features/masters/pages/TestEquipmentMasterPage";
+import OrdersListPage from "@/features/manufacturing/pages/OrdersListPage";
+import OrderDetailPage from "@/features/manufacturing/pages/OrderDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +36,8 @@ function Router() {
       <Route path="/masters/busbars" component={BusbarMasterPage} />
       <Route path="/masters/chargers" component={ChargerMasterPage} />
       <Route path="/masters/test-equipment" component={TestEquipmentMasterPage} />
+      <Route path="/manufacturing/orders" component={OrdersListPage} />
+      <Route path="/manufacturing/orders/:id" component={OrderDetailPage} />
       <Route component={NotFound} />
     </Switch>
   );

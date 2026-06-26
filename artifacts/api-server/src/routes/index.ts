@@ -25,4 +25,7 @@ router.use("/masters/busbars", busbarMasterRouter);
 router.use("/masters/chargers", chargerMasterRouter);
 router.use("/masters/test-equipment", testEquipmentMasterRouter);
 
+import manufacturingRouter from "./manufacturing/index";
+router.use("/manufacturing", manufacturingRouter);
+
 export default router;

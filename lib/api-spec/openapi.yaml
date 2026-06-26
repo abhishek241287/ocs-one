@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: masters
     description: Engineering Master Data operations
+  - name: manufacturing
+    description: Manufacturing Execution System operations
 paths:
   /healthz:
     get:
@@ -864,6 +866,306 @@ paths:
               schema:
                 $ref: "#/components/schemas/TestEquipmentMaster"
 
+  # ── Manufacturing — Production Orders ───────────────────────────────────────
+  /manufacturing/orders:
+    get:
+      operationId: listProductionOrders
+      tags: [manufacturing]
+      summary: List production orders
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [draft, released, in_progress, completed, cancelled]
+        - name: priority
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [low, medium, high]
+      responses:
+        "200":
+          description: List of production orders
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, meta]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProductionOrder"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+    post:
+      operationId: createProductionOrder
+      tags: [manufacturing]
+      summary: Create production order (auto-generates battery number + 8 stages)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductionOrderInput"
+      responses:
+        "201":
+          description: Created order with stages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductionOrderDetail"
+
+  /manufacturing/orders/{id}:
+    get:
+      operationId: getProductionOrder
+      tags: [manufacturing]
+      summary: Get production order with stages, timeline, and genealogy
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Production order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductionOrderDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateProductionOrder
+      tags: [manufacturing]
+      summary: Update production order header fields
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductionOrderUpdate"
+      responses:
+        "200":
+          description: Updated production order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductionOrderDetail"
+
+  # ── Manufacturing — Stages ────────────────────────────────────────────────
+  /manufacturing/orders/{id}/stages:
+    get:
+      operationId: listOrderStages
+      tags: [manufacturing]
+      summary: List all 8 stages for a production order
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: All stages
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OrderStage"
+
+  /manufacturing/orders/{id}/stages/{stage}:
+    get:
+      operationId: getOrderStage
+      tags: [manufacturing]
+      summary: Get a specific stage
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - $ref: "#/components/parameters/StageParam"
+      responses:
+        "200":
+          description: Stage detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStage"
+    patch:
+      operationId: updateOrderStage
+      tags: [manufacturing]
+      summary: Save stage form data (notes, stageData) without transitioning status
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - $ref: "#/components/parameters/StageParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StageUpdate"
+      responses:
+        "200":
+          description: Updated stage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStage"
+
+  /manufacturing/orders/{id}/stages/{stage}/start:
+    post:
+      operationId: startStage
+      tags: [manufacturing]
+      summary: Start a stage (pending → in_progress)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - $ref: "#/components/parameters/StageParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StageStartInput"
+      responses:
+        "200":
+          description: Stage started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStage"
+
+  /manufacturing/orders/{id}/stages/{stage}/complete:
+    post:
+      operationId: completeStage
+      tags: [manufacturing]
+      summary: Complete a stage (in_progress → completed)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - $ref: "#/components/parameters/StageParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StageCompleteInput"
+      responses:
+        "200":
+          description: Stage completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStage"
+
+  /manufacturing/orders/{id}/stages/{stage}/approve:
+    post:
+      operationId: approveStage
+      tags: [manufacturing]
+      summary: Approve a completed stage (completed → approved)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - $ref: "#/components/parameters/StageParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StageApproveInput"
+      responses:
+        "200":
+          description: Stage approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStage"
+
+  /manufacturing/orders/{id}/stages/{stage}/reject:
+    post:
+      operationId: rejectStage
+      tags: [manufacturing]
+      summary: Reject a completed stage (completed → rejected)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - $ref: "#/components/parameters/StageParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StageRejectInput"
+      responses:
+        "200":
+          description: Stage rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStage"
+
+  # ── Manufacturing — Timeline ──────────────────────────────────────────────
+  /manufacturing/orders/{id}/timeline:
+    get:
+      operationId: getOrderTimeline
+      tags: [manufacturing]
+      summary: Immutable append-only event log for a battery/order
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Timeline events newest-first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TimelineEvent"
+
+  # ── Manufacturing — Genealogy ─────────────────────────────────────────────
+  /manufacturing/orders/{id}/genealogy:
+    get:
+      operationId: getOrderGenealogy
+      tags: [manufacturing]
+      summary: Component BOM for a battery
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Genealogy records
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/GenealogyRecord"
+    post:
+      operationId: addGenealogyRecord
+      tags: [manufacturing]
+      summary: Add a component to battery genealogy
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenealogyInput"
+      responses:
+        "201":
+          description: Created genealogy record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenealogyRecord"
+
 components:
   parameters:
     IdParam:
@@ -873,6 +1175,13 @@ components:
       schema:
         type: string
         format: uuid
+    StageParam:
+      name: stage
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [cell_allocation, bms_allocation, assembly, compression, charging, testing, quality_control, packing]
     SearchParam:
       name: search
       in: query
@@ -1395,3 +1704,194 @@ components:
             next_calibration_due: { type: string }
             software_version: { type: ["string", "null"] }
             location: { type: ["string", "null"] }
+
+    # ── Manufacturing Schemas ─────────────────────────────────────────────────
+    PaginationMeta:
+      type: object
+      required: [total, page, pageSize, totalPages]
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalPages: { type: integer }
+
+    StagePhoto:
+      type: object
+      required: [id, name, url, uploadedAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        url: { type: string }
+        uploadedAt: { type: string, format: date-time }
+
+    OrderStage:
+      type: object
+      required: [id, productionOrderId, stageType, stageOrder, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        productionOrderId: { type: string, format: uuid }
+        stageType:
+          type: string
+          enum: [cell_allocation, bms_allocation, assembly, compression, charging, testing, quality_control, packing]
+        stageOrder: { type: integer }
+        status:
+          type: string
+          enum: [pending, in_progress, completed, approved, rejected]
+        operatorName: { type: ["string", "null"] }
+        supervisorName: { type: ["string", "null"] }
+        startedAt: { type: ["string", "null"], format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+        approvedAt: { type: ["string", "null"], format: date-time }
+        notes: { type: ["string", "null"] }
+        photos:
+          type: array
+          items:
+            $ref: "#/components/schemas/StagePhoto"
+        stageData:
+          type: object
+          additionalProperties: true
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    StageUpdate:
+      type: object
+      properties:
+        notes: { type: ["string", "null"] }
+        stageData:
+          type: object
+          additionalProperties: true
+
+    StageStartInput:
+      type: object
+      required: [operatorName]
+      properties:
+        operatorName: { type: string }
+        notes: { type: ["string", "null"] }
+
+    StageCompleteInput:
+      type: object
+      required: [operatorName]
+      properties:
+        operatorName: { type: string }
+        notes: { type: ["string", "null"] }
+        stageData:
+          type: object
+          additionalProperties: true
+
+    StageApproveInput:
+      type: object
+      required: [supervisorName]
+      properties:
+        supervisorName: { type: string }
+        notes: { type: ["string", "null"] }
+
+    StageRejectInput:
+      type: object
+      required: [supervisorName, notes]
+      properties:
+        supervisorName: { type: string }
+        notes: { type: string }
+
+    TimelineEvent:
+      type: object
+      required: [id, productionOrderId, eventType, actor, description, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        productionOrderId: { type: string, format: uuid }
+        eventType: { type: string }
+        stageType:
+          type: ["string", "null"]
+          enum: [cell_allocation, bms_allocation, assembly, compression, charging, testing, quality_control, packing, "null"]
+        actor: { type: string }
+        description: { type: string }
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt: { type: string, format: date-time }
+
+    GenealogyRecord:
+      type: object
+      required: [id, productionOrderId, componentType, componentName, quantity, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        productionOrderId: { type: string, format: uuid }
+        componentType: { type: string }
+        componentId: { type: ["string", "null"], format: uuid }
+        componentName: { type: string }
+        quantity: { type: integer }
+        serialNumber: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+
+    GenealogyInput:
+      type: object
+      required: [componentType, componentName, quantity]
+      properties:
+        componentType: { type: string }
+        componentId: { type: ["string", "null"], format: uuid }
+        componentName: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        serialNumber: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+
+    ProductionOrder:
+      type: object
+      required: [id, orderNumber, batteryNumber, factoryManager, priority, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        orderNumber: { type: string }
+        batteryNumber: { type: string }
+        productId: { type: ["string", "null"], format: uuid }
+        factoryManager: { type: string }
+        currentStage:
+          type: ["string", "null"]
+          enum: [cell_allocation, bms_allocation, assembly, compression, charging, testing, quality_control, packing, "null"]
+        priority:
+          type: string
+          enum: [low, medium, high]
+        status:
+          type: string
+          enum: [draft, released, in_progress, completed, cancelled]
+        plannedStartDate: { type: ["string", "null"] }
+        plannedEndDate: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    ProductionOrderDetail:
+      allOf:
+        - $ref: "#/components/schemas/ProductionOrder"
+        - type: object
+          properties:
+            stages:
+              type: array
+              items:
+                $ref: "#/components/schemas/OrderStage"
+
+    ProductionOrderInput:
+      type: object
+      required: [factoryManager, priority]
+      properties:
+        productId: { type: ["string", "null"], format: uuid }
+        factoryManager: { type: string }
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+        plannedStartDate: { type: ["string", "null"] }
+        plannedEndDate: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+
+    ProductionOrderUpdate:
+      type: object
+      properties:
+        factoryManager: { type: string }
+        priority:
+          type: string
+          enum: [low, medium, high]
+        status:
+          type: string
+          enum: [draft, released, in_progress, completed, cancelled]
+        plannedStartDate: { type: ["string", "null"] }
+        plannedEndDate: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }

@@ -1,0 +1,207 @@
+# OCS One – Sprint 3.1A
+
+## Production Order Management
+
+You are the Lead Manufacturing Software Engineer for OCS One.
+
+Do NOT build Assembly, Charging, QC, Inventory, or Dispatch.
+
+Build ONLY the Production Order Management module.
+
+This module will be used by the Factory Manager to create daily production plans.
+
+---
+
+## Features
+
+### Dashboard Card
+
+Display:
+
+* Total Production Orders
+* Orders Planned Today
+* Orders In Progress
+* Orders Completed
+
+---
+
+## Production Order List
+
+Columns:
+
+* Production Order Number
+* Product
+* Quantity
+* Planned Start Date
+* Planned End Date
+* Factory Manager
+* Priority
+* Status
+
+Status values:
+
+* Draft
+* Released
+* In Progress
+* Completed
+* Cancelled
+
+Allow:
+
+* Search
+* Filter
+* Sort
+
+---
+
+## Create Production Order
+
+Fields:
+
+Production Order Number
+
+Automatically generate
+
+Format:
+
+PO-YYYYMMDD-0001
+
+Product
+
+Dropdown from Product Master
+
+Quantity
+
+Factory Manager
+
+Priority
+
+Low
+
+Medium
+
+High
+
+Planned Start Date
+
+Planned End Date
+
+Notes
+
+---
+
+## When the user clicks
+
+Create Production Order
+
+Automatically create:
+
+Production Order
+
+AND
+
+Generate Battery Numbers.
+
+Example:
+
+Quantity = 5
+
+Generate
+
+BAT-20260626-0001
+
+BAT-20260626-0002
+
+BAT-20260626-0003
+
+BAT-20260626-0004
+
+BAT-20260626-0005
+
+The batteries should be created with status:
+
+Production Planned
+
+Do NOT create stage records yet.
+
+Just create the battery identities.
+
+---
+
+## Battery List
+
+Clicking a Production Order opens a Battery List.
+
+Columns:
+
+Battery Number
+
+QR Code
+
+Status
+
+Current Stage
+
+Created Date
+
+---
+
+## QR Code
+
+Generate one QR code for every battery.
+
+The QR should encode the Battery UUID while displaying the human-readable Battery Number.
+
+Do not implement scanning yet.
+
+---
+
+## Database
+
+Create only the required tables and relationships for:
+
+Production Orders
+
+Batteries
+
+Do not create stage tables yet.
+
+---
+
+## APIs
+
+Create:
+
+Create Production Order
+
+List Production Orders
+
+View Production Order
+
+View Batteries
+
+---
+
+## UI
+
+Simple, professional.
+
+Factory Manager should be able to create today's production plan in under 2 minutes.
+
+Use large buttons and clear tables.
+
+---
+
+## Important
+
+Do NOT build Assembly.
+
+Do NOT build Cell Allocation.
+
+Do NOT build Manufacturing Stages.
+
+Do NOT build QC.
+
+Stop after Production Orders and Battery Creation are complete.
+
+At the end, explain the architecture and wait for approval before implementing the next manufacturing stage.

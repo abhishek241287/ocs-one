@@ -1,0 +1,322 @@
+# OCS One – Sprint 3.1
+
+## Manufacturing Execution System (MES) – Build Phase 1
+
+You are the Lead Manufacturing Software Engineer for OCS One.
+
+Do not build Inventory, Sales, Accounts, or Customer modules.
+
+Your task is to build the Manufacturing Execution System (MES) for OCS Oorja's LiFePO4 Battery factory.
+
+The MES must guide operators through the manufacturing process and prevent skipping mandatory steps.
+
+---
+
+## Product
+
+Initially support only one product:
+
+OCS Oorja 51.2V 100Ah LiFePO4 Battery (16S)
+
+---
+
+# Production Workflow
+
+Create the following workflow exactly.
+
+1. Create Production Order
+2. Generate Battery Number
+3. Generate QR Code
+4. Allocate Approved Cells
+5. Cell Matching Verification
+6. Assembly
+7. Compression
+8. BMS Installation
+9. BMS Programming
+10. First Charge & Top Balancing
+11. Charge/Discharge Test
+12. Protection Test
+13. QC Approval
+14. Packing
+15. Ready for Dispatch
+
+No stage can begin until the previous stage has been completed and approved.
+
+---
+
+# Stage Ownership
+
+Each stage is completed by a different operator.
+
+Store:
+
+* Operator
+* Supervisor
+* Start Time
+* End Time
+* Status
+* Photos
+* Notes
+
+Stage approval is mandatory.
+
+---
+
+# Stage Details
+
+## Production Order
+
+Store:
+
+* Production Order Number
+* Product
+* Quantity
+* Priority
+* Planned Start Date
+* Planned End Date
+* Factory Manager
+
+---
+
+## Battery Creation
+
+Automatically generate:
+
+Battery Number
+
+Format:
+
+BAT-YYYYMMDD-0001
+
+Automatically generate a QR Code linked to the battery record.
+
+The QR code should remain the permanent identity of the battery.
+
+---
+
+## Cell Allocation
+
+Only approved graded cells can be selected.
+
+Each battery requires exactly 16 cells.
+
+Store:
+
+* Cell Serial Number
+* Capacity
+* Internal Resistance
+* Cell Position (1–16)
+
+Validate:
+
+* Capacity difference within company limits
+* Internal Resistance difference within company limits
+
+If the selected cells exceed the allowed tolerance, display a warning and require supervisor approval.
+
+---
+
+## Assembly
+
+Store:
+
+* Operator
+* Assembly Start
+* Assembly Finish
+* Assembly Photos
+* Notes
+
+---
+
+## Compression
+
+Store:
+
+* End Plate Installed
+* Compression Completed
+* Operator
+* Photos
+
+---
+
+## BMS Installation
+
+Store:
+
+* BMS Serial Number
+* Operator
+* Installation Time
+
+---
+
+## BMS Programming
+
+Store:
+
+* Firmware Version
+* Programming Completed
+* Communication Test Passed
+* Operator
+
+---
+
+## Charging
+
+Store:
+
+* Charger ID
+* Charging Current (Default 30A)
+* Start Time
+* End Time
+* Final Voltage
+* Top Balancing Completed
+
+---
+
+## Testing
+
+Store:
+
+Capacity Test
+
+Charge Test
+
+Discharge Test
+
+Protection Test
+
+Pass/Fail
+
+Testing Operator
+
+Attach PDF test report if available.
+
+---
+
+## QC
+
+Only the Plant Manager can approve.
+
+Store:
+
+* Plant Manager
+* Approval Date
+* Digital Approval
+* Remarks
+
+Without QC approval, Packing cannot start.
+
+---
+
+## Packing
+
+Store:
+
+Checkboxes:
+
+☐ Warranty Card
+
+☐ User Manual
+
+☐ Connecting Wire
+
+☐ Mounting Bolts
+
+☐ Support Accessories
+
+Packing Photos
+
+Packing Operator
+
+---
+
+# Battery Timeline
+
+Create an automatic timeline.
+
+Every event should be recorded.
+
+Example:
+
+09:10 Production Started
+
+09:20 Cells Allocated
+
+10:05 Assembly Completed
+
+10:20 Compression Completed
+
+11:15 BMS Installed
+
+11:40 Programming Completed
+
+14:00 Charging Completed
+
+15:20 Testing Passed
+
+15:45 QC Approved
+
+16:00 Packed
+
+---
+
+# Battery Genealogy
+
+For every battery display:
+
+* Product
+* Production Order
+* 16 Cell Serial Numbers
+* BMS
+* Cabinet
+* Connectors
+* Busbars
+* Operators
+* Plant Manager
+* Test Report
+* Photos
+
+This becomes the Digital Passport for the battery.
+
+---
+
+# Dashboard
+
+Display:
+
+* Production Orders
+* Batteries in Progress
+* Current Stage
+* Pending QC
+* Completed Today
+* Bottlenecks by Stage
+
+---
+
+# UI Requirements
+
+The Manufacturing screen must be simple enough for factory operators.
+
+Use:
+
+* Large buttons
+* Step-by-step wizard
+* Color-coded stages:
+
+  * Green = Completed
+  * Yellow = In Progress
+  * Red = Pending
+  * Blue = Current Stage
+
+---
+
+# Technical Requirements
+
+* Use the existing Master Data framework.
+* Use the existing Manufacturing database.
+* Create reusable components.
+* Use transactions where multiple records must update together.
+* Do not allow data inconsistency.
+* Log every manufacturing event into the battery timeline automatically.
+
+At the end, explain the architecture before generating code. If anything is unclear or would benefit from clarification, ask questions before implementing.

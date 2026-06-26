@@ -41,6 +41,10 @@ import type {
   ConnectorMaster,
   ConnectorMasterInput,
   ConnectorMasterUpdate,
+  GenealogyInput,
+  GenealogyRecord,
+  GetOrderGenealogy200,
+  GetOrderTimeline200,
   HealthStatus,
   ListBmsMasters200,
   ListBmsMastersParams,
@@ -56,14 +60,26 @@ import type {
   ListChargerMastersParams,
   ListConnectorMasters200,
   ListConnectorMastersParams,
+  ListOrderStages200,
   ListProductMasters200,
   ListProductMastersParams,
+  ListProductionOrders200,
+  ListProductionOrdersParams,
   ListTestEquipmentMasters200,
   ListTestEquipmentMastersParams,
   MasterStatusToggle,
+  OrderStage,
   ProductMaster,
   ProductMasterInput,
   ProductMasterUpdate,
+  ProductionOrderDetail,
+  ProductionOrderInput,
+  ProductionOrderUpdate,
+  StageApproveInput,
+  StageCompleteInput,
+  StageRejectInput,
+  StageStartInput,
+  StageUpdate,
   TestEquipmentMaster,
   TestEquipmentMasterInput,
   TestEquipmentMasterUpdate
@@ -3259,5 +3275,1056 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getToggleTestEquipmentMasterStatusMutationOptions(options));
+    }
+
+export const getListProductionOrdersUrl = (params?: ListProductionOrdersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/manufacturing/orders?${stringifiedParams}` : `/api/manufacturing/orders`
+}
+
+/**
+ * @summary List production orders
+ */
+export const listProductionOrders = async (params?: ListProductionOrdersParams, options?: RequestInit): Promise<ListProductionOrders200> => {
+
+  return customFetch<ListProductionOrders200>(getListProductionOrdersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProductionOrdersQueryKey = (params?: ListProductionOrdersParams,) => {
+    return [
+    `/api/manufacturing/orders`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListProductionOrdersQueryOptions = <TData = Awaited<ReturnType<typeof listProductionOrders>>, TError = ErrorType<unknown>>(params?: ListProductionOrdersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductionOrders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProductionOrdersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProductionOrders>>> = ({ signal }) => listProductionOrders(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProductionOrders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProductionOrdersQueryResult = NonNullable<Awaited<ReturnType<typeof listProductionOrders>>>
+export type ListProductionOrdersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List production orders
+ */
+
+export function useListProductionOrders<TData = Awaited<ReturnType<typeof listProductionOrders>>, TError = ErrorType<unknown>>(
+ params?: ListProductionOrdersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductionOrders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProductionOrdersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateProductionOrderUrl = () => {
+
+
+
+
+  return `/api/manufacturing/orders`
+}
+
+/**
+ * @summary Create production order (auto-generates battery number + 8 stages)
+ */
+export const createProductionOrder = async (productionOrderInput: ProductionOrderInput, options?: RequestInit): Promise<ProductionOrderDetail> => {
+
+  return customFetch<ProductionOrderDetail>(getCreateProductionOrderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(productionOrderInput)
+  }
+);}
+
+
+
+
+export const getCreateProductionOrderMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProductionOrder>>, TError,{data: BodyType<ProductionOrderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProductionOrder>>, TError,{data: BodyType<ProductionOrderInput>}, TContext> => {
+
+const mutationKey = ['createProductionOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProductionOrder>>, {data: BodyType<ProductionOrderInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createProductionOrder(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProductionOrderMutationResult = NonNullable<Awaited<ReturnType<typeof createProductionOrder>>>
+    export type CreateProductionOrderMutationBody = BodyType<ProductionOrderInput>
+    export type CreateProductionOrderMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create production order (auto-generates battery number + 8 stages)
+ */
+export const useCreateProductionOrder = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProductionOrder>>, TError,{data: BodyType<ProductionOrderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProductionOrder>>,
+        TError,
+        {data: BodyType<ProductionOrderInput>},
+        TContext
+      > => {
+      return useMutation(getCreateProductionOrderMutationOptions(options));
+    }
+
+export const getGetProductionOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}`
+}
+
+/**
+ * @summary Get production order with stages, timeline, and genealogy
+ */
+export const getProductionOrder = async (id: string, options?: RequestInit): Promise<ProductionOrderDetail> => {
+
+  return customFetch<ProductionOrderDetail>(getGetProductionOrderUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProductionOrderQueryKey = (id: string,) => {
+    return [
+    `/api/manufacturing/orders/${id}`
+    ] as const;
+    }
+
+
+export const getGetProductionOrderQueryOptions = <TData = Awaited<ReturnType<typeof getProductionOrder>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductionOrder>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProductionOrderQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProductionOrder>>> = ({ signal }) => getProductionOrder(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProductionOrder>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProductionOrderQueryResult = NonNullable<Awaited<ReturnType<typeof getProductionOrder>>>
+export type GetProductionOrderQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get production order with stages, timeline, and genealogy
+ */
+
+export function useGetProductionOrder<TData = Awaited<ReturnType<typeof getProductionOrder>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductionOrder>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProductionOrderQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateProductionOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}`
+}
+
+/**
+ * @summary Update production order header fields
+ */
+export const updateProductionOrder = async (id: string,
+    productionOrderUpdate: ProductionOrderUpdate, options?: RequestInit): Promise<ProductionOrderDetail> => {
+
+  return customFetch<ProductionOrderDetail>(getUpdateProductionOrderUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(productionOrderUpdate)
+  }
+);}
+
+
+
+
+export const getUpdateProductionOrderMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProductionOrder>>, TError,{id: string;data: BodyType<ProductionOrderUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProductionOrder>>, TError,{id: string;data: BodyType<ProductionOrderUpdate>}, TContext> => {
+
+const mutationKey = ['updateProductionOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProductionOrder>>, {id: string;data: BodyType<ProductionOrderUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateProductionOrder(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProductionOrderMutationResult = NonNullable<Awaited<ReturnType<typeof updateProductionOrder>>>
+    export type UpdateProductionOrderMutationBody = BodyType<ProductionOrderUpdate>
+    export type UpdateProductionOrderMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update production order header fields
+ */
+export const useUpdateProductionOrder = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProductionOrder>>, TError,{id: string;data: BodyType<ProductionOrderUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProductionOrder>>,
+        TError,
+        {id: string;data: BodyType<ProductionOrderUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateProductionOrderMutationOptions(options));
+    }
+
+export const getListOrderStagesUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/stages`
+}
+
+/**
+ * @summary List all 8 stages for a production order
+ */
+export const listOrderStages = async (id: string, options?: RequestInit): Promise<ListOrderStages200> => {
+
+  return customFetch<ListOrderStages200>(getListOrderStagesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListOrderStagesQueryKey = (id: string,) => {
+    return [
+    `/api/manufacturing/orders/${id}/stages`
+    ] as const;
+    }
+
+
+export const getListOrderStagesQueryOptions = <TData = Awaited<ReturnType<typeof listOrderStages>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrderStages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListOrderStagesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrderStages>>> = ({ signal }) => listOrderStages(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrderStages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListOrderStagesQueryResult = NonNullable<Awaited<ReturnType<typeof listOrderStages>>>
+export type ListOrderStagesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all 8 stages for a production order
+ */
+
+export function useListOrderStages<TData = Awaited<ReturnType<typeof listOrderStages>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrderStages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListOrderStagesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetOrderStageUrl = (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/stages/${stage}`
+}
+
+/**
+ * @summary Get a specific stage
+ */
+export const getOrderStage = async (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing', options?: RequestInit): Promise<OrderStage> => {
+
+  return customFetch<OrderStage>(getGetOrderStageUrl(id,stage),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOrderStageQueryKey = (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+    return [
+    `/api/manufacturing/orders/${id}/stages/${stage}`
+    ] as const;
+    }
+
+
+export const getGetOrderStageQueryOptions = <TData = Awaited<ReturnType<typeof getOrderStage>>, TError = ErrorType<unknown>>(id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderStage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOrderStageQueryKey(id,stage);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOrderStage>>> = ({ signal }) => getOrderStage(id,stage, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && stage !== null && stage !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrderStage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOrderStageQueryResult = NonNullable<Awaited<ReturnType<typeof getOrderStage>>>
+export type GetOrderStageQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a specific stage
+ */
+
+export function useGetOrderStage<TData = Awaited<ReturnType<typeof getOrderStage>>, TError = ErrorType<unknown>>(
+ id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderStage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOrderStageQueryOptions(id,stage,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateOrderStageUrl = (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/stages/${stage}`
+}
+
+/**
+ * @summary Save stage form data (notes, stageData) without transitioning status
+ */
+export const updateOrderStage = async (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',
+    stageUpdate: StageUpdate, options?: RequestInit): Promise<OrderStage> => {
+
+  return customFetch<OrderStage>(getUpdateOrderStageUrl(id,stage),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stageUpdate)
+  }
+);}
+
+
+
+
+export const getUpdateOrderStageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOrderStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateOrderStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>}, TContext> => {
+
+const mutationKey = ['updateOrderStage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateOrderStage>>, {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>}> = (props) => {
+          const {id,stage,data} = props ?? {};
+
+          return  updateOrderStage(id,stage,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateOrderStageMutationResult = NonNullable<Awaited<ReturnType<typeof updateOrderStage>>>
+    export type UpdateOrderStageMutationBody = BodyType<StageUpdate>
+    export type UpdateOrderStageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Save stage form data (notes, stageData) without transitioning status
+ */
+export const useUpdateOrderStage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOrderStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateOrderStage>>,
+        TError,
+        {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateOrderStageMutationOptions(options));
+    }
+
+export const getStartStageUrl = (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/stages/${stage}/start`
+}
+
+/**
+ * @summary Start a stage (pending → in_progress)
+ */
+export const startStage = async (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',
+    stageStartInput: StageStartInput, options?: RequestInit): Promise<OrderStage> => {
+
+  return customFetch<OrderStage>(getStartStageUrl(id,stage),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stageStartInput)
+  }
+);}
+
+
+
+
+export const getStartStageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>}, TContext> => {
+
+const mutationKey = ['startStage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startStage>>, {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>}> = (props) => {
+          const {id,stage,data} = props ?? {};
+
+          return  startStage(id,stage,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartStageMutationResult = NonNullable<Awaited<ReturnType<typeof startStage>>>
+    export type StartStageMutationBody = BodyType<StageStartInput>
+    export type StartStageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start a stage (pending → in_progress)
+ */
+export const useStartStage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startStage>>,
+        TError,
+        {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageStartInput>},
+        TContext
+      > => {
+      return useMutation(getStartStageMutationOptions(options));
+    }
+
+export const getCompleteStageUrl = (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/stages/${stage}/complete`
+}
+
+/**
+ * @summary Complete a stage (in_progress → completed)
+ */
+export const completeStage = async (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',
+    stageCompleteInput: StageCompleteInput, options?: RequestInit): Promise<OrderStage> => {
+
+  return customFetch<OrderStage>(getCompleteStageUrl(id,stage),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stageCompleteInput)
+  }
+);}
+
+
+
+
+export const getCompleteStageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>}, TContext> => {
+
+const mutationKey = ['completeStage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeStage>>, {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>}> = (props) => {
+          const {id,stage,data} = props ?? {};
+
+          return  completeStage(id,stage,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteStageMutationResult = NonNullable<Awaited<ReturnType<typeof completeStage>>>
+    export type CompleteStageMutationBody = BodyType<StageCompleteInput>
+    export type CompleteStageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Complete a stage (in_progress → completed)
+ */
+export const useCompleteStage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeStage>>,
+        TError,
+        {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageCompleteInput>},
+        TContext
+      > => {
+      return useMutation(getCompleteStageMutationOptions(options));
+    }
+
+export const getApproveStageUrl = (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/stages/${stage}/approve`
+}
+
+/**
+ * @summary Approve a completed stage (completed → approved)
+ */
+export const approveStage = async (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',
+    stageApproveInput: StageApproveInput, options?: RequestInit): Promise<OrderStage> => {
+
+  return customFetch<OrderStage>(getApproveStageUrl(id,stage),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stageApproveInput)
+  }
+);}
+
+
+
+
+export const getApproveStageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>}, TContext> => {
+
+const mutationKey = ['approveStage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveStage>>, {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>}> = (props) => {
+          const {id,stage,data} = props ?? {};
+
+          return  approveStage(id,stage,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveStageMutationResult = NonNullable<Awaited<ReturnType<typeof approveStage>>>
+    export type ApproveStageMutationBody = BodyType<StageApproveInput>
+    export type ApproveStageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Approve a completed stage (completed → approved)
+ */
+export const useApproveStage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveStage>>,
+        TError,
+        {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageApproveInput>},
+        TContext
+      > => {
+      return useMutation(getApproveStageMutationOptions(options));
+    }
+
+export const getRejectStageUrl = (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/stages/${stage}/reject`
+}
+
+/**
+ * @summary Reject a completed stage (completed → rejected)
+ */
+export const rejectStage = async (id: string,
+    stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing',
+    stageRejectInput: StageRejectInput, options?: RequestInit): Promise<OrderStage> => {
+
+  return customFetch<OrderStage>(getRejectStageUrl(id,stage),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(stageRejectInput)
+  }
+);}
+
+
+
+
+export const getRejectStageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>}, TContext> => {
+
+const mutationKey = ['rejectStage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectStage>>, {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>}> = (props) => {
+          const {id,stage,data} = props ?? {};
+
+          return  rejectStage(id,stage,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectStageMutationResult = NonNullable<Awaited<ReturnType<typeof rejectStage>>>
+    export type RejectStageMutationBody = BodyType<StageRejectInput>
+    export type RejectStageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reject a completed stage (completed → rejected)
+ */
+export const useRejectStage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectStage>>, TError,{id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectStage>>,
+        TError,
+        {id: string;stage: 'cell_allocation' | 'bms_allocation' | 'assembly' | 'compression' | 'charging' | 'testing' | 'quality_control' | 'packing';data: BodyType<StageRejectInput>},
+        TContext
+      > => {
+      return useMutation(getRejectStageMutationOptions(options));
+    }
+
+export const getGetOrderTimelineUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/timeline`
+}
+
+/**
+ * @summary Immutable append-only event log for a battery/order
+ */
+export const getOrderTimeline = async (id: string, options?: RequestInit): Promise<GetOrderTimeline200> => {
+
+  return customFetch<GetOrderTimeline200>(getGetOrderTimelineUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOrderTimelineQueryKey = (id: string,) => {
+    return [
+    `/api/manufacturing/orders/${id}/timeline`
+    ] as const;
+    }
+
+
+export const getGetOrderTimelineQueryOptions = <TData = Awaited<ReturnType<typeof getOrderTimeline>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderTimeline>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOrderTimelineQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOrderTimeline>>> = ({ signal }) => getOrderTimeline(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrderTimeline>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOrderTimelineQueryResult = NonNullable<Awaited<ReturnType<typeof getOrderTimeline>>>
+export type GetOrderTimelineQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Immutable append-only event log for a battery/order
+ */
+
+export function useGetOrderTimeline<TData = Awaited<ReturnType<typeof getOrderTimeline>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderTimeline>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOrderTimelineQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetOrderGenealogyUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/genealogy`
+}
+
+/**
+ * @summary Component BOM for a battery
+ */
+export const getOrderGenealogy = async (id: string, options?: RequestInit): Promise<GetOrderGenealogy200> => {
+
+  return customFetch<GetOrderGenealogy200>(getGetOrderGenealogyUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOrderGenealogyQueryKey = (id: string,) => {
+    return [
+    `/api/manufacturing/orders/${id}/genealogy`
+    ] as const;
+    }
+
+
+export const getGetOrderGenealogyQueryOptions = <TData = Awaited<ReturnType<typeof getOrderGenealogy>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderGenealogy>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOrderGenealogyQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOrderGenealogy>>> = ({ signal }) => getOrderGenealogy(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrderGenealogy>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOrderGenealogyQueryResult = NonNullable<Awaited<ReturnType<typeof getOrderGenealogy>>>
+export type GetOrderGenealogyQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Component BOM for a battery
+ */
+
+export function useGetOrderGenealogy<TData = Awaited<ReturnType<typeof getOrderGenealogy>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrderGenealogy>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOrderGenealogyQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAddGenealogyRecordUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/genealogy`
+}
+
+/**
+ * @summary Add a component to battery genealogy
+ */
+export const addGenealogyRecord = async (id: string,
+    genealogyInput: GenealogyInput, options?: RequestInit): Promise<GenealogyRecord> => {
+
+  return customFetch<GenealogyRecord>(getAddGenealogyRecordUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(genealogyInput)
+  }
+);}
+
+
+
+
+export const getAddGenealogyRecordMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addGenealogyRecord>>, TError,{id: string;data: BodyType<GenealogyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addGenealogyRecord>>, TError,{id: string;data: BodyType<GenealogyInput>}, TContext> => {
+
+const mutationKey = ['addGenealogyRecord'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addGenealogyRecord>>, {id: string;data: BodyType<GenealogyInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addGenealogyRecord(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddGenealogyRecordMutationResult = NonNullable<Awaited<ReturnType<typeof addGenealogyRecord>>>
+    export type AddGenealogyRecordMutationBody = BodyType<GenealogyInput>
+    export type AddGenealogyRecordMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a component to battery genealogy
+ */
+export const useAddGenealogyRecord = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addGenealogyRecord>>, TError,{id: string;data: BodyType<GenealogyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addGenealogyRecord>>,
+        TError,
+        {id: string;data: BodyType<GenealogyInput>},
+        TContext
+      > => {
+      return useMutation(getAddGenealogyRecordMutationOptions(options));
     }
 

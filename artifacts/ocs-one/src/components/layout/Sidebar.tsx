@@ -48,7 +48,7 @@ const navSections = [
   {
     title: "Operations",
     items: [
-      { label: "Manufacturing", href: "#manufacturing", icon: Factory },
+      { label: "Production Orders", href: "/manufacturing/orders", icon: Factory },
       { label: "Inventory", href: "#inventory", icon: Package },
       { label: "Cell Grading", href: "#cell-grading", icon: Battery },
       { label: "Quality Control", href: "#qc", icon: ShieldCheck },

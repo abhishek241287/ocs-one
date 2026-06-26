@@ -427,6 +427,282 @@ export type TestEquipmentMasterUpdate = MasterCommonUpdate & ({
   location?: string | null;
 });
 
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface StagePhoto {
+  id: string;
+  name: string;
+  url: string;
+  uploadedAt: string;
+}
+
+export type OrderStageStageType = typeof OrderStageStageType[keyof typeof OrderStageStageType];
+
+
+export const OrderStageStageType = {
+  cell_allocation: 'cell_allocation',
+  bms_allocation: 'bms_allocation',
+  assembly: 'assembly',
+  compression: 'compression',
+  charging: 'charging',
+  testing: 'testing',
+  quality_control: 'quality_control',
+  packing: 'packing',
+} as const;
+
+export type OrderStageStatus = typeof OrderStageStatus[keyof typeof OrderStageStatus];
+
+
+export const OrderStageStatus = {
+  pending: 'pending',
+  in_progress: 'in_progress',
+  completed: 'completed',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export type OrderStageStageData = { [key: string]: unknown };
+
+export interface OrderStage {
+  id: string;
+  productionOrderId: string;
+  stageType: OrderStageStageType;
+  stageOrder: number;
+  status: OrderStageStatus;
+  /** @nullable */
+  operatorName?: string | null;
+  /** @nullable */
+  supervisorName?: string | null;
+  /** @nullable */
+  startedAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  /** @nullable */
+  approvedAt?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  photos?: StagePhoto[];
+  stageData?: OrderStageStageData;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type StageUpdateStageData = { [key: string]: unknown };
+
+export interface StageUpdate {
+  /** @nullable */
+  notes?: string | null;
+  stageData?: StageUpdateStageData;
+}
+
+export interface StageStartInput {
+  operatorName: string;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export type StageCompleteInputStageData = { [key: string]: unknown };
+
+export interface StageCompleteInput {
+  operatorName: string;
+  /** @nullable */
+  notes?: string | null;
+  stageData?: StageCompleteInputStageData;
+}
+
+export interface StageApproveInput {
+  supervisorName: string;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface StageRejectInput {
+  supervisorName: string;
+  notes: string;
+}
+
+/**
+ * @nullable
+ */
+export type TimelineEventStageType = typeof TimelineEventStageType[keyof typeof TimelineEventStageType] | null;
+
+
+export const TimelineEventStageType = {
+  cell_allocation: 'cell_allocation',
+  bms_allocation: 'bms_allocation',
+  assembly: 'assembly',
+  compression: 'compression',
+  charging: 'charging',
+  testing: 'testing',
+  quality_control: 'quality_control',
+  packing: 'packing',
+  null: 'null',
+} as const;
+
+export type TimelineEventMetadata = { [key: string]: unknown };
+
+export interface TimelineEvent {
+  id: string;
+  productionOrderId: string;
+  eventType: string;
+  /** @nullable */
+  stageType?: TimelineEventStageType;
+  actor: string;
+  description: string;
+  metadata?: TimelineEventMetadata;
+  createdAt: string;
+}
+
+export interface GenealogyRecord {
+  id: string;
+  productionOrderId: string;
+  componentType: string;
+  /** @nullable */
+  componentId?: string | null;
+  componentName: string;
+  quantity: number;
+  /** @nullable */
+  serialNumber?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface GenealogyInput {
+  componentType: string;
+  /** @nullable */
+  componentId?: string | null;
+  componentName: string;
+  /** @minimum 1 */
+  quantity: number;
+  /** @nullable */
+  serialNumber?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+/**
+ * @nullable
+ */
+export type ProductionOrderCurrentStage = typeof ProductionOrderCurrentStage[keyof typeof ProductionOrderCurrentStage] | null;
+
+
+export const ProductionOrderCurrentStage = {
+  cell_allocation: 'cell_allocation',
+  bms_allocation: 'bms_allocation',
+  assembly: 'assembly',
+  compression: 'compression',
+  charging: 'charging',
+  testing: 'testing',
+  quality_control: 'quality_control',
+  packing: 'packing',
+  null: 'null',
+} as const;
+
+export type ProductionOrderPriority = typeof ProductionOrderPriority[keyof typeof ProductionOrderPriority];
+
+
+export const ProductionOrderPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export type ProductionOrderStatus = typeof ProductionOrderStatus[keyof typeof ProductionOrderStatus];
+
+
+export const ProductionOrderStatus = {
+  draft: 'draft',
+  released: 'released',
+  in_progress: 'in_progress',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface ProductionOrder {
+  id: string;
+  orderNumber: string;
+  batteryNumber: string;
+  /** @nullable */
+  productId?: string | null;
+  factoryManager: string;
+  /** @nullable */
+  currentStage?: ProductionOrderCurrentStage;
+  priority: ProductionOrderPriority;
+  status: ProductionOrderStatus;
+  /** @nullable */
+  plannedStartDate?: string | null;
+  /** @nullable */
+  plannedEndDate?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProductionOrderDetail = ProductionOrder & {
+  stages?: OrderStage[];
+};
+
+export type ProductionOrderInputPriority = typeof ProductionOrderInputPriority[keyof typeof ProductionOrderInputPriority];
+
+
+export const ProductionOrderInputPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface ProductionOrderInput {
+  /** @nullable */
+  productId?: string | null;
+  factoryManager: string;
+  priority: ProductionOrderInputPriority;
+  /** @nullable */
+  plannedStartDate?: string | null;
+  /** @nullable */
+  plannedEndDate?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export type ProductionOrderUpdatePriority = typeof ProductionOrderUpdatePriority[keyof typeof ProductionOrderUpdatePriority];
+
+
+export const ProductionOrderUpdatePriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export type ProductionOrderUpdateStatus = typeof ProductionOrderUpdateStatus[keyof typeof ProductionOrderUpdateStatus];
+
+
+export const ProductionOrderUpdateStatus = {
+  draft: 'draft',
+  released: 'released',
+  in_progress: 'in_progress',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface ProductionOrderUpdate {
+  factoryManager?: string;
+  priority?: ProductionOrderUpdatePriority;
+  status?: ProductionOrderUpdateStatus;
+  /** @nullable */
+  plannedStartDate?: string | null;
+  /** @nullable */
+  plannedEndDate?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
 export type SearchParamParameter = string;
 
 export type StatusParamParameter = typeof StatusParamParameter[keyof typeof StatusParamParameter];
@@ -538,5 +814,50 @@ pageSize?: PageSizeParamParameter;
 
 export type ListTestEquipmentMasters200 = MasterListResponse & {
   items?: TestEquipmentMaster[];
+};
+
+export type ListProductionOrdersParams = {
+search?: SearchParamParameter;
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+status?: ListProductionOrdersStatus;
+priority?: ListProductionOrdersPriority;
+};
+
+export type ListProductionOrdersStatus = typeof ListProductionOrdersStatus[keyof typeof ListProductionOrdersStatus];
+
+
+export const ListProductionOrdersStatus = {
+  draft: 'draft',
+  released: 'released',
+  in_progress: 'in_progress',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
+export type ListProductionOrdersPriority = typeof ListProductionOrdersPriority[keyof typeof ListProductionOrdersPriority];
+
+
+export const ListProductionOrdersPriority = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export type ListProductionOrders200 = {
+  items: ProductionOrder[];
+  meta: PaginationMeta;
+};
+
+export type ListOrderStages200 = {
+  items: OrderStage[];
+};
+
+export type GetOrderTimeline200 = {
+  items: TimelineEvent[];
+};
+
+export type GetOrderGenealogy200 = {
+  items: GenealogyRecord[];
 };
 
