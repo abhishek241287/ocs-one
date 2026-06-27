@@ -266,6 +266,9 @@ An invalid FK reference (e.g. a `cellMasterId` UUID that doesn't exist in `maste
 ### LL-07 — Lot lifecycle state transitions must be enforced at the API layer
 The lot `status` column (`received → grading → complete`) is defined in the schema but the transition logic was not implemented — cells can be graded while the lot remains in `received` state, and the lot can be edited after grading begins. Business rules for when a lot becomes immutable must be code-enforced, not just documented. Design the state machine and the guards at the same time as the status enum.
 
+### LL-08 — Business state transitions must be designed before CRUD operations
+Implementing CRUD endpoints before defining the lifecycle state machine leads to incomplete rules, missing guards, and rework. The order is: define entity states → define allowed transitions and triggers → implement guards → implement CRUD. In this module, the `received → grading → graded` transition and the field-level immutability rules were discovered during MAT-03 rather than at design time. For every future module, document the state machine in the product spec before a single route is written.
+
 ---
 
 ## MAT-03 — Workflow & Data Integrity Certification
@@ -351,23 +354,91 @@ The lot `status` column (`received → grading → complete`) is defined in the 
 | High | 0 |
 | Medium | 2 |
 
-### MAT-03 Decision
+### MAT-03 Decision (original run)
 
-⚠️ **CONDITIONAL PASS** — No High severity defects. Two Medium defects filed (DEF-CW01-017, DEF-CW01-018). Per certification policy, Medium defects must be resolved before CW-01 wave closure. Certification gate (zero open High) is met; MAT-03 is recorded as in-progress pending Medium defect resolution.
+🟡 **OPEN** — Two Medium defects filed (DEF-CW01-017, DEF-CW01-018). Per CTO direction, MAT-03 cannot be closed until all Medium defects are verified. Fixes authorized 2026-06-27.
 
 ---
 
-## Overall MAT Summary (updated after MAT-03)
+### MAT-03 Re-Run — Defect Verification (2026-06-27)
 
-| Metric | MAT-01 | MAT-02 (re-run) | MAT-03 | **Total** |
-|--------|--------|-----------------|--------|-----------|
+**CTO Authorization:** Fix DEF-CW01-017 and DEF-CW01-018. Re-run MAT-03. Close only after all Medium defects verified.
+
+#### DEF-CW01-017 Verification
+
+**Fix applied:** Added PG code `23503` branch to the global error handler in `app.ts`, after the existing `23505` handler. Returns HTTP 400 with the constraint name extracted from `err.cause.constraint`.
+
+**Re-test DI-03:**
+```
+POST /api/cells/lots { cellMasterId: "00000000-0000-0000-0000-000000000099" }
+→ HTTP 400 { "error": "Referenced record does not exist (cell_lots_cell_master_id_master_cells_id_fk)" }
+```
+**Result: ✅ PASS** — HTTP 400 returned with clear constraint name; no orphan records created (transaction rolled back correctly as before).
+
+---
+
+#### DEF-CW01-018 Verification
+
+**Fix applied:** Two-part implementation:
+1. **State machine in grading endpoint** (`cells.ts`): The `POST /:id/grade` route now runs inside a transaction that also checks and updates lot status after each cell is graded. First cell graded triggers `received → grading`; when no `received` or `grading` cells remain, triggers `grading → graded`. Both transitions are recorded as `status_changed` events in `cell_lot_events`.
+2. **Immutability guard in PATCH endpoint** (`lots.ts`): When `existing.status !== "received"`, attempts to change `supplier`, `cellModel`, or `dateReceived` return HTTP 422 with a descriptive error naming all attempted locked fields.
+3. **Schema**: Added `"graded"` to `cellLotStatusEnum` PostgreSQL enum (DB push applied).
+
+**Test lot:** `LOT-MAT03-RERUN01` (id: `5fa4ac3d-ff83-4781-bc4d-37167f17faf1`) — 3 cells
+
+**Re-test BR-01 scenarios:**
+
+| Scenario | Input | Expected | Actual | Result |
+|----------|-------|----------|--------|--------|
+| Grade cell 1 of 3 | `POST /cells/CELL-000033/grade` | lot → `grading`, `status_changed` event | `{ status: "grading", stats: { approved:1, received:2 } }` · history: `{ type:"status_changed", changes: { status: { from:"received", to:"grading" } } }` | ✅ |
+| PATCH locked field (grading) | `PATCH /lots/:id { supplier: "CATL Modified" }` | HTTP 422 | `HTTP 422 { "error": "Cannot edit supplier — lot is locked in 'grading' status (grading has started)" }` | ✅ |
+| PATCH multiple locked fields | `PATCH /lots/:id { supplier, cellModel, dateReceived }` | HTTP 422, all fields named | `HTTP 422 { "error": "Cannot edit supplier, cellModel, dateReceived — lot is locked in 'grading' status..." }` | ✅ |
+| PATCH permitted field (remarks) | `PATCH /lots/:id { remarks: "..." }` | HTTP 200 | `HTTP 200` — remarks updated, no immutability error | ✅ |
+| Grade cell 2 of 3 | `POST /cells/CELL-000034/grade` | lot stays `grading` (1 left) | `{ status: "grading", stats: { approved:2, received:1 } }` | ✅ |
+| Grade cell 3 of 3 | `POST /cells/CELL-000035/grade` | lot → `graded`, `status_changed` event | `{ status: "graded", stats: { approved:3, received:0 } }` · history: `{ type:"status_changed", changes: { status: { from:"grading", to:"graded" } } }` | ✅ |
+| PATCH locked field (graded) | `PATCH /lots/:id { supplier: "..." }` | HTTP 422 | `HTTP 422 { "error": "Cannot edit supplier — lot is locked in 'graded' status..." }` | ✅ |
+
+**Result: ✅ PASS** — All 7 state machine scenarios verified.
+
+---
+
+### MAT-03 Final Scorecard (after defect resolution)
+
+| # | Area | Status | Run | Pass | Fail |
+|---|------|--------|-----|------|------|
+| 1 | Workflow | ✅ Pass | 5 | 5 | 0 |
+| 2 | Data Integrity | ✅ Pass | 5 | 5 | 0 |
+| 3 | Concurrency | ✅ Pass | 3 | 3 | 0 |
+| 4 | Business Rules | ✅ Pass | 3 | 3 | 0 |
+| 5 | Recovery | ✅ Pass | 3 | 3 | 0 |
+
+| Metric | Value |
+|--------|-------|
+| Total test cases | 19 |
+| Pass | 19 |
+| Fail | 0 |
+| **Pass rate** | **100%** |
+| Open defects | 0 |
+
+### MAT-03 Decision (final)
+
+✅ **PASS** — All 19 test cases pass. Both Medium defects (DEF-CW01-017, DEF-CW01-018) verified and closed. MAT-03 is complete.
+
+**Signed:** _________________________ **Date:** 2026-06-27
+
+---
+
+## Overall MAT Summary (final — MAT-03 closed)
+
+| Metric | MAT-01 | MAT-02 (re-run) | MAT-03 (final) | **Total** |
+|--------|--------|-----------------|----------------|-----------|
 | Test cases | 10 | 37 | 19 | **66** |
-| Pass | 10 | 33 | 17 | **60** |
-| Fail (open) | 0 | 0 | 2 | **2** |
+| Pass | 10 | 33 | 19 | **62** |
+| Fail (open) | 0 | 0 | 0 | **0** |
 | Deferred (Low) | 0 | 3 | 0 | **3** |
 | Not run | 0 | 1 | 0 | **1** |
-| **Pass rate (actionable)** | **100%** | **91.7%** | **89.5%** | **92.3%** |
+| **Pass rate (actionable)** | **100%** | **91.7%** | **100%** | **95.4%** |
 | Defects filed | 5 | 11 | 2 | **18** |
 | Open High | 0 | 0 | 0 | **0** |
-| Open Medium | 0 | 0 | 2 | **2** |
+| Open Medium | 0 | 0 | 0 | **0** |
 | Open Low (deferred) | 0 | 3 | 0 | **3** |

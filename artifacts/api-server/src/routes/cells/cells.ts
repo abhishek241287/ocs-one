@@ -1,12 +1,13 @@
 import { Router, IRouter } from "express";
-import { db, cellsTable, cellLotsTable, cellGradeConfigTable, mfgProductionOrdersTable, mfgBatteryGenealogyTable } from "@workspace/db";
-import { eq, ilike, and, desc, count } from "drizzle-orm";
+import { db, cellsTable, cellLotsTable, cellGradeConfigTable, cellLotEventsTable, mfgProductionOrdersTable, mfgBatteryGenealogyTable } from "@workspace/db";
+import { eq, ilike, and, or, desc, count } from "drizzle-orm";
 import { ListCellsQueryParams, GradeCellBody } from "@workspace/api-zod";
 
 const router: IRouter = Router({ mergeParams: true });
 
 type CellStatus = typeof cellsTable.status._.data;
 type CellGrade = typeof cellsTable.grade._.data;
+type LotStatus = typeof cellLotsTable.status._.data;
 
 function calcGrade(
   capacityAh: number,
@@ -99,7 +100,6 @@ router.get("/:id", async (req, res) => {
     .from(cellLotsTable)
     .where(eq(cellLotsTable.id, cell.lotId));
 
-  // Find orders that used this cell (via genealogy)
   const genealogyRows = await db
     .select({
       orderId: mfgBatteryGenealogyTable.productionOrderId,
@@ -148,62 +148,104 @@ router.post("/:id/grade", async (req, res) => {
     return;
   }
 
-  const [lot] = await db
-    .select()
-    .from(cellLotsTable)
-    .where(eq(cellLotsTable.id, cell.lotId));
+  const updated = await db.transaction(async (tx) => {
+    const [lotRow] = await tx
+      .select()
+      .from(cellLotsTable)
+      .where(eq(cellLotsTable.id, cell.lotId));
 
-  // Get grading config (or use defaults)
-  const [cfgRow] = await db
-    .select()
-    .from(cellGradeConfigTable)
-    .where(eq(cellGradeConfigTable.id, 1));
+    const [cfgRow] = await tx
+      .select()
+      .from(cellGradeConfigTable)
+      .where(eq(cellGradeConfigTable.id, 1));
 
-  const cfg = cfgRow ?? {
-    gradeAMinCapacityPct: 98,
-    gradeAMaxIrMult: 1.05,
-    gradeBMinCapacityPct: 95,
-    gradeBMaxIrMult: 1.10,
-    gradeCMinCapacityPct: 90,
-    gradeCMaxIrMult: 1.15,
-    nominalIrMohm: 1.0,
-  };
+    const cfg = cfgRow ?? {
+      gradeAMinCapacityPct: 98,
+      gradeAMaxIrMult: 1.05,
+      gradeBMinCapacityPct: 95,
+      gradeBMaxIrMult: 1.10,
+      gradeCMinCapacityPct: 90,
+      gradeCMaxIrMult: 1.15,
+      nominalIrMohm: 1.0,
+    };
 
-  const autoGrade = calcGrade(
-    body.capacityAh,
-    body.internalResistanceMohm,
-    lot?.nominalCapacityAh ?? body.capacityAh,
-    cfg
-  );
+    const autoGrade = calcGrade(
+      body.capacityAh,
+      body.internalResistanceMohm,
+      lotRow?.nominalCapacityAh ?? body.capacityAh,
+      cfg
+    );
 
-  // Allow supervisor override
-  let finalStatus: CellStatus;
-  if (body.overrideStatus) {
-    finalStatus = body.overrideStatus as CellStatus;
-  } else if (autoGrade === "reject") {
-    finalStatus = "rejected";
-  } else {
-    finalStatus = "approved";
-  }
+    let finalStatus: CellStatus;
+    if (body.overrideStatus && body.overrideStatus !== "null") {
+      finalStatus = body.overrideStatus as CellStatus;
+    } else if (autoGrade === "reject") {
+      finalStatus = "rejected";
+    } else {
+      finalStatus = "approved";
+    }
 
-  const finalGrade: CellGrade = autoGrade;
+    const finalGrade: CellGrade = autoGrade;
 
-  const [updated] = await db
-    .update(cellsTable)
-    .set({
-      voltageV: body.voltageV,
-      capacityAh: body.capacityAh,
-      internalResistanceMohm: body.internalResistanceMohm,
-      temperatureC: body.temperatureC ?? null,
-      gradingMachineId: body.gradingMachineId ?? null,
-      gradedBy: body.gradedBy,
-      gradedAt: new Date(),
-      gradingNotes: body.gradingNotes ?? null,
-      grade: finalGrade,
-      status: finalStatus,
-    })
-    .where(eq(cellsTable.id, req.params.id))
-    .returning();
+    const [updatedCell] = await tx
+      .update(cellsTable)
+      .set({
+        voltageV: body.voltageV,
+        capacityAh: body.capacityAh,
+        internalResistanceMohm: body.internalResistanceMohm,
+        temperatureC: body.temperatureC ?? null,
+        gradingMachineId: body.gradingMachineId ?? null,
+        gradedBy: body.gradedBy,
+        gradedAt: new Date(),
+        gradingNotes: body.gradingNotes ?? null,
+        grade: finalGrade,
+        status: finalStatus,
+      })
+      .where(eq(cellsTable.id, req.params.id))
+      .returning();
+
+    if (lotRow) {
+      let newLotStatus: LotStatus | null = null;
+
+      if (lotRow.status === "received") {
+        newLotStatus = "grading";
+      } else if (lotRow.status === "grading") {
+        const [{ pendingCount }] = await tx
+          .select({ pendingCount: count() })
+          .from(cellsTable)
+          .where(
+            and(
+              eq(cellsTable.lotId, lotRow.id),
+              or(
+                eq(cellsTable.status, "received"),
+                eq(cellsTable.status, "grading")
+              )
+            )
+          );
+
+        if (Number(pendingCount) === 0) {
+          newLotStatus = "graded";
+        }
+      }
+
+      if (newLotStatus) {
+        await tx
+          .update(cellLotsTable)
+          .set({ status: newLotStatus })
+          .where(eq(cellLotsTable.id, lotRow.id));
+
+        await tx.insert(cellLotEventsTable).values({
+          lotId: lotRow.id,
+          eventType: "status_changed",
+          performedBy: body.gradedBy,
+          reason: null,
+          changes: { status: { from: lotRow.status, to: newLotStatus } },
+        });
+      }
+    }
+
+    return updatedCell;
+  });
 
   res.json(updated);
 });

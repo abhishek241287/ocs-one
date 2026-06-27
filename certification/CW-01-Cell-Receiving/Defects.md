@@ -29,8 +29,8 @@
 | DEF-CW01-014 | No max-length validation on string fields | Low | **Deferred** | 2026-06-27 | — | — | CTO authorized deferral; target: maintenance wave |
 | DEF-CW01-015 | Future dates accepted in `dateReceived` | Low | **Deferred** | 2026-06-27 | — | — | CTO authorized deferral; target: maintenance wave |
 | DEF-CW01-016 | No DELETE endpoint for cell lots | Low | **Deferred** | 2026-06-27 | — | — | CTO authorized deferral; pending product decision (hard vs. soft delete) |
-| DEF-CW01-017 | Invalid cellMasterId FK (PG 23503) returns HTTP 500 instead of 400 | Medium | **Open** | 2026-06-27 | — | — | Found in MAT-03 DI-03; global error handler only catches 23505, not 23503 |
-| DEF-CW01-018 | Lot status does not transition on grading; no PATCH guard when cells are being graded | Medium | **Open** | 2026-06-27 | — | — | Found in MAT-03 BR-01; business rule gap — lot remains editable while cells approved |
+| DEF-CW01-017 | Invalid cellMasterId FK (PG 23503) returns HTTP 500 instead of 400 | Medium | **Verified** | 2026-06-27 | 2026-06-27 | Replit Agent | Added 23503 branch to global error handler in `app.ts` → HTTP 400 with constraint name |
+| DEF-CW01-018 | Lot status does not transition on grading; no PATCH guard when cells are being graded | Medium | **Verified** | 2026-06-27 | 2026-06-27 | Replit Agent | Full state machine implemented: received→grading→graded with field-level PATCH guard |
 
 ---
 
@@ -384,15 +384,14 @@ A 5000-character supplier name is accepted (HTTP 201). Zod schema uses bare `zod
 | High | 4 |
 | Medium | 8 |
 | Low | 6 |
-| **Verified (fixed + re-tested)** | **13** |
+| **Verified (fixed + re-tested)** | **15** |
 | **Deferred (Low, CTO-authorized)** | **3** |
 | Open High | **0** |
-| Open Medium | **2** (DEF-CW01-017, DEF-CW01-018) |
+| Open Medium | **0** |
 | Open Low | 0 (all deferred) |
 
 > **Certification gate:** Open Critical or High count must be **0** before certification is granted.
-> **Current status: 0 open High defects — gate CLEAR. ✅**
-> **2 open Medium defects must be resolved before CW-01 wave closure.**
+> **Current status: 0 open High defects, 0 open Medium defects. ✅**
 
 ---
 

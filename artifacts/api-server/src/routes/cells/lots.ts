@@ -37,7 +37,7 @@ router.get("/", async (req, res) => {
   }
 
   if (status) {
-    conditions.push(eq(cellLotsTable.status, status as "received" | "grading" | "complete"));
+    conditions.push(eq(cellLotsTable.status, status as "received" | "grading" | "graded" | "complete"));
   }
 
   if (cellModel) {
@@ -202,6 +202,21 @@ router.patch(
     if (!existing) {
       res.status(404).json({ error: "Lot not found" });
       return;
+    }
+
+    // Immutability guard — once grading has started, core manufacturing fields are locked
+    if (existing.status !== "received") {
+      const lockedFields = ["supplier", "cellModel", "dateReceived"] as const;
+      const lockedAttempted = lockedFields.filter((f) => {
+        const incoming = (fields as Record<string, unknown>)[f];
+        return incoming !== undefined && String(incoming) !== String(existing[f] ?? "");
+      });
+      if (lockedAttempted.length > 0) {
+        res.status(422).json({
+          error: `Cannot edit ${lockedAttempted.join(", ")} — lot is locked in '${existing.status}' status (grading has started)`,
+        });
+        return;
+      }
     }
 
     // Build changeset — only include fields that differ

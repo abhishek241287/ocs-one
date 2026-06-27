@@ -37,6 +37,7 @@ export const cellMatchStatusEnum = pgEnum("cell_match_status", [
 export const cellLotStatusEnum = pgEnum("cell_lot_status", [
   "received",
   "grading",
+  "graded",
   "complete",
 ]);
 

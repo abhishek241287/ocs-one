@@ -15,7 +15,7 @@
 |-----|-------|--------|---------------|-------|
 | MAT-01 | Page & Navigation | ✅ Passed | 2026-06-27 | 10/10 · 5 defects resolved |
 | MAT-02 | Functional Certification | ✅ Passed | 2026-06-27 | 33/36 · 8 defects resolved · 3 Low deferred |
-| MAT-03 | Workflow & Data Integrity | ⚠️ Conditional Pass | 2026-06-27 | 17/19 · 2 Medium defects open |
+| MAT-03 | Workflow & Data Integrity | ✅ Pass | 2026-06-27 | 19/19 · all defects verified |
 
 ---
 
@@ -36,7 +36,7 @@
 | Verified (fixed + re-tested) | 13 |
 | Deferred | 3 |
 | Open High | **0** |
-| Open Medium | **2** (DEF-017, DEF-018) |
+| Open Medium | **0** |
 
 ---
 
@@ -60,8 +60,8 @@
 | DEF-CW01-014 | No max-length validation | Low | ⬜ Deferred |
 | DEF-CW01-015 | Future dates accepted | Low | ⬜ Deferred |
 | DEF-CW01-016 | No DELETE endpoint | Low | ⬜ Deferred |
-| DEF-CW01-017 | Invalid cellMasterId FK → HTTP 500 | Medium | 🔴 Open |
-| DEF-CW01-018 | Lot status gap — no auto-transition, no PATCH guard | Medium | 🔴 Open |
+| DEF-CW01-017 | Invalid cellMasterId FK → HTTP 500 | Medium | ✅ Verified |
+| DEF-CW01-018 | Lot status gap — no auto-transition, no PATCH guard | Medium | ✅ Verified |
 
 ---
 
@@ -74,4 +74,7 @@
 | Begin MAT-02 | 2026-06-27 | CTO | ✅ |
 | MAT-02 Passed | 2026-06-27 | CTO | ✅ |
 | Begin MAT-03 | 2026-06-27 | CTO | ✅ |
-| MAT-03 Executed | 2026-06-27 | Replit Agent | ✅ (Conditional Pass — 2 Medium open) |
+| MAT-03 Executed | 2026-06-27 | Replit Agent | ✅ (initial run — 2 Medium defects open) |
+| DEF-CW01-017 Fix | 2026-06-27 | Replit Agent | ✅ 23503 handler added to app.ts |
+| DEF-CW01-018 Fix | 2026-06-27 | Replit Agent | ✅ State machine + PATCH guard implemented |
+| MAT-03 Re-run | 2026-06-27 | Replit Agent | ✅ 19/19 PASS — MAT-03 closed |

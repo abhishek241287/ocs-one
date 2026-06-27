@@ -95,9 +95,10 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     res.status(400).json({ error: "Validation failed", issues: err.issues });
     return;
   }
-  // PostgreSQL unique constraint violation (code 23505) → 409
-  // Drizzle wraps pg errors in _DrizzleQueryError so check both err and err.cause
+  // PostgreSQL constraint violations — Drizzle wraps pg errors in _DrizzleQueryError
+  // so check both err and err.cause for the error code.
   const pgCode = (err as any)?.code ?? (err as any)?.cause?.code;
+  // 23505 — unique constraint violation → 409
   if (pgCode === "23505") {
     const detail = String(
       (err as any)?.detail ?? (err as any)?.cause?.detail ?? ""
@@ -109,6 +110,17 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       ? `${field} "${value}" already exists`
       : "A record with that value already exists";
     res.status(409).json({ error: msg });
+    return;
+  }
+  // 23503 — foreign key violation → 400
+  if (pgCode === "23503") {
+    const constraint = String(
+      (err as any)?.constraint ?? (err as any)?.cause?.constraint ?? ""
+    );
+    const msg = constraint
+      ? `Referenced record does not exist (${constraint})`
+      : "Referenced record does not exist";
+    res.status(400).json({ error: msg });
     return;
   }
   // All other errors → 500
