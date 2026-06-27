@@ -228,6 +228,22 @@ router.post("/:id/grade", async (req, res) => {
         }
       }
 
+      // Record individual cell grading on the lot timeline
+      await tx.insert(cellLotEventsTable).values({
+        lotId: lotRow.id,
+        eventType: "cell_graded",
+        performedBy: body.gradedBy,
+        reason: null,
+        changes: {
+          cellId: updatedCell.cellId,
+          grade: finalGrade,
+          status: finalStatus,
+          capacityAh: body.capacityAh,
+          internalResistanceMohm: body.internalResistanceMohm,
+          voltageV: body.voltageV,
+        },
+      });
+
       if (newLotStatus) {
         await tx
           .update(cellLotsTable)
@@ -236,7 +252,7 @@ router.post("/:id/grade", async (req, res) => {
 
         await tx.insert(cellLotEventsTable).values({
           lotId: lotRow.id,
-          eventType: "status_changed",
+          eventType: newLotStatus === "grading" ? "grading_started" : "lot_fully_graded",
           performedBy: body.gradedBy,
           reason: null,
           changes: { status: { from: lotRow.status, to: newLotStatus } },

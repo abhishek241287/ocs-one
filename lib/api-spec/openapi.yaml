@@ -1601,7 +1601,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [received, grading, complete]
+            enum: [received, grading, graded, complete]
         - name: cellModel
           in: query
           required: false
@@ -3179,7 +3179,7 @@ components:
         remarks: { type: ["string", "null"] }
         status:
           type: string
-          enum: [received, grading, complete]
+          enum: [received, grading, graded, complete]
         cellMasterId: { type: ["string", "null"], format: uuid }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }

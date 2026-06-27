@@ -63,8 +63,39 @@ function LotStatsRow({ lotId }: { lotId: string }) {
 function LotStatusBadge({ status }: { status: string }) {
   if (status === "received") return <Badge variant="outline">Received</Badge>;
   if (status === "grading") return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Grading</Badge>;
+  if (status === "graded") return <Badge className="bg-green-100 text-green-800 border-green-200">Graded</Badge>;
   if (status === "complete") return <Badge className="bg-green-100 text-green-800 border-green-200">Complete</Badge>;
   return <Badge variant="outline">{status}</Badge>;
+}
+
+// ─── Event type display helpers ───────────────────────────────────────────────
+
+const EVENT_META: Record<string, { label: string; dot: string }> = {
+  lot_received:             { label: "Lot Received",            dot: "bg-blue-500" },
+  cell_records_generated:   { label: "Cell Records Generated",  dot: "bg-blue-300" },
+  grading_started:          { label: "Grading Started",         dot: "bg-yellow-500" },
+  cell_graded:              { label: "Cell Graded",             dot: "bg-yellow-400" },
+  lot_fully_graded:         { label: "Lot Fully Graded",        dot: "bg-green-500" },
+  lot_updated:              { label: "Lot Updated",             dot: "bg-gray-400" },
+  remarks_updated:          { label: "Remarks Updated",         dot: "bg-gray-300" },
+  // legacy
+  received:                 { label: "Lot Received",            dot: "bg-blue-500" },
+  corrected:                { label: "Lot Updated",             dot: "bg-gray-400" },
+  status_changed:           { label: "Status Changed",          dot: "bg-purple-400" },
+};
+
+function eventMeta(type: string) {
+  return EVENT_META[type] ?? { label: type.replace(/_/g, " "), dot: "bg-gray-300" };
+}
+
+// ─── Shared helpers ───────────────────────────────────────────────────────────
+
+const Req = () => <span className="text-red-500 ml-0.5" aria-hidden="true">*</span>;
+
+function formatDate(iso: string) {
+  return new Date(iso + "T00:00:00").toLocaleDateString(undefined, {
+    day: "2-digit", month: "short", year: "numeric",
+  });
 }
 
 // ─── History dialog ───────────────────────────────────────────────────────────
@@ -75,35 +106,54 @@ function LotHistoryDialog({ lotId, open, onClose }: { lotId: string; open: boole
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Lot History</DialogTitle>
+          <DialogTitle>Manufacturing Timeline</DialogTitle>
         </DialogHeader>
         {isLoading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
             <Loader2 size={14} className="animate-spin" /> Loading…
           </div>
-        ) : data?.events.length === 0 ? (
+        ) : !data?.events.length ? (
           <p className="text-sm text-muted-foreground py-4">No events recorded.</p>
         ) : (
-          <ul className="space-y-3 text-sm">
-            {data?.events.map((ev) => (
-              <li key={ev.id} className="border rounded-md p-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium capitalize">{ev.eventType}</span>
-                  <span className="text-xs text-muted-foreground">{new Date(ev.performedAt).toLocaleString()}</span>
-                </div>
-                <div className="text-muted-foreground">By: {ev.performedBy}</div>
-                {ev.reason && <div className="text-muted-foreground">Reason: {ev.reason}</div>}
-                {ev.changes && typeof ev.changes === "object" && Object.keys(ev.changes).length > 0 && (
-                  <details className="mt-1">
-                    <summary className="cursor-pointer text-xs text-muted-foreground">Changes</summary>
-                    <pre className="mt-1 text-xs bg-muted p-2 rounded overflow-x-auto">
-                      {JSON.stringify(ev.changes, null, 2)}
-                    </pre>
-                  </details>
-                )}
-              </li>
-            ))}
-          </ul>
+          <ol className="relative border-l border-border ml-3 space-y-0">
+            {data.events.map((ev, idx) => {
+              const meta = eventMeta(ev.eventType);
+              const hasDetails = ev.changes && typeof ev.changes === "object" && Object.keys(ev.changes as object).length > 0;
+              return (
+                <li key={ev.id} className={`ml-4 ${idx < data.events.length - 1 ? "pb-6" : "pb-2"}`}>
+                  <span className={`absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full border-2 border-background ${meta.dot}`} />
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{meta.label}</p>
+                      <p className="mt-0.5 text-sm font-medium leading-snug">
+                        {(ev as any).summary ?? ev.eventType}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {ev.performedBy}
+                        {ev.reason ? ` · ${ev.reason}` : ""}
+                      </p>
+                    </div>
+                    <time className="shrink-0 text-xs text-muted-foreground tabular-nums pt-0.5">
+                      {new Date(ev.performedAt).toLocaleString(undefined, {
+                        month: "short", day: "numeric",
+                        hour: "2-digit", minute: "2-digit",
+                      })}
+                    </time>
+                  </div>
+                  {hasDetails && (
+                    <details className="mt-1.5">
+                      <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                        Details
+                      </summary>
+                      <pre className="mt-1 text-xs bg-muted p-2 rounded overflow-x-auto leading-relaxed">
+                        {JSON.stringify(ev.changes, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
         )}
       </DialogContent>
     </Dialog>
@@ -151,6 +201,7 @@ export default function CellReceivingPage() {
   const [historyLotId, setHistoryLotId] = useState<string | null>(null);
 
   // Edit form state
+  const [editLotStatus, setEditLotStatus] = useState<string>("received");
   const [editForm, setEditForm] = useState({
     supplier: "",
     manufacturer: "",
@@ -169,7 +220,7 @@ export default function CellReceivingPage() {
     page,
     pageSize: 25,
     search: search || undefined,
-    status: statusFilter !== "all" ? (statusFilter as "received" | "grading" | "complete") : undefined,
+    status: statusFilter !== "all" ? (statusFilter as "received" | "grading" | "graded" | "complete") : undefined,
   });
 
   const createLot = useCreateCellLot({
@@ -198,8 +249,14 @@ export default function CellReceivingPage() {
   // Create submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.supplier || !form.manufacturer || !form.cellModel || !form.nominalCapacityAh || !form.lotNumber || !form.dateReceived || !form.quantityReceived || !form.receivedBy) {
-      notify.error("Required fields missing");
+    const REQUIRED: Array<[keyof typeof form, string]> = [
+      ["supplier", "Supplier"], ["manufacturer", "Manufacturer"], ["cellModel", "Cell Model"],
+      ["nominalCapacityAh", "Nominal Capacity"], ["lotNumber", "Lot Number"],
+      ["dateReceived", "Date Received"], ["quantityReceived", "Quantity Received"], ["receivedBy", "Received By"],
+    ];
+    const missing = REQUIRED.filter(([k]) => !form[k]).map(([, label]) => label);
+    if (missing.length) {
+      notify.error("Required fields missing", { description: missing.join(", ") });
       return;
     }
     createLot.mutate({
@@ -251,6 +308,7 @@ export default function CellReceivingPage() {
     setEditForm((f) => ({ ...f, [k]: e.target.value }));
 
   const openEditDialog = (lot: NonNullable<typeof data>["items"][number]) => {
+    setEditLotStatus(lot.status);
     setEditForm({
       supplier: lot.supplier,
       manufacturer: lot.manufacturer,
@@ -304,6 +362,7 @@ export default function CellReceivingPage() {
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="received">Received</SelectItem>
                 <SelectItem value="grading">Grading</SelectItem>
+                <SelectItem value="graded">Graded</SelectItem>
                 <SelectItem value="complete">Complete</SelectItem>
               </SelectContent>
             </Select>
@@ -355,7 +414,7 @@ export default function CellReceivingPage() {
                       <TableCell>{lot.cellModel}</TableCell>
                       <TableCell className="text-right">{lot.nominalCapacityAh} Ah</TableCell>
                       <TableCell className="text-right font-medium">{lot.quantityReceived}</TableCell>
-                      <TableCell>{lot.dateReceived}</TableCell>
+                      <TableCell>{formatDate(lot.dateReceived)}</TableCell>
                       <TableCell>{lot.receivedBy}</TableCell>
                       <TableCell><LotStatusBadge status={lot.status} /></TableCell>
                       <TableCell><LotStatsRow lotId={lot.id} /></TableCell>
@@ -365,6 +424,7 @@ export default function CellReceivingPage() {
                             size="icon"
                             variant="ghost"
                             className="h-7 w-7"
+                            aria-label="Edit lot"
                             title="Edit lot"
                             onClick={() => openEditDialog(lot)}
                           >
@@ -374,7 +434,8 @@ export default function CellReceivingPage() {
                             size="icon"
                             variant="ghost"
                             className="h-7 w-7"
-                            title="View history"
+                            aria-label="View manufacturing timeline"
+                            title="View manufacturing timeline"
                             onClick={() => setHistoryLotId(lot.id)}
                           >
                             <History size={14} />
@@ -422,15 +483,15 @@ export default function CellReceivingPage() {
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Supplier *</Label>
+                <Label>Supplier<Req /></Label>
                 <Input value={form.supplier} onChange={set("supplier")} placeholder="e.g. CATL" />
               </div>
               <div className="space-y-1.5">
-                <Label>Manufacturer *</Label>
+                <Label>Manufacturer<Req /></Label>
                 <Input value={form.manufacturer} onChange={set("manufacturer")} placeholder="e.g. CATL Technologies" />
               </div>
               <div className="space-y-1.5">
-                <Label>Cell Model *</Label>
+                <Label>Cell Model<Req /></Label>
                 <Input value={form.cellModel} onChange={set("cellModel")} placeholder="e.g. LFP-280Ah" />
               </div>
               <div className="space-y-1.5">
@@ -438,11 +499,11 @@ export default function CellReceivingPage() {
                 <Input value={form.cellChemistry} onChange={set("cellChemistry")} placeholder="LiFePO4" />
               </div>
               <div className="space-y-1.5">
-                <Label>Nominal Capacity (Ah) *</Label>
+                <Label>Nominal Capacity (Ah)<Req /></Label>
                 <Input type="number" step="0.1" value={form.nominalCapacityAh} onChange={set("nominalCapacityAh")} placeholder="280" />
               </div>
               <div className="space-y-1.5">
-                <Label>Lot Number *</Label>
+                <Label>Lot Number<Req /></Label>
                 <Input value={form.lotNumber} onChange={set("lotNumber")} placeholder="LOT-2026-001" />
               </div>
               <div className="space-y-1.5">
@@ -450,15 +511,15 @@ export default function CellReceivingPage() {
                 <Input value={form.invoiceNumber} onChange={set("invoiceNumber")} placeholder="INV-12345" />
               </div>
               <div className="space-y-1.5">
-                <Label>Date Received *</Label>
+                <Label>Date Received<Req /></Label>
                 <Input type="date" value={form.dateReceived} onChange={set("dateReceived")} />
               </div>
               <div className="space-y-1.5">
-                <Label>Quantity Received *</Label>
+                <Label>Quantity Received<Req /></Label>
                 <Input type="number" value={form.quantityReceived} onChange={set("quantityReceived")} placeholder="100" />
               </div>
               <div className="space-y-1.5">
-                <Label>Received By *</Label>
+                <Label>Received By<Req /></Label>
                 <Input value={form.receivedBy} onChange={set("receivedBy")} placeholder="Engineer name" />
               </div>
             </div>
@@ -484,18 +545,27 @@ export default function CellReceivingPage() {
             <DialogTitle>Edit Cell Lot</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEditSubmit} className="space-y-4">
+            {editLotStatus !== "received" && (
+              <div className="rounded-md bg-yellow-50 border border-yellow-200 px-3 py-2 text-sm text-yellow-800">
+                🔒 This lot is in <strong>{editLotStatus}</strong> status — Supplier, Cell Model, and Date Received are locked. Only remarks and non-identifying fields can be changed.
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Supplier</Label>
-                <Input value={editForm.supplier} onChange={setEdit("supplier")} />
+                <Label className={editLotStatus !== "received" ? "text-muted-foreground" : ""}>
+                  Supplier {editLotStatus !== "received" && <span className="text-xs">(locked)</span>}
+                </Label>
+                <Input value={editForm.supplier} onChange={setEdit("supplier")} disabled={editLotStatus !== "received"} />
               </div>
               <div className="space-y-1.5">
                 <Label>Manufacturer</Label>
                 <Input value={editForm.manufacturer} onChange={setEdit("manufacturer")} />
               </div>
               <div className="space-y-1.5">
-                <Label>Cell Model</Label>
-                <Input value={editForm.cellModel} onChange={setEdit("cellModel")} />
+                <Label className={editLotStatus !== "received" ? "text-muted-foreground" : ""}>
+                  Cell Model {editLotStatus !== "received" && <span className="text-xs">(locked)</span>}
+                </Label>
+                <Input value={editForm.cellModel} onChange={setEdit("cellModel")} disabled={editLotStatus !== "received"} />
               </div>
               <div className="space-y-1.5">
                 <Label>Cell Chemistry</Label>
@@ -510,8 +580,10 @@ export default function CellReceivingPage() {
                 <Input value={editForm.invoiceNumber} onChange={setEdit("invoiceNumber")} placeholder="INV-12345" />
               </div>
               <div className="space-y-1.5">
-                <Label>Date Received</Label>
-                <Input type="date" value={editForm.dateReceived} onChange={setEdit("dateReceived")} />
+                <Label className={editLotStatus !== "received" ? "text-muted-foreground" : ""}>
+                  Date Received {editLotStatus !== "received" && <span className="text-xs">(locked)</span>}
+                </Label>
+                <Input type="date" value={editForm.dateReceived} onChange={setEdit("dateReceived")} disabled={editLotStatus !== "received"} />
               </div>
               <div className="space-y-1.5">
                 <Label>Received By</Label>
@@ -523,7 +595,7 @@ export default function CellReceivingPage() {
               <Input value={editForm.remarks} onChange={setEdit("remarks")} placeholder="Any additional notes..." />
             </div>
             <div className="space-y-1.5 border-t pt-3">
-              <Label>Reason for correction *</Label>
+              <Label>Reason for correction<Req /></Label>
               <Input value={editForm.reason} onChange={setEdit("reason")} placeholder="e.g. Corrected invoice number after vendor confirmation" />
               <p className="text-xs text-muted-foreground">Required — recorded in audit history.</p>
             </div>

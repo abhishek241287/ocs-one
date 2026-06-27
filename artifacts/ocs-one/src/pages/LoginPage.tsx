@@ -94,6 +94,7 @@ export default function LoginPage() {
                 placeholder="Enter your email"
                 required
                 className="h-11"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={login.isPending}
@@ -106,6 +107,7 @@ export default function LoginPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
+                  autoComplete="current-password"
                   required
                   className="h-11 pr-10"
                   value={password}

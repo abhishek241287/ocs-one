@@ -104,6 +104,9 @@ router.post(
         })
         .returning();
 
+      const firstCellId = `${prefix}${String(startSeq).padStart(6, "0")}`;
+      const lastCellId = `${prefix}${String(startSeq + body.quantityReceived - 1).padStart(6, "0")}`;
+
       const cellRecords = Array.from({ length: body.quantityReceived }, (_, i) => ({
         cellId: `${prefix}${String(startSeq + i).padStart(6, "0")}`,
         lotId: lot.id,
@@ -112,15 +115,28 @@ router.post(
 
       await tx.insert(cellsTable).values(cellRecords);
 
-      // Record creation event
+      // Record lot received event
       await tx.insert(cellLotEventsTable).values({
         lotId: lot.id,
-        eventType: "received",
+        eventType: "lot_received",
         performedBy: req.user!.email,
         reason: null,
         changes: {
           lotNumber: lot.lotNumber,
+          supplier: lot.supplier,
           quantityReceived: lot.quantityReceived,
+        },
+      });
+
+      // Record cell records generated event
+      await tx.insert(cellLotEventsTable).values({
+        lotId: lot.id,
+        eventType: "cell_records_generated",
+        performedBy: req.user!.email,
+        reason: null,
+        changes: {
+          quantity: body.quantityReceived,
+          range: `${firstCellId} → ${lastCellId}`,
         },
       });
 
@@ -260,9 +276,13 @@ router.patch(
         .where(eq(cellLotsTable.id, lotId))
         .returning();
 
+      // Use "remarks_updated" when only remarks changed; "lot_updated" otherwise
+      const changedKeys = Object.keys(changes);
+      const isRemarksOnly = changedKeys.length === 1 && changedKeys[0] === "remarks";
+
       await tx.insert(cellLotEventsTable).values({
         lotId: existing.id,
-        eventType: "corrected",
+        eventType: isRemarksOnly ? "remarks_updated" : "lot_updated",
         performedBy: req.user!.email,
         reason,
         changes,
@@ -274,6 +294,58 @@ router.patch(
     res.json(updated);
   }
 );
+
+function computeEventSummary(
+  eventType: string,
+  changes: unknown,
+  reason?: string | null
+): string {
+  const ch = changes as Record<string, any> | null;
+  switch (eventType) {
+    case "lot_received":
+    case "received": {
+      const lotNum = ch?.lotNumber ?? "—";
+      const qty = ch?.quantityReceived ?? "?";
+      const supplier = ch?.supplier ? ` from ${ch.supplier}` : "";
+      return `Lot ${lotNum} received with ${qty} cells${supplier}`;
+    }
+    case "cell_records_generated": {
+      const qty = ch?.quantity ?? "?";
+      const range = ch?.range;
+      return range
+        ? `${qty} cell records generated (${range})`
+        : `${qty} cell records generated`;
+    }
+    case "grading_started": {
+      return "Grading started — first cell measured";
+    }
+    case "cell_graded": {
+      const cid = ch?.cellId ?? "?";
+      const grade = ch?.grade ?? "?";
+      const cap = ch?.capacityAh != null ? ` · ${Number(ch.capacityAh).toFixed(2)} Ah` : "";
+      const ir = ch?.internalResistanceMohm != null ? ` · ${Number(ch.internalResistanceMohm).toFixed(3)} mΩ` : "";
+      return `Cell ${cid} graded — Grade ${grade}${cap}${ir}`;
+    }
+    case "lot_fully_graded": {
+      return "All cells graded — lot is fully graded";
+    }
+    case "status_changed": {
+      const from = ch?.status?.from ?? "?";
+      const to = ch?.status?.to ?? "?";
+      return `Status changed: ${from} → ${to}`;
+    }
+    case "lot_updated":
+    case "corrected": {
+      const fields = Object.keys(ch ?? {}).join(", ");
+      return reason ? `Lot updated — ${reason}` : `Lot updated (${fields} modified)`;
+    }
+    case "remarks_updated": {
+      return "Remarks updated";
+    }
+    default:
+      return eventType.replace(/_/g, " ");
+  }
+}
 
 // GET /cells/lots/:id/history
 router.get("/:id/history", async (req, res) => {
@@ -293,7 +365,12 @@ router.get("/:id/history", async (req, res) => {
     .where(eq(cellLotEventsTable.lotId, lot.id))
     .orderBy(desc(cellLotEventsTable.performedAt));
 
-  res.json({ lotId: lot.id, events });
+  const enriched = events.map((ev) => ({
+    ...ev,
+    summary: computeEventSummary(ev.eventType, ev.changes, ev.reason),
+  }));
+
+  res.json({ lotId: lot.id, events: enriched });
 });
 
 export default router;

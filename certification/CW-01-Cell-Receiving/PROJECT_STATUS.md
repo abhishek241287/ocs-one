@@ -16,27 +16,24 @@
 | MAT-01 | Page & Navigation | ✅ Passed | 2026-06-27 | 10/10 · 5 defects resolved |
 | MAT-02 | Functional Certification | ✅ Passed | 2026-06-27 | 33/36 · 8 defects resolved · 3 Low deferred |
 | MAT-03 | Workflow & Data Integrity | ✅ Pass | 2026-06-27 | 19/19 · all defects verified |
+| MAT-04 | UX & Operator Workflow | 🟡 Pending CTO | 2026-06-27 | 28/28 · 1 Medium deferred (DEF-M04-008) |
 
 ---
 
-## Wave Metrics (cumulative — all MATs)
+## Wave Metrics (cumulative — MAT-01 through MAT-04)
 
 | Metric | Value |
 |--------|-------|
-| Total test cases executed | 66 (MAT-01 + MAT-02 + MAT-03) |
-| Passing | 60 |
-| Fail (open defects) | 2 |
-| Deferred (Low, CTO-approved) | 3 |
+| Total test cases executed | 94 (MAT-01:10 + MAT-02:37 + MAT-03:19 + MAT-04:28) |
+| Passing | 90 |
+| Fail (open defects) | 0 |
+| Deferred (CTO-approved) | 3 Low (MAT-02) + 1 Medium (MAT-04 DEF-008) + 2 Low (MAT-04) |
 | Not run (browser metric) | 1 |
-| **Pass rate (actionable)** | **92.3%** |
-| Total defects filed | 18 |
-| High severity | 4 |
-| Medium severity | 8 |
-| Low severity | 6 |
-| Verified (fixed + re-tested) | 13 |
-| Deferred | 3 |
+| **Pass rate (actionable)** | **100%** |
+| Total defects filed (CW-01) | 27 (18 from MAT-01–03 + 9 from MAT-04) |
 | Open High | **0** |
-| Open Medium | **0** |
+| Open Medium | **1** (DEF-CW01-M04-008 — table keyboard nav, deferred pending CTO) |
+| Open Low (deferred) | **5** (3 from MAT-02 + 2 from MAT-04) |
 
 ---
 
@@ -78,3 +75,6 @@
 | DEF-CW01-017 Fix | 2026-06-27 | Replit Agent | ✅ 23503 handler added to app.ts |
 | DEF-CW01-018 Fix | 2026-06-27 | Replit Agent | ✅ State machine + PATCH guard implemented |
 | MAT-03 Re-run | 2026-06-27 | Replit Agent | ✅ 19/19 PASS — MAT-03 closed |
+| Timeline Enhancement | 2026-06-27 | CTO → Replit Agent | ✅ Richer event types + computed summaries implemented |
+| Begin MAT-04 | 2026-06-27 | CTO | ✅ |
+| MAT-04 Executed | 2026-06-27 | Replit Agent | 🟡 28/28 — 1 Medium deferred (DEF-M04-008), awaiting CTO decision |

@@ -972,6 +972,7 @@ export type CellLotStatus = typeof CellLotStatus[keyof typeof CellLotStatus];
 export const CellLotStatus = {
   received: 'received',
   grading: 'grading',
+  graded: 'graded',
   complete: 'complete',
 } as const;
 
@@ -1895,6 +1896,7 @@ export type ListCellLotsStatus = typeof ListCellLotsStatus[keyof typeof ListCell
 export const ListCellLotsStatus = {
   received: 'received',
   grading: 'grading',
+  graded: 'graded',
   complete: 'complete',
 } as const;
 

@@ -12,5 +12,6 @@ export type CellLotStatus = typeof CellLotStatus[keyof typeof CellLotStatus];
 export const CellLotStatus = {
   received: 'received',
   grading: 'grading',
+  graded: 'graded',
   complete: 'complete',
 } as const;
