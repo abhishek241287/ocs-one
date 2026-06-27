@@ -3092,6 +3092,219 @@ export const GetManufacturingDashboardResponse = zod.object({
 
 
 /**
+ * @summary Get all test results for an order
+ */
+export const GetOrderTestResultsParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetOrderTestResultsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "productionOrderId": zod.string().uuid(),
+  "testType": zod.enum(['capacity', 'charge_discharge', 'protection', 'internal_resistance']),
+  "testEquipmentId": zod.string().uuid().nullish(),
+  "testEquipmentName": zod.string().nullish(),
+  "operatorName": zod.string(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "result": zod.enum(['pass', 'fail', 'warning']),
+  "testData": zod.record(zod.string(), zod.unknown()),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const GetOrderTestResultsResponse = zod.array(GetOrderTestResultsResponseItem)
+
+
+/**
+ * @summary Upsert a test result (capacity|charge_discharge|protection|internal_resistance)
+ */
+export const UpsertTestResultParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "testType": zod.enum(['capacity', 'charge_discharge', 'protection', 'internal_resistance'])
+})
+
+export const UpsertTestResultBody = zod.object({
+  "testEquipmentId": zod.string().uuid().nullish(),
+  "testEquipmentName": zod.string().nullish(),
+  "operatorName": zod.string(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "result": zod.enum(['pass', 'fail', 'warning']),
+  "testData": zod.record(zod.string(), zod.unknown()),
+  "notes": zod.string().nullish()
+})
+
+export const UpsertTestResultResponse = zod.object({
+  "id": zod.string().uuid(),
+  "productionOrderId": zod.string().uuid(),
+  "testType": zod.enum(['capacity', 'charge_discharge', 'protection', 'internal_resistance']),
+  "testEquipmentId": zod.string().uuid().nullish(),
+  "testEquipmentName": zod.string().nullish(),
+  "operatorName": zod.string(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "result": zod.enum(['pass', 'fail', 'warning']),
+  "testData": zod.record(zod.string(), zod.unknown()),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get QC approval for an order
+ */
+export const GetQcApprovalParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetQcApprovalResponse = zod.object({
+  "id": zod.string().uuid(),
+  "productionOrderId": zod.string().uuid(),
+  "decision": zod.enum(['approved', 'rejected']),
+  "inspectorName": zod.string(),
+  "inspectorRole": zod.string(),
+  "digitalSignature": zod.string().nullish(),
+  "remarks": zod.string().nullish(),
+  "approvedAt": zod.coerce.date(),
+  "createdAt": zod.coerce.date(),
+  "reworkTicketId": zod.string().uuid().nullish()
+})
+
+
+/**
+ * @summary Submit QC approval or rejection (Plant Manager only)
+ */
+export const CreateQcApprovalParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const CreateQcApprovalBody = zod.object({
+  "decision": zod.enum(['approved', 'rejected']),
+  "inspectorName": zod.string(),
+  "inspectorRole": zod.string().optional(),
+  "digitalSignature": zod.string().nullish(),
+  "remarks": zod.string().nullish(),
+  "failedTests": zod.array(zod.string()).optional(),
+  "failureReason": zod.string().nullish()
+})
+
+export const CreateQcApprovalResponse = zod.object({
+  "id": zod.string().uuid(),
+  "productionOrderId": zod.string().uuid(),
+  "decision": zod.enum(['approved', 'rejected']),
+  "inspectorName": zod.string(),
+  "inspectorRole": zod.string(),
+  "digitalSignature": zod.string().nullish(),
+  "remarks": zod.string().nullish(),
+  "approvedAt": zod.coerce.date(),
+  "createdAt": zod.coerce.date(),
+  "reworkTicketId": zod.string().uuid().nullish()
+})
+
+
+/**
+ * @summary List rework tickets
+ */
+export const listReworkTicketsQueryPageDefault = 1;
+export const listReworkTicketsQueryPageSizeDefault = 25;
+
+export const ListReworkTicketsQueryParams = zod.object({
+  "page": zod.coerce.number().default(listReworkTicketsQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listReworkTicketsQueryPageSizeDefault),
+  "status": zod.enum(['open', 'in_progress', 'resolved', 'closed']).optional()
+})
+
+export const ListReworkTicketsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "ticketNumber": zod.string(),
+  "productionOrderId": zod.string().uuid(),
+  "batteryNumber": zod.string(),
+  "failedTests": zod.array(zod.string()),
+  "failureReason": zod.string(),
+  "status": zod.enum(['open', 'in_progress', 'resolved', 'closed']),
+  "assignedTechnician": zod.string().nullish(),
+  "correctiveAction": zod.string().nullish(),
+  "retestRequired": zod.boolean(),
+  "resolvedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "total": zod.number()
+})
+
+
+/**
+ * @summary Get a rework ticket by ID
+ */
+export const GetReworkTicketParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetReworkTicketResponse = zod.object({
+  "id": zod.string().uuid(),
+  "ticketNumber": zod.string(),
+  "productionOrderId": zod.string().uuid(),
+  "batteryNumber": zod.string(),
+  "failedTests": zod.array(zod.string()),
+  "failureReason": zod.string(),
+  "status": zod.enum(['open', 'in_progress', 'resolved', 'closed']),
+  "assignedTechnician": zod.string().nullish(),
+  "correctiveAction": zod.string().nullish(),
+  "retestRequired": zod.boolean(),
+  "resolvedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a rework ticket
+ */
+export const UpdateReworkTicketParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateReworkTicketBody = zod.object({
+  "status": zod.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
+  "assignedTechnician": zod.string().nullish(),
+  "correctiveAction": zod.string().nullish(),
+  "retestRequired": zod.boolean().optional()
+})
+
+export const UpdateReworkTicketResponse = zod.object({
+  "id": zod.string().uuid(),
+  "ticketNumber": zod.string(),
+  "productionOrderId": zod.string().uuid(),
+  "batteryNumber": zod.string(),
+  "failedTests": zod.array(zod.string()),
+  "failureReason": zod.string(),
+  "status": zod.enum(['open', 'in_progress', 'resolved', 'closed']),
+  "assignedTechnician": zod.string().nullish(),
+  "correctiveAction": zod.string().nullish(),
+  "retestRequired": zod.boolean(),
+  "resolvedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Testing and QC dashboard stats
+ */
+export const GetTestingDashboardResponse = zod.object({
+  "batteriesUnderTest": zod.number(),
+  "passedToday": zod.number(),
+  "failedToday": zod.number(),
+  "reworkQueueCount": zod.number(),
+  "qcPendingCount": zod.number(),
+  "avgTestTimeHrs": zod.number().nullable()
+})
+
+
+/**
  * @summary Get grade tolerance configuration
  */
 export const GetCellGradeConfigResponse = zod.object({

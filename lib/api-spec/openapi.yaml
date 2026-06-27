@@ -1380,6 +1380,163 @@ paths:
               schema:
                 $ref: "#/components/schemas/ManufacturingDashboard"
 
+  # ── Manufacturing — Test Results ────────────────────────────────────────────
+  /manufacturing/orders/{id}/test-results:
+    get:
+      operationId: getOrderTestResults
+      tags: [manufacturing]
+      summary: Get all test results for an order
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Test results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TestResult"
+
+  /manufacturing/orders/{id}/test-results/{testType}:
+    put:
+      operationId: upsertTestResult
+      tags: [manufacturing]
+      summary: Upsert a test result (capacity|charge_discharge|protection|internal_resistance)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - name: testType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [capacity, charge_discharge, protection, internal_resistance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestResultInput"
+      responses:
+        "200":
+          description: Upserted test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResult"
+
+  # ── Manufacturing — QC Approval ──────────────────────────────────────────────
+  /manufacturing/orders/{id}/qc-approval:
+    get:
+      operationId: getQcApproval
+      tags: [manufacturing]
+      summary: Get QC approval for an order
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: QC approval record or null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QcApproval"
+    post:
+      operationId: createQcApproval
+      tags: [manufacturing]
+      summary: Submit QC approval or rejection (Plant Manager only)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QcApprovalInput"
+      responses:
+        "201":
+          description: QC approval created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QcApproval"
+
+  # ── Manufacturing — Rework Queue ─────────────────────────────────────────────
+  /manufacturing/rework:
+    get:
+      operationId: listReworkTickets
+      tags: [manufacturing]
+      summary: List rework tickets
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, in_progress, resolved, closed]
+      responses:
+        "200":
+          description: Rework tickets list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ReworkTicket"
+                  total: { type: integer }
+
+  /manufacturing/rework/{id}:
+    get:
+      operationId: getReworkTicket
+      tags: [manufacturing]
+      summary: Get a rework ticket by ID
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Rework ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReworkTicket"
+    patch:
+      operationId: updateReworkTicket
+      tags: [manufacturing]
+      summary: Update a rework ticket
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReworkTicketUpdate"
+      responses:
+        "200":
+          description: Updated rework ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReworkTicket"
+
+  # ── Manufacturing — Testing Dashboard ────────────────────────────────────────
+  /manufacturing/testing-dashboard:
+    get:
+      operationId: getTestingDashboard
+      tags: [manufacturing]
+      summary: Testing and QC dashboard stats
+      responses:
+        "200":
+          description: Testing dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestingDashboard"
+
   # ── Cell Grading — Config ─────────────────────────────────────────────────
   /cells/config:
     get:
@@ -2781,6 +2938,101 @@ components:
         maxVoltageDiffMv: { type: number }
         nominalIrMohm: { type: number }
         updatedAt: { type: string, format: date-time }
+
+    TestResult:
+      type: object
+      required: [id, productionOrderId, testType, operatorName, result, testData, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        productionOrderId: { type: string, format: uuid }
+        testType: { type: string, enum: [capacity, charge_discharge, protection, internal_resistance] }
+        testEquipmentId: { type: ["string", "null"], format: uuid }
+        testEquipmentName: { type: ["string", "null"] }
+        operatorName: { type: string }
+        startedAt: { type: ["string", "null"], format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+        result: { type: string, enum: [pass, fail, warning] }
+        testData: { type: object, additionalProperties: true }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    TestResultInput:
+      type: object
+      required: [operatorName, result, testData]
+      properties:
+        testEquipmentId: { type: ["string", "null"], format: uuid }
+        testEquipmentName: { type: ["string", "null"] }
+        operatorName: { type: string }
+        startedAt: { type: ["string", "null"], format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+        result: { type: string, enum: [pass, fail, warning] }
+        testData: { type: object, additionalProperties: true }
+        notes: { type: ["string", "null"] }
+
+    QcApproval:
+      type: object
+      required: [id, productionOrderId, decision, inspectorName, inspectorRole, approvedAt, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        productionOrderId: { type: string, format: uuid }
+        decision: { type: string, enum: [approved, rejected] }
+        inspectorName: { type: string }
+        inspectorRole: { type: string }
+        digitalSignature: { type: ["string", "null"] }
+        remarks: { type: ["string", "null"] }
+        approvedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        reworkTicketId: { type: ["string", "null"], format: uuid }
+
+    QcApprovalInput:
+      type: object
+      required: [decision, inspectorName]
+      properties:
+        decision: { type: string, enum: [approved, rejected] }
+        inspectorName: { type: string }
+        inspectorRole: { type: string }
+        digitalSignature: { type: ["string", "null"] }
+        remarks: { type: ["string", "null"] }
+        failedTests: { type: array, items: { type: string } }
+        failureReason: { type: ["string", "null"] }
+
+    ReworkTicket:
+      type: object
+      required: [id, ticketNumber, productionOrderId, batteryNumber, failedTests, failureReason, status, retestRequired, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        ticketNumber: { type: string }
+        productionOrderId: { type: string, format: uuid }
+        batteryNumber: { type: string }
+        failedTests: { type: array, items: { type: string } }
+        failureReason: { type: string }
+        status: { type: string, enum: [open, in_progress, resolved, closed] }
+        assignedTechnician: { type: ["string", "null"] }
+        correctiveAction: { type: ["string", "null"] }
+        retestRequired: { type: boolean }
+        resolvedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    ReworkTicketUpdate:
+      type: object
+      properties:
+        status: { type: string, enum: [open, in_progress, resolved, closed] }
+        assignedTechnician: { type: ["string", "null"] }
+        correctiveAction: { type: ["string", "null"] }
+        retestRequired: { type: boolean }
+
+    TestingDashboard:
+      type: object
+      required: [batteriesUnderTest, passedToday, failedToday, reworkQueueCount, qcPendingCount, avgTestTimeHrs]
+      properties:
+        batteriesUnderTest: { type: integer }
+        passedToday: { type: integer }
+        failedToday: { type: integer }
+        reworkQueueCount: { type: integer }
+        qcPendingCount: { type: integer }
+        avgTestTimeHrs: { type: ["number", "null"] }
 
     CellGradeConfigInput:
       type: object

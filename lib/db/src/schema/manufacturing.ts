@@ -185,6 +185,85 @@ export const mfgFormationReportsTable = pgTable("mfg_formation_reports", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ─── Sprint 7 — Testing & QC enums ──────────────────────────────────────────
+
+export const mfgTestTypeEnum = pgEnum("mfg_test_type", [
+  "capacity",
+  "charge_discharge",
+  "protection",
+  "internal_resistance",
+]);
+
+export const mfgTestResultEnum = pgEnum("mfg_test_result", [
+  "pass",
+  "fail",
+  "warning",
+]);
+
+export const mfgQcDecisionEnum = pgEnum("mfg_qc_decision", [
+  "approved",
+  "rejected",
+]);
+
+export const mfgReworkStatusEnum = pgEnum("mfg_rework_status", [
+  "open",
+  "in_progress",
+  "resolved",
+  "closed",
+]);
+
+// ─── Sprint 7 — Testing & QC tables ─────────────────────────────────────────
+
+export const mfgTestResultsTable = pgTable("mfg_test_results", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productionOrderId: uuid("production_order_id")
+    .notNull()
+    .references(() => mfgProductionOrdersTable.id, { onDelete: "cascade" }),
+  testType: mfgTestTypeEnum("test_type").notNull(),
+  testEquipmentId: uuid("test_equipment_id"),
+  testEquipmentName: text("test_equipment_name"),
+  operatorName: text("operator_name").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  result: mfgTestResultEnum("result").notNull(),
+  testData: jsonb("test_data").$type<Record<string, unknown>>().default({}),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const mfgQcApprovalsTable = pgTable("mfg_qc_approvals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productionOrderId: uuid("production_order_id")
+    .notNull()
+    .references(() => mfgProductionOrdersTable.id, { onDelete: "cascade" }),
+  decision: mfgQcDecisionEnum("decision").notNull(),
+  inspectorName: text("inspector_name").notNull(),
+  inspectorRole: varchar("inspector_role", { length: 100 }).notNull().default("Plant Manager"),
+  digitalSignature: text("digital_signature"),
+  remarks: text("remarks"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const mfgReworkTicketsTable = pgTable("mfg_rework_tickets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ticketNumber: varchar("ticket_number", { length: 50 }).notNull().unique(),
+  productionOrderId: uuid("production_order_id")
+    .notNull()
+    .references(() => mfgProductionOrdersTable.id, { onDelete: "cascade" }),
+  batteryNumber: varchar("battery_number", { length: 50 }).notNull(),
+  failedTests: jsonb("failed_tests").$type<string[]>().default([]),
+  failureReason: text("failure_reason").notNull(),
+  status: mfgReworkStatusEnum("status").notNull().default("open"),
+  assignedTechnician: text("assigned_technician"),
+  correctiveAction: text("corrective_action"),
+  retestRequired: boolean("retest_required").notNull().default(true),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type MfgProductionOrder = typeof mfgProductionOrdersTable.$inferSelect;
@@ -204,3 +283,12 @@ export type InsertMfgChargerUnit = typeof mfgChargerUnitsTable.$inferInsert;
 
 export type MfgFormationReport = typeof mfgFormationReportsTable.$inferSelect;
 export type InsertMfgFormationReport = typeof mfgFormationReportsTable.$inferInsert;
+
+export type MfgTestResult = typeof mfgTestResultsTable.$inferSelect;
+export type InsertMfgTestResult = typeof mfgTestResultsTable.$inferInsert;
+
+export type MfgQcApproval = typeof mfgQcApprovalsTable.$inferSelect;
+export type InsertMfgQcApproval = typeof mfgQcApprovalsTable.$inferInsert;
+
+export type MfgReworkTicket = typeof mfgReworkTicketsTable.$inferSelect;
+export type InsertMfgReworkTicket = typeof mfgReworkTicketsTable.$inferInsert;

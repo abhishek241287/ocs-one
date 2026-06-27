@@ -4,6 +4,8 @@ import CompressionCard from "./stage-cards/CompressionCard";
 import BmsInstallCard from "./stage-cards/BmsInstallCard";
 import BmsProgrammingCard from "./stage-cards/BmsProgrammingCard";
 import ChargingCard from "./stage-cards/ChargingCard";
+import TestingCard from "./stage-cards/TestingCard";
+import QualityControlCard from "./stage-cards/QualityControlCard";
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,8 +64,14 @@ export default function StageCard({ orderId, stage, onRefresh }: Props) {
   if (stage.stageType === "charging") {
     return <ChargingCard orderId={orderId} stage={stage} onRefresh={onRefresh} />;
   }
+  if (stage.stageType === "testing") {
+    return <TestingCard orderId={orderId} stage={stage} onRefresh={onRefresh} />;
+  }
+  if (stage.stageType === "quality_control") {
+    return <QualityControlCard orderId={orderId} stage={stage} onRefresh={onRefresh} />;
+  }
 
-  // Generic fallback for remaining stages (testing, QC, packing)
+  // Generic fallback for packing
   return <GenericStageCard orderId={orderId} stage={stage} onRefresh={onRefresh} />;
 }
 

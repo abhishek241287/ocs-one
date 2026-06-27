@@ -77,6 +77,8 @@ const navSections: NavSection[] = [
           { label: "Production Orders", href: "/manufacturing/orders", icon: Factory },
           { label: "Charger Management", href: "/manufacturing/chargers", icon: BatteryCharging },
           { label: "Charging Dashboard", href: "/manufacturing/charging-dashboard", icon: Zap },
+          { label: "Testing Dashboard", href: "/manufacturing/testing-dashboard", icon: FlaskConical },
+          { label: "Rework Queue", href: "/manufacturing/rework", icon: Wrench },
         ],
       },
     ],

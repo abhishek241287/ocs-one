@@ -1127,6 +1127,178 @@ export interface CellGradeConfig {
   updatedAt: string;
 }
 
+export type TestResultTestType = typeof TestResultTestType[keyof typeof TestResultTestType];
+
+
+export const TestResultTestType = {
+  capacity: 'capacity',
+  charge_discharge: 'charge_discharge',
+  protection: 'protection',
+  internal_resistance: 'internal_resistance',
+} as const;
+
+export type TestResultResult = typeof TestResultResult[keyof typeof TestResultResult];
+
+
+export const TestResultResult = {
+  pass: 'pass',
+  fail: 'fail',
+  warning: 'warning',
+} as const;
+
+export type TestResultTestData = { [key: string]: unknown };
+
+export interface TestResult {
+  id: string;
+  productionOrderId: string;
+  testType: TestResultTestType;
+  /** @nullable */
+  testEquipmentId?: string | null;
+  /** @nullable */
+  testEquipmentName?: string | null;
+  operatorName: string;
+  /** @nullable */
+  startedAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  result: TestResultResult;
+  testData: TestResultTestData;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TestResultInputResult = typeof TestResultInputResult[keyof typeof TestResultInputResult];
+
+
+export const TestResultInputResult = {
+  pass: 'pass',
+  fail: 'fail',
+  warning: 'warning',
+} as const;
+
+export type TestResultInputTestData = { [key: string]: unknown };
+
+export interface TestResultInput {
+  /** @nullable */
+  testEquipmentId?: string | null;
+  /** @nullable */
+  testEquipmentName?: string | null;
+  operatorName: string;
+  /** @nullable */
+  startedAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  result: TestResultInputResult;
+  testData: TestResultInputTestData;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export type QcApprovalDecision = typeof QcApprovalDecision[keyof typeof QcApprovalDecision];
+
+
+export const QcApprovalDecision = {
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface QcApproval {
+  id: string;
+  productionOrderId: string;
+  decision: QcApprovalDecision;
+  inspectorName: string;
+  inspectorRole: string;
+  /** @nullable */
+  digitalSignature?: string | null;
+  /** @nullable */
+  remarks?: string | null;
+  approvedAt: string;
+  createdAt: string;
+  /** @nullable */
+  reworkTicketId?: string | null;
+}
+
+export type QcApprovalInputDecision = typeof QcApprovalInputDecision[keyof typeof QcApprovalInputDecision];
+
+
+export const QcApprovalInputDecision = {
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface QcApprovalInput {
+  decision: QcApprovalInputDecision;
+  inspectorName: string;
+  inspectorRole?: string;
+  /** @nullable */
+  digitalSignature?: string | null;
+  /** @nullable */
+  remarks?: string | null;
+  failedTests?: string[];
+  /** @nullable */
+  failureReason?: string | null;
+}
+
+export type ReworkTicketStatus = typeof ReworkTicketStatus[keyof typeof ReworkTicketStatus];
+
+
+export const ReworkTicketStatus = {
+  open: 'open',
+  in_progress: 'in_progress',
+  resolved: 'resolved',
+  closed: 'closed',
+} as const;
+
+export interface ReworkTicket {
+  id: string;
+  ticketNumber: string;
+  productionOrderId: string;
+  batteryNumber: string;
+  failedTests: string[];
+  failureReason: string;
+  status: ReworkTicketStatus;
+  /** @nullable */
+  assignedTechnician?: string | null;
+  /** @nullable */
+  correctiveAction?: string | null;
+  retestRequired: boolean;
+  /** @nullable */
+  resolvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ReworkTicketUpdateStatus = typeof ReworkTicketUpdateStatus[keyof typeof ReworkTicketUpdateStatus];
+
+
+export const ReworkTicketUpdateStatus = {
+  open: 'open',
+  in_progress: 'in_progress',
+  resolved: 'resolved',
+  closed: 'closed',
+} as const;
+
+export interface ReworkTicketUpdate {
+  status?: ReworkTicketUpdateStatus;
+  /** @nullable */
+  assignedTechnician?: string | null;
+  /** @nullable */
+  correctiveAction?: string | null;
+  retestRequired?: boolean;
+}
+
+export interface TestingDashboard {
+  batteriesUnderTest: number;
+  passedToday: number;
+  failedToday: number;
+  reworkQueueCount: number;
+  qcPendingCount: number;
+  /** @nullable */
+  avgTestTimeHrs: number | null;
+}
+
 export interface CellGradeConfigInput {
   gradeAMinCapacityPct?: number;
   gradeAMaxIrMult?: number;
@@ -1324,6 +1496,27 @@ export type GetAllocatedCells200 = {
   /** @nullable */
   matchScore: number | null;
   items: AllocatedCellItem[];
+};
+
+export type ListReworkTicketsParams = {
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+status?: ListReworkTicketsStatus;
+};
+
+export type ListReworkTicketsStatus = typeof ListReworkTicketsStatus[keyof typeof ListReworkTicketsStatus];
+
+
+export const ListReworkTicketsStatus = {
+  open: 'open',
+  in_progress: 'in_progress',
+  resolved: 'resolved',
+  closed: 'closed',
+} as const;
+
+export type ListReworkTickets200 = {
+  items: ReworkTicket[];
+  total: number;
 };
 
 export type ListCellLotsParams = {
