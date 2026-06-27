@@ -353,6 +353,58 @@ Every Certification Wave follows this sequence without exception. No wave is com
 
 ---
 
+## Certification Exit Criteria
+
+A module may only be marked **🔵 Certified** when every item below is true. Any unchecked item is a certification blocker.
+
+| # | Criterion | Blocker? |
+|---|-----------|----------|
+| 1 | Module Acceptance Test completed — all mandatory tests passing | Yes |
+| 2 | No Critical or High severity defects remain open | Yes |
+| 3 | TypeScript: 0 errors across all workspace packages | Yes |
+| 4 | ESLint: 0 warnings | Yes |
+| 5 | OpenAPI specification matches implementation | Yes |
+| 6 | Database migrations (if any) applied and verified | Yes |
+| 7 | Integration with all dependent modules verified | Yes |
+| 8 | Reports and Director Dashboard reflect correct data | Yes |
+| 9 | Documentation updated — `PROJECT_STATUS.md`, `CHANGELOG.md`, Certification History | Yes |
+| 10 | Factory UAT signed off by a director or supervisor | Yes |
+| 11 | Release checkpoint created — Git tag and source backup | Yes |
+
+---
+
+## Defect Classification
+
+Every defect found during a Certification Wave must be classified on discovery.
+
+| Severity | Definition | Effect on Certification |
+|----------|-----------|------------------------|
+| **Critical** | Prevents production use — data loss, security breach, complete workflow failure | 🚫 Certification blocked until resolved |
+| **High** | Major workflow failure — a primary user journey cannot be completed | 🚫 Certification blocked until resolved |
+| **Medium** | Usability or secondary workflow issue — workaround exists | ⚠️ Must be fixed before wave closure unless explicitly deferred with written approval |
+| **Low** | Cosmetic or minor enhancement — no workflow impact | ✅ May be scheduled for a future maintenance release |
+
+> Critical and High defects are never deferred. If one is found after certification, the module reverts to `✅ Built` until it is fixed and re-certified.
+
+---
+
+## Wave Metrics
+
+Record these metrics for every completed Certification Wave. They build a quality baseline across the lifetime of the project.
+
+| Wave | Modules Certified | Defects Found | Defects Fixed | Defects Deferred | Test Cases | Pass Rate | Duration |
+|------|-------------------|---------------|---------------|------------------|------------|-----------|----------|
+
+**Definitions:**
+- **Defects Found** — total defects logged during the wave (all severities)
+- **Defects Fixed** — defects resolved and verified before wave closure
+- **Defects Deferred** — Low severity defects explicitly approved for a future release
+- **Test Cases** — total MAT test cases executed (including re-runs after fixes)
+- **Pass Rate** — passing test cases ÷ total test cases × 100%
+- **Duration** — calendar days from wave start to certification
+
+---
+
 ## How to Update This File
 
 After every Certification Wave:
