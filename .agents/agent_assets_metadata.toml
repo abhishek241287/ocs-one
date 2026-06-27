@@ -1,0 +1,26 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "-sYhonkur1gCihlGDo_Qi"
+uri = "file://engineering_audit.md"
+type = "text"
+title = "Engineering Audit"
+
+[[outputs]]
+id = "sYUneZXx_KeIEayi5FjYF"
+uri = "file://performance_report.md"
+type = "text"
+title = "Performance Report"
+
+[[outputs]]
+id = "D2mZ0Oigb91OpmFBSTWgI"
+uri = "file://security_report.md"
+type = "text"
+title = "Security Report"
+
+[[outputs]]
+id = "bxPg_Mco7sRwFGUr_Dqnt"
+uri = "file://refactoring_plan.md"
+type = "text"
+title = "Refactoring Plan"
