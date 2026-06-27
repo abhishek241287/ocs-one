@@ -1,0 +1,498 @@
+# OCS One – Sprint ODS 2.0
+
+## Enterprise Design System Foundation
+
+### What & Why
+
+Build the OCS One Design System (ODS) into a complete enterprise UI framework.
+
+No new ERP features are to be developed.
+
+This sprint focuses on creating reusable UI components, layouts, design tokens, navigation patterns, and developer tooling so every future module uses the same foundation.
+
+This sprint is an architectural investment that reduces future development effort, improves consistency, and enables rapid module development.
+
+---
+
+# OBJECTIVE
+
+Every screen inside OCS One should eventually be assembled from ODS components.
+
+No page should implement its own table, toolbar, drawer, dialog, or search bar.
+
+ODS becomes the only UI framework used inside the application.
+
+---
+
+# PHASE 1 – CORE COMPONENT LIBRARY
+
+Create a new folder:
+
+```
+src/components/ods/
+```
+
+Implement the following reusable components.
+
+---
+
+## OdsDataTable
+
+This becomes the standard table component for OCS One.
+
+Features:
+
+* Search integration
+* Filters
+* Sorting
+* Pagination
+* Column resize
+* Column visibility
+* Density selector
+* Sticky header
+* Sticky first column
+* Multi-row selection
+* Bulk actions
+* Loading skeleton
+* Empty state
+* Keyboard navigation
+* Export hooks
+* Responsive behaviour
+
+Replace existing table implementations where practical.
+
+---
+
+## OdsToolbar
+
+Universal toolbar.
+
+Contains:
+
+* Search
+* Filters
+* Refresh
+* Export
+* Density
+* Module actions
+* New button
+
+No module should create its own toolbar.
+
+---
+
+## OdsSearchBar
+
+Features:
+
+* Ctrl + F support
+* Debounced search
+* Clear button
+* Search icon
+* Placeholder support
+* Search history (future-ready)
+* Recent searches (future-ready)
+
+---
+
+## OdsDrawer
+
+Standard drawer.
+
+Used by:
+
+Engineering Masters
+
+Production Orders
+
+Dealer Master
+
+Future modules
+
+Support:
+
+Header
+
+Description
+
+Scrollable body
+
+Sticky footer
+
+Cancel
+
+Save
+
+Keyboard shortcuts
+
+Validation summary
+
+---
+
+## OdsDialog
+
+Standard dialog.
+
+Used for:
+
+Delete
+
+Deactivate
+
+Approval
+
+Confirmation
+
+Reject
+
+Warning
+
+Support:
+
+Primary action
+
+Secondary action
+
+Danger variant
+
+ESC support
+
+Enter support
+
+---
+
+# PHASE 2 – COMMAND PALETTE
+
+Keyboard shortcut:
+
+Ctrl + K
+
+Implement global command palette.
+
+Search:
+
+Modules
+
+Reports
+
+Products
+
+Battery Numbers
+
+Production Orders
+
+Dealers
+
+Cells
+
+Commands:
+
+New Product
+
+Receive Cells
+
+Create Production Order
+
+Dispatch Order
+
+Dealer Master
+
+Reports
+
+Settings
+
+Support fuzzy search.
+
+---
+
+# PHASE 3 – STANDARD LAYOUTS
+
+Create:
+
+```
+layouts/
+
+MasterLayout
+
+DashboardLayout
+
+WorkflowLayout
+
+ReportLayout
+
+DirectorLayout
+```
+
+Every future page extends one of these layouts.
+
+---
+
+# PHASE 4 – DESIGN TOKENS
+
+Create:
+
+```
+src/ods/theme/
+
+colors.ts
+
+spacing.ts
+
+radius.ts
+
+shadows.ts
+
+typography.ts
+
+motion.ts
+
+index.ts
+```
+
+Replace hard-coded UI values.
+
+Examples:
+
+```
+ods.colors.success
+
+ods.colors.warning
+
+ods.spacing.md
+
+ods.radius.lg
+
+ods.shadow.card
+
+ods.typography.heading
+```
+
+No direct Tailwind colour values inside reusable ODS components.
+
+---
+
+# PHASE 5 – COMPONENT SHOWCASE
+
+Create:
+
+```
+/design-system
+```
+
+This page demonstrates every reusable ODS component.
+
+Sections:
+
+Buttons
+
+Inputs
+
+Number Fields
+
+Date Pickers
+
+Select
+
+Badges
+
+Cards
+
+Tables
+
+Dialogs
+
+Drawers
+
+Typography
+
+Icons
+
+Empty States
+
+Skeletons
+
+Timeline
+
+Stepper
+
+Charts
+
+Metric Cards
+
+Toolbar
+
+Search
+
+Forms
+
+Dark Mode
+
+This becomes the internal component catalogue.
+
+---
+
+# PHASE 6 – GLOBAL NOTIFICATION SYSTEM
+
+Create one notification service.
+
+Support:
+
+Success
+
+Info
+
+Warning
+
+Error
+
+Queue multiple notifications.
+
+Support undo actions.
+
+No module should call toast() directly.
+
+---
+
+# PHASE 7 – STANDARD PAGE HEADER
+
+Every page uses ModuleHeader.
+
+Show:
+
+Module Icon
+
+Module Name
+
+Description
+
+Certification Badge
+
+Version
+
+Last Updated
+
+Module Owner (future-ready)
+
+Actions
+
+---
+
+# PHASE 8 – STANDARD TABLE EXPERIENCE
+
+Every table in OCS One should eventually support:
+
+Search
+
+Refresh
+
+Export
+
+Density
+
+Column chooser
+
+Pagination
+
+Filters
+
+Bulk actions
+
+Keyboard shortcuts
+
+Loading skeleton
+
+Empty state
+
+Sticky header
+
+---
+
+# PHASE 9 – DEVELOPER MODE
+
+Create:
+
+Developer Mode
+
+Admin only.
+
+Toggle from User Menu.
+
+When enabled display:
+
+Current Route
+
+Component Name
+
+API Endpoint
+
+React Query Key
+
+Module Version
+
+Certification Status
+
+Development Build Number
+
+---
+
+# PHASE 10 – DOCUMENTATION
+
+Create:
+
+```
+docs/
+
+OCS-One-Handbook/
+
+01_UI_Standards.md
+
+02_Component_Guidelines.md
+
+03_Design_Tokens.md
+
+04_Layouts.md
+
+05_Keyboard_Shortcuts.md
+
+06_Developer_Mode.md
+
+07_Component_Catalog.md
+```
+
+---
+
+# SUCCESS CRITERIA
+
+✓ OdsDataTable implemented
+
+✓ OdsToolbar implemented
+
+✓ OdsSearchBar implemented
+
+✓ OdsDrawer implemented
+
+✓ OdsDialog implemented
+
+✓ Ctrl+K Command Palette implemented
+
+✓ Design Tokens implemented
+
+✓ Standard Layouts implemented
+
+✓ Global Notification System implemented
+
+✓ ModuleHeader standardized
+
+✓ Component Showcase page created
+
+✓ Developer Mode implemented
+
+✓ Zero TypeScript errors
+
+✓ Zero ESLint warnings
+
+✓ Existing modules migrated where practical
+
+Do NOT build new ERP functionality.
+
+This sprint is purely architectural and establishes the permanent OCS One Design System.

@@ -3,9 +3,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OdsCommandPalette, DevModeProvider } from "@/components/ods";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
+import DesignSystemPage from "@/pages/DesignSystemPage";
 import ExecutiveDashboardPage from "@/features/reports/pages/ExecutiveDashboardPage";
 import ProductionReportPage from "@/features/reports/pages/ProductionReportPage";
 import CellAnalyticsPage from "@/features/reports/pages/CellAnalyticsPage";
@@ -58,6 +60,9 @@ function Router() {
         <Redirect to="/dashboard" />
       </Route>
       <Route path="/dashboard" component={DirectorDashboardPage} />
+      <Route path="/design-system" component={DesignSystemPage} />
+
+      {/* Masters */}
       <Route path="/masters/products" component={ProductMasterPage} />
       <Route path="/masters/cells" component={CellMasterPage} />
       <Route path="/masters/bms" component={BmsMasterPage} />
@@ -67,6 +72,8 @@ function Router() {
       <Route path="/masters/busbars" component={BusbarMasterPage} />
       <Route path="/masters/chargers" component={ChargerMasterPage} />
       <Route path="/masters/test-equipment" component={TestEquipmentMasterPage} />
+
+      {/* Manufacturing */}
       <Route path="/manufacturing">
         <Redirect to="/manufacturing/orders" />
       </Route>
@@ -76,11 +83,15 @@ function Router() {
       <Route path="/manufacturing/charging-dashboard" component={ChargingDashboardPage} />
       <Route path="/manufacturing/testing-dashboard" component={TestingDashboardPage} />
       <Route path="/manufacturing/rework" component={ReworkQueuePage} />
+
+      {/* Cells */}
       <Route path="/cells/receiving" component={CellReceivingPage} />
       <Route path="/cells/grading" component={CellGradingPage} />
       <Route path="/cells/inventory" component={CellInventoryPage} />
       <Route path="/cells/matching" component={CellMatchingPage} />
       <Route path="/cells/config" component={GradeConfigPage} />
+
+      {/* Logistics */}
       <Route path="/logistics">
         <Redirect to="/logistics/packing-dashboard" />
       </Route>
@@ -88,6 +99,8 @@ function Router() {
       <Route path="/logistics/dealers" component={DealerMasterPage} />
       <Route path="/logistics/dispatch-orders" component={DispatchOrdersPage} />
       <Route path="/logistics/dispatch-orders/:id" component={DispatchOrderDetailPage} />
+
+      {/* Reports */}
       <Route path="/reports/executive" component={ExecutiveDashboardPage} />
       <Route path="/reports/production" component={ProductionReportPage} />
       <Route path="/reports/cells" component={CellAnalyticsPage} />
@@ -95,6 +108,7 @@ function Router() {
       <Route path="/reports/inventory" component={InventoryAnalyticsPage} />
       <Route path="/reports/logistics" component={LogisticsAnalyticsPage} />
       <Route path="/reports/export" component={ExportCenterPage} />
+
       <Route component={NotFound} />
     </Switch>
   );
@@ -105,9 +119,13 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ErrorBoundary>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
+          <DevModeProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+              {/* Global overlays — available on every page */}
+              <OdsCommandPalette />
+            </WouterRouter>
+          </DevModeProvider>
         </ErrorBoundary>
         <Toaster />
       </TooltipProvider>

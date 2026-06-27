@@ -1,14 +1,13 @@
-import { useState, useRef } from "react";
-import { Plus, Search, RefreshCw } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { Plus, Edit, Power, PowerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { ColumnDef } from "@tanstack/react-table";
 import { MasterConfig } from "../types/master.types";
-import { MasterDataGrid } from "./MasterDataGrid";
 import { MasterEditDrawer } from "./MasterEditDrawer";
 import { useMasterCrud } from "../hooks/useMasterCrud";
 import AppLayout from "@/layouts/AppLayout";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
-import { ModuleHeader, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
+import { ModuleHeader, OdsToolbar, OdsDataTable, OdsStatusBadge, OdsDialog } from "@/components/ods";
 
 interface MasterPageProps<T> {
   config: MasterConfig<T>;
@@ -23,28 +22,20 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<T | null>(null);
   const [selectedItem, setSelectedItem] = useState<T | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<T | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const selectedRef = useRef<T | null>(null);
+  selectedRef.current = selectedItem;
 
-  const {
-    listQuery,
-    handleCreate,
-    handleUpdate,
-    handleToggleStatus,
-  } = useMasterCrud<T>(config.resource, hooks);
+  const { listQuery, handleCreate, handleUpdate, handleToggleStatus } =
+    useMasterCrud<T>(config.resource, hooks);
 
-  const handleAdd = () => {
-    setEditingItem(null);
-    setIsDrawerOpen(true);
-  };
-
-  const handleEdit = (item: T) => {
-    setEditingItem(item);
-    setIsDrawerOpen(true);
-  };
+  const handleAdd = useCallback(() => { setEditingItem(null); setIsDrawerOpen(true); }, []);
+  const handleEdit = useCallback((item: T) => { setEditingItem(item); setIsDrawerOpen(true); }, []);
 
   useModuleShortcuts({
     onNew: handleAdd,
-    onEdit: () => { if (selectedItem) handleEdit(selectedItem); },
+    onEdit: () => { const s = selectedRef.current; if (s) handleEdit(s); },
     searchRef,
   });
 
@@ -56,6 +47,13 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
     }
   };
 
+  const handleConfirmToggle = async () => {
+    if (!toggleTarget) return;
+    const nextStatus = toggleTarget.status === "active" ? "inactive" : "active";
+    await handleToggleStatus(toggleTarget.id, nextStatus);
+    setToggleTarget(null);
+  };
+
   const items = listQuery.data?.items ?? [];
   const filtered = searchTerm
     ? items.filter((item: any) =>
@@ -64,6 +62,43 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
         )
       )
     : items;
+
+  // Append status column to the config columns
+  const columns: ColumnDef<T>[] = [
+    ...config.columns,
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => <OdsStatusBadge status={row.original.status} />,
+    },
+  ];
+
+  const rowActions = (item: T) => (
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={() => handleEdit(item)}
+        title="Edit"
+      >
+        <Edit className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={() => setToggleTarget(item)}
+        title={item.status === "active" ? "Deactivate" : "Activate"}
+      >
+        {item.status === "active" ? (
+          <PowerOff className="h-3.5 w-3.5 text-destructive" />
+        ) : (
+          <Power className="h-3.5 w-3.5 text-primary" />
+        )}
+      </Button>
+    </>
+  );
 
   return (
     <AppLayout>
@@ -80,47 +115,38 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
           }
         />
 
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              ref={searchRef}
-              type="search"
-              placeholder={`Search ${config.title.toLowerCase()}...`}
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+        <OdsDataTable
+          data={filtered}
+          columns={columns}
+          isLoading={listQuery.isLoading}
+          emptyIcon={config.icon ?? "📋"}
+          emptyTitle={`No ${config.title.toLowerCase()} found`}
+          emptyDescription={
+            searchTerm
+              ? "Try a different search term."
+              : `Add your first ${config.title.toLowerCase()} to get started.`
+          }
+          emptyAction={!searchTerm ? { label: `Add ${config.title}`, onClick: handleAdd } : undefined}
+          rowActions={rowActions}
+          onRowClick={(item) => setSelectedItem(item)}
+          getRowId={(item) => item.id}
+          selectedId={selectedItem?.id}
+          enableSorting
+          enableColumnVisibility
+          enableDensity
+          toolbar={
+            <OdsToolbar
+              search={{
+                value: searchTerm,
+                onChange: setSearchTerm,
+                placeholder: `Search ${config.title.toLowerCase()}…`,
+                captureCtrlF: true,
+              }}
+              onRefresh={() => listQuery.refetch()}
+              isRefreshing={listQuery.isFetching}
             />
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => listQuery.refetch()}
-            title="Refresh"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {listQuery.isLoading ? (
-          <OdsTableSkeleton rows={6} columns={config.columns.length + 2} />
-        ) : filtered.length === 0 ? (
-          <OdsEmptyState
-            icon={config.icon ?? "📋"}
-            title={`No ${config.title.toLowerCase()} found`}
-            description={searchTerm ? "Try a different search term." : `Add your first ${config.title.toLowerCase()} to get started.`}
-            action={!searchTerm ? { label: `Add ${config.title}`, onClick: handleAdd } : undefined}
-          />
-        ) : (
-          <MasterDataGrid
-            data={filtered}
-            columns={config.columns}
-            onEdit={handleEdit}
-            onToggleStatus={(id, status) => handleToggleStatus(id, status)}
-            selectedId={selectedItem?.id}
-            onRowClick={(item) => setSelectedItem(item)}
-          />
-        )}
+          }
+        />
 
         <MasterEditDrawer
           isOpen={isDrawerOpen}
@@ -129,6 +155,20 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
           initialData={editingItem}
           fields={config.fields}
           title={config.title}
+        />
+
+        <OdsDialog
+          open={!!toggleTarget}
+          onClose={() => setToggleTarget(null)}
+          onConfirm={handleConfirmToggle}
+          title={toggleTarget?.status === "active" ? "Deactivate Record" : "Activate Record"}
+          description={
+            toggleTarget?.status === "active"
+              ? "This will mark the record as inactive. You can reactivate it later."
+              : "This will mark the record as active again."
+          }
+          variant={toggleTarget?.status === "active" ? "warning" : "confirm"}
+          confirmLabel={toggleTarget?.status === "active" ? "Deactivate" : "Activate"}
         />
       </div>
     </AppLayout>
