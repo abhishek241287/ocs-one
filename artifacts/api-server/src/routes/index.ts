@@ -34,4 +34,7 @@ router.use("/cells", cellsRouter);
 import logisticsRouter from "./logistics/index";
 router.use("/logistics", logisticsRouter);
 
+import dashboardRouter from "./dashboard/index";
+router.use("/dashboard", dashboardRouter);
+
 export default router;

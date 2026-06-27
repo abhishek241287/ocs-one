@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/LoginPage";
-import DashboardPage from "@/pages/DashboardPage";
+import DirectorDashboardPage from "@/pages/DirectorDashboardPage";
 import ProductMasterPage from "@/features/masters/pages/ProductMasterPage";
 import CellMasterPage from "@/features/masters/pages/CellMasterPage";
 import BmsMasterPage from "@/features/masters/pages/BmsMasterPage";
@@ -39,7 +39,7 @@ function Router() {
       <Route path="/">
         <Redirect to="/dashboard" />
       </Route>
-      <Route path="/dashboard" component={DashboardPage} />
+      <Route path="/dashboard" component={DirectorDashboardPage} />
       <Route path="/masters/products" component={ProductMasterPage} />
       <Route path="/masters/cells" component={CellMasterPage} />
       <Route path="/masters/bms" component={BmsMasterPage} />

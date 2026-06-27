@@ -1,2 +1,3 @@
 - [Orval duplicate exports](orval-duplicate-exports.md) — inline requestBody schemas generate TypeScript types in types/ dir AND Zod consts in api.ts — delete the types/ files to fix TS2308.
 - [Drizzle date column](drizzle-date-column.md) — Drizzle `date()` columns accept strings only; zod.coerce.date() returns Date objects — always .toISOString().split("T")[0] when writing to date columns.
+- [DB enum cross-check](db-enum-crosscheck.md) — always verify exact enum values from schema before writing SQL filter queries; wrong enum values cause runtime 500s not compile errors.
