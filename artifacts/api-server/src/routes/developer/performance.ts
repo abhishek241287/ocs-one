@@ -1,6 +1,11 @@
 import { Router, type IRouter } from "express";
-import { db, cellLotsTable, cellsTable } from "@workspace/db";
-import { count, sql } from "drizzle-orm";
+import {
+  db,
+  cellLotsTable,
+  cellsTable,
+  performanceSnapshotsTable,
+} from "@workspace/db";
+import { count, sql, desc } from "drizzle-orm";
 import { requireRole } from "../../middleware/auth";
 import {
   getMetricsSnapshot,
@@ -18,6 +23,11 @@ import {
 
 const router: IRouter = Router();
 
+// A regression is only asserted once we have a statistically meaningful number
+// of live samples since boot. Below this, cold-start/JIT warm-up noise would
+// produce false positives — we report "insufficient data" instead of crying wolf.
+const MIN_SAMPLES_FOR_REGRESSION = 30;
+
 /** Time a single DB query, returning elapsed ms and row count. */
 async function timed<T>(fn: () => Promise<T[]>): Promise<{ ms: number; rows: number }> {
   const start = process.hrtime.bigint();
@@ -26,8 +36,12 @@ async function timed<T>(fn: () => Promise<T[]>): Promise<{ ms: number; rows: num
   return { ms, rows: Array.isArray(result) ? result.length : 0 };
 }
 
-// Director-only — this is internal engineering telemetry.
-router.get("/", requireRole("director"), async (_req, res) => {
+/**
+ * Build the full live performance report. Shared between the live GET endpoint
+ * and snapshot capture so a stored snapshot is byte-for-byte the same shape the
+ * dashboard renders live — historical evidence is never a different metric.
+ */
+async function buildPerformanceReport() {
   const apiLatency = getMetricsSnapshot();
   const slowestEndpoints = [...apiLatency]
     .filter((r) => r.count > 0)
@@ -54,11 +68,6 @@ router.get("/", requireRole("director"), async (_req, res) => {
   ];
 
   // ─── Baseline comparison + regression detection ──────────────────────────────
-  // A regression is only asserted once we have a statistically meaningful number
-  // of live samples since boot. Below this, cold-start/JIT warm-up noise would
-  // produce false positives — we report "insufficient data" instead of crying wolf.
-  const MIN_SAMPLES_FOR_REGRESSION = 30;
-
   const baselineComparison = PERFORMANCE_BASELINE_V1.map((entry) => {
     const live = entry.routeKey
       ? getLatencyForRoute(entry.routeKey.method, entry.routeKey.route)
@@ -102,7 +111,7 @@ router.get("/", requireRole("director"), async (_req, res) => {
   const toMb = (n: number) => Math.round((n / 1024 / 1024) * 100) / 100;
   const collector = getCollectorMeta();
 
-  res.json({
+  return {
     generatedAt: new Date().toISOString(),
     baselineVersion: BASELINE_VERSION,
     baselineCapturedAt: BASELINE_CAPTURED_AT,
@@ -130,7 +139,56 @@ router.get("/", requireRole("director"), async (_req, res) => {
     bundle: BUNDLE_BASELINE,
     baselineComparison,
     regressionRules: REGRESSION_RULES,
-  });
+  };
+}
+
+// Director-only — this is internal engineering telemetry.
+router.get("/", requireRole("director"), async (_req, res) => {
+  const report = await buildPerformanceReport();
+  res.json(report);
+});
+
+// ─── Historical baseline storage (MAT-05 closure gate) ─────────────────────────
+
+/** Capture the current live report as a permanent certification snapshot. */
+router.post("/snapshots", requireRole("director"), async (req, res) => {
+  const report = await buildPerformanceReport();
+  const label =
+    typeof req.body?.label === "string" && req.body.label.trim().length > 0
+      ? req.body.label.trim().slice(0, 160)
+      : `Certification run ${new Date().toISOString().slice(0, 16).replace("T", " ")}`;
+  const note =
+    typeof req.body?.note === "string" && req.body.note.trim().length > 0
+      ? req.body.note.trim().slice(0, 2000)
+      : null;
+
+  const [row] = await db
+    .insert(performanceSnapshotsTable)
+    .values({
+      version: report.baselineVersion,
+      label,
+      regressionCount: report.regressionCount,
+      metrics: report,
+      note,
+      capturedBy: req.user?.email ?? null,
+    })
+    .returning();
+
+  res.status(201).json(row);
+});
+
+/** List the most recent certification snapshots (default last 10). */
+router.get("/snapshots", requireRole("director"), async (req, res) => {
+  const raw = Number.parseInt(String(req.query.limit ?? "10"), 10);
+  const limit = Number.isFinite(raw) ? Math.min(Math.max(raw, 1), 50) : 10;
+
+  const rows = await db
+    .select()
+    .from(performanceSnapshotsTable)
+    .orderBy(desc(performanceSnapshotsTable.capturedAt))
+    .limit(limit);
+
+  res.json(rows);
 });
 
 export default router;

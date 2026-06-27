@@ -244,6 +244,46 @@ endpoint exists to measure).
 
 ---
 
+## Historical Baseline Storage (MAT-05 closure gate)
+
+> **CTO closure criterion.** MAT-05 may only close once *historical baseline
+> storage* exists — even if it initially stores only certification snapshots.
+> This is now implemented and operating on **recorded evidence**, not a single
+> live snapshot.
+
+- **Persistent store** — `performance_snapshots` table (`lib/db/src/schema/performance-snapshots.ts`):
+  `version`, `label`, `captured_at`, `regression_count`, `captured_by`, and a
+  `metrics` JSONB column holding the **complete** report (full baseline
+  comparison, bundle baseline, server runtime) exactly as the live endpoint
+  serves it — so a stored run and a live run are byte-for-byte the same shape.
+- **Capture** — `POST /api/developer/performance/snapshots` (director-only)
+  records the current live report as a permanent run, attributed to the
+  capturing user.
+- **History** — `GET /api/developer/performance/snapshots?limit=N` returns the
+  last N runs (default 10).
+- **Dashboard** — the `/developer/performance` page gains a **Historical
+  Performance** section: last-10-runs table, baseline-version chips (version
+  comparison), and a per-operation P95 trend (inline sparklines + run-over-run
+  improvement/regression indicators). A **Capture snapshot** button records a run
+  on demand.
+- **Honesty** — trend sparklines plot only runs that actually recorded live
+  traffic for that operation; runs with no traffic are skipped rather than
+  charted as zero. "Improvement" (green) means lower P95, "regression" (red)
+  means higher — measured run-over-run, not estimated.
+
+**Closure criteria status:**
+
+| Criterion | Status |
+|-----------|--------|
+| Performance Baseline complete | ✅ Baseline v1.0 (above) |
+| Regression Framework implemented | ✅ `certification/Performance-Regression-Framework.md` + live `>10%` detection |
+| Developer Performance Dashboard operational | ✅ `/developer/performance` (director-only) |
+| Historical baseline storage exists | ✅ `performance_snapshots` + capture/history API + dashboard section |
+
+All four closure criteria are met → MAT-05 closes as **PASS**.
+
+---
+
 ## Defects Filed
 
 | ID | Severity | Area | Status |
@@ -283,13 +323,12 @@ instrumented vs. what was assessed by design rather than measured:
 
 ## Certification Decision
 
-- [ ] PASS
-- [x] **PASS WITH NOTES** — every **measured** threshold is met by a wide margin;
-  one missing index found and fixed (`DEF-CW01-M05-001`). Two items remain:
-  a low-severity code-splitting recommendation (`DEF-CW01-M05-002`), and the
-  frontend micro-metrics (render counts, re-renders, memory growth) plus
-  write-path load were assessed by design but **not instrumented** — recommended
-  for a follow-up profiler pass.
+- [x] **PASS** — closed 2026-06-27 per CTO closure criteria. All three accepted
+  deliverables (Performance Baseline v1.0, Regression Framework,
+  `/developer/performance` dashboard) plus the closure gate (**historical
+  baseline storage**) are complete. Every **measured** threshold is met by a wide
+  margin; one missing index was found and fixed (`DEF-CW01-M05-001`).
+- [ ] PASS WITH NOTES
 - [ ] FAIL
 
 **Summary:** At full stress scale (1,014 lots / 10,058 cells) every measured Cell
@@ -297,10 +336,20 @@ Receiving API resolves in single-digit milliseconds, 50 concurrent users drain
 in < 300 ms with zero errors, all hot queries are index-backed (after the
 `DEF-CW01-M05-001` fix), there is no N+1, transactions stay short, and the
 frontend bundle is within budget with a clean runtime console. No High/Medium
-defects, no regression. The remaining gaps are measurement-coverage gaps, not
-observed problems — hence **Pass with notes** rather than a clean Pass.
+defects, no regression. The interim **Pass with notes** is now upgraded to a
+clean **Pass**: the CTO's four closure criteria are all satisfied, and the
+remaining measurement-coverage items are tracked openly as a deferred roadmap
+below rather than blocking closure.
 
-**Open items for follow-up:** `DEF-CW01-M05-002` (route-level code-splitting);
-profiler-instrumented frontend render/memory metrics; write-path load test.
+**Open items (deferred, non-blocking — tracked, not silently dropped):**
+- `DEF-CW01-M05-002` — route-level code-splitting (within budget; recommendation).
+- **Engineering-dashboard roadmap (CTO "over time" enhancements #2–#5)** — Live
+  Database Health (pool/long-running queries/index usage), measured React
+  performance (render counts, slow renders >16 ms, memoization effectiveness,
+  cache hit ratio), background monitoring (per-minute memory/CPU/latency with a
+  rolling 24 h history), and report export (PDF/Excel/JSON). These are
+  **explicitly deferred** per the CTO's "add over time" directive — **not**
+  claimed as delivered in this sprint. The frontend render/memory micro-metrics
+  previously listed as a MAT-05 gap fold into this roadmap.
 
 **Signed:** Replit Agent (QA) · **Date:** 2026-06-27

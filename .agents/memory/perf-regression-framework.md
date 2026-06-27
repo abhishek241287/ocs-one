@@ -42,4 +42,13 @@ scoped under CW-01).
 
 - **"Auto-defect" = detection/surfacing is automatic; ticket filing is procedural**
   (manual `DEF-…`) until an issue-tracker integration exists. Do not imply fully
-  automated ticket creation that isn't built.
+  automated ticket creation that isn't built. UI copy must say "auto-flagged here;
+  defect filed per certification process" — not "files a defect automatically".
+
+- **Historical baseline storage**: snapshots persist via `performance_snapshots`
+  (full report stored as JSONB `metrics`). Capture (`POST .../snapshots`) and the
+  live `GET` endpoint share one `buildPerformanceReport()` so a stored run is
+  shape-identical to a live run by construction — never build the snapshot payload
+  separately. **Why:** divergent shapes make trend comparison lie. Snapshot
+  capture + history are director-only; trend sparklines skip null/no-traffic runs
+  (don't zero-chart them — a missing point is not an improvement to 0ms).

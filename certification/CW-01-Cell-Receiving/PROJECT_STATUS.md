@@ -4,7 +4,7 @@
 |-------|-------|
 | **Wave** | CW-01 |
 | **Module** | Cell Receiving |
-| **Overall Status** | 🟢 MAT-01→05 Passed · MAT-05 CTO deliverables complete · MAT-06 authorized |
+| **Overall Status** | 🟢 MAT-01→05 ✅ PASS (closed) · MAT-06 Security & Reliability in progress |
 | **Last Updated** | 2026-06-27 |
 
 ---
@@ -17,11 +17,12 @@
 | MAT-02 | Functional Certification | ✅ Passed | 2026-06-27 | 33/36 · 8 defects resolved · 3 Low deferred |
 | MAT-03 | Workflow & Data Integrity | ✅ Pass | 2026-06-27 | 19/19 · all defects verified |
 | MAT-04 | UX & Operator Workflow | ✅ Pass | 2026-06-27 | 35/35 · DEF-M04-008 fixed & verified (ODS Standard 15) · login race (DEF-M04-010) fixed |
-| MAT-05 | Performance & Stress | ✅ Pass w/ notes | 2026-06-27 | All *measured* thresholds met @ 1,014 lots / 10,058 cells · DEF-M05-001 (missing index) fixed · DEF-M05-002 (code-split) deferred · FE render/memory micro-metrics not instrumented (follow-up) · **3 CTO deliverables complete:** Performance Baseline v1.0 (in MAT-05.md), permanent Performance Regression Framework (`certification/Performance-Regression-Framework.md`), live `/developer/performance` Engineering Health dashboard |
+| MAT-05 | Performance & Stress | ✅ **Pass (closed)** | 2026-06-27 | All *measured* thresholds met @ 1,014 lots / 10,058 cells · DEF-M05-001 (missing index) fixed · DEF-M05-002 (code-split) deferred · **4 closure criteria met:** Baseline v1.0, Regression Framework, `/developer/performance` dashboard, **historical baseline storage** (`performance_snapshots` + capture/history API + dashboard trend section) · enhancements #2–#5 (live DB health, measured React perf, background monitoring, PDF/Excel/JSON export) deferred per CTO "over time" directive |
+| MAT-06 | Security & Reliability | 🟡 In progress | — | Authorized 2026-06-27 · 14-area scope · **first-pass review done** (`MAT-06.md`) · scans clean (0 dep vulns, 0 privacy) · **5 defects open: 1 HIGH (broken access control — most mutations lack role checks), 1 MEDIUM (public+unthrottled registration), 3 LOW (audit log, prod CSP unsafe-inline, no JWT revocation)** · NOT YET PASSED |
 
 ---
 
-## Wave Metrics (cumulative — MAT-01 through MAT-05)
+## Wave Metrics (cumulative — MAT-01 through MAT-05, all closed)
 
 | Metric | Value |
 |--------|-------|
@@ -92,4 +93,9 @@
 | MAT-05 Pass w/ notes | 2026-06-27 | Replit Agent | ✅ All measured thresholds met; 2 honest measurement gaps noted (FE micro-metrics, write-path load) |
 | MAT-05 CTO deliverables required | 2026-06-27 | CTO | 📋 3 required before MAT-05 closes: Performance Baseline v1.0, permanent Regression Framework (>10% auto-defect), live `/developer/performance` dashboard |
 | MAT-05 deliverables complete | 2026-06-27 | Replit Agent | ✅ Baseline v1.0 (measured, honest N/A for client-side Export) + `Performance-Regression-Framework.md` (permanent, all waves) + live director-only Engineering Health dashboard (e2e-verified) |
-| Begin MAT-06 | 2026-06-27 | CTO | ✅ Authorized — MAT-05 deliverables satisfied |
+| MAT-05 deliverables accepted | 2026-06-27 | CTO | ✅ All 3 deliverables accepted; closure gate added: historical baseline storage required |
+| MAT-05 closure gate complete | 2026-06-27 | Replit Agent | ✅ Historical baseline storage: `performance_snapshots` table + capture/history API + dashboard Historical Performance section (trends, version chips, per-op P95 sparklines) — e2e-verified (capture returns 201, run appears in table) |
+| MAT-05 closed | 2026-06-27 | Replit Agent | ✅ Upgraded Pass-with-notes → **PASS** · all 4 closure criteria met · enhancements #2–#5 deferred as honest "over time" roadmap |
+| Begin MAT-06 | 2026-06-27 | CTO | ✅ Authorized — Security & Reliability Certification (most rigorous wave) |
+| MAT-06 scope + first-pass review | 2026-06-27 | Replit Agent | ✅ `MAT-06.md` charter (14 areas) + systematic review · scanners clean (dep audit 0, SAST 0 server-side, privacy 0) · Drizzle verified injection-safe · PASS areas: authn, secret-mgmt, input-validation, dependency, file-upload (N/A) |
+| MAT-06 defects filed | 2026-06-27 | Replit Agent | 🔴 DEF-CW01-M06-001 HIGH (broken access control — viewer can mutate prod/QC/masters/logistics) · -002 MED (public unthrottled `/auth/register`) · -003/-004/-005 LOW (no auth audit log · prod CSP `unsafe-inline` · stateless JWT no revocation) — remediation pending CTO RBAC-matrix sign-off |

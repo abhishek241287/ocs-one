@@ -5,7 +5,7 @@
 - [Orval split mode barrel](orval-split-barrel.md) — api-zod barrel must use `export * as types` not `export *` to avoid duplicate identifier conflicts after codegen.
 - [Postgres sequence race fix](postgres-sequences.md) — use `SELECT nextval(seq)` inside transactions; never `SELECT MAX(id)+1` which races under concurrent inserts.
 - [Lucide icon naming v0.511+](lucide-icon-names.md) — PlayCircle does not exist; correct name is CirclePlay in lucide-react ≥0.5.
-- [JWT httpOnly cookie auth](jwt-cookie-auth.md) — cookie `ocs_token`, signed with SESSION_SECRET; trust proxy required; public routes: /api/healthz and /api/auth/* only.
+- [JWT httpOnly cookie auth](jwt-cookie-auth.md) — cookie `ocs_token`, signed with SESSION_SECRET; trust proxy required; public routes: /api/healthz and /api/auth/* only. Also: requireAuth ≠ authorization — every write route needs its own requireRole (viewer passes requireAuth).
 - [ODS 2.0 component registry](ods-component-registry.md) — all ODS components and tokens; do not add new UI patterns outside ODS.
 - [Drizzle wraps PG errors](drizzle-pg-error-wrapping.md) — PG error code 23505 lives on `err.cause.code`, not `err.code`; check both in Express error handlers.
 - [Performance regression framework](perf-regression-framework.md) — gate regressions behind a min sample count (cold-start noise), never fake N/A figures, baseline≠stress dataset, never silently move a baseline.

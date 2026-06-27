@@ -12,13 +12,21 @@ import {
   CheckCircle2,
   MinusCircle,
   Clock,
+  History,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Camera,
 } from "lucide-react";
 import { OdsPageLayout, ModuleHeader, OdsMetricCard, OdsMetricGrid } from "@/components/ods";
 import { Button } from "@/components/ui/button";
 import {
   usePerformanceMetrics,
+  usePerformanceSnapshots,
+  useCaptureSnapshot,
   type BaselineComparisonRow,
   type RouteLatency,
+  type PerformanceSnapshot,
 } from "@/features/developer/hooks/usePerformanceMetrics";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -94,6 +102,8 @@ function FuturePanel({ title, reason }: { title: string; reason: string }) {
 
 export default function PerformancePage() {
   const { data, isLoading, isError, error, refetch, isFetching } = usePerformanceMetrics();
+  const { data: snapshots = [], isLoading: snapshotsLoading } = usePerformanceSnapshots(10);
+  const captureSnapshot = useCaptureSnapshot();
   const queryClient = useQueryClient();
 
   // Client-side React Query cache stats (live, browser-side).
@@ -212,6 +222,25 @@ export default function PerformancePage() {
           <BaselineTable rows={data?.baselineComparison ?? []} isLoading={isLoading} threshold={data?.regressionThresholdPct ?? 10} />
         </SectionCard>
 
+        {/* ─── Historical performance ────────────────────────────────────── */}
+        <SectionCard
+          icon={<History className="h-4 w-4" />}
+          title="Historical Performance"
+          subtitle="Permanent certification snapshots — trends, version comparison, and run-over-run movement from recorded evidence."
+          right={
+            <Button
+              size="sm"
+              onClick={() => captureSnapshot.mutate(undefined)}
+              disabled={captureSnapshot.isPending}
+            >
+              <Camera className={`h-3.5 w-3.5 mr-1.5 ${captureSnapshot.isPending ? "animate-pulse" : ""}`} />
+              {captureSnapshot.isPending ? "Capturing…" : "Capture snapshot"}
+            </Button>
+          }
+        >
+          <HistoricalSection snapshots={snapshots} isLoading={snapshotsLoading} />
+        </SectionCard>
+
         {/* ─── Live API latency ──────────────────────────────────────────── */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
           <SectionCard
@@ -320,7 +349,7 @@ export default function PerformancePage() {
         <SectionCard
           icon={<AlertTriangle className="h-4 w-4" />}
           title="Regression Framework Rules"
-          subtitle="Permanent policy — any breach files a defect automatically"
+          subtitle="Permanent policy — a breach is auto-flagged here; the defect is then filed per the certification process"
         >
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -441,6 +470,188 @@ function BaselineTable({ rows, isLoading, threshold }: { rows: BaselineCompariso
           })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+// ─── Historical performance ──────────────────────────────────────────────────
+
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) {
+    return <span className="text-[11px] text-slate-400 italic">need ≥2 runs</span>;
+  }
+  const w = 84;
+  const h = 24;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const pts = values
+    .map((v, i) => {
+      const x = (i / (values.length - 1)) * w;
+      const y = h - ((v - min) / span) * h;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  // Lower latency is better — trend down (last < first) is an improvement.
+  const improving = values[values.length - 1] <= values[0];
+  return (
+    <svg width={w} height={h} className="overflow-visible">
+      <polyline
+        points={pts}
+        fill="none"
+        stroke={improving ? "rgb(16 185 129)" : "rgb(239 68 68)"}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TrendIndicator({ deltaPct }: { deltaPct: number | null }) {
+  if (deltaPct == null) {
+    return <span className="inline-flex items-center gap-1 text-[11px] text-slate-400"><Minus className="h-3 w-3" />flat</span>;
+  }
+  if (Math.abs(deltaPct) < 1) {
+    return <span className="inline-flex items-center gap-1 text-[11px] text-slate-500"><Minus className="h-3 w-3" />±{Math.abs(deltaPct)}%</span>;
+  }
+  // Lower P95 is better: negative delta = improvement (green).
+  const improved = deltaPct < 0;
+  return (
+    <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${improved ? "text-emerald-600" : "text-red-600"}`}>
+      {improved ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
+      {deltaPct > 0 ? "+" : ""}{deltaPct}%
+    </span>
+  );
+}
+
+function HistoricalSection({ snapshots, isLoading }: { snapshots: PerformanceSnapshot[]; isLoading: boolean }) {
+  // Chronological (oldest → newest) for trend lines; API returns newest-first.
+  const chrono = useMemo(() => [...snapshots].reverse(), [snapshots]);
+
+  // Per-operation P95 series across runs (measured ops only; nulls skipped).
+  const opTrends = useMemo(() => {
+    const latest = snapshots[0];
+    if (!latest) return [];
+    return latest.metrics.baselineComparison
+      .filter((op) => op.measured)
+      .map((op) => {
+        const series = chrono
+          .map((s) => s.metrics.baselineComparison.find((o) => o.operation === op.operation)?.currentP95 ?? null)
+          .filter((v): v is number => v != null);
+        let deltaPct: number | null = null;
+        if (series.length >= 2) {
+          const first = series[0];
+          const last = series[series.length - 1];
+          if (first > 0) deltaPct = Math.round(((last - first) / first) * 1000) / 10;
+        }
+        return { operation: op.operation, baselineMs: op.baselineMs, series, deltaPct };
+      });
+  }, [snapshots, chrono]);
+
+  const versions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const s of snapshots) counts.set(s.version, (counts.get(s.version) ?? 0) + 1);
+    return [...counts.entries()];
+  }, [snapshots]);
+
+  if (isLoading) return <div className="h-40 animate-pulse bg-slate-100 rounded-lg" />;
+
+  if (snapshots.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <History className="h-7 w-7 text-slate-300 mx-auto mb-2" />
+        <p className="text-sm text-slate-500">No certification snapshots recorded yet.</p>
+        <p className="text-xs text-slate-400 mt-1">
+          Capture a snapshot to begin building historical evidence. Each run is stored permanently for trend analysis.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Version comparison chips */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Baseline versions:</span>
+        {versions.map(([v, n]) => (
+          <span key={v} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs">
+            <span className="font-semibold text-slate-700">v{v}</span>
+            <span className="text-slate-400">·</span>
+            <span className="text-slate-500">{n} run{n === 1 ? "" : "s"}</span>
+          </span>
+        ))}
+      </div>
+
+      {/* Runs table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wider text-slate-500 border-b border-slate-100">
+              <th className="py-2 pr-3 font-semibold">Captured</th>
+              <th className="py-2 px-2 font-semibold">Version</th>
+              <th className="py-2 px-2 font-semibold">Label</th>
+              <th className="py-2 px-2 font-semibold text-right">Regressions</th>
+              <th className="py-2 px-2 font-semibold text-right">Bundle gzip</th>
+              <th className="py-2 pl-2 font-semibold">By</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {snapshots.map((s) => (
+              <tr key={s.id}>
+                <td className="py-2.5 pr-3 text-slate-700 whitespace-nowrap">{new Date(s.capturedAt).toLocaleString()}</td>
+                <td className="py-2.5 px-2 text-slate-600">v{s.version}</td>
+                <td className="py-2.5 px-2 text-slate-700">{s.label}</td>
+                <td className="py-2.5 px-2 text-right">
+                  {s.regressionCount === 0 ? (
+                    <span className="text-emerald-600 font-medium tabular-nums">0</span>
+                  ) : (
+                    <span className="text-red-600 font-medium tabular-nums">{s.regressionCount}</span>
+                  )}
+                </td>
+                <td className="py-2.5 px-2 text-right tabular-nums text-slate-600">{s.metrics.bundle.totalGzipKb} KB</td>
+                <td className="py-2.5 pl-2 text-slate-500 text-xs">{s.capturedBy ?? "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Per-operation trends */}
+      <div>
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+          Per-operation P95 trend{" "}
+          <span className="font-normal normal-case tracking-normal text-slate-400">
+            (live P95 across runs · only runs with recorded traffic)
+          </span>
+        </h4>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wider text-slate-500 border-b border-slate-100">
+                <th className="py-2 pr-3 font-semibold">Operation</th>
+                <th className="py-2 px-2 font-semibold text-right">Baseline</th>
+                <th className="py-2 px-2 font-semibold text-right">Latest</th>
+                <th className="py-2 px-2 font-semibold">Trend</th>
+                <th className="py-2 pl-2 font-semibold">Movement</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {opTrends.map((t) => (
+                <tr key={t.operation}>
+                  <td className="py-2.5 pr-3 font-medium text-slate-800">{t.operation}</td>
+                  <td className="py-2.5 px-2 text-right tabular-nums text-slate-600">{fmtMs(t.baselineMs)}</td>
+                  <td className="py-2.5 px-2 text-right tabular-nums font-semibold text-slate-800">
+                    {t.series.length > 0 ? fmtMs(t.series[t.series.length - 1]) : "—"}
+                  </td>
+                  <td className="py-2.5 px-2"><Sparkline values={t.series} /></td>
+                  <td className="py-2.5 pl-2"><TrendIndicator deltaPct={t.deltaPct} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
