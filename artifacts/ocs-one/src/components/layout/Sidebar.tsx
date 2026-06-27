@@ -84,10 +84,17 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    title: "Logistics",
+    items: [
+      { label: "Packing Dashboard", href: "/logistics/packing-dashboard", icon: Package },
+      { label: "Dispatch Orders", href: "/logistics/dispatch-orders", icon: Truck },
+      { label: "Dealer Master", href: "/logistics/dealers", icon: ShieldCheck },
+    ],
+  },
+  {
     title: "Traceability",
     items: [
       { label: "QR Traceability", href: "#qr", icon: QrCode },
-      { label: "Dispatch", href: "#dispatch", icon: Truck },
     ],
   },
   {

@@ -1,0 +1,228 @@
+# OCS One – Sprint 8
+
+## Packing, Dispatch & Dealer Management
+
+You are the Lead Manufacturing Software Engineer for OCS One.
+
+Use all existing modules.
+
+Do not redesign any completed module.
+
+Extend the existing Manufacturing Engine.
+
+---
+
+# Objective
+
+After QC Approval, every battery must be packed, assigned to a dispatch order, shipped to a dealer/customer, and remain traceable throughout its logistics lifecycle.
+
+No battery can be dispatched unless it has passed QC.
+
+---
+
+# Module 1 – Packing
+
+Create a Packing stage.
+
+Operator records:
+
+* Packing Operator
+* Packing Date
+* Box Number
+* Box Type
+* Gross Weight
+* Net Weight
+
+Packing Checklist:
+
+☐ Warranty Card
+
+☐ User Manual
+
+☐ Connecting Cable
+
+☐ Mounting Bolts
+
+☐ Support Accessories
+
+☐ Final Visual Inspection
+
+Photo Upload:
+
+* Battery Photo
+* Packed Box Photo
+
+Buttons:
+
+Start Packing
+
+Complete Packing
+
+---
+
+# Module 2 – Dispatch Order
+
+Create Dispatch Orders.
+
+Fields:
+
+* Dispatch Number (Auto)
+
+Format:
+
+DIS-YYYYMMDD-0001
+
+* Dealer
+* Customer
+* Transporter
+* Vehicle Number
+* Driver Name
+* Driver Mobile
+* Dispatch Date
+
+Display batteries included.
+
+One dispatch can contain multiple batteries.
+
+---
+
+# Module 3 – Dealer Management
+
+Create Dealer Master.
+
+Fields:
+
+* Dealer Code
+* Dealer Name
+* GST Number
+* Address
+* Contact Person
+* Mobile
+* Email
+* Territory
+* Credit Limit
+* Status
+
+Link dispatches to dealers.
+
+---
+
+# Module 4 – Shipment Tracking
+
+Track:
+
+Ready for Dispatch
+
+Loaded
+
+In Transit
+
+Delivered
+
+Received by Dealer
+
+Store timestamps.
+
+---
+
+# Module 5 – Packing Dashboard
+
+Display:
+
+Batteries Ready
+
+Packed Today
+
+Waiting Dispatch
+
+In Transit
+
+Delivered Today
+
+---
+
+# Module 6 – Battery Passport
+
+Automatically update:
+
+Packing Date
+
+Dispatch Number
+
+Dealer
+
+Transporter
+
+Tracking Status
+
+Photos
+
+Timeline entries:
+
+Packing Started
+
+Packing Completed
+
+Dispatched
+
+Delivered
+
+---
+
+# Module 7 – QR Scan
+
+When a QR code is scanned after dispatch:
+
+Display:
+
+Battery Number
+
+Dealer
+
+Dispatch Status
+
+Manufacturing History
+
+Digital Passport
+
+No editing allowed after dispatch.
+
+---
+
+# Rules
+
+* Only QC Approved batteries can be packed.
+* Packed batteries cannot return to production without a formal rework process.
+* One battery belongs to only one dispatch order.
+* Every logistics event is written to the audit log.
+* Digital Passport updates automatically.
+
+---
+
+# Dashboard
+
+Create Logistics Dashboard:
+
+* Dispatches Today
+* Batteries in Transit
+* Delivered
+* Pending Dispatch
+* Dealer-wise Shipments
+
+---
+
+# Deliverables
+
+* Packing Module
+* Dispatch Orders
+* Dealer Master
+* Shipment Tracking
+* Logistics Dashboard
+* Digital Passport updates
+* Database migration
+* API documentation
+* TypeScript passes
+
+Stop after Dispatch & Dealer Management.
+
+Do not implement Warranty Registration or Service in this sprint.

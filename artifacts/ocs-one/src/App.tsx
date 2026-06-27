@@ -25,6 +25,10 @@ import CellGradingPage from "@/features/cells/pages/CellGradingPage";
 import CellInventoryPage from "@/features/cells/pages/CellInventoryPage";
 import CellMatchingPage from "@/features/cells/pages/CellMatchingPage";
 import GradeConfigPage from "@/features/cells/pages/GradeConfigPage";
+import PackingDashboardPage from "@/features/logistics/pages/PackingDashboardPage";
+import DealerMasterPage from "@/features/logistics/pages/DealerMasterPage";
+import DispatchOrdersPage from "@/features/logistics/pages/DispatchOrdersPage";
+import DispatchOrderDetailPage from "@/features/logistics/pages/DispatchOrderDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +63,13 @@ function Router() {
       <Route path="/cells/inventory" component={CellInventoryPage} />
       <Route path="/cells/matching" component={CellMatchingPage} />
       <Route path="/cells/config" component={GradeConfigPage} />
+      <Route path="/logistics">
+        <Redirect to="/logistics/packing-dashboard" />
+      </Route>
+      <Route path="/logistics/packing-dashboard" component={PackingDashboardPage} />
+      <Route path="/logistics/dealers" component={DealerMasterPage} />
+      <Route path="/logistics/dispatch-orders" component={DispatchOrdersPage} />
+      <Route path="/logistics/dispatch-orders/:id" component={DispatchOrderDetailPage} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -31,4 +31,7 @@ router.use("/manufacturing", manufacturingRouter);
 import cellsRouter from "./cells/index";
 router.use("/cells", cellsRouter);
 
+import logisticsRouter from "./logistics/index";
+router.use("/logistics", logisticsRouter);
+
 export default router;

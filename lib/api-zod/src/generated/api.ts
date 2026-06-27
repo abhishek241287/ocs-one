@@ -3895,3 +3895,376 @@ export const ReportCellInventoryResponse = zod.unknown()
 export const ReportCellMatchingResponse = zod.unknown()
 
 
+/**
+ * @summary List all dealers
+ */
+export const listDealersQueryPageDefault = 1;
+export const listDealersQueryPageSizeDefault = 20;
+
+export const ListDealersQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.enum(['active', 'inactive']).optional(),
+  "page": zod.coerce.number().default(listDealersQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listDealersQueryPageSizeDefault)
+})
+
+export const ListDealersResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "dealerCode": zod.string(),
+  "dealerName": zod.string(),
+  "gstNumber": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "contactPerson": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "territory": zod.string().nullish(),
+  "creditLimit": zod.number().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "total": zod.number()
+})
+
+
+/**
+ * @summary Create a new dealer
+ */
+export const CreateDealerBody = zod.object({
+  "dealerCode": zod.string(),
+  "dealerName": zod.string(),
+  "gstNumber": zod.string().optional(),
+  "address": zod.string().optional(),
+  "contactPerson": zod.string().optional(),
+  "mobile": zod.string().optional(),
+  "email": zod.string().optional(),
+  "territory": zod.string().optional(),
+  "creditLimit": zod.number().optional(),
+  "status": zod.enum(['active', 'inactive']).optional()
+})
+
+export const CreateDealerResponse = zod.object({
+  "id": zod.string().uuid(),
+  "dealerCode": zod.string(),
+  "dealerName": zod.string(),
+  "gstNumber": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "contactPerson": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "territory": zod.string().nullish(),
+  "creditLimit": zod.number().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get a dealer
+ */
+export const GetDealerParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetDealerResponse = zod.object({
+  "id": zod.string().uuid(),
+  "dealerCode": zod.string(),
+  "dealerName": zod.string(),
+  "gstNumber": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "contactPerson": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "territory": zod.string().nullish(),
+  "creditLimit": zod.number().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a dealer
+ */
+export const UpdateDealerParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateDealerBody = zod.object({
+  "dealerCode": zod.string(),
+  "dealerName": zod.string(),
+  "gstNumber": zod.string().optional(),
+  "address": zod.string().optional(),
+  "contactPerson": zod.string().optional(),
+  "mobile": zod.string().optional(),
+  "email": zod.string().optional(),
+  "territory": zod.string().optional(),
+  "creditLimit": zod.number().optional(),
+  "status": zod.enum(['active', 'inactive']).optional()
+})
+
+export const UpdateDealerResponse = zod.object({
+  "id": zod.string().uuid(),
+  "dealerCode": zod.string(),
+  "dealerName": zod.string(),
+  "gstNumber": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "contactPerson": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "territory": zod.string().nullish(),
+  "creditLimit": zod.number().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a dealer
+ */
+export const DeleteDealerParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DeleteDealerResponse = zod.void()
+
+
+/**
+ * @summary List dispatch orders
+ */
+export const listDispatchOrdersQueryPageDefault = 1;
+export const listDispatchOrdersQueryPageSizeDefault = 20;
+
+export const ListDispatchOrdersQueryParams = zod.object({
+  "status": zod.enum(['draft', 'confirmed', 'loaded', 'in_transit', 'delivered', 'cancelled']).optional(),
+  "dealerId": zod.coerce.string().uuid().optional(),
+  "page": zod.coerce.number().default(listDispatchOrdersQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listDispatchOrdersQueryPageSizeDefault)
+})
+
+export const ListDispatchOrdersResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "dispatchNumber": zod.string(),
+  "dealerId": zod.string().uuid().nullish(),
+  "customerName": zod.string().nullish(),
+  "transporter": zod.string().nullish(),
+  "vehicleNumber": zod.string().nullish(),
+  "driverName": zod.string().nullish(),
+  "driverMobile": zod.string().nullish(),
+  "dispatchDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['draft', 'confirmed', 'loaded', 'in_transit', 'delivered', 'cancelled']),
+  "notes": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "total": zod.number()
+})
+
+
+/**
+ * @summary Create a dispatch order
+ */
+export const CreateDispatchOrderBody = zod.object({
+  "dealerId": zod.string().uuid().optional(),
+  "customerName": zod.string().optional(),
+  "transporter": zod.string().optional(),
+  "vehicleNumber": zod.string().optional(),
+  "driverName": zod.string().optional(),
+  "driverMobile": zod.string().optional(),
+  "dispatchDate": zod.coerce.date().optional(),
+  "notes": zod.string().optional(),
+  "createdBy": zod.string().optional()
+})
+
+export const CreateDispatchOrderResponse = zod.object({
+  "id": zod.string().uuid(),
+  "dispatchNumber": zod.string(),
+  "dealerId": zod.string().uuid().nullish(),
+  "customerName": zod.string().nullish(),
+  "transporter": zod.string().nullish(),
+  "vehicleNumber": zod.string().nullish(),
+  "driverName": zod.string().nullish(),
+  "driverMobile": zod.string().nullish(),
+  "dispatchDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['draft', 'confirmed', 'loaded', 'in_transit', 'delivered', 'cancelled']),
+  "notes": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get a dispatch order with batteries
+ */
+export const GetDispatchOrderParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetDispatchOrderResponse = zod.object({
+  "id": zod.string().uuid(),
+  "dispatchNumber": zod.string(),
+  "dealerId": zod.string().uuid().nullish(),
+  "customerName": zod.string().nullish(),
+  "transporter": zod.string().nullish(),
+  "vehicleNumber": zod.string().nullish(),
+  "driverName": zod.string().nullish(),
+  "driverMobile": zod.string().nullish(),
+  "dispatchDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['draft', 'confirmed', 'loaded', 'in_transit', 'delivered', 'cancelled']),
+  "notes": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "dealer": zod.object({
+  "id": zod.string().uuid(),
+  "dealerCode": zod.string(),
+  "dealerName": zod.string(),
+  "gstNumber": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "contactPerson": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "territory": zod.string().nullish(),
+  "creditLimit": zod.number().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).optional(),
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "dispatchOrderId": zod.string().uuid(),
+  "productionOrderId": zod.string().uuid(),
+  "batteryNumber": zod.string().optional(),
+  "orderNumber": zod.string().optional(),
+  "addedAt": zod.coerce.date()
+})),
+  "shipmentEvents": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "dispatchOrderId": zod.string().uuid(),
+  "eventType": zod.enum(['ready_for_dispatch', 'loaded', 'in_transit', 'delivered', 'received_by_dealer']),
+  "actor": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "occurredAt": zod.coerce.date()
+}))
+}))
+
+
+/**
+ * @summary Update a dispatch order
+ */
+export const UpdateDispatchOrderParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateDispatchOrderBody = zod.object({
+  "dealerId": zod.string().uuid().optional(),
+  "customerName": zod.string().optional(),
+  "transporter": zod.string().optional(),
+  "vehicleNumber": zod.string().optional(),
+  "driverName": zod.string().optional(),
+  "driverMobile": zod.string().optional(),
+  "dispatchDate": zod.coerce.date().optional(),
+  "notes": zod.string().optional(),
+  "createdBy": zod.string().optional()
+})
+
+export const UpdateDispatchOrderResponse = zod.object({
+  "id": zod.string().uuid(),
+  "dispatchNumber": zod.string(),
+  "dealerId": zod.string().uuid().nullish(),
+  "customerName": zod.string().nullish(),
+  "transporter": zod.string().nullish(),
+  "vehicleNumber": zod.string().nullish(),
+  "driverName": zod.string().nullish(),
+  "driverMobile": zod.string().nullish(),
+  "dispatchDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['draft', 'confirmed', 'loaded', 'in_transit', 'delivered', 'cancelled']),
+  "notes": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Add a battery to a dispatch order
+ */
+export const AddDispatchItemParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const AddDispatchItemBody = zod.object({
+  "productionOrderId": zod.string().uuid()
+})
+
+export const AddDispatchItemResponse = zod.object({
+  "id": zod.string().uuid(),
+  "dispatchOrderId": zod.string().uuid(),
+  "productionOrderId": zod.string().uuid(),
+  "batteryNumber": zod.string().optional(),
+  "orderNumber": zod.string().optional(),
+  "addedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a battery from a dispatch order
+ */
+export const RemoveDispatchItemParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "itemId": zod.coerce.string().uuid()
+})
+
+export const RemoveDispatchItemResponse = zod.void()
+
+
+/**
+ * @summary Advance dispatch order status
+ */
+export const AdvanceDispatchStatusParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const AdvanceDispatchStatusBody = zod.object({
+  "status": zod.enum(['confirmed', 'loaded', 'in_transit', 'delivered', 'cancelled']),
+  "actor": zod.string(),
+  "notes": zod.string().optional()
+})
+
+export const AdvanceDispatchStatusResponse = zod.object({
+  "id": zod.string().uuid(),
+  "dispatchNumber": zod.string(),
+  "dealerId": zod.string().uuid().nullish(),
+  "customerName": zod.string().nullish(),
+  "transporter": zod.string().nullish(),
+  "vehicleNumber": zod.string().nullish(),
+  "driverName": zod.string().nullish(),
+  "driverMobile": zod.string().nullish(),
+  "dispatchDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['draft', 'confirmed', 'loaded', 'in_transit', 'delivered', 'cancelled']),
+  "notes": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Live packing & dispatch KPI dashboard
+ */
+export const GetPackingDashboardResponse = zod.object({
+  "readyForDispatch": zod.number(),
+  "packedToday": zod.number(),
+  "waitingDispatch": zod.number(),
+  "inTransit": zod.number(),
+  "deliveredToday": zod.number()
+})
+
+

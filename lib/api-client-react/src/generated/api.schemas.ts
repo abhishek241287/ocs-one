@@ -1312,6 +1312,153 @@ export interface CellGradeConfigInput {
   nominalIrMohm?: number;
 }
 
+export type DealerStatus = typeof DealerStatus[keyof typeof DealerStatus];
+
+
+export const DealerStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface Dealer {
+  id: string;
+  dealerCode: string;
+  dealerName: string;
+  /** @nullable */
+  gstNumber?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  contactPerson?: string | null;
+  /** @nullable */
+  mobile?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  territory?: string | null;
+  /** @nullable */
+  creditLimit?: number | null;
+  status: DealerStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DealerInputStatus = typeof DealerInputStatus[keyof typeof DealerInputStatus];
+
+
+export const DealerInputStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface DealerInput {
+  dealerCode: string;
+  dealerName: string;
+  gstNumber?: string;
+  address?: string;
+  contactPerson?: string;
+  mobile?: string;
+  email?: string;
+  territory?: string;
+  creditLimit?: number;
+  status?: DealerInputStatus;
+}
+
+export type DispatchOrderStatus = typeof DispatchOrderStatus[keyof typeof DispatchOrderStatus];
+
+
+export const DispatchOrderStatus = {
+  draft: 'draft',
+  confirmed: 'confirmed',
+  loaded: 'loaded',
+  in_transit: 'in_transit',
+  delivered: 'delivered',
+  cancelled: 'cancelled',
+} as const;
+
+export interface DispatchOrder {
+  id: string;
+  dispatchNumber: string;
+  /** @nullable */
+  dealerId?: string | null;
+  /** @nullable */
+  customerName?: string | null;
+  /** @nullable */
+  transporter?: string | null;
+  /** @nullable */
+  vehicleNumber?: string | null;
+  /** @nullable */
+  driverName?: string | null;
+  /** @nullable */
+  driverMobile?: string | null;
+  /** @nullable */
+  dispatchDate?: string | null;
+  status: DispatchOrderStatus;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DispatchItem {
+  id: string;
+  dispatchOrderId: string;
+  productionOrderId: string;
+  batteryNumber?: string;
+  orderNumber?: string;
+  addedAt: string;
+}
+
+export type ShipmentEventEventType = typeof ShipmentEventEventType[keyof typeof ShipmentEventEventType];
+
+
+export const ShipmentEventEventType = {
+  ready_for_dispatch: 'ready_for_dispatch',
+  loaded: 'loaded',
+  in_transit: 'in_transit',
+  delivered: 'delivered',
+  received_by_dealer: 'received_by_dealer',
+} as const;
+
+export interface ShipmentEvent {
+  id: string;
+  dispatchOrderId: string;
+  eventType: ShipmentEventEventType;
+  /** @nullable */
+  actor?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  occurredAt: string;
+}
+
+export type DispatchOrderDetail = DispatchOrder & {
+  dealer?: Dealer;
+  items: DispatchItem[];
+  shipmentEvents: ShipmentEvent[];
+};
+
+export interface DispatchOrderInput {
+  dealerId?: string;
+  customerName?: string;
+  transporter?: string;
+  vehicleNumber?: string;
+  driverName?: string;
+  driverMobile?: string;
+  dispatchDate?: string;
+  notes?: string;
+  createdBy?: string;
+}
+
+export interface PackingDashboard {
+  readyForDispatch: number;
+  packedToday: number;
+  waitingDispatch: number;
+  inTransit: number;
+  deliveredToday: number;
+}
+
 export type SearchParamParameter = string;
 
 export type StatusParamParameter = typeof StatusParamParameter[keyof typeof StatusParamParameter];
@@ -1586,5 +1733,70 @@ export const ListCellsGrade = {
 export type ListCells200 = {
   items: Cell[];
   meta: PaginationMeta;
+};
+
+export type ListDealersParams = {
+search?: string;
+status?: ListDealersStatus;
+page?: number;
+pageSize?: number;
+};
+
+export type ListDealersStatus = typeof ListDealersStatus[keyof typeof ListDealersStatus];
+
+
+export const ListDealersStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export type ListDealers200 = {
+  items: Dealer[];
+  total: number;
+};
+
+export type ListDispatchOrdersParams = {
+status?: ListDispatchOrdersStatus;
+dealerId?: string;
+page?: number;
+pageSize?: number;
+};
+
+export type ListDispatchOrdersStatus = typeof ListDispatchOrdersStatus[keyof typeof ListDispatchOrdersStatus];
+
+
+export const ListDispatchOrdersStatus = {
+  draft: 'draft',
+  confirmed: 'confirmed',
+  loaded: 'loaded',
+  in_transit: 'in_transit',
+  delivered: 'delivered',
+  cancelled: 'cancelled',
+} as const;
+
+export type ListDispatchOrders200 = {
+  items: DispatchOrder[];
+  total: number;
+};
+
+export type AddDispatchItemBody = {
+  productionOrderId: string;
+};
+
+export type AdvanceDispatchStatusBodyStatus = typeof AdvanceDispatchStatusBodyStatus[keyof typeof AdvanceDispatchStatusBodyStatus];
+
+
+export const AdvanceDispatchStatusBodyStatus = {
+  confirmed: 'confirmed',
+  loaded: 'loaded',
+  in_transit: 'in_transit',
+  delivered: 'delivered',
+  cancelled: 'cancelled',
+} as const;
+
+export type AdvanceDispatchStatusBody = {
+  status: AdvanceDispatchStatusBodyStatus;
+  actor: string;
+  notes?: string;
 };
 

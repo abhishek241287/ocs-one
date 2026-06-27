@@ -1872,6 +1872,249 @@ paths:
             text/csv:
               schema: { type: string }
 
+  # ── Logistics — Dealers ───────────────────────────────────────────────────────
+  /logistics/dealers:
+    get:
+      operationId: listDealers
+      tags: [logistics]
+      summary: List all dealers
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, inactive] }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: Dealers list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Dealer" }
+                  total: { type: integer }
+    post:
+      operationId: createDealer
+      tags: [logistics]
+      summary: Create a new dealer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DealerInput" }
+      responses:
+        "201":
+          description: Dealer created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Dealer" }
+
+  /logistics/dealers/{id}:
+    get:
+      operationId: getDealer
+      tags: [logistics]
+      summary: Get a dealer
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Dealer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Dealer" }
+    put:
+      operationId: updateDealer
+      tags: [logistics]
+      summary: Update a dealer
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DealerInput" }
+      responses:
+        "200":
+          description: Updated dealer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Dealer" }
+    delete:
+      operationId: deleteDealer
+      tags: [logistics]
+      summary: Delete a dealer
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Logistics — Dispatch Orders ───────────────────────────────────────────────
+  /logistics/dispatch-orders:
+    get:
+      operationId: listDispatchOrders
+      tags: [logistics]
+      summary: List dispatch orders
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [draft, confirmed, loaded, in_transit, delivered, cancelled] }
+        - name: dealerId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: Dispatch orders list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/DispatchOrder" }
+                  total: { type: integer }
+    post:
+      operationId: createDispatchOrder
+      tags: [logistics]
+      summary: Create a dispatch order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DispatchOrderInput" }
+      responses:
+        "201":
+          description: Dispatch order created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DispatchOrder" }
+
+  /logistics/dispatch-orders/{id}:
+    get:
+      operationId: getDispatchOrder
+      tags: [logistics]
+      summary: Get a dispatch order with batteries
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Dispatch order detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DispatchOrderDetail" }
+    put:
+      operationId: updateDispatchOrder
+      tags: [logistics]
+      summary: Update a dispatch order
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DispatchOrderInput" }
+      responses:
+        "200":
+          description: Updated dispatch order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DispatchOrder" }
+
+  /logistics/dispatch-orders/{id}/items:
+    post:
+      operationId: addDispatchItem
+      tags: [logistics]
+      summary: Add a battery to a dispatch order
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productionOrderId]
+              properties:
+                productionOrderId: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Item added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DispatchItem" }
+
+  /logistics/dispatch-orders/{id}/items/{itemId}:
+    delete:
+      operationId: removeDispatchItem
+      tags: [logistics]
+      summary: Remove a battery from a dispatch order
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204":
+          description: Removed
+
+  /logistics/dispatch-orders/{id}/status:
+    post:
+      operationId: advanceDispatchStatus
+      tags: [logistics]
+      summary: Advance dispatch order status
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status, actor]
+              properties:
+                status: { type: string, enum: [confirmed, loaded, in_transit, delivered, cancelled] }
+                actor: { type: string }
+                notes: { type: string }
+      responses:
+        "200":
+          description: Updated dispatch order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DispatchOrder" }
+
+  # ── Logistics — Packing Dashboard ─────────────────────────────────────────────
+  /logistics/packing-dashboard:
+    get:
+      operationId: getPackingDashboard
+      tags: [logistics]
+      summary: Live packing & dispatch KPI dashboard
+      responses:
+        "200":
+          description: Packing dashboard stats
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PackingDashboard" }
+
 components:
   parameters:
     IdParam:
@@ -3047,3 +3290,116 @@ components:
         maxIrDiffMohm: { type: number }
         maxVoltageDiffMv: { type: number }
         nominalIrMohm: { type: number }
+
+    # ── Logistics ────────────────────────────────────────────────────────────────
+    Dealer:
+      type: object
+      required: [id, dealerCode, dealerName, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        dealerCode: { type: string }
+        dealerName: { type: string }
+        gstNumber: { type: ["string", "null"] }
+        address: { type: ["string", "null"] }
+        contactPerson: { type: ["string", "null"] }
+        mobile: { type: ["string", "null"] }
+        email: { type: ["string", "null"] }
+        territory: { type: ["string", "null"] }
+        creditLimit: { type: ["number", "null"] }
+        status: { type: string, enum: [active, inactive] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    DealerInput:
+      type: object
+      required: [dealerCode, dealerName]
+      properties:
+        dealerCode: { type: string }
+        dealerName: { type: string }
+        gstNumber: { type: string }
+        address: { type: string }
+        contactPerson: { type: string }
+        mobile: { type: string }
+        email: { type: string }
+        territory: { type: string }
+        creditLimit: { type: number }
+        status: { type: string, enum: [active, inactive] }
+
+    DispatchOrder:
+      type: object
+      required: [id, dispatchNumber, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        dispatchNumber: { type: string }
+        dealerId: { type: ["string", "null"], format: uuid }
+        customerName: { type: ["string", "null"] }
+        transporter: { type: ["string", "null"] }
+        vehicleNumber: { type: ["string", "null"] }
+        driverName: { type: ["string", "null"] }
+        driverMobile: { type: ["string", "null"] }
+        dispatchDate: { type: ["string", "null"], format: date }
+        status: { type: string, enum: [draft, confirmed, loaded, in_transit, delivered, cancelled] }
+        notes: { type: ["string", "null"] }
+        createdBy: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    DispatchOrderDetail:
+      allOf:
+        - $ref: "#/components/schemas/DispatchOrder"
+        - type: object
+          required: [items, shipmentEvents]
+          properties:
+            dealer:
+              $ref: "#/components/schemas/Dealer"
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/DispatchItem" }
+            shipmentEvents:
+              type: array
+              items: { $ref: "#/components/schemas/ShipmentEvent" }
+
+    DispatchOrderInput:
+      type: object
+      properties:
+        dealerId: { type: string, format: uuid }
+        customerName: { type: string }
+        transporter: { type: string }
+        vehicleNumber: { type: string }
+        driverName: { type: string }
+        driverMobile: { type: string }
+        dispatchDate: { type: string, format: date }
+        notes: { type: string }
+        createdBy: { type: string }
+
+    DispatchItem:
+      type: object
+      required: [id, dispatchOrderId, productionOrderId, addedAt]
+      properties:
+        id: { type: string, format: uuid }
+        dispatchOrderId: { type: string, format: uuid }
+        productionOrderId: { type: string, format: uuid }
+        batteryNumber: { type: string }
+        orderNumber: { type: string }
+        addedAt: { type: string, format: date-time }
+
+    ShipmentEvent:
+      type: object
+      required: [id, dispatchOrderId, eventType, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        dispatchOrderId: { type: string, format: uuid }
+        eventType: { type: string, enum: [ready_for_dispatch, loaded, in_transit, delivered, received_by_dealer] }
+        actor: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        occurredAt: { type: string, format: date-time }
+
+    PackingDashboard:
+      type: object
+      required: [readyForDispatch, packedToday, waitingDispatch, inTransit, deliveredToday]
+      properties:
+        readyForDispatch: { type: integer }
+        packedToday: { type: integer }
+        waitingDispatch: { type: integer }
+        inTransit: { type: integer }
+        deliveredToday: { type: integer }

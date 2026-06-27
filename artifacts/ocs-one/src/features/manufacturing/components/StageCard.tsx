@@ -1,3 +1,4 @@
+import PackingCard from "./stage-cards/PackingCard";
 import CellAllocationCard from "./stage-cards/CellAllocationCard";
 import AssemblyCard from "./stage-cards/AssemblyCard";
 import CompressionCard from "./stage-cards/CompressionCard";
@@ -70,8 +71,10 @@ export default function StageCard({ orderId, stage, onRefresh }: Props) {
   if (stage.stageType === "quality_control") {
     return <QualityControlCard orderId={orderId} stage={stage} onRefresh={onRefresh} />;
   }
+  if (stage.stageType === "packing") {
+    return <PackingCard orderId={orderId} stage={stage} onRefresh={onRefresh} />;
+  }
 
-  // Generic fallback for packing
   return <GenericStageCard orderId={orderId} stage={stage} onRefresh={onRefresh} />;
 }
 

@@ -29,3 +29,4 @@ export * from "./master-chargers";
 export * from "./master-test-equipment";
 export * from "./manufacturing";
 export * from "./cell-grading";
+export * from "./logistics";
