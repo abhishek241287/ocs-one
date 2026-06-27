@@ -4,37 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Zap, BatteryCharging, Clock, CheckCircle2, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
 import { useGetChargingDashboard, useListChargerUnits } from "@workspace/api-client-react";
 import { Link } from "wouter";
-
-function KpiCard({
-  label, value, sub, icon: Icon, color,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  icon: React.FC<{ className?: string }>;
-  color: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-5 pb-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
-            {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
-          </div>
-          <div className={`p-2.5 rounded-xl ${color}`}>
-            <Icon className="h-5 w-5" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+import { OdsMetricCard, OdsMetricGrid } from "@/components/ods";
 
 const CHARGER_STATUS_CONFIG = {
-  available: { label: "Available", className: "bg-green-100 text-green-800 border-green-300" },
-  busy: { label: "Charging", className: "bg-blue-100 text-blue-800 border-blue-300" },
+  available:   { label: "Available",   className: "bg-green-100 text-green-800 border-green-300" },
+  busy:        { label: "Charging",    className: "bg-blue-100 text-blue-800 border-blue-300" },
   maintenance: { label: "Maintenance", className: "bg-yellow-100 text-yellow-800 border-yellow-300" },
 };
 
@@ -66,35 +40,77 @@ export default function ChargingDashboardPage() {
               <RefreshCw className="h-4 w-4 mr-1" />Refresh
             </Button>
             <Link href="/manufacturing/chargers">
-              <Button size="sm" variant="outline">
-                Manage Chargers
-              </Button>
+              <Button size="sm" variant="outline">Manage Chargers</Button>
             </Link>
           </div>
         </div>
 
         {/* KPIs */}
         {dashLoading ? (
-          <div className="flex items-center justify-center py-16 text-gray-400">
-            <Loader2 className="h-6 w-6 animate-spin mr-2" />Loading dashboard...
-          </div>
+          <OdsMetricGrid columns={4}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <OdsMetricCard key={i} title="" value="" isLoading />
+            ))}
+          </OdsMetricGrid>
         ) : dash ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <KpiCard label="Chargers Available" value={dash.chargersAvailable} icon={Zap} color="bg-green-50 text-green-600" sub={`of ${dash.totalChargers} total`} />
-            <KpiCard label="Chargers Busy" value={dash.chargersBusy} icon={BatteryCharging} color="bg-blue-50 text-blue-600" sub="active charging sessions" />
-            <KpiCard label="Batteries Charging" value={dash.batteriesCharging} icon={BatteryCharging} color="bg-yellow-50 text-yellow-600" />
-            <KpiCard label="Waiting for Charger" value={dash.batteriesWaiting} icon={Clock} color="bg-orange-50 text-orange-600" />
-            <KpiCard label="Today's Completions" value={dash.todayCompletedCharges} icon={CheckCircle2} color="bg-teal-50 text-teal-600" sub="formation reports generated" />
-            <KpiCard
-              label="Avg Charge Time"
-              value={dash.avgChargeTimeMin != null ? `${Math.floor(dash.avgChargeTimeMin / 60)}h ${dash.avgChargeTimeMin % 60}m` : "—"}
-              icon={Clock}
-              color="bg-purple-50 text-purple-600"
-              sub="across all completed charges"
+          <OdsMetricGrid columns={4}>
+            <OdsMetricCard
+              title="Chargers Available"
+              value={dash.chargersAvailable}
+              icon={<Zap className="h-4 w-4 text-green-600" />}
+              status="positive"
+              footer={`of ${dash.totalChargers} total`}
             />
-            <KpiCard label="Chargers in Maintenance" value={dash.chargersMaintenance} icon={AlertTriangle} color="bg-yellow-50 text-yellow-700" />
-            <KpiCard label="Total Chargers" value={dash.totalChargers} icon={Zap} color="bg-gray-50 text-gray-600" />
-          </div>
+            <OdsMetricCard
+              title="Chargers Busy"
+              value={dash.chargersBusy}
+              icon={<BatteryCharging className="h-4 w-4 text-blue-600" />}
+              status="neutral"
+              footer="active charging sessions"
+            />
+            <OdsMetricCard
+              title="Batteries Charging"
+              value={dash.batteriesCharging}
+              icon={<BatteryCharging className="h-4 w-4 text-yellow-600" />}
+              status="neutral"
+            />
+            <OdsMetricCard
+              title="Waiting for Charger"
+              value={dash.batteriesWaiting}
+              icon={<Clock className="h-4 w-4 text-orange-600" />}
+              status={dash.batteriesWaiting > 3 ? "warning" : "neutral"}
+            />
+            <OdsMetricCard
+              title="Today's Completions"
+              value={dash.todayCompletedCharges}
+              icon={<CheckCircle2 className="h-4 w-4 text-teal-600" />}
+              status="positive"
+              footer="formation reports generated"
+            />
+            <OdsMetricCard
+              title="Avg Charge Time"
+              value={
+                dash.avgChargeTimeMin != null
+                  ? `${Math.floor(dash.avgChargeTimeMin / 60)}h ${dash.avgChargeTimeMin % 60}m`
+                  : "—"
+              }
+              icon={<Clock className="h-4 w-4 text-purple-600" />}
+              status="neutral"
+              footer="across all completed charges"
+            />
+            <OdsMetricCard
+              title="In Maintenance"
+              value={dash.chargersMaintenance}
+              icon={<AlertTriangle className="h-4 w-4 text-yellow-700" />}
+              status={dash.chargersMaintenance > 0 ? "warning" : "neutral"}
+            />
+            <OdsMetricCard
+              title="Total Chargers"
+              value={dash.totalChargers}
+              icon={<Zap className="h-4 w-4 text-slate-600" />}
+              status="neutral"
+            />
+          </OdsMetricGrid>
         ) : null}
 
         {/* Charger Unit Status Table */}
@@ -117,18 +133,26 @@ export default function ChargingDashboardPage() {
             ) : (
               <div className="divide-y">
                 {units.map((unit: any) => {
-                  const cfg = CHARGER_STATUS_CONFIG[unit.status as keyof typeof CHARGER_STATUS_CONFIG] ?? { label: unit.status, className: "bg-gray-100" };
+                  const cfg = CHARGER_STATUS_CONFIG[unit.status as keyof typeof CHARGER_STATUS_CONFIG]
+                    ?? { label: unit.status, className: "bg-gray-100" };
                   return (
                     <div key={unit.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-mono font-semibold text-gray-900">{unit.chargerCode}</span>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg.className}`}>{cfg.label}</span>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg.className}`}>
+                            {cfg.label}
+                          </span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5">{unit.manufacturer} {unit.model} · S/N: {unit.serialNumber}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {unit.manufacturer} {unit.model} · S/N: {unit.serialNumber}
+                        </p>
                       </div>
                       <div className="text-right text-xs text-gray-500 shrink-0">
-                        <div>{unit.outputVoltageV != null ? `${unit.outputVoltageV}V` : "—"} / {unit.maxCurrentA != null ? `${unit.maxCurrentA}A` : "—"}</div>
+                        <div>
+                          {unit.outputVoltageV != null ? `${unit.outputVoltageV}V` : "—"} /{" "}
+                          {unit.maxCurrentA != null ? `${unit.maxCurrentA}A` : "—"}
+                        </div>
                         {unit.currentOrderId && (
                           <Link href={`/manufacturing/orders/${unit.currentOrderId}`}>
                             <span className="text-blue-600 hover:underline">View Order →</span>

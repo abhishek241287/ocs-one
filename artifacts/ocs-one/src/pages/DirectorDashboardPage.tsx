@@ -10,36 +10,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-// ─── KPI Card ────────────────────────────────────────────────────────────────
-
-function KpiCard({
-  label, value, sub, icon: Icon, accent, loading,
-}: {
-  label: string; value: string | number; sub?: string;
-  icon: React.FC<{ className?: string }>; accent: string; loading?: boolean;
-}) {
-  return (
-    <Card className="relative overflow-hidden">
-      <CardContent className="pt-5 pb-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
-            {loading ? (
-              <div className="h-8 w-16 bg-muted animate-pulse rounded mt-1" />
-            ) : (
-              <p className="text-3xl font-black tracking-tight">{value}</p>
-            )}
-            {sub && <p className="text-[11px] text-muted-foreground mt-1">{sub}</p>}
-          </div>
-          <div className={`p-2.5 rounded-xl ${accent} shrink-0`}>
-            <Icon className="h-5 w-5" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+import { OdsMetricCard, OdsMetricGrid } from "@/components/ods";
 
 // ─── Pipeline Stage Card ──────────────────────────────────────────────────────
 
@@ -222,16 +193,69 @@ export default function DirectorDashboardPage() {
         )}
 
         {/* ── Section 1: KPI Cards ────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
-          <KpiCard label="Today's Target" value={data?.kpis.todayTarget ?? 0} sub="orders created today" icon={Factory} accent="bg-gray-100 text-gray-700" loading={isLoading} />
-          <KpiCard label="Completed Today" value={data?.kpis.todayCompleted ?? 0} sub="batteries done" icon={CheckCircle2} accent="bg-green-100 text-green-700" loading={isLoading} />
-          <KpiCard label="Efficiency" value={`${data?.kpis.productionEfficiency ?? 0}%`} sub="vs today's target" icon={TrendingUp} accent="bg-blue-100 text-blue-700" loading={isLoading} />
-          <KpiCard label="In Progress" value={data?.kpis.inProgress ?? 0} sub="on factory floor" icon={Activity} accent="bg-indigo-100 text-indigo-700" loading={isLoading} />
-          <KpiCard label="QC Pending" value={data?.kpis.qcPending ?? 0} sub="awaiting approval" icon={ShieldCheck} accent={`${(data?.kpis.qcPending ?? 0) > 5 ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`} loading={isLoading} />
-          <KpiCard label="Dispatch Ready" value={data?.kpis.dispatchReady ?? 0} sub="packing approved" icon={Truck} accent="bg-teal-100 text-teal-700" loading={isLoading} />
-          <KpiCard label="Rework Queue" value={data?.kpis.reworkQueue ?? 0} sub="open tickets" icon={Wrench} accent={`${(data?.kpis.reworkQueue ?? 0) > 3 ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`} loading={isLoading} />
-          <KpiCard label="Charger Util." value={`${data?.kpis.chargerUtilization ?? 0}%`} sub="chargers in use" icon={Zap} accent="bg-purple-100 text-purple-700" loading={isLoading} />
-        </div>
+        <OdsMetricGrid columns={4}>
+          <OdsMetricCard
+            title="Today's Target"
+            value={data?.kpis.todayTarget ?? 0}
+            icon={<Factory className="h-4 w-4 text-slate-600" />}
+            footer="orders created today"
+            isLoading={isLoading}
+          />
+          <OdsMetricCard
+            title="Completed Today"
+            value={data?.kpis.todayCompleted ?? 0}
+            icon={<CheckCircle2 className="h-4 w-4 text-green-600" />}
+            status="positive"
+            footer="batteries done"
+            isLoading={isLoading}
+          />
+          <OdsMetricCard
+            title="Efficiency"
+            value={`${data?.kpis.productionEfficiency ?? 0}%`}
+            icon={<TrendingUp className="h-4 w-4 text-blue-600" />}
+            status="positive"
+            footer="vs today's target"
+            isLoading={isLoading}
+          />
+          <OdsMetricCard
+            title="In Progress"
+            value={data?.kpis.inProgress ?? 0}
+            icon={<Activity className="h-4 w-4 text-indigo-600" />}
+            footer="on factory floor"
+            isLoading={isLoading}
+          />
+          <OdsMetricCard
+            title="QC Pending"
+            value={data?.kpis.qcPending ?? 0}
+            icon={<ShieldCheck className="h-4 w-4 text-yellow-600" />}
+            status={(data?.kpis.qcPending ?? 0) > 5 ? "negative" : "warning"}
+            footer="awaiting approval"
+            isLoading={isLoading}
+          />
+          <OdsMetricCard
+            title="Dispatch Ready"
+            value={data?.kpis.dispatchReady ?? 0}
+            icon={<Truck className="h-4 w-4 text-teal-600" />}
+            status="positive"
+            footer="packing approved"
+            isLoading={isLoading}
+          />
+          <OdsMetricCard
+            title="Rework Queue"
+            value={data?.kpis.reworkQueue ?? 0}
+            icon={<Wrench className="h-4 w-4 text-orange-600" />}
+            status={(data?.kpis.reworkQueue ?? 0) > 3 ? "negative" : "warning"}
+            footer="open tickets"
+            isLoading={isLoading}
+          />
+          <OdsMetricCard
+            title="Charger Util."
+            value={`${data?.kpis.chargerUtilization ?? 0}%`}
+            icon={<Zap className="h-4 w-4 text-purple-600" />}
+            footer="chargers in use"
+            isLoading={isLoading}
+          />
+        </OdsMetricGrid>
 
         {/* ── Section 2: Manufacturing Pipeline ──────────────────────────── */}
         <Card>

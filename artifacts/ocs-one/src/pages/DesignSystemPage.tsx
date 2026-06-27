@@ -14,12 +14,22 @@ import { OdsToolbar } from "@/components/ods/OdsToolbar";
 import { OdsDrawer } from "@/components/ods/OdsDrawer";
 import { OdsDialog } from "@/components/ods/OdsDialog";
 import { OdsDataTable } from "@/components/ods/OdsDataTable";
+import {
+  OdsMetricCard, OdsMetricGrid,
+  OdsChartCard,
+  OdsTimeline, type OdsTimelineItem,
+  OdsStepper, type OdsStep,
+} from "@/components/ods";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ColumnDef } from "@tanstack/react-table";
 import { useOdsNotify } from "@/hooks/use-ods-notify";
 import { ods } from "@/ods/theme";
 import { cn } from "@/lib/utils";
+import {
+  TrendingUp, TrendingDown, Factory, ShieldCheck,
+  Zap, Activity,
+} from "lucide-react";
 
 // ── Sample data ────────────────────────────────────────────────────────────
 
@@ -32,18 +42,44 @@ interface SampleRow {
 }
 
 const SAMPLE_DATA: SampleRow[] = [
-  { id: "1", name: "OCS 48V 280Ah Pack", status: "active", type: "Energy Storage", amount: 85000 },
-  { id: "2", name: "OCS 24V 150Ah Pack", status: "inactive", type: "Battery", amount: 42000 },
-  { id: "3", name: "BMS-16S-A100", status: "active", type: "BMS", amount: 8500 },
-  { id: "4", name: "Charger CHG-50A", status: "active", type: "Charger", amount: 12000 },
-  { id: "5", name: "Test Equip TE-01", status: "inactive", type: "Equipment", amount: 35000 },
+  { id: "1", name: "OCS 48V 280Ah Pack",  status: "active",   type: "Energy Storage", amount: 85000 },
+  { id: "2", name: "OCS 24V 150Ah Pack",  status: "inactive", type: "Battery",        amount: 42000 },
+  { id: "3", name: "BMS-16S-A100",         status: "active",   type: "BMS",            amount: 8500  },
+  { id: "4", name: "Charger CHG-50A",      status: "active",   type: "Charger",        amount: 12000 },
+  { id: "5", name: "Test Equip TE-01",     status: "inactive", type: "Equipment",      amount: 35000 },
 ];
 
 const SAMPLE_COLS: ColumnDef<SampleRow>[] = [
-  { accessorKey: "name", header: "Name" },
-  { accessorKey: "type", header: "Type" },
+  { accessorKey: "name",   header: "Name" },
+  { accessorKey: "type",   header: "Type" },
   { accessorKey: "status", header: "Status", cell: ({ row }) => <OdsStatusBadge status={row.original.status} /> },
-  { accessorKey: "amount", header: "Amount", cell: ({ row }) => `₹${row.original.amount.toLocaleString()}` },
+  { accessorKey: "amount", header: "Amount",  cell: ({ row }) => `₹${row.original.amount.toLocaleString()}` },
+];
+
+const DEMO_TIMELINE_ITEMS: OdsTimelineItem[] = [
+  { id: "1", title: "Order Released",         description: "Production order MFG-2026-001 released to floor.", timestamp: new Date(Date.now() - 3600000 * 5), user: "Abhishek", color: "info",    icon: "🚀" },
+  { id: "2", title: "Assembly Completed",      description: "Cell stack assembled and torqued to spec.",        timestamp: new Date(Date.now() - 3600000 * 3), user: "Rajan",    color: "success", icon: "🔧" },
+  { id: "3", title: "BMS Programming Failed",  description: "Firmware flash timeout on port COM3.",            timestamp: new Date(Date.now() - 3600000 * 2), user: "Vikram",   color: "error",   icon: "❌" },
+  { id: "4", title: "BMS Reprogrammed",        description: "Successfully flashed v4.2.1 firmware.",           timestamp: new Date(Date.now() - 3600000),     user: "Vikram",   color: "success", icon: "✅" },
+  { id: "5", title: "Charging Started",        description: "Formation charge cycle initiated.",                timestamp: new Date(),                          user: "Operator", color: "default", icon: "⚡", status: "Active" },
+];
+
+const DEMO_STEPPER_STEPS: OdsStep[] = [
+  { id: "cell_alloc",    label: "Cell Allocation",  status: "completed", timestamp: new Date(Date.now() - 86400000 * 2) },
+  { id: "assembly",      label: "Assembly",          status: "completed", timestamp: new Date(Date.now() - 86400000) },
+  { id: "compression",   label: "Compression",       status: "completed", timestamp: new Date(Date.now() - 3600000 * 6) },
+  { id: "bms_install",   label: "BMS Install",       status: "active",    description: "Flashing firmware v4.2.1" },
+  { id: "charging",      label: "Charging",          status: "pending" },
+  { id: "testing",       label: "Testing",           status: "locked" },
+  { id: "qc",            label: "Quality Control",   status: "locked" },
+];
+
+const DISPATCH_STEPS: OdsStep[] = [
+  { id: "draft",      label: "Draft",      status: "completed" },
+  { id: "confirmed",  label: "Confirmed",  status: "completed" },
+  { id: "loaded",     label: "Loaded",     status: "active"    },
+  { id: "in_transit", label: "In Transit", status: "pending"   },
+  { id: "delivered",  label: "Delivered",  status: "pending"   },
 ];
 
 // ── Section wrapper ────────────────────────────────────────────────────────
@@ -68,20 +104,49 @@ function TokenSwatch({ label, classes }: { label: string; classes: string }) {
   );
 }
 
+// ── Simple bar chart using divs (no external charting lib needed) ──────────
+
+function SimpleBarChart() {
+  const bars = [
+    { label: "Mon", value: 12 }, { label: "Tue", value: 19 },
+    { label: "Wed", value: 8  }, { label: "Thu", value: 24 },
+    { label: "Fri", value: 17 }, { label: "Sat", value: 6  },
+  ];
+  const max = Math.max(...bars.map((b) => b.value));
+  return (
+    <div className="flex items-end gap-3 h-full px-4 pb-4 pt-2">
+      {bars.map((b) => (
+        <div key={b.label} className="flex flex-col items-center gap-1 flex-1">
+          <span className="text-[10px] text-slate-500 font-medium">{b.value}</span>
+          <div
+            className="w-full rounded-t bg-primary/70 transition-all"
+            style={{ height: `${(b.value / max) * 80}%` }}
+          />
+          <span className="text-[10px] text-slate-400">{b.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────
 
 export default function DesignSystemPage() {
   const notify = useOdsNotify();
-  const [search, setSearch] = useState("");
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [search, setSearch]               = useState("");
+  const [drawerOpen, setDrawerOpen]       = useState(false);
+  const [dialogOpen, setDialogOpen]       = useState(false);
   const [dialogVariant, setDialogVariant] = useState<"default" | "danger" | "warning" | "confirm">("danger");
-  const [showSkeleton, setShowSkeleton] = useState(false);
-  const [showEmpty, setShowEmpty] = useState(false);
+  const [showSkeleton, setShowSkeleton]   = useState(false);
+  const [showEmpty, setShowEmpty]         = useState(false);
+  const [chartLoading, setChartLoading]   = useState(false);
+  const [chartEmpty, setChartEmpty]       = useState(false);
+  const [selectedStep, setSelectedStep]   = useState<string | undefined>("bms_install");
 
   const sections = [
     "Tokens", "Typography", "Badges", "Status", "Toolbar", "Search",
     "Tables", "Skeletons", "Empty States", "Dialogs", "Drawers", "Notifications",
+    "Metric Cards", "Chart Card", "Timeline", "Stepper", "Page Layout",
   ];
 
   return (
@@ -99,7 +164,7 @@ export default function DesignSystemPage() {
           {sections.map((s) => (
             <a
               key={s}
-              href={`#${s.toLowerCase().replace(" ", "-")}`}
+              href={`#${s.toLowerCase().replace(/ /g, "-")}`}
               className="text-xs px-2.5 py-1 rounded-md bg-white border text-gray-600 hover:text-gray-900 hover:border-gray-400 transition-colors"
             >
               {s}
@@ -116,7 +181,7 @@ export default function DesignSystemPage() {
             <div className="space-y-2">
               <p className={ods.typography.label.section}>Status — Success</p>
               <TokenSwatch label="ods.colors.status.success.bg" classes={ods.colors.status.success.bg} />
-              <TokenSwatch label="ods.colors.status.success.dot (dot)" classes={`${ods.colors.status.success.dot} h-4 w-4 rounded-full`} />
+              <TokenSwatch label="dot" classes={`${ods.colors.status.success.dot} h-4 w-4 rounded-full`} />
             </div>
             <div className="space-y-2">
               <p className={ods.typography.label.section}>Status — Warning</p>
@@ -211,12 +276,8 @@ export default function DesignSystemPage() {
         {/* ── Data Table ── */}
         <Section id="tables" title="OdsDataTable">
           <div className="flex gap-2 mb-3 flex-wrap">
-            <Button size="sm" variant="outline" onClick={() => setShowSkeleton((v) => !v)}>
-              Toggle Loading
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowEmpty((v) => !v)}>
-              Toggle Empty
-            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowSkeleton((v) => !v)}>Toggle Loading</Button>
+            <Button size="sm" variant="outline" onClick={() => setShowEmpty((v) => !v)}>Toggle Empty</Button>
           </div>
           <OdsDataTable
             data={showEmpty ? [] : SAMPLE_DATA}
@@ -259,9 +320,7 @@ export default function DesignSystemPage() {
           <div className="flex gap-2 flex-wrap">
             {(["danger", "warning", "confirm", "default"] as const).map((v) => (
               <Button
-                key={v}
-                size="sm"
-                variant="outline"
+                key={v} size="sm" variant="outline"
                 onClick={() => { setDialogVariant(v); setDialogOpen(true); }}
               >
                 {v} dialog
@@ -282,9 +341,7 @@ export default function DesignSystemPage() {
         {/* ── Drawers ── */}
         <Section id="drawers" title="OdsDrawer">
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setDrawerOpen(true)}>
-              Open Drawer (md)
-            </Button>
+            <Button size="sm" variant="outline" onClick={() => setDrawerOpen(true)}>Open Drawer (md)</Button>
           </div>
           <OdsDrawer
             open={drawerOpen}
@@ -303,7 +360,7 @@ export default function DesignSystemPage() {
                 <Input placeholder="e.g. PRD-001" />
               </div>
               <p className={ods.typography.body.muted}>
-                This drawer uses <code className={ods.typography.code}>OdsDrawer</code>. 
+                This drawer uses <code className={ods.typography.code}>OdsDrawer</code>.
                 It has a sticky header, scrollable body, and a Ctrl+S shortcut.
               </p>
             </div>
@@ -330,6 +387,260 @@ export default function DesignSystemPage() {
               ℹ️ Info
             </Button>
           </div>
+        </Section>
+
+        {/* ═══════════════ ODS Completion Pack Components ═══════════════════ */}
+
+        {/* ── Metric Cards ── */}
+        <Section id="metric-cards" title="OdsMetricCard + OdsMetricGrid">
+          <p className={ods.typography.body.muted}>
+            KPI cards for dashboards. Use inside <code className={ods.typography.code}>OdsMetricGrid</code> for responsive layouts.
+          </p>
+
+          <div className="space-y-4">
+            <p className={ods.typography.label.section}>Statuses &amp; trends</p>
+            <OdsMetricGrid columns={4}>
+              <OdsMetricCard
+                title="Completed Today"
+                value={47}
+                unit="packs"
+                icon={<Factory className="h-4 w-4 text-green-600" />}
+                status="positive"
+                trend="up"
+                trendValue="+12% vs yesterday"
+                footer="batteries shipped"
+              />
+              <OdsMetricCard
+                title="Rework Queue"
+                value={8}
+                icon={<ShieldCheck className="h-4 w-4 text-red-600" />}
+                status="negative"
+                trend="up"
+                trendValue="+3 since morning"
+                footer="open tickets"
+              />
+              <OdsMetricCard
+                title="QC Pending"
+                value={5}
+                icon={<Activity className="h-4 w-4 text-amber-600" />}
+                status="warning"
+                trend="flat"
+                trendValue="No change"
+              />
+              <OdsMetricCard
+                title="Charger Util."
+                value="72%"
+                icon={<Zap className="h-4 w-4 text-slate-600" />}
+                trend="down"
+                trendValue="-8% from peak"
+              />
+            </OdsMetricGrid>
+
+            <p className={ods.typography.label.section}>Loading skeleton</p>
+            <OdsMetricGrid columns={4}>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <OdsMetricCard key={i} title="" value="" isLoading />
+              ))}
+            </OdsMetricGrid>
+
+            <p className={ods.typography.label.section}>Grid columns — 2 / 3 / 4 / auto</p>
+            <div className="space-y-2">
+              {([2, 3, 4, "auto"] as const).map((cols) => (
+                <div key={String(cols)}>
+                  <p className="text-xs text-slate-400 mb-1">columns={String(cols)}</p>
+                  <OdsMetricGrid columns={cols}>
+                    {Array.from({ length: Number(cols) === 2 ? 2 : Number(cols) === 3 ? 3 : 4 }).map((_, i) => (
+                      <OdsMetricCard
+                        key={i}
+                        title={`Metric ${i + 1}`}
+                        value={Math.floor(Math.random() * 100)}
+                      />
+                    ))}
+                  </OdsMetricGrid>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Chart Card ── */}
+        <Section id="chart-card" title="OdsChartCard">
+          <p className={ods.typography.body.muted}>
+            Wraps any chart (Recharts, custom) with a standard header, toolbar slots, export/refresh actions, loading skeleton, and empty state.
+          </p>
+          <div className="flex gap-2 mb-3">
+            <Button size="sm" variant="outline" onClick={() => setChartLoading((v) => !v)}>
+              Toggle Loading
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setChartEmpty((v) => !v)}>
+              Toggle Empty
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <OdsChartCard
+              title="Weekly Production Output"
+              subtitle="Batteries completed per day"
+              isLoading={chartLoading}
+              isEmpty={chartEmpty}
+              emptyTitle="No production data"
+              emptyDescription="Run production orders to see output here."
+              onRefresh={() => notify.info("Refreshed chart")}
+              onExport={() => notify.success("Exported to CSV")}
+              height={200}
+            >
+              <SimpleBarChart />
+            </OdsChartCard>
+            <OdsChartCard
+              title="Cell Grade Distribution"
+              subtitle="Grade A/B/C breakdown this week"
+              isLoading={false}
+              isEmpty={chartEmpty}
+              height={200}
+              legend={
+                <div className="flex gap-4 text-xs">
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block" />Grade A (68%)</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />Grade B (24%)</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" />Grade C (8%)</span>
+                </div>
+              }
+            >
+              <div className="flex items-center justify-center h-full gap-4">
+                <div className="flex flex-col gap-2 w-full px-4">
+                  {[{ label: "Grade A", pct: 68, color: "bg-green-500" }, { label: "Grade B", pct: 24, color: "bg-blue-500" }, { label: "Grade C", pct: 8, color: "bg-red-400" }].map((g) => (
+                    <div key={g.label} className="flex items-center gap-2 text-xs">
+                      <span className="w-14 text-slate-500 shrink-0">{g.label}</span>
+                      <div className="flex-1 bg-slate-100 rounded-full h-3">
+                        <div className={`h-3 rounded-full ${g.color}`} style={{ width: `${g.pct}%` }} />
+                      </div>
+                      <span className="w-8 text-right font-medium">{g.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </OdsChartCard>
+          </div>
+        </Section>
+
+        {/* ── Timeline ── */}
+        <Section id="timeline" title="OdsTimeline">
+          <p className={ods.typography.body.muted}>
+            Event log for battery lifecycle, dispatch history, QC audit trails, and operator activity.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <p className={cn(ods.typography.label.section, "mb-2")}>Battery lifecycle (5 events)</p>
+              <OdsTimeline items={DEMO_TIMELINE_ITEMS} />
+            </div>
+            <div>
+              <p className={cn(ods.typography.label.section, "mb-2")}>Loading state</p>
+              <OdsTimeline items={[]} isLoading />
+              <p className={cn(ods.typography.label.section, "mt-4 mb-2")}>Empty state</p>
+              <OdsTimeline
+                items={[]}
+                emptyTitle="No events yet"
+                emptyDescription="Events will appear here as the order progresses."
+              />
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Stepper ── */}
+        <Section id="stepper" title="OdsStepper">
+          <p className={ods.typography.body.muted}>
+            Workflow progress indicator. Supports vertical and horizontal orientations; completed / active / pending / locked / rejected states.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <p className={cn(ods.typography.label.section, "mb-3")}>Vertical — Manufacturing stages (click to select)</p>
+              <OdsStepper
+                steps={DEMO_STEPPER_STEPS}
+                orientation="vertical"
+                selectedId={selectedStep}
+                onStepClick={setSelectedStep}
+              />
+            </div>
+            <div>
+              <p className={cn(ods.typography.label.section, "mb-3")}>Horizontal — Dispatch workflow</p>
+              <OdsStepper
+                steps={DISPATCH_STEPS}
+                orientation="horizontal"
+              />
+              <p className={cn(ods.typography.label.section, "mt-4 mb-2")}>All statuses</p>
+              <OdsStepper
+                orientation="vertical"
+                steps={[
+                  { id: "c",  label: "Completed",  status: "completed",  description: "Done on 25 Jun 09:30" },
+                  { id: "a",  label: "Active",      status: "active",     description: "Currently in progress" },
+                  { id: "p",  label: "Pending",     status: "pending",    description: "Waiting to start" },
+                  { id: "l",  label: "Locked",      status: "locked",     description: "Not yet unlocked" },
+                  { id: "r",  label: "Rejected",    status: "rejected",   description: "Failed QC check" },
+                ]}
+              />
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Page Layout ── */}
+        <Section id="page-layout" title="OdsPageLayout">
+          <p className={ods.typography.body.muted}>
+            Standard page shell: <code className={ods.typography.code}>ModuleHeader → Toolbar → Content → Footer (optional)</code>.
+            All new pages should be built with <code className={ods.typography.code}>OdsPageLayout</code>.
+          </p>
+          <div className="rounded-xl border border-dashed border-slate-300 overflow-hidden">
+            <div className="bg-slate-50 px-4 py-2 text-xs font-mono text-slate-500 border-b">Preview (live OdsPageLayout is this entire page)</div>
+            <div className="p-4 space-y-2 text-xs text-slate-600">
+              <div className="rounded-lg border border-slate-200 bg-white p-3">
+                <p className="font-semibold text-slate-700 mb-1">📦 OdsPageLayout props</p>
+                <div className="font-mono space-y-0.5 text-slate-500">
+                  <p><span className="text-primary">header</span>: ReactNode  — ModuleHeader (required)</p>
+                  <p><span className="text-primary">toolbar</span>?: ReactNode — OdsToolbar (optional)</p>
+                  <p><span className="text-primary">footer</span>?: ReactNode  — Sticky bottom bar (optional)</p>
+                  <p><span className="text-primary">noPadding</span>?: boolean  — Remove default p-6 for full-bleed content</p>
+                  <p><span className="text-primary">children</span>: ReactNode  — Main content area</p>
+                </div>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-blue-700">
+                ℹ️ The current page (/design-system) uses OdsPageLayout's AppLayout internally. Use{" "}
+                <code className="font-mono">OdsPageLayout</code> for all new module pages.
+              </div>
+            </div>
+          </div>
+          <div className="bg-slate-950 rounded-lg p-4 text-sm font-mono text-slate-300 leading-relaxed">
+            <span className="text-slate-500">{"// Example usage"}</span>
+            <br />
+            <span className="text-green-400">{"<OdsPageLayout"}</span>
+            <br />
+            {"  "}<span className="text-blue-300">header</span>{"={"}
+            <span className="text-yellow-300">{"<ModuleHeader icon=\"📦\" title=\"Cell Receiving\" />"}</span>
+            {"}"}
+            <br />
+            {"  "}<span className="text-blue-300">toolbar</span>{"={"}
+            <span className="text-yellow-300">{"<OdsToolbar ... />"}</span>
+            {"}"}
+            <br />
+            <span className="text-green-400">{">"}</span>
+            <br />
+            {"  "}<span className="text-slate-400">{"<OdsDataTable ... />"}</span>
+            <br />
+            <span className="text-green-400">{"</OdsPageLayout>"}</span>
+          </div>
+        </Section>
+
+        {/* ── Trend icons demo ── */}
+        <Section id="trend-icons" title="Metric Trend Icons">
+          <div className="flex gap-4 items-center flex-wrap">
+            <div className="flex items-center gap-1.5 text-sm text-green-600">
+              <TrendingUp className="h-4 w-4" /> trend="up"
+            </div>
+            <div className="flex items-center gap-1.5 text-sm text-red-600">
+              <TrendingDown className="h-4 w-4" /> trend="down"
+            </div>
+            <div className="text-sm text-slate-500">— (Minus) trend="flat"</div>
+          </div>
+          <p className={ods.typography.body.muted}>
+            Pass <code className={ods.typography.code}>trend</code> +{" "}
+            <code className={ods.typography.code}>trendValue</code> to OdsMetricCard for animated trend badges.
+          </p>
         </Section>
 
         <div className="pb-12" />

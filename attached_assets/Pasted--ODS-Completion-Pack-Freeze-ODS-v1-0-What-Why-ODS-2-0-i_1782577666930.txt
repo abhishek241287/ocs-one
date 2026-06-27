@@ -1,0 +1,294 @@
+# ODS Completion Pack – Freeze ODS v1.0
+
+## What & Why
+
+ODS 2.0 is complete.
+
+This sprint is **NOT** about building new ERP functionality.
+
+Its purpose is to complete the remaining reusable enterprise UI components so ODS can be frozen as Version 1.0.
+
+After this sprint, all future work should focus on Certification Waves and business modules.
+
+---
+
+# PHASE 1 – OdsMetricCard
+
+Create:
+
+```
+src/components/ods/OdsMetricCard.tsx
+```
+
+Standard KPI card used everywhere.
+
+Features:
+
+* Icon
+* Title
+* Value
+* Unit
+* Trend indicator (↑ ↓ →)
+* Trend percentage
+* Status colour
+* Optional footer
+* Optional click handler
+* Loading skeleton
+
+Replace KPI cards in:
+
+* Director Dashboard
+* Manufacturing Dashboard
+* Charging Dashboard
+* Packing Dashboard
+* Reports
+
+---
+
+# PHASE 2 – OdsMetricGrid
+
+Create:
+
+```
+src/components/ods/OdsMetricGrid.tsx
+```
+
+Responsive KPI grid.
+
+Support:
+
+* 2 columns
+* 3 columns
+* 4 columns
+* Auto responsive
+
+Every dashboard should use this.
+
+---
+
+# PHASE 3 – OdsChartCard
+
+Create:
+
+```
+src/components/ods/OdsChartCard.tsx
+```
+
+Standard wrapper for charts.
+
+Contains:
+
+* Title
+* Subtitle
+* Toolbar
+* Export button slot
+* Refresh slot
+* Chart body
+* Legend
+* Loading skeleton
+* Empty state
+
+Migrate all dashboard/report charts.
+
+---
+
+# PHASE 4 – OdsTimeline
+
+Create:
+
+```
+src/components/ods/OdsTimeline.tsx
+```
+
+Used by:
+
+* Battery Timeline
+* Dispatch Timeline
+* QC Timeline
+* Activity Log
+* Audit Log
+* Future Service History
+
+Support:
+
+* Icons
+* Timestamp
+* User
+* Description
+* Status badge
+* Vertical connector
+* Colour coding
+
+Replace existing timeline implementations.
+
+---
+
+# PHASE 5 – OdsStepper
+
+Create:
+
+```
+src/components/ods/OdsStepper.tsx
+```
+
+Reusable workflow component.
+
+Support:
+
+* Vertical
+* Horizontal
+* Completed
+* Active
+* Pending
+* Locked
+* Rejected
+
+Replace:
+
+* Manufacturing stepper
+* Dispatch stepper
+
+Future:
+
+* Warranty
+* Service
+* Repair
+
+---
+
+# PHASE 6 – OdsPageLayout
+
+Create:
+
+```
+src/components/ods/OdsPageLayout.tsx
+```
+
+Reusable page shell.
+
+Structure:
+
+ModuleHeader
+
+↓
+
+Toolbar
+
+↓
+
+Content
+
+↓
+
+Footer (optional)
+
+Used by all future pages.
+
+---
+
+# PHASE 7 – ODS Migration
+
+Replace duplicated implementations with the new components.
+
+Priority:
+
+1. Director Dashboard
+2. Reports
+3. Manufacturing Dashboard
+4. Charging Dashboard
+5. Packing Dashboard
+6. Battery Workspace
+7. Dispatch Order Detail
+
+No behaviour changes.
+
+Only migrate to reusable ODS components.
+
+---
+
+# PHASE 8 – Component Showcase
+
+Update:
+
+```
+/design-system
+```
+
+Demonstrate:
+
+* OdsMetricCard
+* OdsMetricGrid
+* OdsChartCard
+* OdsTimeline
+* OdsStepper
+* OdsPageLayout
+
+Include live interactive examples.
+
+---
+
+# PHASE 9 – ODS Registry
+
+Update:
+
+```
+docs/ods-component-registry.md
+```
+
+For every component include:
+
+* Purpose
+* Props
+* Example
+* Used By
+* Status
+
+---
+
+# Success Criteria
+
+✅ OdsMetricCard complete
+
+✅ OdsMetricGrid complete
+
+✅ OdsChartCard complete
+
+✅ OdsTimeline complete
+
+✅ OdsStepper complete
+
+✅ OdsPageLayout complete
+
+✅ Existing dashboards migrated
+
+✅ Existing timelines migrated
+
+✅ Existing steppers migrated
+
+✅ Component Showcase updated
+
+✅ Registry updated
+
+✅ TypeScript: 0 errors
+
+✅ ESLint: 0 warnings
+
+---
+
+# IMPORTANT
+
+Do NOT build new ERP functionality.
+
+Do NOT modify database schemas.
+
+Do NOT modify APIs unless absolutely required.
+
+This is the final ODS completion sprint.
+
+At completion, mark:
+
+**ODS Version 1.0 — Frozen**
+
+Future work moves to:
+
+**Certification Wave 01 – Cell Receiving**
