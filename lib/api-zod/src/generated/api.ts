@@ -2026,12 +2026,14 @@ export const ListTestEquipmentMastersResponse = zod.object({
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
 }).and(zod.object({
+  "equipment_type": zod.enum(['capacity_tester', 'dc_load', 'protection_tester', 'internal_resistance_meter', 'thermal_camera', 'other']).optional(),
   "equipment_name": zod.string().optional(),
   "manufacturer": zod.string().optional(),
   "model": zod.string().optional(),
   "serial_number": zod.string().optional(),
   "calibration_date": zod.string().optional(),
   "next_calibration_due": zod.string().optional(),
+  "floor_status": zod.enum(['available', 'busy', 'maintenance']).optional(),
   "software_version": zod.string().nullish(),
   "location": zod.string().nullish()
 })))
@@ -2052,12 +2054,14 @@ export const CreateTestEquipmentMasterBody = zod.object({
   "uploadedAt": zod.coerce.date()
 })).optional()
 }).and(zod.object({
+  "equipment_type": zod.enum(['capacity_tester', 'dc_load', 'protection_tester', 'internal_resistance_meter', 'thermal_camera', 'other']).optional(),
   "equipment_name": zod.string(),
   "manufacturer": zod.string(),
   "model": zod.string(),
   "serial_number": zod.string(),
   "calibration_date": zod.string(),
   "next_calibration_due": zod.string(),
+  "floor_status": zod.enum(['available', 'busy', 'maintenance']).optional(),
   "software_version": zod.string().nullish(),
   "location": zod.string().nullish()
 }))
@@ -2083,12 +2087,14 @@ export const CreateTestEquipmentMasterResponse = zod.object({
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
 }).and(zod.object({
+  "equipment_type": zod.enum(['capacity_tester', 'dc_load', 'protection_tester', 'internal_resistance_meter', 'thermal_camera', 'other']).optional(),
   "equipment_name": zod.string().optional(),
   "manufacturer": zod.string().optional(),
   "model": zod.string().optional(),
   "serial_number": zod.string().optional(),
   "calibration_date": zod.string().optional(),
   "next_calibration_due": zod.string().optional(),
+  "floor_status": zod.enum(['available', 'busy', 'maintenance']).optional(),
   "software_version": zod.string().nullish(),
   "location": zod.string().nullish()
 }))
@@ -2119,12 +2125,14 @@ export const GetTestEquipmentMasterResponse = zod.object({
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
 }).and(zod.object({
+  "equipment_type": zod.enum(['capacity_tester', 'dc_load', 'protection_tester', 'internal_resistance_meter', 'thermal_camera', 'other']).optional(),
   "equipment_name": zod.string().optional(),
   "manufacturer": zod.string().optional(),
   "model": zod.string().optional(),
   "serial_number": zod.string().optional(),
   "calibration_date": zod.string().optional(),
   "next_calibration_due": zod.string().optional(),
+  "floor_status": zod.enum(['available', 'busy', 'maintenance']).optional(),
   "software_version": zod.string().nullish(),
   "location": zod.string().nullish()
 }))
@@ -2148,12 +2156,14 @@ export const UpdateTestEquipmentMasterBody = zod.object({
   "uploadedAt": zod.coerce.date()
 })).optional()
 }).and(zod.object({
+  "equipment_type": zod.enum(['capacity_tester', 'dc_load', 'protection_tester', 'internal_resistance_meter', 'thermal_camera', 'other']).optional(),
   "equipment_name": zod.string().optional(),
   "manufacturer": zod.string().optional(),
   "model": zod.string().optional(),
   "serial_number": zod.string().optional(),
   "calibration_date": zod.string().optional(),
   "next_calibration_due": zod.string().optional(),
+  "floor_status": zod.enum(['available', 'busy', 'maintenance']).optional(),
   "software_version": zod.string().nullish(),
   "location": zod.string().nullish()
 }))
@@ -2179,12 +2189,14 @@ export const UpdateTestEquipmentMasterResponse = zod.object({
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
 }).and(zod.object({
+  "equipment_type": zod.enum(['capacity_tester', 'dc_load', 'protection_tester', 'internal_resistance_meter', 'thermal_camera', 'other']).optional(),
   "equipment_name": zod.string().optional(),
   "manufacturer": zod.string().optional(),
   "model": zod.string().optional(),
   "serial_number": zod.string().optional(),
   "calibration_date": zod.string().optional(),
   "next_calibration_due": zod.string().optional(),
+  "floor_status": zod.enum(['available', 'busy', 'maintenance']).optional(),
   "software_version": zod.string().nullish(),
   "location": zod.string().nullish()
 }))
@@ -2219,12 +2231,14 @@ export const ToggleTestEquipmentMasterStatusResponse = zod.object({
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
 }).and(zod.object({
+  "equipment_type": zod.enum(['capacity_tester', 'dc_load', 'protection_tester', 'internal_resistance_meter', 'thermal_camera', 'other']).optional(),
   "equipment_name": zod.string().optional(),
   "manufacturer": zod.string().optional(),
   "model": zod.string().optional(),
   "serial_number": zod.string().optional(),
   "calibration_date": zod.string().optional(),
   "next_calibration_due": zod.string().optional(),
+  "floor_status": zod.enum(['available', 'busy', 'maintenance']).optional(),
   "software_version": zod.string().nullish(),
   "location": zod.string().nullish()
 }))
@@ -4280,6 +4294,30 @@ export const AuthLoginBody = zod.object({
 })
 
 export const AuthLoginResponse = zod.object({
+  "user": zod.object({
+  "userId": zod.string().uuid(),
+  "email": zod.string().email(),
+  "name": zod.string(),
+  "role": zod.enum(['director', 'supervisor', 'operator', 'viewer'])
+})
+})
+
+
+/**
+ * @summary Register a new account (defaults to viewer role)
+ */
+
+export const authRegisterBodyPasswordMin = 8;
+
+
+
+export const AuthRegisterBody = zod.object({
+  "name": zod.string().min(1),
+  "email": zod.string().email(),
+  "password": zod.string().min(authRegisterBodyPasswordMin)
+})
+
+export const AuthRegisterResponse = zod.object({
   "user": zod.object({
   "userId": zod.string().uuid(),
   "email": zod.string().email(),

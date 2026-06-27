@@ -388,39 +388,108 @@ export type ChargerMasterUpdate = MasterCommonUpdate & ({
   datasheet_url?: string | null;
 });
 
+export type TestEquipmentMasterEquipmentType = typeof TestEquipmentMasterEquipmentType[keyof typeof TestEquipmentMasterEquipmentType];
+
+
+export const TestEquipmentMasterEquipmentType = {
+  capacity_tester: 'capacity_tester',
+  dc_load: 'dc_load',
+  protection_tester: 'protection_tester',
+  internal_resistance_meter: 'internal_resistance_meter',
+  thermal_camera: 'thermal_camera',
+  other: 'other',
+} as const;
+
+export type TestEquipmentMasterFloorStatus = typeof TestEquipmentMasterFloorStatus[keyof typeof TestEquipmentMasterFloorStatus];
+
+
+export const TestEquipmentMasterFloorStatus = {
+  available: 'available',
+  busy: 'busy',
+  maintenance: 'maintenance',
+} as const;
+
 export type TestEquipmentMaster = MasterCommon & ({
+  equipment_type?: TestEquipmentMasterEquipmentType;
   equipment_name?: string;
   manufacturer?: string;
   model?: string;
   serial_number?: string;
   calibration_date?: string;
   next_calibration_due?: string;
+  floor_status?: TestEquipmentMasterFloorStatus;
   /** @nullable */
   software_version?: string | null;
   /** @nullable */
   location?: string | null;
 });
 
+export type TestEquipmentMasterInputEquipmentType = typeof TestEquipmentMasterInputEquipmentType[keyof typeof TestEquipmentMasterInputEquipmentType];
+
+
+export const TestEquipmentMasterInputEquipmentType = {
+  capacity_tester: 'capacity_tester',
+  dc_load: 'dc_load',
+  protection_tester: 'protection_tester',
+  internal_resistance_meter: 'internal_resistance_meter',
+  thermal_camera: 'thermal_camera',
+  other: 'other',
+} as const;
+
+export type TestEquipmentMasterInputFloorStatus = typeof TestEquipmentMasterInputFloorStatus[keyof typeof TestEquipmentMasterInputFloorStatus];
+
+
+export const TestEquipmentMasterInputFloorStatus = {
+  available: 'available',
+  busy: 'busy',
+  maintenance: 'maintenance',
+} as const;
+
 export type TestEquipmentMasterInput = MasterCommonInput & ({
+  equipment_type?: TestEquipmentMasterInputEquipmentType;
   equipment_name: string;
   manufacturer: string;
   model: string;
   serial_number: string;
   calibration_date: string;
   next_calibration_due: string;
+  floor_status?: TestEquipmentMasterInputFloorStatus;
   /** @nullable */
   software_version?: string | null;
   /** @nullable */
   location?: string | null;
 });
 
+export type TestEquipmentMasterUpdateEquipmentType = typeof TestEquipmentMasterUpdateEquipmentType[keyof typeof TestEquipmentMasterUpdateEquipmentType];
+
+
+export const TestEquipmentMasterUpdateEquipmentType = {
+  capacity_tester: 'capacity_tester',
+  dc_load: 'dc_load',
+  protection_tester: 'protection_tester',
+  internal_resistance_meter: 'internal_resistance_meter',
+  thermal_camera: 'thermal_camera',
+  other: 'other',
+} as const;
+
+export type TestEquipmentMasterUpdateFloorStatus = typeof TestEquipmentMasterUpdateFloorStatus[keyof typeof TestEquipmentMasterUpdateFloorStatus];
+
+
+export const TestEquipmentMasterUpdateFloorStatus = {
+  available: 'available',
+  busy: 'busy',
+  maintenance: 'maintenance',
+} as const;
+
 export type TestEquipmentMasterUpdate = MasterCommonUpdate & ({
+  equipment_type?: TestEquipmentMasterUpdateEquipmentType;
   equipment_name?: string;
   manufacturer?: string;
   model?: string;
   serial_number?: string;
   calibration_date?: string;
   next_calibration_due?: string;
+  floor_status?: TestEquipmentMasterUpdateFloorStatus;
   /** @nullable */
   software_version?: string | null;
   /** @nullable */
@@ -1484,6 +1553,14 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   user: AuthUser;
+}
+
+export interface RegisterRequest {
+  /** @minLength 1 */
+  name: string;
+  email: string;
+  /** @minLength 8 */
+  password: string;
 }
 
 /**

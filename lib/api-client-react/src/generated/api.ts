@@ -123,6 +123,7 @@ import type {
   ProductionOrderUpdate,
   QcApproval,
   QcApprovalInput,
+  RegisterRequest,
   ReworkTicket,
   ReworkTicketUpdate,
   StageApproveInput,
@@ -8216,6 +8217,76 @@ export const useAuthLogin = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAuthLoginMutationOptions(options));
+    }
+
+export const getAuthRegisterUrl = () => {
+
+
+
+
+  return `/api/auth/register`
+}
+
+/**
+ * @summary Register a new account (defaults to viewer role)
+ */
+export const authRegister = async (registerRequest: RegisterRequest, options?: RequestInit): Promise<LoginResponse> => {
+
+  return customFetch<LoginResponse>(getAuthRegisterUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(registerRequest)
+  }
+);}
+
+
+
+
+export const getAuthRegisterMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authRegister>>, TError,{data: BodyType<RegisterRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authRegister>>, TError,{data: BodyType<RegisterRequest>}, TContext> => {
+
+const mutationKey = ['authRegister'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authRegister>>, {data: BodyType<RegisterRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  authRegister(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof authRegister>>>
+    export type AuthRegisterMutationBody = BodyType<RegisterRequest>
+    export type AuthRegisterMutationError = ErrorType<void>
+
+    /**
+ * @summary Register a new account (defaults to viewer role)
+ */
+export const useAuthRegister = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authRegister>>, TError,{data: BodyType<RegisterRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof authRegister>>,
+        TError,
+        {data: BodyType<RegisterRequest>},
+        TContext
+      > => {
+      return useMutation(getAuthRegisterMutationOptions(options));
     }
 
 export const getAuthLogoutUrl = () => {

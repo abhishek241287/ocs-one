@@ -2709,12 +2709,18 @@ components:
         - $ref: "#/components/schemas/MasterCommon"
         - type: object
           properties:
+            equipment_type:
+              type: string
+              enum: [capacity_tester, dc_load, protection_tester, internal_resistance_meter, thermal_camera, other]
             equipment_name: { type: string }
             manufacturer: { type: string }
             model: { type: string }
             serial_number: { type: string }
             calibration_date: { type: string }
             next_calibration_due: { type: string }
+            floor_status:
+              type: string
+              enum: [available, busy, maintenance]
             software_version: { type: ["string", "null"] }
             location: { type: ["string", "null"] }
 
@@ -2724,12 +2730,18 @@ components:
         - type: object
           required: [equipment_name, manufacturer, model, serial_number, calibration_date, next_calibration_due]
           properties:
+            equipment_type:
+              type: string
+              enum: [capacity_tester, dc_load, protection_tester, internal_resistance_meter, thermal_camera, other]
             equipment_name: { type: string }
             manufacturer: { type: string }
             model: { type: string }
             serial_number: { type: string }
             calibration_date: { type: string }
             next_calibration_due: { type: string }
+            floor_status:
+              type: string
+              enum: [available, busy, maintenance]
             software_version: { type: ["string", "null"] }
             location: { type: ["string", "null"] }
 
@@ -2738,12 +2750,18 @@ components:
         - $ref: "#/components/schemas/MasterCommonUpdate"
         - type: object
           properties:
+            equipment_type:
+              type: string
+              enum: [capacity_tester, dc_load, protection_tester, internal_resistance_meter, thermal_camera, other]
             equipment_name: { type: string }
             manufacturer: { type: string }
             model: { type: string }
             serial_number: { type: string }
             calibration_date: { type: string }
             next_calibration_due: { type: string }
+            floor_status:
+              type: string
+              enum: [available, busy, maintenance]
             software_version: { type: ["string", "null"] }
             location: { type: ["string", "null"] }
 

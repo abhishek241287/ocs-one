@@ -6,14 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { MasterCommon } from './masterCommon';
+import type { TestEquipmentMasterEquipmentType } from './testEquipmentMasterEquipmentType';
+import type { TestEquipmentMasterFloorStatus } from './testEquipmentMasterFloorStatus';
 
 export type TestEquipmentMaster = MasterCommon & ({
+  equipment_type?: TestEquipmentMasterEquipmentType;
   equipment_name?: string;
   manufacturer?: string;
   model?: string;
   serial_number?: string;
   calibration_date?: string;
   next_calibration_due?: string;
+  floor_status?: TestEquipmentMasterFloorStatus;
   /** @nullable */
   software_version?: string | null;
   /** @nullable */

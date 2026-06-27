@@ -6,6 +6,31 @@ import {
 } from "@workspace/api-zod";
 import type { PgTableWithColumns } from "drizzle-orm/pg-core";
 
+// Convert snake_case keys from Zod-parsed body → camelCase for Drizzle insert/update
+function snakeToCamel(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+}
+
+function bodyToCamel(obj: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => [snakeToCamel(k), v])
+  );
+}
+
+// Serialize Drizzle row → API response:
+//   • camelCase keys → snake_case
+//   • Postgres numeric/decimal strings → JS numbers
+function serializeRow(item: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(item).map(([k, v]) => {
+      const snakeKey = k.replace(/([A-Z])/g, "_$1").toLowerCase();
+      const value =
+        typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v;
+      return [snakeKey, value];
+    })
+  );
+}
+
 export function createMasterRouter<
   TTable extends PgTableWithColumns<any>,
   _TEntity,
@@ -13,13 +38,13 @@ export function createMasterRouter<
   _TUpdate
 >(options: {
   table: TTable;
-  schema: any; // The entity Zod schema
-  inputSchema: any; // The input Zod schema
-  updateSchema: any; // The update Zod schema
+  schema: any;
+  inputSchema: any;
+  updateSchema: any;
   resourceName: string;
 }) {
   const router: IRouter = Router();
-  const { table, schema, inputSchema, updateSchema, resourceName } = options;
+  const { table, inputSchema, updateSchema, resourceName } = options;
 
   // List
   router.get("/", async (req: Request, res: Response): Promise<void> => {
@@ -36,7 +61,6 @@ export function createMasterRouter<
       conditions.push(eq((table as any).status, status));
     }
     if (search) {
-      // Common masters have 'code' and 'name'
       conditions.push(
         or(
           ilike((table as any).code, `%${search}%`),
@@ -60,17 +84,12 @@ export function createMasterRouter<
       .offset(offset)
       .orderBy(desc((table as any).createdAt));
 
-    const total = (totalResult as any)?.count || 0;
+    const total = Number((totalResult as any)?.count ?? 0);
     const totalPages = Math.ceil(total / pageSize);
 
     res.json({
-      items: (items as any[]).map(item => schema.parse(item)),
-      meta: {
-        total,
-        page,
-        pageSize,
-        totalPages,
-      },
+      items: (items as any[]).map(item => serializeRow(item as Record<string, unknown>)),
+      meta: { total, page, pageSize, totalPages },
     });
   });
 
@@ -84,10 +103,13 @@ export function createMasterRouter<
     }
 
     try {
-      const [item] = await db.insert(table).values(parsed.data).returning();
-      res.status(201).json(schema.parse(item));
+      const camelData = bodyToCamel(parsed.data as Record<string, unknown>);
+      const [item] = await db.insert(table).values(camelData as any).returning();
+      res.status(201).json(serializeRow(item as Record<string, unknown>));
     } catch (err: any) {
-      if (err.code === "23505") { // Unique violation
+      // Drizzle wraps pg errors: throw new Error("Failed query...", { cause: pgErr })
+      const pgCode = err.code ?? (err.cause as any)?.code;
+      if (pgCode === "23505") {
         res.status(409).json({ error: `${resourceName} with this code already exists` });
         return;
       }
@@ -95,17 +117,20 @@ export function createMasterRouter<
     }
   });
 
-  // Get
+  // Get by ID
   router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     const id = req.params.id as string;
-    const [item] = (await db.select().from(table as any).where(eq((table as any).id, id))) as any[];
+    const [item] = (await db
+      .select()
+      .from(table as any)
+      .where(eq((table as any).id, id))) as any[];
 
     if (!item) {
       res.status(404).json({ error: `${resourceName} not found` });
       return;
     }
 
-    res.json(schema.parse(item));
+    res.json(serializeRow(item as Record<string, unknown>));
   });
 
   // Update
@@ -118,10 +143,12 @@ export function createMasterRouter<
       return;
     }
 
+    const camelData = bodyToCamel(parsed.data as Record<string, unknown>);
+
     const [item] = (await db
       .update(table as any)
       .set({
-        ...parsed.data,
+        ...camelData,
         revisionNumber: sql`${(table as any).revisionNumber} + 1`,
         updatedAt: new Date(),
       })
@@ -133,7 +160,7 @@ export function createMasterRouter<
       return;
     }
 
-    res.json(schema.parse(item));
+    res.json(serializeRow(item as Record<string, unknown>));
   });
 
   // Toggle Status
@@ -159,7 +186,7 @@ export function createMasterRouter<
       return;
     }
 
-    res.json(schema.parse(item));
+    res.json(serializeRow(item as Record<string, unknown>));
   });
 
   return router;
