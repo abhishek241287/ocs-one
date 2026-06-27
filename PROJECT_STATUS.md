@@ -357,19 +357,23 @@ Every Certification Wave follows this sequence without exception. No wave is com
 
 A module may only be marked **🔵 Certified** when every item below is true. Any unchecked item is a certification blocker.
 
-| # | Criterion | Blocker? |
-|---|-----------|----------|
-| 1 | Module Acceptance Test completed — all mandatory tests passing | Yes |
-| 2 | No Critical or High severity defects remain open | Yes |
-| 3 | TypeScript: 0 errors across all workspace packages | Yes |
-| 4 | ESLint: 0 warnings | Yes |
-| 5 | OpenAPI specification matches implementation | Yes |
-| 6 | Database migrations (if any) applied and verified | Yes |
-| 7 | Integration with all dependent modules verified | Yes |
-| 8 | Reports and Director Dashboard reflect correct data | Yes |
-| 9 | Documentation updated — `PROJECT_STATUS.md`, `CHANGELOG.md`, Certification History | Yes |
-| 10 | Factory UAT signed off by a director or supervisor | Yes |
-| 11 | Release checkpoint created — Git tag and source backup | Yes |
+Certification is **evidence-based**. A checkmark is not sufficient — each criterion must be backed by a recorded artefact. If an audit is performed six months later, every decision must be provable from the files in `certification/CW-NN-<Module>/`.
+
+| # | Criterion | Blocker? | Evidence Required |
+|---|-----------|----------|-------------------|
+| 1 | Module Acceptance Test completed — all mandatory tests passing | Yes | `MAT.md` — completed scorecard with pass/fail per test case |
+| 2 | No Critical or High severity defects remain open | Yes | `Defects.md` — full defect log with severity and resolution status |
+| 3 | TypeScript: 0 errors across all workspace packages | Yes | `Certification.md` — `pnpm run typecheck` output pasted verbatim |
+| 4 | ESLint: 0 warnings | Yes | `Certification.md` — `pnpm run lint` output pasted verbatim |
+| 5 | OpenAPI specification matches implementation | Yes | `Certification.md` — codegen run confirmation, no diff |
+| 6 | Database migrations (if any) applied and verified | Yes | `Certification.md` — migration file names and `db push` confirmation |
+| 7 | Integration with all dependent modules verified | Yes | `Integration.md` — per-dependency verification results |
+| 8 | Reports and Director Dashboard reflect correct data | Yes | `Integration.md` — screenshot references or recorded test results |
+| 9 | Documentation updated — `PROJECT_STATUS.md`, `CHANGELOG.md`, Certification History | Yes | `Certification.md` — commit hash of documentation update |
+| 10 | Factory UAT signed off by a director or supervisor | Yes | `UAT.md` — named approver, date, and sign-off statement |
+| 11 | Release checkpoint created — Git tag and source backup | Yes | `Certification.md` — Git tag name and backup file path |
+
+Evidence files live at: `certification/CW-NN-<Module>/` (one folder per wave, created before the wave begins).
 
 ---
 
