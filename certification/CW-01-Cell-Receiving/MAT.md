@@ -13,99 +13,106 @@
 
 ## MAT-01 — Page & Navigation Inspection
 
-> Pre-test check. Must complete before functional test cases.
-> 10 areas inspected. Evidence: source review + live API calls + browser console capture.
+> Pre-test check executed **twice** — initial inspection, then re-tested after defect remediation.
 
-### MAT-01 Scorecard
+### MAT-01 Final Scorecard (post-remediation re-test)
 
 | # | Area | Status | Notes |
 |---|------|--------|-------|
-| 1 | Sidebar Navigation | ✅ Pass | Cell Receiving link present under Manufacturing → Cell Lifecycle. Correct href `/cells/receiving`, icon `Package`, active-state logic correct. |
-| 2 | Route Loading | ✅ Pass | Auth guard redirects unauthenticated `/cells/receiving` → `/login` (HTTP 401 on API, login page rendered). Authenticated route wraps in `AppLayout`. |
-| 3 | API Connectivity | ✅ Pass | `GET /api/cells/lots` → HTTP 200 in **22.8 ms**. Response schema: `{ items: [...], meta: { total, page, pageSize, totalPages } }`. Auth required (401 without cookie). |
-| 4 | Browser Console Errors | ❌ Fail | Two browser-level reload errors captured: `Failed to reload DealerMasterPage.tsx` and `Failed to reload DispatchOrdersPage.tsx`. Cause: both import `useOdsNotify` from `@/components/ods/OdsNotify` (non-existent) instead of `@/hooks/use-ods-notify`. Affects Logistics module; no Cell Receiving–specific console errors. See **DEF-CW01-004**. |
-| 5 | Module Header | ⚠️ Partial | `ModuleHeader` present with `icon="📦"`, `title="Cell Receiving"`, dynamic description `"N lots received"`. DEFECT: `certification="certified"` prop renders a Certified badge on an uncertified module. See **DEF-CW01-002**. |
-| 6 | Toolbar | ✅ Pass | `OdsToolbar` with `search` (placeholder "Search lot number…"), `onRefresh` callback, and `isRefreshing={isFetching}` state. `searchRef` wired for keyboard shortcuts via `useModuleShortcuts`. |
-| 7 | Search | ✅ Pass | Search state managed, page resets to 1 on change. `GET /api/cells/lots?search=nonexistent_xyz` → HTTP 200, `items: []`. Live filter confirmed working at API layer. |
-| 8 | Loading Skeleton | ✅ Pass | `OdsTableSkeleton rows={6} columns={10}` rendered when `isLoading === true`. Correct ODS pattern. |
-| 9 | Empty State | ✅ Pass | `OdsEmptyState icon="📦" title="No lots received yet"` with action button "Receive New Lot" (opens dialog). Shown when `lots.length === 0`. |
-| 10 | ODS Compliance | ⚠️ Partial | ODS components used: `ModuleHeader` ✅, `OdsToolbar` ✅, `OdsTableSkeleton` ✅, `OdsEmptyState` ✅ — all imported from `@/components/ods`. DEFECT: page uses `useToast` (from `@/hooks/use-toast`) instead of `useOdsNotify` (from `@/hooks/use-ods-notify`). See **DEF-CW01-001**. |
+| 1 | Sidebar Navigation | ✅ Pass | Cell Receiving link at `/cells/receiving` under Manufacturing → Cell Lifecycle. Correct icon, label, active-state logic. Stub items (Traceability/After-Sales) now render with disabled state — no false navigation. DEF-CW01-005 resolved. |
+| 2 | Route Loading | ✅ Pass | Auth guard active: unauthenticated `/cells/receiving` → login redirect (HTTP 401 on API probe). Authenticated route wraps in `AppLayout`. |
+| 3 | API Connectivity | ✅ Pass | `GET /api/cells/lots` → HTTP 200 in **18.2 ms**. Response: `{ items: [...], meta: { total, page, pageSize, totalPages } }`. 401 without cookie. |
+| 4 | Browser Console Errors | ✅ Pass | **Zero errors** in re-test session. Previous `Failed to reload` errors (DEF-CW01-004) confirmed absent. Only expected events: auth 401 resources and browser autocomplete hint on login form. |
+| 5 | Module Header | ✅ Pass | `ModuleHeader` present, `icon="📦"`, `title="Cell Receiving"`, dynamic description. `certification` prop removed — module now correctly shows "development" state. DEF-CW01-002 resolved. |
+| 6 | Toolbar | ✅ Pass | `OdsToolbar` with search, `onRefresh`, `isRefreshing={isFetching}`, `searchRef` for keyboard shortcuts. |
+| 7 | Search | ✅ Pass | Search input with placeholder "Search lot number…". API probe: `?search=nonexistent_xyz` → HTTP 200, `items: []`, 3.9 ms. Filter confirmed at API layer. |
+| 8 | Loading Skeleton | ✅ Pass | `OdsTableSkeleton rows={6} columns={10}` shown on `isLoading`. Correct ODS pattern. |
+| 9 | Empty State | ✅ Pass | `OdsEmptyState icon="📦" title="No lots received yet"` with action "Receive New Lot" that opens the dialog. |
+| 10 | ODS Compliance | ✅ Pass | All five ODS structural components used correctly: `ModuleHeader`, `OdsToolbar`, `OdsTableSkeleton`, `OdsEmptyState` from `@/components/ods`. Notifications now use `useOdsNotify` from `@/hooks/use-ods-notify`. Fragment key fixed. DEF-CW01-001, -003 resolved. |
 
-**Status legend:** ✅ Pass · ❌ Fail · ⚠️ Partial · ⬜ Not run
+**10 / 10 Pass**
 
-### MAT-01 Evidence
+---
 
-**Screenshot — unauthenticated access to `/cells/receiving`:**
-Auth guard is active. Navigating to `/cells/receiving` without a session redirects to the login page. The page title, branding, and sign-in form render correctly.
+### MAT-01 Initial Inspection (2026-06-27 — before remediation)
 
-> `http://localhost:80/cells/receiving → Login page (HTTP 401 on /api/auth/me)`
+| # | Area | Initial Status | Defect |
+|---|------|---------------|--------|
+| 1 | Sidebar Navigation | ✅ Pass | DEF-CW01-005 noted (stub routes) |
+| 2 | Route Loading | ✅ Pass | — |
+| 3 | API Connectivity | ✅ Pass | — |
+| 4 | Browser Console Errors | ❌ Fail | DEF-CW01-004 (High) |
+| 5 | Module Header | ⚠️ Partial | DEF-CW01-002 (Low) |
+| 6 | Toolbar | ✅ Pass | — |
+| 7 | Search | ✅ Pass | — |
+| 8 | Loading Skeleton | ✅ Pass | — |
+| 9 | Empty State | ✅ Pass | — |
+| 10 | ODS Compliance | ⚠️ Partial | DEF-CW01-001 (Medium), DEF-CW01-003 (Low) |
 
-**API probe results:**
+Initial result: 7 Pass · 2 Partial · 1 Fail. 5 defects raised. Conditional pass.
 
-```
-GET /api/healthz              → 200  4.7 ms
-GET /api/cells/lots           → 200  22.8 ms  (authenticated)
-GET /api/cells/lots?search=nonexistent_xyz  → 200  8.0 ms  { items: [], meta: { total: 0 } }
-GET /api/cells/lots           → 401  (no cookie)
-```
+---
 
-**Vite server errors (from workflow log, 2026-06-27):**
+### MAT-01 Verification Evidence
 
-```
-3:49:44 PM [vite] Internal server error: Failed to resolve import
-  "@/components/ods/OdsNotify" from
-  "src/features/logistics/pages/DispatchOrdersPage.tsx"
-  File: ...DispatchOrdersPage.tsx:18:29
-
-3:50:57 PM [vite] Pre-transform error: Failed to resolve import
-  "@/components/ods/OdsNotify" from
-  "src/features/logistics/pages/DealerMasterPage.tsx"
-  File: ...DealerMasterPage.tsx:17:29
-```
-
-**Browser console errors (captured):**
+**API re-test probes (2026-06-27 post-remediation):**
 
 ```
-[vite] Failed to reload /src/features/logistics/pages/DealerMasterPage.tsx.
-[vite] Failed to reload /src/features/logistics/pages/DispatchOrdersPage.tsx.
+GET /api/healthz                                → HTTP 200 in 3.7 ms
+GET /api/cells/lots                (no cookie)  → HTTP 401 in 3.2 ms  ✅ auth guard
+GET /api/cells/lots                (authed)     → HTTP 200 in 18.2 ms ✅ data returned
+GET /api/cells/lots?search=nonexistent_xyz      → HTTP 200 in 3.9 ms  ✅ empty items
 ```
 
-**No errors were produced by CellReceivingPage.tsx itself.**
+**TypeScript compile:**
+```
+pnpm --filter @workspace/ocs-one run typecheck
+→ tsc -p tsconfig.json --noEmit
+→ (clean exit, zero errors)
+```
 
-### MAT-01 Defects Raised
+**Vite HMR log (post-fix):**
+```
+[vite] hmr update /src/features/cells/pages/CellReceivingPage.tsx  ← clean
+[vite] hmr update /src/components/layout/Sidebar.tsx               ← clean
+```
+No `Internal server error`, no `Pre-transform error`, no `Failed to reload`.
 
-| Defect ID | Title | Severity | Area |
-|-----------|-------|----------|------|
-| DEF-CW01-001 | `useToast` used instead of `useOdsNotify` in CellReceivingPage | Medium | ODS Compliance |
-| DEF-CW01-002 | `certification="certified"` shown on uncertified module | Low | Module Header |
-| DEF-CW01-003 | React Fragment missing `key` prop in `lots.map()` | Low | Render |
-| DEF-CW01-004 | `@/components/ods/OdsNotify` import error — DealerMasterPage + DispatchOrdersPage | High | Logistics (found in CW-01 session) |
-| DEF-CW01-005 | Sidebar stub routes `#qr`, `#warranty`, `#service` are non-functional | Low | Sidebar Navigation |
+**Browser console (re-test session):**
+```
+[vite] connecting...
+[vite] connected.
+[React DevTools hint]                                  ← expected info
+Failed to load resource: 401 (Unauthorized)            ← auth guard (expected)
+Failed to load resource: 401 (Unauthorized)            ← auth guard (expected)
+[DOM] Input autocomplete hint on login form            ← browser suggestion, not an error
+```
 
-### MAT-01 Summary
+**Route guard screenshot:** `/cells/receiving` while unauthenticated → login page rendered correctly. OCS One branding, email/password fields, Sign In button all present.
 
-| Metric | Value |
-|--------|-------|
-| Areas inspected | 10 |
-| Pass | 7 |
-| Partial | 2 |
-| Fail | 1 |
-| Defects raised | 5 (1 High · 1 Medium · 3 Low) |
+### MAT-01 Defects Summary
+
+| Defect ID | Title | Severity | Resolution |
+|-----------|-------|----------|-----------|
+| DEF-CW01-001 | `useToast` → `useOdsNotify` | Medium | ✅ Verified 2026-06-27 |
+| DEF-CW01-002 | Premature `certification="certified"` badge | Low | ✅ Verified 2026-06-27 |
+| DEF-CW01-003 | Fragment missing `key` prop | Low | ✅ Verified 2026-06-27 |
+| DEF-CW01-004 | `@/components/ods/OdsNotify` import error (Logistics) | High | ✅ Verified 2026-06-27 |
+| DEF-CW01-005 | Sidebar stub routes non-functional | Low | ✅ Verified 2026-06-27 |
+
+**Open blockers: 0**
 
 ### MAT-01 Decision
 
-**CONDITIONAL PASS** — the Cell Receiving page structure, route guard, API connectivity, toolbar, search, loading skeleton, empty state, and core ODS components all function correctly. Two remediation items must be resolved before advancing to functional tests:
+✅ **FULL PASS** — All 10 areas pass on re-test. Zero open defects. Zero browser console errors. TypeScript compiles clean. Auth guard active. API connectivity confirmed. ODS compliance achieved.
 
-1. **DEF-CW01-001 (Medium)** — Replace `useToast` with `useOdsNotify` in `CellReceivingPage.tsx`.
-2. **DEF-CW01-004 (High)** — Fix `@/components/ods/OdsNotify` import path in `DealerMasterPage.tsx` and `DispatchOrdersPage.tsx` (Logistics module; causes browser console errors visible in every session).
-
-DEF-CW01-002, -003, -005 are Low severity and may be remediated concurrently or deferred to a maintenance release with explicit approval.
+MAT-01 complete. Cleared to proceed to MAT-02 functional tests.
 
 ---
 
 ## 10-Point Functional Scorecard
 
-> Not yet run. Awaiting MAT-01 defect remediation.
+> Not yet run. MAT-01 cleared.
 
 | # | Area | Status | Cases Run | Pass | Fail | Notes |
 |---|------|--------|-----------|------|------|-------|
@@ -225,7 +232,7 @@ DEF-CW01-002, -003, -005 are Low severity and may be remediated concurrently or 
 | Blocked | — |
 | Not run | 32 |
 | **Pass rate** | — |
-| Defects filed | 5 (MAT-01 inspection only) |
+| Defects filed | 5 (all resolved, MAT-01 only) |
 
 ## MAT Decision
 

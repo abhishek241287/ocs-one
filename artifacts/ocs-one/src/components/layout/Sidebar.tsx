@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-type NavItem = { label: string; href: string; icon: any };
+type NavItem = { label: string; href: string; icon: any; disabled?: boolean };
 type NavSection = {
   title: string;
   items?: NavItem[];
@@ -95,14 +95,14 @@ const navSections: NavSection[] = [
   {
     title: "Traceability",
     items: [
-      { label: "QR Traceability", href: "#qr", icon: QrCode },
+      { label: "QR Traceability", href: "#qr", icon: QrCode, disabled: true },
     ],
   },
   {
     title: "After-Sales",
     items: [
-      { label: "Warranty", href: "#warranty", icon: FileCheck },
-      { label: "Service", href: "#service", icon: Wrench },
+      { label: "Warranty", href: "#warranty", icon: FileCheck, disabled: true },
+      { label: "Service", href: "#service", icon: Wrench, disabled: true },
     ],
   },
   {
@@ -247,6 +247,27 @@ export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCo
                 {(section.items ?? []).map((item) => {
                   const isActive = location === item.href || location.startsWith(item.href + "/");
                   const Icon = item.icon;
+                  if (item.disabled) {
+                    return (
+                      <li key={item.label}>
+                        <span
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-md cursor-not-allowed opacity-40 select-none",
+                            collapsed && "justify-center px-0"
+                          )}
+                          title={collapsed ? `${item.label} (coming soon)` : undefined}
+                        >
+                          <Icon size={20} className="shrink-0" />
+                          {!collapsed && (
+                            <span className="truncate text-sm flex items-center gap-1.5">
+                              {item.label}
+                              <span className="text-[10px] font-medium uppercase tracking-wide opacity-60">soon</span>
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  }
                   return (
                     <li key={item.label}>
                       <Link href={item.href}>

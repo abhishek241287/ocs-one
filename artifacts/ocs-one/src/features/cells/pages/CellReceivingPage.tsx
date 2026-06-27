@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, Fragment } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 import { ModuleHeader, OdsToolbar, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 import { useListCellLots, useCreateCellLot, useGetCellLot } from "@workspace/api-client-react";
 import { Plus, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -58,7 +58,7 @@ const DEFAULT_FORM = {
 };
 
 export default function CellReceivingPage() {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -77,16 +77,16 @@ export default function CellReceivingPage() {
         queryClient.invalidateQueries({ queryKey: ["/api/cells/lots"] });
         setOpen(false);
         setForm(DEFAULT_FORM);
-        toast({ title: "Lot received", description: "Individual cell records generated." });
+        notify.success("Lot received", { description: "Individual cell records generated." });
       },
-      onError: (e: any) => toast({ title: "Error", description: e?.message ?? "Failed", variant: "destructive" }),
+      onError: (e: any) => notify.error("Error", { description: e?.message ?? "Failed" }),
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.supplier || !form.manufacturer || !form.cellModel || !form.nominalCapacityAh || !form.lotNumber || !form.dateReceived || !form.quantityReceived || !form.receivedBy) {
-      toast({ title: "Required fields missing", variant: "destructive" });
+      notify.error("Required fields missing");
       return;
     }
     createLot.mutate({
@@ -119,7 +119,6 @@ export default function CellReceivingPage() {
           icon="📦"
           title="Cell Receiving"
           description={`${meta?.total ?? 0} lots received`}
-          certification="certified"
           actions={
             <Button onClick={() => setOpen(true)}>
               <Plus size={16} className="mr-1" /> Receive New Lot
@@ -174,9 +173,8 @@ export default function CellReceivingPage() {
                 </TableRow>
               ) : (
                 lots.map((lot) => (
-                  <>
+                  <Fragment key={lot.id}>
                     <TableRow
-                      key={lot.id}
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => setExpandedLot(expandedLot === lot.id ? null : lot.id)}
                     >
@@ -196,7 +194,7 @@ export default function CellReceivingPage() {
                       </TableCell>
                     </TableRow>
                     {expandedLot === lot.id && (
-                      <TableRow key={`${lot.id}-detail`}>
+                      <TableRow>
                         <TableCell colSpan={10} className="bg-muted/30 px-6 py-3 text-sm">
                           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                             <div><span className="text-muted-foreground">Chemistry:</span> {lot.cellChemistry}</div>
@@ -209,7 +207,7 @@ export default function CellReceivingPage() {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 ))
               )}
             </TableBody>
