@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Sheet,
   SheetContent,
@@ -20,6 +20,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { useCreateProductionOrder } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
+import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 
 interface Props {
   open: boolean;
@@ -38,6 +39,9 @@ export default function CreateOrderDrawer({ open, onClose, onSuccess }: Props) {
     plannedEndDate: "",
     notes: "",
   });
+
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,9 +77,9 @@ export default function CreateOrderDrawer({ open, onClose, onSuccess }: Props) {
           </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5 mt-6">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-5 mt-6">
           <div className="space-y-2">
-            <Label htmlFor="factoryManager">Factory Manager *</Label>
+            <Label htmlFor="factoryManager">Factory Manager <span className="text-red-500">*</span></Label>
             <Input
               id="factoryManager"
               placeholder="e.g. Rajesh Kumar"

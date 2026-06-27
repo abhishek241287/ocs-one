@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import { useLocation, Link } from "wouter";
 import { Zap, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [, setLocation] = useLocation();
   const login = useLogin();
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit(), autoFocusDelay: 0 });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +85,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form ref={formRef} onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

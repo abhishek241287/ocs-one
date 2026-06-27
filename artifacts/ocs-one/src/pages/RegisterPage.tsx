@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import { useLocation, Link } from "wouter";
 import { Zap, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ export default function RegisterPage() {
   const [clientError, setClientError] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   const register = useRegister();
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit(), autoFocusDelay: 0 });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +96,7 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="name">Full name</Label>
               <Input

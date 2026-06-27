@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,8 @@ export default function CellGradingPage() {
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   const [selectedCellLabel, setSelectedCellLabel] = useState<string>("");
   const [form, setForm] = useState<GradeForm>(DEFAULT_GRADE_FORM);
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
 
   const status = tab === "pending" ? "received" : undefined;
 
@@ -245,7 +248,7 @@ export default function CellGradingPage() {
           <DialogHeader>
             <DialogTitle>Grade Cell — <span className="font-mono text-primary">{selectedCellLabel}</span></DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleGrade} className="space-y-4">
+          <form ref={formRef} onSubmit={handleGrade} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Voltage (V) *</Label>

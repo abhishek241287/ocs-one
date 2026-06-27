@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -168,6 +169,8 @@ export default function CellMatchingPage() {
   const [open, setOpen] = useState(false);
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [form, setForm] = useState(DEFAULT_FORM);
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useListCellMatches({ page, pageSize: 25 });
@@ -343,7 +346,7 @@ export default function CellMatchingPage() {
               New Intelligent Match
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-4">
+          <form ref={formRef} onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-1.5">
               <Label>Battery Model *</Label>
               <Input value={form.batteryModel} onChange={set("batteryModel")} placeholder="e.g. OCS-48V-280Ah" />

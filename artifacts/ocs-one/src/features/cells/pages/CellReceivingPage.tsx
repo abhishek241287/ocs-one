@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +63,8 @@ export default function CellReceivingPage() {
   const [page, setPage] = useState(1);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [expandedLot, setExpandedLot] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
 
   const { data, isLoading } = useListCellLots({ page, pageSize: 25, search: search || undefined });
   const createLot = useCreateCellLot({
@@ -219,7 +222,7 @@ export default function CellReceivingPage() {
           <DialogHeader>
             <DialogTitle>Receive New Cell Lot</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Supplier *</Label>

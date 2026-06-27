@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import {
   Sheet,
   SheetContent,
@@ -62,6 +63,9 @@ export function MasterEditDrawer({
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const summaryRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
 
   useEffect(() => {
     if (isOpen) {
@@ -190,7 +194,7 @@ export function MasterEditDrawer({
           <SheetTitle>{initialData ? `Edit ${title}` : `Add ${title}`}</SheetTitle>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit} noValidate>
+        <form ref={formRef} onSubmit={handleSubmit} noValidate>
           <div ref={summaryRef} className="pt-4 space-y-4">
             {(hasErrors || saveError) && (
               <div className="rounded-md border border-red-200 bg-red-50 p-3 space-y-1">
