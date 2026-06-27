@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
-import { ModuleHeader, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
+import { ModuleHeader, OdsToolbar, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,30 +142,30 @@ export default function CellGradingPage() {
           certification="certified"
         />
 
-        <div className="flex gap-3 mb-4 flex-wrap items-center">
-          <div className="flex rounded-md border overflow-hidden">
-            <button
-              className={`px-4 py-1.5 text-sm font-medium ${tab === "pending" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-              onClick={() => { setTab("pending"); setPage(1); }}
-            >
-              Pending Grading
-            </button>
-            <button
-              className={`px-4 py-1.5 text-sm font-medium ${tab === "all" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-              onClick={() => { setTab("all"); setPage(1); }}
-            >
-              All Cells
-            </button>
-          </div>
-          <Input
-            ref={searchRef}
-            placeholder="Search cell ID..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="max-w-xs"
-          />
-          <span className="text-sm text-muted-foreground">{meta?.total ?? 0} cells</span>
-        </div>
+        <OdsToolbar
+          search={{
+            value: search,
+            onChange: (v) => { setSearch(v); setPage(1); },
+            placeholder: "Search cell ID…",
+            ref: searchRef,
+          }}
+          filters={
+            <div className="flex rounded-md border overflow-hidden">
+              <button
+                className={`px-4 py-1.5 text-sm font-medium ${tab === "pending" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                onClick={() => { setTab("pending"); setPage(1); }}
+              >
+                Pending Grading
+              </button>
+              <button
+                className={`px-4 py-1.5 text-sm font-medium ${tab === "all" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                onClick={() => { setTab("all"); setPage(1); }}
+              >
+                All Cells
+              </button>
+            </div>
+          }
+        />
 
         <div className="rounded-md border">
           <Table>

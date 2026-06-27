@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
-import { ModuleHeader, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
+import { ModuleHeader, OdsToolbar, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +70,7 @@ export default function CellReceivingPage() {
   useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
   useModuleShortcuts({ onNew: () => setOpen(true), searchRef });
 
-  const { data, isLoading } = useListCellLots({ page, pageSize: 25, search: search || undefined });
+  const { data, isLoading, isFetching, refetch } = useListCellLots({ page, pageSize: 25, search: search || undefined });
   const createLot = useCreateCellLot({
     mutation: {
       onSuccess: () => {
@@ -127,15 +127,16 @@ export default function CellReceivingPage() {
           }
         />
 
-        <div className="mb-4">
-          <Input
-            ref={searchRef}
-            placeholder="Search lot number..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="max-w-sm"
-          />
-        </div>
+        <OdsToolbar
+          search={{
+            value: search,
+            onChange: (v) => { setSearch(v); setPage(1); },
+            placeholder: "Search lot number…",
+            ref: searchRef,
+          }}
+          onRefresh={() => refetch()}
+          isRefreshing={isFetching}
+        />
 
         <div className="rounded-md border">
           <Table>

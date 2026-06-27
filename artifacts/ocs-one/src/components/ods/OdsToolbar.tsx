@@ -10,6 +10,7 @@ interface OdsToolbarSearchProps {
   onDebouncedChange?: (v: string) => void;
   placeholder?: string;
   captureCtrlF?: boolean;
+  ref?: React.Ref<HTMLInputElement>;
 }
 
 interface OdsToolbarProps {
