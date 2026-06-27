@@ -40,6 +40,7 @@ import PackingDashboardPage from "@/features/logistics/pages/PackingDashboardPag
 import DealerMasterPage from "@/features/logistics/pages/DealerMasterPage";
 import DispatchOrdersPage from "@/features/logistics/pages/DispatchOrdersPage";
 import DispatchOrderDetailPage from "@/features/logistics/pages/DispatchOrderDetailPage";
+import ArchitecturePage from "@/pages/ArchitecturePage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,6 +62,7 @@ function Router() {
       </Route>
       <Route path="/dashboard" component={DirectorDashboardPage} />
       <Route path="/design-system" component={DesignSystemPage} />
+      <Route path="/developer/architecture" component={ArchitecturePage} />
 
       {/* Masters */}
       <Route path="/masters/products" component={ProductMasterPage} />

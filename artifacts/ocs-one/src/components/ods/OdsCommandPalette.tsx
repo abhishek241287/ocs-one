@@ -53,7 +53,8 @@ const NAVIGATION_COMMANDS: CommandEntry[] = [
   { id: "nav-charging", label: "Charging Dashboard", group: "Navigate", icon: "⚡", href: "/manufacturing/charging-dashboard", keywords: ["charging"] },
   { id: "nav-testing", label: "Testing Dashboard", group: "Navigate", icon: "🧪", href: "/manufacturing/testing-dashboard", keywords: ["testing"] },
   { id: "nav-rework", label: "Rework Queue", group: "Navigate", icon: "🔄", href: "/manufacturing/rework", keywords: ["rework"] },
-  { id: "nav-design-system", label: "Design System", group: "Developer", icon: "🎨", href: "/design-system", keywords: ["ods", "design", "components", "ui"] },
+  { id: "nav-design-system",   label: "Design System",    group: "Developer", icon: "🎨", href: "/design-system",           keywords: ["ods", "design", "components", "ui"] },
+  { id: "nav-architecture",    label: "Architecture Map",  group: "Developer", icon: "🗺️", href: "/developer/architecture",   keywords: ["architecture", "dependency", "map", "modules", "api", "db"] },
 ];
 
 function fuzzyMatch(query: string, text: string, keywords?: string[]): boolean {
