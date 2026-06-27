@@ -331,6 +331,7 @@ These rules are non-negotiable and apply for the lifetime of the project.
 5. **Every module must pass certification before being marked complete.** `✅ Built` means implemented. `🔵 Certified` means tested, validated, and production-ready.
 6. **`PROJECT_STATUS.md` must be updated at the end of every Certification Wave.** It is the last commit in every wave — not an afterthought.
 7. **No new feature development during a Certification Wave.** The only code permitted is defect fixes found during that wave or work required to complete it. Scope creep is a defect.
+8. **Templates are versioned. Evidence is immutable.** The certification templates (`MAT.md`, `Defects.md`, `Performance.md`, `Integration.md`, `UAT.md`, `Certification.md`) may be improved for future waves as the process matures. Once a wave is certified, its recorded evidence must never be rewritten or deleted. If a certified module later fails due to a critical defect, record that in a new maintenance or re-certification entry — the original certification record is a permanent part of the audit history.
 
 ---
 
