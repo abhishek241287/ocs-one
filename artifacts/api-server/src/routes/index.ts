@@ -1,5 +1,7 @@
 import { Router, type IRouter } from "express";
+import { requireAuth } from "../middleware/auth";
 import healthRouter from "./health";
+import authRouter from "./auth";
 import productMasterRouter from "./masters/products";
 import cellMasterRouter from "./masters/cells";
 import bmsMasterRouter from "./masters/bms";
@@ -9,10 +11,19 @@ import cableMasterRouter from "./masters/cables";
 import busbarMasterRouter from "./masters/busbars";
 import chargerMasterRouter from "./masters/chargers";
 import testEquipmentMasterRouter from "./masters/test-equipment";
+import manufacturingRouter from "./manufacturing/index";
+import cellsRouter from "./cells/index";
+import logisticsRouter from "./logistics/index";
+import dashboardRouter from "./dashboard/index";
 
 const router: IRouter = Router();
 
+// ─── Public routes (no auth required) ────────────────────────────────────────
 router.use(healthRouter);
+router.use("/auth", authRouter);
+
+// ─── All routes below require a valid session ─────────────────────────────────
+router.use(requireAuth);
 
 // Engineering Masters
 router.use("/masters/products", productMasterRouter);
@@ -25,16 +36,16 @@ router.use("/masters/busbars", busbarMasterRouter);
 router.use("/masters/chargers", chargerMasterRouter);
 router.use("/masters/test-equipment", testEquipmentMasterRouter);
 
-import manufacturingRouter from "./manufacturing/index";
+// Manufacturing
 router.use("/manufacturing", manufacturingRouter);
 
-import cellsRouter from "./cells/index";
+// Cell Lifecycle
 router.use("/cells", cellsRouter);
 
-import logisticsRouter from "./logistics/index";
+// Logistics
 router.use("/logistics", logisticsRouter);
 
-import dashboardRouter from "./dashboard/index";
+// Director Dashboard
 router.use("/dashboard", dashboardRouter);
 
 export default router;

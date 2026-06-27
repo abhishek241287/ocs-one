@@ -7,8 +7,6 @@ import {
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import {
-  GetOrderTestResultsParams,
-  UpsertTestResultParams,
   UpsertTestResultBody,
 } from "@workspace/api-zod";
 

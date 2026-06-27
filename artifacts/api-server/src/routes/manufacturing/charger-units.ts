@@ -1,6 +1,6 @@
 import { Router, IRouter } from "express";
 import { db, mfgChargerUnitsTable } from "@workspace/db";
-import { eq, ilike, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import {
   ListChargerUnitsQueryParams,
   CreateChargerUnitBody,
@@ -69,7 +69,7 @@ router.get("/dashboard", async (_req, res) => {
   const maintenance = all.filter((c) => c.status === "maintenance").length;
 
   // Count batteries currently in charging stage (in_progress or paused)
-  const { mfgOrderStagesTable, mfgProductionOrdersTable } = await import("@workspace/db");
+  const { mfgOrderStagesTable, mfgProductionOrdersTable: _mfgProductionOrdersTable } = await import("@workspace/db");
   const { and, inArray } = await import("drizzle-orm");
 
   const chargingStages = await db

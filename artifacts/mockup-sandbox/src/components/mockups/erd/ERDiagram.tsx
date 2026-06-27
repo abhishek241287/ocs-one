@@ -347,8 +347,8 @@ function RelLine({ rel }: { rel: Rel }) {
   const fromColor = DOMAIN_COLORS[from.domain].border;
 
   // Simple elbow path
-  const mx = (x1 + x2) / 2;
-  const my = (y1 + y2) / 2;
+  const _mx = (x1 + x2) / 2;
+  const _my = (y1 + y2) / 2;
 
   let d: string;
   if (rel.fromSide === "R" || rel.fromSide === "L") {

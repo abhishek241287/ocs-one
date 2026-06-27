@@ -4268,3 +4268,63 @@ export const GetPackingDashboardResponse = zod.object({
 })
 
 
+/**
+ * @summary Log in with email and password
+ */
+
+
+
+export const AuthLoginBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string().min(1)
+})
+
+export const AuthLoginResponse = zod.object({
+  "user": zod.object({
+  "userId": zod.string().uuid(),
+  "email": zod.string().email(),
+  "name": zod.string(),
+  "role": zod.enum(['director', 'supervisor', 'operator', 'viewer'])
+})
+})
+
+
+/**
+ * @summary Log out and clear session cookie
+ */
+export const AuthLogoutResponse = zod.object({
+  "success": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Get current authenticated user
+ */
+export const AuthMeResponse = zod.object({
+  "user": zod.object({
+  "userId": zod.string().uuid(),
+  "email": zod.string().email(),
+  "name": zod.string(),
+  "role": zod.enum(['director', 'supervisor', 'operator', 'viewer'])
+})
+})
+
+
+/**
+ * @summary Live director dashboard — all KPIs and pipeline in one call
+ */
+export const GetDirectorDashboardResponse = zod.object({
+  "refreshedAt": zod.coerce.date(),
+  "kpis": zod.record(zod.string(), zod.unknown()).describe('Key performance indicators'),
+  "pipeline": zod.array(zod.record(zod.string(), zod.unknown())).describe('Stage-by-stage production pipeline'),
+  "alerts": zod.array(zod.record(zod.string(), zod.unknown())).describe('Active alerts and blockers'),
+  "recentOrders": zod.array(zod.record(zod.string(), zod.unknown())).describe('Recently updated production orders'),
+  "operatorActivity": zod.array(zod.record(zod.string(), zod.unknown())).describe('Operator activity breakdown'),
+  "equipmentStatus": zod.record(zod.string(), zod.unknown()).describe('Charger and test equipment utilization'),
+  "qualitySummary": zod.record(zod.string(), zod.unknown()).describe('QC pass\/fail rates and rework stats'),
+  "logistics": zod.record(zod.string(), zod.unknown()).describe('Dispatch and delivery summary'),
+  "cellInventory": zod.record(zod.string(), zod.unknown()).describe('Cell stock levels by status and grade'),
+  "orderStats": zod.record(zod.string(), zod.unknown()).describe('Order counts by status')
+})
+
+

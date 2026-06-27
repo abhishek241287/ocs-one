@@ -1,3 +1,8 @@
 - [Orval duplicate exports](orval-duplicate-exports.md) — inline requestBody schemas generate TypeScript types in types/ dir AND Zod consts in api.ts — delete the types/ files to fix TS2308.
 - [Drizzle date column](drizzle-date-column.md) — Drizzle `date()` columns accept strings only; zod.coerce.date() returns Date objects — always .toISOString().split("T")[0] when writing to date columns.
 - [DB enum cross-check](db-enum-crosscheck.md) — always verify exact enum values from schema before writing SQL filter queries; wrong enum values cause runtime 500s not compile errors.
+- [Trust proxy + rate limiter](trust-proxy-rate-limit.md) — must set `app.set("trust proxy", 1)` before express-rate-limit or Replit proxy causes ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+- [Orval split mode barrel](orval-split-barrel.md) — api-zod barrel must use `export * as types` not `export *` to avoid duplicate identifier conflicts after codegen.
+- [Postgres sequence race fix](postgres-sequences.md) — use `SELECT nextval(seq)` inside transactions; never `SELECT MAX(id)+1` which races under concurrent inserts.
+- [Lucide icon naming v0.511+](lucide-icon-names.md) — PlayCircle does not exist; correct name is CirclePlay in lucide-react ≥0.5.
+- [JWT httpOnly cookie auth](jwt-cookie-auth.md) — cookie `ocs_token`, signed with SESSION_SECRET; trust proxy required; public routes: /api/healthz and /api/auth/* only.

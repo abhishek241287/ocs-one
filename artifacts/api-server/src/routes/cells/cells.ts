@@ -1,6 +1,6 @@
 import { Router, IRouter } from "express";
 import { db, cellsTable, cellLotsTable, cellGradeConfigTable, mfgProductionOrdersTable, mfgBatteryGenealogyTable } from "@workspace/db";
-import { eq, ilike, and, desc, count, or } from "drizzle-orm";
+import { eq, ilike, and, desc, count } from "drizzle-orm";
 import { ListCellsQueryParams, GradeCellBody } from "@workspace/api-zod";
 
 const router: IRouter = Router({ mergeParams: true });

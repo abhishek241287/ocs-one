@@ -38,7 +38,7 @@ const router: IRouter = Router({ mergeParams: true });
 async function getStageOrFail(
   orderId: string,
   stageType: string,
-  res: Parameters<Parameters<IRouter["get"]>[1]>[1]
+_res: Parameters<Parameters<IRouter["get"]>[1]>[1]
 ) {
   const [stage] = await db
     .select()

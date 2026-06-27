@@ -1,5 +1,5 @@
 import { Router, IRouter } from "express";
-import { db, cellsTable, cellLotsTable, cellMatchesTable, cellMatchItemsTable } from "@workspace/db";
+import { db, cellsTable, cellLotsTable, cellMatchesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 const router: IRouter = Router({ mergeParams: true });

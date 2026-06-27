@@ -9,8 +9,6 @@ import {
 } from "@workspace/db";
 import { eq, and, count, like } from "drizzle-orm";
 import {
-  GetQcApprovalParams,
-  CreateQcApprovalParams,
   CreateQcApprovalBody,
 } from "@workspace/api-zod";
 

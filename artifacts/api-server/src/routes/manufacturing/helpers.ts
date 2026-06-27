@@ -1,10 +1,8 @@
-import { db } from "@workspace/db";
+import { db, pool } from "@workspace/db";
 import {
-  mfgProductionOrdersTable,
   mfgBatteryTimelineTable,
   mfgStagetypeEnum,
 } from "@workspace/db";
-import { like, count } from "drizzle-orm";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -16,42 +14,33 @@ function todayDateStr(): string {
   return `${y}${m}${d}`;
 }
 
-export async function generateOrderNumber(tx: Tx): Promise<string> {
-  const dateStr = todayDateStr();
-  const prefix = `PO-${dateStr}-`;
-  const [result] = await tx
-    .select({ count: count() })
-    .from(mfgProductionOrdersTable)
-    .where(like(mfgProductionOrdersTable.orderNumber, `${prefix}%`));
-  const seq = ((result?.count as number) ?? 0) + 1;
-  return `${prefix}${String(seq).padStart(4, "0")}`;
+export async function generateOrderNumber(_tx: Tx): Promise<string> {
+  const { rows } = await pool.query("SELECT nextval('mfg_order_seq') AS seq");
+  const seq = String(rows[0].seq).padStart(6, "0");
+  return `PO-${todayDateStr()}-${seq}`;
 }
 
-export async function generateBatteryNumber(tx: Tx): Promise<string> {
-  const dateStr = todayDateStr();
-  const prefix = `BAT-${dateStr}-`;
-  const [result] = await tx
-    .select({ count: count() })
-    .from(mfgProductionOrdersTable)
-    .where(like(mfgProductionOrdersTable.batteryNumber, `${prefix}%`));
-  const seq = ((result?.count as number) ?? 0) + 1;
-  return `${prefix}${String(seq).padStart(4, "0")}`;
+export async function generateBatteryNumber(_tx: Tx): Promise<string> {
+  const { rows } = await pool.query("SELECT nextval('mfg_battery_seq') AS seq");
+  const seq = String(rows[0].seq).padStart(6, "0");
+  return `BAT-${todayDateStr()}-${seq}`;
 }
 
 export type StageTypeValue = (typeof mfgStagetypeEnum.enumValues)[number];
 
-// Sprint 5 stage sequence: Cell Allocation → Assembly → Compression → BMS Install → BMS Programming → (future)
-export const STAGE_SEQUENCE: StageTypeValue[] = [
-  "cell_allocation",
-  "assembly",
-  "compression",
-  "bms_allocation",
-  "bms_programming",
-  "charging",
-  "testing",
-  "quality_control",
-  "packing",
+export const STAGE_META: { type: StageTypeValue; label: string; shortLabel: string }[] = [
+  { type: "cell_allocation",  label: "Cell Allocation",  shortLabel: "Cell Alloc" },
+  { type: "assembly",         label: "Assembly",          shortLabel: "Assembly" },
+  { type: "compression",      label: "Compression",       shortLabel: "Compress" },
+  { type: "bms_allocation",   label: "BMS Installation",  shortLabel: "BMS Install" },
+  { type: "bms_programming",  label: "BMS Programming",   shortLabel: "BMS Prog" },
+  { type: "charging",         label: "Charging",          shortLabel: "Charging" },
+  { type: "testing",          label: "Testing",           shortLabel: "Testing" },
+  { type: "quality_control",  label: "Quality Control",   shortLabel: "QC" },
+  { type: "packing",          label: "Packing",           shortLabel: "Packing" },
 ];
+
+export const STAGE_SEQUENCE: StageTypeValue[] = STAGE_META.map((s) => s.type);
 
 export function getNextStage(current: StageTypeValue): StageTypeValue | null {
   const idx = STAGE_SEQUENCE.indexOf(current);

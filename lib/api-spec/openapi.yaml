@@ -10,10 +10,14 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
   - name: masters
     description: Engineering Master Data operations
   - name: manufacturing
     description: Manufacturing Execution System operations
+  - name: dashboard
+    description: Director dashboard operations
 paths:
   /healthz:
     get:
@@ -2115,6 +2119,74 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PackingDashboard" }
 
+  # ─── Auth ─────────────────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      operationId: authLogin
+      tags: [auth]
+      summary: Log in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Login successful — sets httpOnly cookie
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "401":
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      operationId: authLogout
+      tags: [auth]
+      summary: Log out and clear session cookie
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+
+  /auth/me:
+    get:
+      operationId: authMe
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Authenticated user info
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user]
+                properties:
+                  user: { $ref: "#/components/schemas/AuthUser" }
+        "401":
+          description: Not authenticated
+
+  # ─── Director Dashboard ───────────────────────────────────────────────────
+  /dashboard/director:
+    get:
+      operationId: getDirectorDashboard
+      tags: [dashboard]
+      summary: Live director dashboard — all KPIs and pipeline in one call
+      responses:
+        "200":
+          description: Director dashboard data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectorDashboard" }
+        "401":
+          description: Not authenticated
+
 components:
   parameters:
     IdParam:
@@ -3403,3 +3475,83 @@ components:
         waitingDispatch: { type: integer }
         inTransit: { type: integer }
         deliveredToday: { type: integer }
+
+    # ─── Auth schemas ─────────────────────────────────────────────────────────
+    AuthUser:
+      type: object
+      required: [userId, email, name, role]
+      properties:
+        userId: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        role:
+          type: string
+          enum: [director, supervisor, operator, viewer]
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 1 }
+
+    LoginResponse:
+      type: object
+      required: [user]
+      properties:
+        user: { $ref: "#/components/schemas/AuthUser" }
+
+    # ─── Director Dashboard schema ────────────────────────────────────────────
+    DirectorDashboard:
+      type: object
+      required: [refreshedAt, kpis, pipeline, alerts, recentOrders, operatorActivity, equipmentStatus, qualitySummary, logistics, cellInventory, orderStats]
+      properties:
+        refreshedAt: { type: string, format: date-time }
+        kpis:
+          type: object
+          description: Key performance indicators
+          additionalProperties: true
+        pipeline:
+          type: array
+          description: Stage-by-stage production pipeline
+          items:
+            type: object
+            additionalProperties: true
+        alerts:
+          type: array
+          description: Active alerts and blockers
+          items:
+            type: object
+            additionalProperties: true
+        recentOrders:
+          type: array
+          description: Recently updated production orders
+          items:
+            type: object
+            additionalProperties: true
+        operatorActivity:
+          type: array
+          description: Operator activity breakdown
+          items:
+            type: object
+            additionalProperties: true
+        equipmentStatus:
+          type: object
+          description: Charger and test equipment utilization
+          additionalProperties: true
+        qualitySummary:
+          type: object
+          description: QC pass/fail rates and rework stats
+          additionalProperties: true
+        logistics:
+          type: object
+          description: Dispatch and delivery summary
+          additionalProperties: true
+        cellInventory:
+          type: object
+          description: Cell stock levels by status and grade
+          additionalProperties: true
+        orderStats:
+          type: object
+          description: Order counts by status
+          additionalProperties: true

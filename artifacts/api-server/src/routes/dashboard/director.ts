@@ -31,7 +31,7 @@ router.get("/", async (req, res) => {
 
   const [
     orderStats,
-    stageStats,
+    _stageStats,
     qcPipeline,
     reworkStats,
     packingReady,

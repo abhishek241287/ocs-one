@@ -2,6 +2,7 @@ import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/LoginPage";
 import DirectorDashboardPage from "@/pages/DirectorDashboardPage";
@@ -30,7 +31,15 @@ import DealerMasterPage from "@/features/logistics/pages/DealerMasterPage";
 import DispatchOrdersPage from "@/features/logistics/pages/DispatchOrdersPage";
 import DispatchOrderDetailPage from "@/features/logistics/pages/DispatchOrderDetailPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+      retry: 2,
+    },
+  },
+});
 
 function Router() {
   return (
@@ -79,9 +88,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
+        <ErrorBoundary>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+        </ErrorBoundary>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

@@ -14,10 +14,6 @@ function todayDateStr(): string {
   return `${y}${m}${d}`;
 }
 
-async function generateCellId(tx: typeof db, seq: number): Promise<string> {
-  const dateStr = todayDateStr();
-  return `CELL-${dateStr}-${String(seq).padStart(6, "0")}`;
-}
 
 // GET /cells/lots
 router.get("/", async (req, res) => {

@@ -6,7 +6,7 @@ interface MutationOptions {
   onError?: (error: any) => void;
 }
 
-export function useMasterCrud<T extends { id: string }>(
+export function useMasterCrud<_T extends { id: string }>(
   resource: string,
   hooks: {
     useList: any;

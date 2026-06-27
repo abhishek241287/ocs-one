@@ -1,6 +1,6 @@
 import { Router, IRouter } from "express";
 import { db, cellsTable } from "@workspace/db";
-import { count, eq, and, gte, sql } from "drizzle-orm";
+import { count, and, gte, sql } from "drizzle-orm";
 
 const router: IRouter = Router({ mergeParams: true });
 

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import {
   PlayCircle, CheckCircle2, ThumbsUp, ThumbsDown, Loader2, ChevronDown, ChevronRight,
-  Circle, Clock, XCircle, FlaskConical, Save,
+  FlaskConical, Save,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -356,11 +356,11 @@ export default function TestingCard({ orderId, stage, onRefresh }: Props) {
   const { toast } = useToast();
   const [operatorName, setOperatorName] = useState(stage.operatorName ?? "");
   const [supervisorName, setSupervisorName] = useState(stage.supervisorName ?? "");
-  const [notes, setNotes] = useState(stage.notes ?? "");
+  const [notes, _setNotes] = useState(stage.notes ?? "");
   const [rejectNotes, setRejectNotes] = useState("");
   const [showReject, setShowReject] = useState(false);
 
-  const { data: testResults, refetch: refetchResults } = useGetOrderTestResults(orderId);
+  const { data: testResults } = useGetOrderTestResults(orderId);
   const startStage = useStartStage();
   const completeStage = useCompleteStage();
   const approveStage = useApproveStage();

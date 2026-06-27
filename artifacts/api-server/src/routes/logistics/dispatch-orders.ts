@@ -16,7 +16,6 @@ import {
   CreateDispatchOrderBody,
   UpdateDispatchOrderBody,
   AddDispatchItemBody,
-  RemoveDispatchItemParams,
   AdvanceDispatchStatusBody,
   AdvanceDispatchStatusParams,
 } from "@workspace/api-zod";

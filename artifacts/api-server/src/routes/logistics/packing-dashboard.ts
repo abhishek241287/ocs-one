@@ -3,10 +3,9 @@ import {
   db,
   mfgOrderStagesTable,
   logisticsDispatchOrdersTable,
-  logisticsDispatchItemsTable,
   logisticsShipmentEventsTable,
 } from "@workspace/db";
-import { sql, count, eq } from "drizzle-orm";
+import { sql, count } from "drizzle-orm";
 
 const router: IRouter = Router();
 

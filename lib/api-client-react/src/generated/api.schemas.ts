@@ -1459,6 +1459,95 @@ export interface PackingDashboard {
   deliveredToday: number;
 }
 
+export type AuthUserRole = typeof AuthUserRole[keyof typeof AuthUserRole];
+
+
+export const AuthUserRole = {
+  director: 'director',
+  supervisor: 'supervisor',
+  operator: 'operator',
+  viewer: 'viewer',
+} as const;
+
+export interface AuthUser {
+  userId: string;
+  email: string;
+  name: string;
+  role: AuthUserRole;
+}
+
+export interface LoginRequest {
+  email: string;
+  /** @minLength 1 */
+  password: string;
+}
+
+export interface LoginResponse {
+  user: AuthUser;
+}
+
+/**
+ * Key performance indicators
+ */
+export type DirectorDashboardKpis = { [key: string]: unknown };
+
+export type DirectorDashboardPipelineItem = { [key: string]: unknown };
+
+export type DirectorDashboardAlertsItem = { [key: string]: unknown };
+
+export type DirectorDashboardRecentOrdersItem = { [key: string]: unknown };
+
+export type DirectorDashboardOperatorActivityItem = { [key: string]: unknown };
+
+/**
+ * Charger and test equipment utilization
+ */
+export type DirectorDashboardEquipmentStatus = { [key: string]: unknown };
+
+/**
+ * QC pass/fail rates and rework stats
+ */
+export type DirectorDashboardQualitySummary = { [key: string]: unknown };
+
+/**
+ * Dispatch and delivery summary
+ */
+export type DirectorDashboardLogistics = { [key: string]: unknown };
+
+/**
+ * Cell stock levels by status and grade
+ */
+export type DirectorDashboardCellInventory = { [key: string]: unknown };
+
+/**
+ * Order counts by status
+ */
+export type DirectorDashboardOrderStats = { [key: string]: unknown };
+
+export interface DirectorDashboard {
+  refreshedAt: string;
+  /** Key performance indicators */
+  kpis: DirectorDashboardKpis;
+  /** Stage-by-stage production pipeline */
+  pipeline: DirectorDashboardPipelineItem[];
+  /** Active alerts and blockers */
+  alerts: DirectorDashboardAlertsItem[];
+  /** Recently updated production orders */
+  recentOrders: DirectorDashboardRecentOrdersItem[];
+  /** Operator activity breakdown */
+  operatorActivity: DirectorDashboardOperatorActivityItem[];
+  /** Charger and test equipment utilization */
+  equipmentStatus: DirectorDashboardEquipmentStatus;
+  /** QC pass/fail rates and rework stats */
+  qualitySummary: DirectorDashboardQualitySummary;
+  /** Dispatch and delivery summary */
+  logistics: DirectorDashboardLogistics;
+  /** Cell stock levels by status and grade */
+  cellInventory: DirectorDashboardCellInventory;
+  /** Order counts by status */
+  orderStats: DirectorDashboardOrderStats;
+}
+
 export type SearchParamParameter = string;
 
 export type StatusParamParameter = typeof StatusParamParameter[keyof typeof StatusParamParameter];
@@ -1798,5 +1887,13 @@ export type AdvanceDispatchStatusBody = {
   status: AdvanceDispatchStatusBodyStatus;
   actor: string;
   notes?: string;
+};
+
+export type AuthLogout200 = {
+  success?: boolean;
+};
+
+export type AuthMe200 = {
+  user: AuthUser;
 };
 

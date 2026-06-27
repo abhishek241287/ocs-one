@@ -1,9 +1,9 @@
 import { useGetOrderTimeline } from "@workspace/api-client-react";
-import { Loader2, Clock, CheckCircle2, PlayCircle, XCircle, Plus, Package2 } from "lucide-react";
+import { Package2, Clock, CheckCircle2, Loader2, CirclePlay, XCircle } from "lucide-react";
 
 const EVENT_ICONS: Record<string, React.FC<{ className?: string }>> = {
   order_created: Package2,
-  stage_started: PlayCircle,
+  stage_started: CirclePlay,
   stage_completed: CheckCircle2,
   stage_approved: CheckCircle2,
   stage_rejected: XCircle,

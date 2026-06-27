@@ -30,3 +30,4 @@ export * from "./master-test-equipment";
 export * from "./manufacturing";
 export * from "./cell-grading";
 export * from "./logistics";
+export * from "./users";

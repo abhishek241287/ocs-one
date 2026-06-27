@@ -3,14 +3,13 @@ import AppLayout from "@/layouts/AppLayout";
 import { useDirectorDashboard, PipelineStage, DashboardAlert } from "@/features/dashboard/hooks/useDirectorDashboard";
 import { Link } from "wouter";
 import {
-  Factory, Package, ShieldCheck, Truck, Wrench, Battery, Cpu,
-  Zap, FlaskConical, RefreshCw, Loader2, AlertCircle, AlertTriangle,
-  Info, CheckCircle2, Plus, ArrowRight, Clock, Activity,
-  BarChart3, Building2, ChevronDown, TrendingUp, Circle,
+  Factory, Package, ShieldCheck, Truck, Wrench,
+  Zap, FlaskConical, RefreshCw, AlertCircle, AlertTriangle,
+  Info, CheckCircle2, Plus, ArrowRight, Activity,
+  Building2, TrendingUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 // ─── KPI Card ────────────────────────────────────────────────────────────────
 

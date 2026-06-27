@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {

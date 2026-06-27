@@ -4,12 +4,10 @@ import {
   uuid,
   varchar,
   text,
-  integer,
   timestamp,
   date,
-  jsonb,
   decimal,
-  boolean,
+  index,
 } from "drizzle-orm/pg-core";
 import { mfgProductionOrdersTable } from "./manufacturing";
 
@@ -57,46 +55,66 @@ export const logisticsDealersTable = pgTable("logistics_dealers", {
 
 // ─── Dispatch Orders ──────────────────────────────────────────────────────────
 
-export const logisticsDispatchOrdersTable = pgTable("logistics_dispatch_orders", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  dispatchNumber: varchar("dispatch_number", { length: 50 }).notNull().unique(),
-  dealerId: uuid("dealer_id").references(() => logisticsDealersTable.id),
-  customerName: varchar("customer_name", { length: 255 }),
-  transporter: varchar("transporter", { length: 255 }),
-  vehicleNumber: varchar("vehicle_number", { length: 50 }),
-  driverName: varchar("driver_name", { length: 255 }),
-  driverMobile: varchar("driver_mobile", { length: 20 }),
-  dispatchDate: date("dispatch_date"),
-  status: logisticsDispatchStatusEnum("status").notNull().default("draft"),
-  notes: text("notes"),
-  createdBy: varchar("created_by", { length: 255 }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const logisticsDispatchOrdersTable = pgTable(
+  "logistics_dispatch_orders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    dispatchNumber: varchar("dispatch_number", { length: 50 }).notNull().unique(),
+    dealerId: uuid("dealer_id").references(() => logisticsDealersTable.id),
+    customerName: varchar("customer_name", { length: 255 }),
+    transporter: varchar("transporter", { length: 255 }),
+    vehicleNumber: varchar("vehicle_number", { length: 50 }),
+    driverName: varchar("driver_name", { length: 255 }),
+    driverMobile: varchar("driver_mobile", { length: 20 }),
+    dispatchDate: date("dispatch_date"),
+    status: logisticsDispatchStatusEnum("status").notNull().default("draft"),
+    notes: text("notes"),
+    createdBy: varchar("created_by", { length: 255 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_dispatch_orders_status").on(table.status),
+    index("idx_dispatch_orders_dealer_id").on(table.dealerId),
+    index("idx_dispatch_orders_created_at").on(table.createdAt),
+  ]
+);
 
 // ─── Dispatch Items (junction: dispatch order ↔ battery) ──────────────────────
 
-export const logisticsDispatchItemsTable = pgTable("logistics_dispatch_items", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  dispatchOrderId: uuid("dispatch_order_id")
-    .notNull()
-    .references(() => logisticsDispatchOrdersTable.id, { onDelete: "cascade" }),
-  productionOrderId: uuid("production_order_id")
-    .notNull()
-    .unique()
-    .references(() => mfgProductionOrdersTable.id),
-  addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const logisticsDispatchItemsTable = pgTable(
+  "logistics_dispatch_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    dispatchOrderId: uuid("dispatch_order_id")
+      .notNull()
+      .references(() => logisticsDispatchOrdersTable.id, { onDelete: "cascade" }),
+    productionOrderId: uuid("production_order_id")
+      .notNull()
+      .unique()
+      .references(() => mfgProductionOrdersTable.id),
+    addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_dispatch_items_order_id").on(table.dispatchOrderId),
+  ]
+);
 
 // ─── Shipment Events (audit log) ──────────────────────────────────────────────
 
-export const logisticsShipmentEventsTable = pgTable("logistics_shipment_events", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  dispatchOrderId: uuid("dispatch_order_id")
-    .notNull()
-    .references(() => logisticsDispatchOrdersTable.id, { onDelete: "cascade" }),
-  eventType: logisticsShipmentEventTypeEnum("event_type").notNull(),
-  actor: varchar("actor", { length: 255 }),
-  notes: text("notes"),
-  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const logisticsShipmentEventsTable = pgTable(
+  "logistics_shipment_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    dispatchOrderId: uuid("dispatch_order_id")
+      .notNull()
+      .references(() => logisticsDispatchOrdersTable.id, { onDelete: "cascade" }),
+    eventType: logisticsShipmentEventTypeEnum("event_type").notNull(),
+    actor: varchar("actor", { length: 255 }),
+    notes: text("notes"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_shipment_events_dispatch_id").on(table.dispatchOrderId),
+  ]
+);

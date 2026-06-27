@@ -9,14 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { Truck, Plus, Trash2, Loader2, ChevronLeft, Package, CheckCircle2, Clock, MapPin } from "lucide-react";
+import { Truck, Plus, Trash2, Loader2, ChevronLeft, Package, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useParams } from "wouter";
 
@@ -151,7 +148,7 @@ export default function DispatchOrderDetailPage() {
               {STATUS_STEPS.map((step, idx) => {
                 const isCompleted = idx < currentStepIdx;
                 const isCurrent = idx === currentStepIdx;
-                const isFuture = idx > currentStepIdx;
+                const _isFuture = idx > currentStepIdx;
                 return (
                   <div key={step.key} className="flex items-center flex-1">
                     <div className="flex flex-col items-center">

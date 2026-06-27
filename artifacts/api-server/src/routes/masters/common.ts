@@ -8,9 +8,9 @@ import type { PgTableWithColumns } from "drizzle-orm/pg-core";
 
 export function createMasterRouter<
   TTable extends PgTableWithColumns<any>,
-  TEntity,
-  TInput,
-  TUpdate
+  _TEntity,
+  _TInput,
+  _TUpdate
 >(options: {
   table: TTable;
   schema: any; // The entity Zod schema

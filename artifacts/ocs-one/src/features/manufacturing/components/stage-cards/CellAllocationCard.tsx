@@ -51,7 +51,7 @@ export default function CellAllocationCard({ orderId, stage, onRefresh }: Props)
 
   const reservedMatches = matchesData?.items ?? [];
   const allocatedCells = allocatedData?.items ?? [];
-  const matchLinked = !!allocatedData?.matchId;
+  const _matchLinked = !!allocatedData?.matchId;
 
   const isReadOnly = stage.status === "approved" || stage.status === "completed";
   const isPending = stage.status === "pending";

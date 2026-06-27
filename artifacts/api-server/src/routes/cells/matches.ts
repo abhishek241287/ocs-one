@@ -1,6 +1,6 @@
 import { Router, IRouter } from "express";
 import { db, cellsTable, cellMatchesTable, cellMatchItemsTable } from "@workspace/db";
-import { eq, and, desc, count, inArray } from "drizzle-orm";
+import { eq, desc, count, inArray } from "drizzle-orm";
 import { ListCellMatchesQueryParams, CreateCellMatchBody } from "@workspace/api-zod";
 
 const router: IRouter = Router({ mergeParams: true });
@@ -297,7 +297,7 @@ router.post("/:id/regenerate", async (req, res) => {
     .from(cellMatchItemsTable)
     .where(eq(cellMatchItemsTable.matchId, match.id));
 
-  const existingCellIds = new Set(existingItems.map((i) => i.cellId));
+  const _existingCellIds = new Set(existingItems.map((i) => i.cellId));
 
   // Delete existing items
   await db
