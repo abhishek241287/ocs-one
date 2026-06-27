@@ -4,14 +4,108 @@
 |-------|-------|
 | **Wave** | CW-01 |
 | **Module** | Cell Receiving |
-| **Version** | — |
-| **Tester** | — |
-| **Test Date** | — |
-| **Environment** | — |
+| **Version** | v1.0-foundation |
+| **Tester** | Replit Agent (automated inspection) |
+| **Test Date** | 2026-06-27 |
+| **Environment** | Development — Replit (Node 24, PostgreSQL, Vite 7.3.5) |
 
 ---
 
-## 10-Point Scorecard
+## MAT-01 — Page & Navigation Inspection
+
+> Pre-test check. Must complete before functional test cases.
+> 10 areas inspected. Evidence: source review + live API calls + browser console capture.
+
+### MAT-01 Scorecard
+
+| # | Area | Status | Notes |
+|---|------|--------|-------|
+| 1 | Sidebar Navigation | ✅ Pass | Cell Receiving link present under Manufacturing → Cell Lifecycle. Correct href `/cells/receiving`, icon `Package`, active-state logic correct. |
+| 2 | Route Loading | ✅ Pass | Auth guard redirects unauthenticated `/cells/receiving` → `/login` (HTTP 401 on API, login page rendered). Authenticated route wraps in `AppLayout`. |
+| 3 | API Connectivity | ✅ Pass | `GET /api/cells/lots` → HTTP 200 in **22.8 ms**. Response schema: `{ items: [...], meta: { total, page, pageSize, totalPages } }`. Auth required (401 without cookie). |
+| 4 | Browser Console Errors | ❌ Fail | Two browser-level reload errors captured: `Failed to reload DealerMasterPage.tsx` and `Failed to reload DispatchOrdersPage.tsx`. Cause: both import `useOdsNotify` from `@/components/ods/OdsNotify` (non-existent) instead of `@/hooks/use-ods-notify`. Affects Logistics module; no Cell Receiving–specific console errors. See **DEF-CW01-004**. |
+| 5 | Module Header | ⚠️ Partial | `ModuleHeader` present with `icon="📦"`, `title="Cell Receiving"`, dynamic description `"N lots received"`. DEFECT: `certification="certified"` prop renders a Certified badge on an uncertified module. See **DEF-CW01-002**. |
+| 6 | Toolbar | ✅ Pass | `OdsToolbar` with `search` (placeholder "Search lot number…"), `onRefresh` callback, and `isRefreshing={isFetching}` state. `searchRef` wired for keyboard shortcuts via `useModuleShortcuts`. |
+| 7 | Search | ✅ Pass | Search state managed, page resets to 1 on change. `GET /api/cells/lots?search=nonexistent_xyz` → HTTP 200, `items: []`. Live filter confirmed working at API layer. |
+| 8 | Loading Skeleton | ✅ Pass | `OdsTableSkeleton rows={6} columns={10}` rendered when `isLoading === true`. Correct ODS pattern. |
+| 9 | Empty State | ✅ Pass | `OdsEmptyState icon="📦" title="No lots received yet"` with action button "Receive New Lot" (opens dialog). Shown when `lots.length === 0`. |
+| 10 | ODS Compliance | ⚠️ Partial | ODS components used: `ModuleHeader` ✅, `OdsToolbar` ✅, `OdsTableSkeleton` ✅, `OdsEmptyState` ✅ — all imported from `@/components/ods`. DEFECT: page uses `useToast` (from `@/hooks/use-toast`) instead of `useOdsNotify` (from `@/hooks/use-ods-notify`). See **DEF-CW01-001**. |
+
+**Status legend:** ✅ Pass · ❌ Fail · ⚠️ Partial · ⬜ Not run
+
+### MAT-01 Evidence
+
+**Screenshot — unauthenticated access to `/cells/receiving`:**
+Auth guard is active. Navigating to `/cells/receiving` without a session redirects to the login page. The page title, branding, and sign-in form render correctly.
+
+> `http://localhost:80/cells/receiving → Login page (HTTP 401 on /api/auth/me)`
+
+**API probe results:**
+
+```
+GET /api/healthz              → 200  4.7 ms
+GET /api/cells/lots           → 200  22.8 ms  (authenticated)
+GET /api/cells/lots?search=nonexistent_xyz  → 200  8.0 ms  { items: [], meta: { total: 0 } }
+GET /api/cells/lots           → 401  (no cookie)
+```
+
+**Vite server errors (from workflow log, 2026-06-27):**
+
+```
+3:49:44 PM [vite] Internal server error: Failed to resolve import
+  "@/components/ods/OdsNotify" from
+  "src/features/logistics/pages/DispatchOrdersPage.tsx"
+  File: ...DispatchOrdersPage.tsx:18:29
+
+3:50:57 PM [vite] Pre-transform error: Failed to resolve import
+  "@/components/ods/OdsNotify" from
+  "src/features/logistics/pages/DealerMasterPage.tsx"
+  File: ...DealerMasterPage.tsx:17:29
+```
+
+**Browser console errors (captured):**
+
+```
+[vite] Failed to reload /src/features/logistics/pages/DealerMasterPage.tsx.
+[vite] Failed to reload /src/features/logistics/pages/DispatchOrdersPage.tsx.
+```
+
+**No errors were produced by CellReceivingPage.tsx itself.**
+
+### MAT-01 Defects Raised
+
+| Defect ID | Title | Severity | Area |
+|-----------|-------|----------|------|
+| DEF-CW01-001 | `useToast` used instead of `useOdsNotify` in CellReceivingPage | Medium | ODS Compliance |
+| DEF-CW01-002 | `certification="certified"` shown on uncertified module | Low | Module Header |
+| DEF-CW01-003 | React Fragment missing `key` prop in `lots.map()` | Low | Render |
+| DEF-CW01-004 | `@/components/ods/OdsNotify` import error — DealerMasterPage + DispatchOrdersPage | High | Logistics (found in CW-01 session) |
+| DEF-CW01-005 | Sidebar stub routes `#qr`, `#warranty`, `#service` are non-functional | Low | Sidebar Navigation |
+
+### MAT-01 Summary
+
+| Metric | Value |
+|--------|-------|
+| Areas inspected | 10 |
+| Pass | 7 |
+| Partial | 2 |
+| Fail | 1 |
+| Defects raised | 5 (1 High · 1 Medium · 3 Low) |
+
+### MAT-01 Decision
+
+**CONDITIONAL PASS** — the Cell Receiving page structure, route guard, API connectivity, toolbar, search, loading skeleton, empty state, and core ODS components all function correctly. Two remediation items must be resolved before advancing to functional tests:
+
+1. **DEF-CW01-001 (Medium)** — Replace `useToast` with `useOdsNotify` in `CellReceivingPage.tsx`.
+2. **DEF-CW01-004 (High)** — Fix `@/components/ods/OdsNotify` import path in `DealerMasterPage.tsx` and `DispatchOrdersPage.tsx` (Logistics module; causes browser console errors visible in every session).
+
+DEF-CW01-002, -003, -005 are Low severity and may be remediated concurrently or deferred to a maintenance release with explicit approval.
+
+---
+
+## 10-Point Functional Scorecard
+
+> Not yet run. Awaiting MAT-01 defect remediation.
 
 | # | Area | Status | Cases Run | Pass | Fail | Notes |
 |---|------|--------|-----------|------|------|-------|
@@ -98,7 +192,7 @@
 
 | ID | Description | Expected Result | Actual Result | Status | Defect |
 |----|-------------|-----------------|---------------|--------|--------|
-| MAT-SC-01 | Unauthenticated GET `/api/cells` returns 401 | 401 Unauthorized | | ⬜ | |
+| MAT-SC-01 | Unauthenticated GET `/api/cells/lots` returns 401 | 401 Unauthorized | | ⬜ | |
 | MAT-SC-02 | Viewer role cannot create a lot (POST blocked) | 403 Forbidden | | ⬜ | |
 | MAT-SC-03 | SQL injection attempt in search field | Parameterised query — no injection | | ⬜ | |
 | MAT-SC-04 | Authenticated operator can create and edit lots | 200 OK | | ⬜ | |
@@ -125,13 +219,13 @@
 
 | Metric | Value |
 |--------|-------|
-| Total test cases | |
-| Pass | |
-| Fail | |
-| Blocked | |
-| Not run | |
-| **Pass rate** | |
-| Defects filed | |
+| Total test cases | 32 |
+| Pass | — |
+| Fail | — |
+| Blocked | — |
+| Not run | 32 |
+| **Pass rate** | — |
+| Defects filed | 5 (MAT-01 inspection only) |
 
 ## MAT Decision
 
