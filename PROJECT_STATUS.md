@@ -269,7 +269,7 @@ Full registry: `artifacts/ocs-one/docs/ods-component-registry.md`
 
 | Wave | Scope | Status | Target |
 |------|-------|--------|--------|
-| **CW-01** | Cell Receiving | ⬜ Not started | TBD |
+| **CW-01** | Cell Receiving | 🟡 In Progress | MAT-01 ✅ PASSED 2026-06-27 · MAT-02 ❌ FAIL (3 High defects open) |
 | **CW-02** | Cell Grading | ⬜ Not started | TBD |
 | **CW-03** | Manufacturing Orders | ⬜ Not started | TBD |
 | **CW-04** | Charging | ⬜ Not started | TBD |
