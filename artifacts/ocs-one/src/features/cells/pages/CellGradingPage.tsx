@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
+import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +70,9 @@ export default function CellGradingPage() {
   const [selectedCellLabel, setSelectedCellLabel] = useState<string>("");
   const [form, setForm] = useState<GradeForm>(DEFAULT_GRADE_FORM);
   const formRef = useRef<HTMLFormElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
+  useModuleShortcuts({ searchRef });
 
   const status = tab === "pending" ? "received" : undefined;
 
@@ -157,6 +160,7 @@ export default function CellGradingPage() {
             </button>
           </div>
           <Input
+            ref={searchRef}
             placeholder="Search cell ID..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import { Plus, Search, Loader2, ChevronLeft, ChevronRight, Factory } from "lucid
 import { useListProductionOrders } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import CreateOrderDrawer from "../components/CreateOrderDrawer";
+import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-700",
@@ -55,6 +56,8 @@ export default function OrdersListPage() {
   const [priority, setPriority] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useModuleShortcuts({ onNew: () => setCreateOpen(true), searchRef });
 
   const { data, isLoading, refetch } = useListProductionOrders({
     page,
@@ -101,6 +104,7 @@ export default function OrdersListPage() {
           <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
+              ref={searchRef}
               placeholder="Search order / battery number..."
               value={search}
               onChange={(e) => handleSearch(e.target.value)}

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
+import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +65,9 @@ export default function CellReceivingPage() {
   const [form, setForm] = useState(DEFAULT_FORM);
   const [expandedLot, setExpandedLot] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
+  useModuleShortcuts({ onNew: () => setOpen(true), searchRef });
 
   const { data, isLoading } = useListCellLots({ page, pageSize: 25, search: search || undefined });
   const createLot = useCreateCellLot({
@@ -128,6 +131,7 @@ export default function CellReceivingPage() {
 
         <div className="mb-4">
           <Input
+            ref={searchRef}
             placeholder="Search lot number..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}

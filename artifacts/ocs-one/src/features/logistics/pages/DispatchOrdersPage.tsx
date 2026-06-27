@@ -22,6 +22,7 @@ import {
 import { Truck, Plus, Loader2, RefreshCw, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600",
@@ -43,6 +44,7 @@ export default function DispatchOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<DispatchOrderInput>(EMPTY_FORM);
+  useModuleShortcuts({ onNew: () => setDialogOpen(true) });
 
   const { data, isLoading, refetch } = useListDispatchOrders(
     statusFilter !== "all" ? { status: statusFilter as any } : {}

@@ -21,6 +21,8 @@ interface MasterDataGridProps<T> {
   columns: ColumnDef<T>[];
   onEdit: (item: T) => void;
   onToggleStatus: (id: string, currentStatus: "active" | "inactive") => void;
+  selectedId?: string;
+  onRowClick?: (item: T) => void;
 }
 
 export function MasterDataGrid<T extends { id: string; status: "active" | "inactive" }>({
@@ -28,6 +30,8 @@ export function MasterDataGrid<T extends { id: string; status: "active" | "inact
   columns,
   onEdit,
   onToggleStatus,
+  selectedId,
+  onRowClick,
 }: MasterDataGridProps<T>) {
   const tableColumns: ColumnDef<T>[] = [
     ...columns,
@@ -42,18 +46,19 @@ export function MasterDataGrid<T extends { id: string; status: "active" | "inact
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" onClick={() => onEdit(row.original)}>
+          <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEdit(row.original); }}>
             <Edit className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            onClick={() =>
+            onClick={(e) => {
+              e.stopPropagation();
               onToggleStatus(
                 row.original.id,
                 row.original.status === "active" ? "inactive" : "active"
-              )
-            }
+              );
+            }}
           >
             {row.original.status === "active" ? (
               <PowerOff className="h-4 w-4 text-destructive" />
@@ -91,7 +96,15 @@ export function MasterDataGrid<T extends { id: string; status: "active" | "inact
         <TableBody>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                onClick={() => onRowClick?.(row.original)}
+                className={
+                  selectedId === row.original.id
+                    ? "bg-blue-50 ring-1 ring-inset ring-blue-200 cursor-pointer"
+                    : "cursor-pointer hover:bg-muted/50"
+                }
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import AppLayout from "@/layouts/AppLayout";
 import {
   useListDealers, useCreateDealer, useUpdateDealer, useDeleteDealer,
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Building2, Plus, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 
 const EMPTY_FORM: Omit<DealerInput, 'creditLimit'> & { creditLimit: string } = {
   dealerCode: "", dealerName: "", gstNumber: "", address: "", contactPerson: "",
@@ -35,6 +36,10 @@ export default function DealerMasterPage() {
   const [editing, setEditing] = useState<Dealer | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedDealer, setSelectedDealer] = useState<Dealer | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const selectedDealerRef = useRef<Dealer | null>(null);
+  selectedDealerRef.current = selectedDealer;
 
   const { data, isLoading, refetch } = useListDealers(search ? { search } : {});
   const createDealer = useCreateDealer();
@@ -43,6 +48,7 @@ export default function DealerMasterPage() {
 
   const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setDialogOpen(true); };
   const openEdit = (d: Dealer) => {
+    // also called via F2 from useModuleShortcuts
     setEditing(d);
     setForm({
       dealerCode: d.dealerCode, dealerName: d.dealerName,
@@ -54,6 +60,12 @@ export default function DealerMasterPage() {
     });
     setDialogOpen(true);
   };
+
+  useModuleShortcuts({
+    onNew: openCreate,
+    onEdit: () => { const d = selectedDealerRef.current; if (d) openEdit(d); },
+    searchRef,
+  });
 
   const handleSave = async () => {
     if (!form.dealerCode.trim() || !form.dealerName.trim()) {
@@ -114,7 +126,7 @@ export default function DealerMasterPage() {
         </div>
 
         <div className="flex gap-3">
-          <Input placeholder="Search by name, code, territory..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+          <Input ref={searchRef} placeholder="Search by name, code, territory..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
         </div>
 
         <Card>
@@ -141,7 +153,15 @@ export default function DealerMasterPage() {
                   <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No dealers found. Create one to get started.</TableCell></TableRow>
                 )}
                 {data?.items.map((d) => (
-                  <TableRow key={d.id}>
+                  <TableRow
+                    key={d.id}
+                    onClick={() => setSelectedDealer(d)}
+                    className={
+                      selectedDealer?.id === d.id
+                        ? "bg-blue-50 ring-1 ring-inset ring-blue-200 cursor-pointer"
+                        : "cursor-pointer hover:bg-muted/50"
+                    }
+                  >
                     <TableCell className="font-mono text-xs font-semibold">{d.dealerCode}</TableCell>
                     <TableCell className="font-medium">{d.dealerName}</TableCell>
                     <TableCell className="text-xs">{d.gstNumber ?? "—"}</TableCell>
@@ -156,8 +176,8 @@ export default function DealerMasterPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => openEdit(d)}><Pencil className="h-3 w-3" /></Button>
-                        <Button size="sm" variant="ghost" onClick={() => setDeleteId(d.id)} className="text-red-500 hover:text-red-700"><Trash2 className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); openEdit(d); }}><Pencil className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setDeleteId(d.id); }} className="text-red-500 hover:text-red-700"><Trash2 className="h-3 w-3" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>

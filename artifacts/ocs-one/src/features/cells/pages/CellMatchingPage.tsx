@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
+import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -171,6 +172,7 @@ export default function CellMatchingPage() {
   const [form, setForm] = useState(DEFAULT_FORM);
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
+  useModuleShortcuts({ onNew: () => setOpen(true) });
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useListCellMatches({ page, pageSize: 25 });

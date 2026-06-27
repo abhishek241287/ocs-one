@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { MasterEditDrawer } from "./MasterEditDrawer";
 import { useMasterCrud } from "../hooks/useMasterCrud";
 import AppLayout from "@/layouts/AppLayout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 
 interface MasterPageProps<T> {
   config: MasterConfig<T>;
@@ -21,6 +22,8 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
   const [searchTerm, setSearchTerm] = useState("");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<T | null>(null);
+  const [selectedItem, setSelectedItem] = useState<T | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const {
     listQuery,
@@ -38,6 +41,12 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
     setEditingItem(item);
     setIsDrawerOpen(true);
   };
+
+  useModuleShortcuts({
+    onNew: handleAdd,
+    onEdit: () => { if (selectedItem) handleEdit(selectedItem); },
+    searchRef,
+  });
 
   const handleSave = async (data: any) => {
     if (editingItem) {
@@ -64,6 +73,7 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
+              ref={searchRef}
               type="search"
               placeholder={`Search ${config.title.toLowerCase()}...`}
               className="pl-8"
@@ -84,6 +94,8 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
             columns={config.columns}
             onEdit={handleEdit}
             onToggleStatus={(id, status) => handleToggleStatus(id, status)}
+            selectedId={selectedItem?.id}
+            onRowClick={(item) => setSelectedItem(item)}
           />
         )}
 
