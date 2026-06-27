@@ -17,20 +17,20 @@ export function UserMenu() {
         <button className="flex items-center gap-2 outline-none hover:bg-muted/50 p-1 rounded-full transition-colors">
           <Avatar className="h-8 w-8 border border-border">
             <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-              AM
+              AB
             </AvatarFallback>
           </Avatar>
           <div className="hidden md:flex flex-col items-start text-left mr-1">
-            <span className="text-sm font-medium leading-none">Arjun Mehta</span>
-            <span className="text-xs text-muted-foreground mt-0.5">Plant Manager</span>
+            <span className="text-sm font-medium leading-none">Abhishek</span>
+            <span className="text-xs text-muted-foreground mt-0.5">Director</span>
           </div>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Arjun Mehta</p>
-            <p className="text-xs leading-none text-muted-foreground">arjun.m@ocsoorja.com</p>
+            <p className="text-sm font-medium leading-none">Abhishek</p>
+            <p className="text-xs leading-none text-muted-foreground">abhishek@ocsoorja.com</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

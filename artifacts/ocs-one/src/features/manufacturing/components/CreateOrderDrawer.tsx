@@ -32,7 +32,7 @@ export default function CreateOrderDrawer({ open, onClose, onSuccess }: Props) {
   const createOrder = useCreateProductionOrder();
 
   const [form, setForm] = useState({
-    factoryManager: "",
+    factoryManager: "Sujeet",
     priority: "medium" as "low" | "medium" | "high",
     plannedStartDate: "",
     plannedEndDate: "",
