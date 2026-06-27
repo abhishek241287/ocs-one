@@ -6,6 +6,13 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
+import ExecutiveDashboardPage from "@/features/reports/pages/ExecutiveDashboardPage";
+import ProductionReportPage from "@/features/reports/pages/ProductionReportPage";
+import CellAnalyticsPage from "@/features/reports/pages/CellAnalyticsPage";
+import QualityAnalyticsPage from "@/features/reports/pages/QualityAnalyticsPage";
+import InventoryAnalyticsPage from "@/features/reports/pages/InventoryAnalyticsPage";
+import LogisticsAnalyticsPage from "@/features/reports/pages/LogisticsAnalyticsPage";
+import ExportCenterPage from "@/features/reports/pages/ExportCenterPage";
 import DirectorDashboardPage from "@/pages/DirectorDashboardPage";
 import ProductMasterPage from "@/features/masters/pages/ProductMasterPage";
 import CellMasterPage from "@/features/masters/pages/CellMasterPage";
@@ -81,6 +88,13 @@ function Router() {
       <Route path="/logistics/dealers" component={DealerMasterPage} />
       <Route path="/logistics/dispatch-orders" component={DispatchOrdersPage} />
       <Route path="/logistics/dispatch-orders/:id" component={DispatchOrderDetailPage} />
+      <Route path="/reports/executive" component={ExecutiveDashboardPage} />
+      <Route path="/reports/production" component={ProductionReportPage} />
+      <Route path="/reports/cells" component={CellAnalyticsPage} />
+      <Route path="/reports/quality" component={QualityAnalyticsPage} />
+      <Route path="/reports/inventory" component={InventoryAnalyticsPage} />
+      <Route path="/reports/logistics" component={LogisticsAnalyticsPage} />
+      <Route path="/reports/export" component={ExportCenterPage} />
       <Route component={NotFound} />
     </Switch>
   );

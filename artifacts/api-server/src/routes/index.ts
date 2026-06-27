@@ -15,6 +15,7 @@ import manufacturingRouter from "./manufacturing/index";
 import cellsRouter from "./cells/index";
 import logisticsRouter from "./logistics/index";
 import dashboardRouter from "./dashboard/index";
+import reportsRouter from "./reports/index";
 
 const router: IRouter = Router();
 
@@ -47,5 +48,8 @@ router.use("/logistics", logisticsRouter);
 
 // Director Dashboard
 router.use("/dashboard", dashboardRouter);
+
+// Reports
+router.use("/reports", reportsRouter);
 
 export default router;

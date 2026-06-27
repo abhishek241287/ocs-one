@@ -11,8 +11,6 @@ import {
   Truck,
   FileCheck,
   Wrench,
-  BarChart3,
-  BrainCircuit,
   ChevronLeft,
   ChevronRight,
   Zap,
@@ -27,6 +25,9 @@ import {
   Settings,
   ChevronDown,
   ChevronUp,
+  TrendingUp,
+  Download,
+  BrainCircuit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -105,10 +106,15 @@ const navSections: NavSection[] = [
     ],
   },
   {
-    title: "Analytics",
+    title: "Reports",
     items: [
-      { label: "Reports", href: "#reports", icon: BarChart3 },
-      { label: "AI Assistant", href: "#ai", icon: BrainCircuit },
+      { label: "Executive Dashboard", href: "/reports/executive", icon: TrendingUp },
+      { label: "Production Reports", href: "/reports/production", icon: Factory },
+      { label: "Cell Analytics", href: "/reports/cells", icon: Battery },
+      { label: "Quality Analytics", href: "/reports/quality", icon: ShieldCheck },
+      { label: "Inventory Analytics", href: "/reports/inventory", icon: Archive },
+      { label: "Logistics Analytics", href: "/reports/logistics", icon: Truck },
+      { label: "Export Center", href: "/reports/export", icon: Download },
     ],
   },
 ];
