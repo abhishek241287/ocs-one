@@ -83,7 +83,6 @@ app.use("/api", router);
 
 // ─── Global error handler ────────────────────────────────────────────────────
 // Must be registered after all routes. Express 5 forwards async throws here.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   // Zod v4 validation error — duck-typed to avoid direct zod dependency
   if (

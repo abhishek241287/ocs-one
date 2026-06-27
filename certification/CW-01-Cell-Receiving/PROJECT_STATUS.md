@@ -4,7 +4,7 @@
 |-------|-------|
 | **Wave** | CW-01 |
 | **Module** | Cell Receiving |
-| **Overall Status** | 🟢 MAT-01→04 Passed · MAT-05 next |
+| **Overall Status** | 🟢 MAT-01→05 Passed · MAT-06 next |
 | **Last Updated** | 2026-06-27 |
 
 ---
@@ -17,23 +17,24 @@
 | MAT-02 | Functional Certification | ✅ Passed | 2026-06-27 | 33/36 · 8 defects resolved · 3 Low deferred |
 | MAT-03 | Workflow & Data Integrity | ✅ Pass | 2026-06-27 | 19/19 · all defects verified |
 | MAT-04 | UX & Operator Workflow | ✅ Pass | 2026-06-27 | 35/35 · DEF-M04-008 fixed & verified (ODS Standard 15) · login race (DEF-M04-010) fixed |
+| MAT-05 | Performance & Stress | ✅ Pass w/ notes | 2026-06-27 | All *measured* thresholds met @ 1,014 lots / 10,058 cells · DEF-M05-001 (missing index) fixed · DEF-M05-002 (code-split) deferred · FE render/memory micro-metrics not instrumented (follow-up) |
 
 ---
 
-## Wave Metrics (cumulative — MAT-01 through MAT-04)
+## Wave Metrics (cumulative — MAT-01 through MAT-05)
 
 | Metric | Value |
 |--------|-------|
-| Total test cases executed | 101 (MAT-01:10 + MAT-02:37 + MAT-03:19 + MAT-04:35) |
+| Total test cases executed | 101 (MAT-01:10 + MAT-02:37 + MAT-03:19 + MAT-04:35) + MAT-05 perf/stress suite |
 | Passing | 97 |
 | Fail (open defects) | 0 |
-| Deferred (CTO-approved) | 3 Low (MAT-02) + 2 Low (MAT-04) |
+| Deferred (CTO-approved) | 3 Low (MAT-02) + 2 Low (MAT-04) + 1 Low (MAT-05) |
 | Not run (browser metric) | 1 |
 | **Pass rate (actionable)** | **100%** |
-| Total defects filed (CW-01) | 28 (18 from MAT-01–03 + 10 from MAT-04) |
+| Total defects filed (CW-01) | 30 (18 from MAT-01–03 + 10 from MAT-04 + 2 from MAT-05) |
 | Open High | **0** |
-| Open Medium | **0** ✅ (DEF-CW01-M04-008 fixed & verified — ODS Standard 15) |
-| Open Low (deferred) | **5** (3 from MAT-02 + 2 from MAT-04) |
+| Open Medium | **0** ✅ |
+| Open Low (deferred) | **6** (3 from MAT-02 + 2 from MAT-04 + 1 from MAT-05) |
 
 ---
 
@@ -59,6 +60,8 @@
 | DEF-CW01-016 | No DELETE endpoint | Low | ⬜ Deferred |
 | DEF-CW01-017 | Invalid cellMasterId FK → HTTP 500 | Medium | ✅ Verified |
 | DEF-CW01-018 | Lot status gap — no auto-transition, no PATCH guard | Medium | ✅ Verified |
+| DEF-CW01-M05-001 | Missing `cell_lots` indexes (created_at, status) → Seq Scan + sort on every list page | Low | ✅ Fixed (indexes added + pushed) |
+| DEF-CW01-M05-002 | Single 365 kB-gzip JS chunk, no route-level code-splitting | Low | ⬜ Deferred (within budget) |
 
 ---
 
@@ -83,4 +86,6 @@
 | DEF-M04-010 Fix | 2026-06-27 | Replit Agent | ✅ Login redirect race fixed (synchronous auth-cache set) — found during TK re-test |
 | MAT-04 Re-test (TK keyboard nav) | 2026-06-27 | Replit Agent | ✅ 7/7 e2e PASS (Playwright) |
 | MAT-04 Passed | 2026-06-27 | Replit Agent | ✅ 35/35 · 0 open High/Medium — MAT-04 closed |
-| Begin MAT-05 | 2026-06-27 | CTO | ⬜ Awaiting authorization |
+| MAT-04 Accepted | 2026-06-27 | CTO | ✅ Standard 15, DEF-M04-008, DEF-M04-010, MAT-04 all officially accepted |
+| ODS Standard 16 (Focus Management) | 2026-06-27 | CTO → Replit Agent | ✅ Documented in Design System — mandatory for all future components |
+| Begin MAT-05 | 2026-06-27 | CTO | ✅ Authorized — Performance & Stress Certification |

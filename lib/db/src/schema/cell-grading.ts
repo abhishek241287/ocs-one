@@ -43,24 +43,34 @@ export const cellLotStatusEnum = pgEnum("cell_lot_status", [
 
 // ─── Tables ──────────────────────────────────────────────────────────────────
 
-export const cellLotsTable = pgTable("cell_lots", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  supplier: text("supplier").notNull(),
-  manufacturer: text("manufacturer").notNull(),
-  cellModel: text("cell_model").notNull(),
-  cellChemistry: text("cell_chemistry").notNull().default("LiFePO4"),
-  nominalCapacityAh: doublePrecision("nominal_capacity_ah").notNull(),
-  lotNumber: varchar("lot_number", { length: 100 }).notNull().unique(),
-  invoiceNumber: varchar("invoice_number", { length: 100 }),
-  dateReceived: text("date_received").notNull(),
-  quantityReceived: integer("quantity_received").notNull(),
-  receivedBy: text("received_by").notNull(),
-  remarks: text("remarks"),
-  status: cellLotStatusEnum("status").notNull().default("received"),
-  cellMasterId: uuid("cell_master_id").references(() => masterCellsTable.id),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+export const cellLotsTable = pgTable(
+  "cell_lots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    supplier: text("supplier").notNull(),
+    manufacturer: text("manufacturer").notNull(),
+    cellModel: text("cell_model").notNull(),
+    cellChemistry: text("cell_chemistry").notNull().default("LiFePO4"),
+    nominalCapacityAh: doublePrecision("nominal_capacity_ah").notNull(),
+    lotNumber: varchar("lot_number", { length: 100 }).notNull().unique(),
+    invoiceNumber: varchar("invoice_number", { length: 100 }),
+    dateReceived: text("date_received").notNull(),
+    quantityReceived: integer("quantity_received").notNull(),
+    receivedBy: text("received_by").notNull(),
+    remarks: text("remarks"),
+    status: cellLotStatusEnum("status").notNull().default("received"),
+    cellMasterId: uuid("cell_master_id").references(() => masterCellsTable.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (table) => [
+    // List default order is `ORDER BY created_at DESC`; without this the planner
+    // does a Seq Scan + top-N sort on every list page (MAT-05 DEF-CW01-M05-001).
+    index("idx_cell_lots_created_at").on(table.createdAt),
+    // Status filter on the list endpoint.
+    index("idx_cell_lots_status").on(table.status),
+  ]
+);
 
 export const cellsTable = pgTable(
   "cells",

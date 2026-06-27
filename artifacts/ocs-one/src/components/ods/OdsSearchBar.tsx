@@ -52,6 +52,14 @@ export const OdsSearchBar = forwardRef<HTMLInputElement, OdsSearchBarProps>(
       resolvedRef.current?.focus();
     };
 
+    // ODS Standard 16 — keyboard escape: Esc clears the query and retains focus.
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Escape" && value) {
+        e.preventDefault();
+        handleClear();
+      }
+    };
+
     useEffect(() => {
       if (!captureCtrlF) return;
       const handler = (e: KeyboardEvent) => {
@@ -79,6 +87,7 @@ export const OdsSearchBar = forwardRef<HTMLInputElement, OdsSearchBarProps>(
           type="search"
           value={value}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           autoFocus={autoFocus}
           className="pl-8 pr-8 h-9"

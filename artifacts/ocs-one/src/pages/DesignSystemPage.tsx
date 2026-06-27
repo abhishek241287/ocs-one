@@ -145,7 +145,7 @@ export default function DesignSystemPage() {
 
   const sections = [
     "Tokens", "Typography", "Badges", "Status", "Toolbar", "Search",
-    "Tables", "Skeletons", "Empty States", "Dialogs", "Drawers", "Notifications",
+    "Tables", "Focus Management", "Skeletons", "Empty States", "Dialogs", "Drawers", "Notifications",
     "Metric Cards", "Chart Card", "Timeline", "Stepper", "Page Layout",
   ];
 
@@ -307,6 +307,78 @@ export default function DesignSystemPage() {
               <li><kbd>Space</kbd> — select the active row</li>
               <li><kbd>Esc</kbd> — clear selection</li>
             </ul>
+          </div>
+        </Section>
+
+        {/* ── Focus Management (Standard 16) ── */}
+        <Section id="focus-management" title="Focus Management">
+          <div className="rounded-md border bg-blue-50/60 p-4 text-sm text-gray-700 space-y-3">
+            <p className="font-semibold text-gray-900">
+              ODS Standard 16 — Focus Management (mandatory)
+            </p>
+            <p>
+              Every interactive ODS component must guarantee a keyboard user always knows where
+              focus is and can never lose it. Each of the five guarantees below is required before a
+              component may ship.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                {
+                  k: "Initial focus",
+                  d: "On open, focus moves to the first meaningful control (first field, primary action, or the container itself). It never stays behind on the trigger.",
+                },
+                {
+                  k: "Focus trap (overlays)",
+                  d: "Dialogs, drawers and the command palette trap Tab / Shift+Tab inside the overlay while open — focus cannot escape to the page behind.",
+                },
+                {
+                  k: "Focus restoration",
+                  d: "On close, focus returns to the element that opened the component (the trigger), so the user resumes exactly where they were.",
+                },
+                {
+                  k: "Visible focus indicator",
+                  d: "The focused element always shows a visible ring (focus-visible). No invisible focus, ever.",
+                },
+                {
+                  k: "Keyboard escape",
+                  d: "Esc closes any overlay; tables/menus define their own documented escape (Esc clears selection). Escape behaviour is always predictable.",
+                },
+              ].map((g) => (
+                <div key={g.k} className="rounded-md border bg-white p-3">
+                  <p className="font-semibold text-gray-900 mb-1">{g.k}</p>
+                  <p className="text-xs text-gray-600">{g.d}</p>
+                </div>
+              ))}
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 mb-1 mt-1">Applies to</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  "Drawers", "Dialogs", "Command Palette", "Dropdowns",
+                  "Date Pickers", "Search Bars", "Data Tables",
+                ].map((c) => (
+                  <span key={c} className="text-xs px-2 py-0.5 rounded-full bg-white border text-gray-700">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-md border border-blue-200 bg-white p-3 text-xs text-gray-600">
+              <p className="font-semibold text-gray-800 mb-1">Audited compliance status (CW-01)</p>
+              <ul className="space-y-0.5">
+                <li>✅ <strong>OdsDialog / OdsDrawer</strong> — verified: Radix-backed, so initial focus, focus trap, restoration and Esc are built in.</li>
+                <li>✅ <strong>OdsCommandPalette</strong> — verified: cmdk dialog provides trap + restore; Esc closes.</li>
+                <li>✅ <strong>Dropdowns / Selects / Popovers</strong> — verified at the primitive level: Radix provides roving focus, trap and Esc-to-close.</li>
+                <li>✅ <strong>OdsSearchBar</strong> — verified: focus-visible ring; Ctrl+F focuses; Esc clears the query and keeps focus.</li>
+                <li>✅ <strong>OdsDataTable</strong> — verified: Standard 15 nav, visible active-row ring; Esc clears selection (see above).</li>
+                <li>🟡 <strong>Date Picker</strong> — pending: a <code>ui/calendar</code> primitive exists, but there is no dedicated ODS date-picker wrapper yet. To be audited against all five guarantees when one is built.</li>
+              </ul>
+              <p className="mt-1 text-[11px] text-gray-500">Legend: ✅ verified · 🟡 pending audit. Components are only marked verified once their five guarantees are confirmed against the real implementation.</p>
+            </div>
+            <p className="text-xs text-gray-500">
+              This is the standard for all future components — new interactive ODS components must
+              document and satisfy all five guarantees before merge.
+            </p>
           </div>
         </Section>
 

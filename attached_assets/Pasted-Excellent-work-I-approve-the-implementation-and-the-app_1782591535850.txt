@@ -1,0 +1,116 @@
+Excellent work.
+
+I approve the implementation and the approach taken.
+
+Two things stand out:
+
+1. The keyboard navigation was implemented as an ODS capability rather than a page-specific feature. That is exactly the architectural approach we want.
+2. The code review identified a genuine regression before certification. Fixing it immediately demonstrates that our certification process is improving the platform, not just the module.
+
+The login race condition (DEF-M04-010) is also an excellent example of why we execute full end-to-end tests during certification. Although it was discovered while testing keyboard navigation, it affected the authentication flow for the entire application. Resolving it now improves every module.
+
+## CTO Acceptance
+
+I officially accept:
+
+* ✅ ODS Standard 15
+* ✅ DEF-CW01-M04-008 Verified
+* ✅ DEF-M04-010 Verified
+* ✅ MAT-04 Passed
+
+---
+
+## One additional requirement
+
+Before we start MAT-05, I want one permanent addition to ODS.
+
+### ODS Standard 16 – Focus Management
+
+Every interactive component must explicitly define:
+
+* Initial focus when opened
+* Focus trap while open (dialogs/drawers)
+* Focus restoration when closed
+* Visible focus indicator
+* Keyboard escape behaviour
+
+This applies to:
+
+* Drawers
+* Dialogs
+* Command Palette
+* Dropdowns
+* Date Pickers
+* Search Bars
+* Data Tables
+
+The objective is that a keyboard user can always understand where focus is and never lose it.
+
+Please document this in the Design System and make it the standard for all future components.
+
+---
+
+## MAT-05 Authorization
+
+Authorization is granted to begin:
+
+**MAT-05 – Performance & Stress Certification**
+
+The scope should include:
+
+### Performance
+
+* Initial page load
+* API response times (P50 / P95 / P99)
+* Search latency
+* Save latency
+* Drawer open/close
+* Timeline rendering
+* History loading
+
+### Stress
+
+* 1,000 lots
+* 10,000 cells
+* Concurrent users
+* Rapid search
+* Rapid pagination
+* Repeated save operations
+
+### Database
+
+* Query execution plans
+* Missing indexes
+* Slow queries
+* N+1 detection
+* Transaction duration
+
+### Frontend
+
+* React render counts
+* Unnecessary re-renders
+* Memory growth
+* Bundle impact
+* Network waterfall
+
+### Success Criteria
+
+Document measurable thresholds for each metric and record actual results.
+
+Any performance regression or scalability concern should receive a new defect ID and follow the standard certification lifecycle.
+
+---
+
+## Current Certification Status
+
+MAT-01 ✅ PASS
+
+MAT-02 ✅ PASS
+
+MAT-03 ✅ PASS
+
+MAT-04 ✅ PASS
+
+CW-01 remains **In Progress**.
+
+Authorization is granted to begin **MAT-05 – Performance & Stress Certification**.
