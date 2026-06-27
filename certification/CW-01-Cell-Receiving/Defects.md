@@ -29,6 +29,8 @@
 | DEF-CW01-014 | No max-length validation on string fields | Low | **Deferred** | 2026-06-27 | — | — | CTO authorized deferral; target: maintenance wave |
 | DEF-CW01-015 | Future dates accepted in `dateReceived` | Low | **Deferred** | 2026-06-27 | — | — | CTO authorized deferral; target: maintenance wave |
 | DEF-CW01-016 | No DELETE endpoint for cell lots | Low | **Deferred** | 2026-06-27 | — | — | CTO authorized deferral; pending product decision (hard vs. soft delete) |
+| DEF-CW01-017 | Invalid cellMasterId FK (PG 23503) returns HTTP 500 instead of 400 | Medium | **Open** | 2026-06-27 | — | — | Found in MAT-03 DI-03; global error handler only catches 23505, not 23503 |
+| DEF-CW01-018 | Lot status does not transition on grading; no PATCH guard when cells are being graded | Medium | **Open** | 2026-06-27 | — | — | Found in MAT-03 BR-01; business rule gap — lot remains editable while cells approved |
 
 ---
 
@@ -377,19 +379,97 @@ A 5000-character supplier name is accepted (HTTP 201). Zod schema uses bare `zod
 
 | Metric | Value |
 |--------|-------|
-| Total defects found | 16 |
+| Total defects found | 18 |
 | Critical | 0 |
 | High | 4 |
-| Medium | 6 |
+| Medium | 8 |
 | Low | 6 |
 | **Verified (fixed + re-tested)** | **13** |
 | **Deferred (Low, CTO-authorized)** | **3** |
 | Open High | **0** |
-| Open Medium | **0** |
+| Open Medium | **2** (DEF-CW01-017, DEF-CW01-018) |
 | Open Low | 0 (all deferred) |
 
 > **Certification gate:** Open Critical or High count must be **0** before certification is granted.
 > **Current status: 0 open High defects — gate CLEAR. ✅**
+> **2 open Medium defects must be resolved before CW-01 wave closure.**
+
+---
+
+### DEF-CW01-017 — Invalid cellMasterId FK returns HTTP 500
+
+| Field | Value |
+|-------|-------|
+| **ID** | DEF-CW01-017 |
+| **Severity** | Medium |
+| **Status** | Open |
+| **Found** | 2026-06-27 (MAT-03) |
+| **Test case** | MAT-DI-03 |
+| **File** | `artifacts/api-server/src/app.ts` |
+
+**Description:**
+When `POST /api/cells/lots` is called with a `cellMasterId` that references a non-existent `master_cells` record, PostgreSQL throws a foreign key violation (error code `23503`). The global error handler in `app.ts` only checks for `23505` (unique constraint) via `err.cause?.code`. A `23503` error falls through to the catch-all 500 handler.
+
+The data integrity outcome is correct — the lot INSERT fails atomically, no orphan records are created — but the HTTP response is `500 Internal Server Error` instead of a structured `400`/`422` with a human-readable message.
+
+**Evidence:**
+```
+POST /api/cells/lots { cellMasterId: "00000000-0000-0000-0000-000000000099" }
+→ HTTP 500 { "error": "Internal server error" }
+GET /api/cells/lots?search=LOT-DI01-ROLLBACK → { total: 0 } (no orphan — transaction rolled back)
+```
+
+**Remediation:** Extend the global error handler in `app.ts` to also catch PG code `23503`:
+```typescript
+if (pgCode === "23503") {
+  const constraint = (err as any)?.constraint ?? (err as any)?.cause?.constraint ?? "";
+  res.status(400).json({ error: `Referenced record does not exist${constraint ? ` (${constraint})` : ""}` });
+  return;
+}
+```
+
+---
+
+### DEF-CW01-018 — Lot status does not transition on grading; no PATCH guard
+
+| Field | Value |
+|-------|-------|
+| **ID** | DEF-CW01-018 |
+| **Severity** | Medium |
+| **Status** | Open |
+| **Found** | 2026-06-27 (MAT-03) |
+| **Test case** | MAT-BR-01 |
+| **Files** | `artifacts/api-server/src/routes/cells/lots.ts`, `artifacts/api-server/src/routes/cells/cells.ts` |
+
+**Description:**
+Two related gaps in the lot lifecycle state machine:
+
+1. **No auto-transition**: When cells in a lot are graded (their `status` changes to `approved`, `rejected`, etc.), the lot's `status` column remains `"received"`. There is no trigger or application-level logic to set the lot to `"grading"` when the first cell is graded, or to `"complete"` when all cells are graded.
+
+2. **No PATCH guard**: The `PATCH /api/cells/lots/:id` endpoint has no check on the lot's current `status`. A lot can be freely edited even while cells are being graded or after all cells are approved. The `status` field is not in the `editableFields` array, meaning the status can never be changed via PATCH at all — but nor is there any check preventing edits when status should be locked.
+
+**Evidence:**
+```
+# Grade one cell
+POST /api/cells/3b2db783-.../grade { capacityAh: 298, ... }
+→ HTTP 200 { cellId: "CELL-20260627-000018", status: "approved", grade: "A" }
+
+# Lot status unchanged
+GET /api/cells/lots/1e587cb0-...
+→ { status: "received" }  ← expected: "grading"
+
+# Edit still allowed
+PATCH /api/cells/lots/1e587cb0-... { supplier: "BYD Re-edit During Grading", reason: "test" }
+→ HTTP 200  ← expected: HTTP 422 "Lot cannot be edited while grading is in progress"
+```
+
+**Product decision required:** The intended rule ("lot cannot be edited after grading begins") must be confirmed by product owner before implementation. If confirmed:
+
+**Remediation:**
+1. Add lot status transition logic to `POST /cells/:id/grade`: when the first cell in a lot is graded, set the lot `status` to `"grading"`; when all cells are graded, set to `"complete"`.
+2. Add a guard at the top of `PATCH /lots/:id`: if `existing.status !== "received"`, return HTTP 422 `{ error: "Lot cannot be edited — grading is in progress or complete" }`.
+
+---
 
 ## Deferred Defects
 

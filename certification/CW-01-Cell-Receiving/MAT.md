@@ -238,3 +238,136 @@ Initial: 7 Pass · 2 Partial · 1 Fail. All 5 defects resolved and verified befo
 - [ ] **FAIL** — (original MAT-02 run — superseded)
 
 **Signed:** _________________________ **Date:** 2026-06-27
+
+---
+
+## Lessons Learned
+
+These observations were derived during CW-01 and apply to all future certification waves.
+
+### LL-01 — Drizzle ORM wraps PostgreSQL errors in `err.cause`
+Drizzle does not re-throw PostgreSQL `DatabaseError` directly. It wraps it in a `_DrizzleQueryError`, placing the original PG error (with `code`, `detail`, `constraint`) on `err.cause`. A global Express error handler that only inspects `err.code` will miss all constraint violations. Always check `err.cause?.code ?? err.code`. This applies to unique violations (`23505`), FK violations (`23503`), not-null violations (`23502`), and all other PG-level errors.
+
+### LL-02 — Global Zod error handling prevents 500 cascades
+Without a global Express error handler that recognises `ZodError`, every invalid API request returns an HTML 500 page. This makes the API unusable for operators and masks the real validation error. The fix is a single 4-argument error handler registered after all routes that duck-types ZodError via `err.name === "ZodError" && Array.isArray(err.issues)`. Add this handler at project bootstrap; do not add try/catch around every `schema.parse()` call.
+
+### LL-03 — Role-based authorization must be tested with real non-admin accounts
+Every protected route must be exercised with a real `viewer`-role account in the certification suite. Admin-only testing creates a false sense of security. For each new module: create a dedicated test account for each role before running security test cases. The MAT-08 (Security) area of each MAT template should include viewer, operator, supervisor, and director probes for every write endpoint.
+
+### LL-04 — Audit history is a first-class feature, not an afterthought
+History/audit endpoints were the last items built in MAT-02 because they were not part of the original CRUD design. In future modules, design the event table and `received`/`corrected`/`status_changed` event types alongside the main entity — not after CRUD is complete. Every entity that can be received, edited, or status-transitioned needs a `_events` table from the start.
+
+### LL-05 — Test the correct API path, not an assumed one
+The `cells` list endpoint is mounted at `/api/cells/` (root of the cells router), not `/api/cells/cells`. Assuming a doubled-segment path caused false 500 errors and wasted test cycles. Before executing MAT API probes, verify the route index to confirm every endpoint's full path.
+
+### LL-06 — FK violations (23503) need the same treatment as unique violations (23505)
+An invalid FK reference (e.g. a `cellMasterId` UUID that doesn't exist in `master_cells`) returns HTTP 500 unless explicitly caught. The global error handler must map PG code `23503` to HTTP 400/422 with a useful message, just as `23505` maps to 409. Catch all constraint-class PG codes (`23xxx`) proactively.
+
+### LL-07 — Lot lifecycle state transitions must be enforced at the API layer
+The lot `status` column (`received → grading → complete`) is defined in the schema but the transition logic was not implemented — cells can be graded while the lot remains in `received` state, and the lot can be edited after grading begins. Business rules for when a lot becomes immutable must be code-enforced, not just documented. Design the state machine and the guards at the same time as the status enum.
+
+---
+
+## MAT-03 — Workflow & Data Integrity Certification
+
+**Executed:** 2026-06-27 · **Method:** Live API probes (curl + auth cookie) + source code review
+
+> **CTO Authorization — 2026-06-27:** Begin MAT-03 – Workflow & Data Integrity Certification. Scope: end-to-end lot workflow, data integrity, concurrency, business rules, and recovery behaviour.
+
+### MAT-03 Scorecard
+
+| # | Area | Status | Run | Pass | Fail | Notes |
+|---|------|--------|-----|------|------|-------|
+| 1 | Workflow | ✅ Pass | 5 | 5 | 0 | Cells, inventory, history, dashboard, reports all update |
+| 2 | Data Integrity | ⚠️ Partial | 5 | 4 | 1 | DI-03 ❌ FK violation → 500 — DEF-CW01-017 |
+| 3 | Concurrency | ✅ Pass | 3 | 3 | 0 | Simultaneous creates, duplicate race, refresh during save |
+| 4 | Business Rules | ⚠️ Partial | 3 | 2 | 1 | BR-01 ❌ Lot status gap — DEF-CW01-018 |
+| 5 | Recovery | ✅ Pass | 3 | 3 | 0 | Data persists across restart; browser + network recovery |
+
+### MAT-03 Test Cases
+
+#### 1 — Workflow
+
+| ID | Description | Expected | Actual | Status | Defect |
+|----|-------------|----------|--------|--------|--------|
+| MAT-WF-01 | Receive a lot — verify generated cell records | N cells created, all status=received, sequential IDs | HTTP 201 · lot `LOT-MAT03-WF01` (8 cells) · cells CELL-20260627-000018…000025 · all `status: "received"` · `lotId` correct on each cell | ✅ Pass | — |
+| MAT-WF-02 | Verify inventory updates after lot creation | `receivedToday` +N, `total` +N | Before: total=37, received=21, receivedToday=17 · After: total=45, received=29, receivedToday=25 · delta=+8 correct | ✅ Pass | — |
+| MAT-WF-03 | Verify timeline event on creation | `GET /:id/history` returns `received` event | `{ eventType: "received", performedBy: "admin@ocs.local" }` — event recorded at creation time | ✅ Pass | — |
+| MAT-WF-04 | Verify Director Dashboard updates | `cellInventory` reflects new cells | `GET /api/dashboard/director` → `cellInventory: { total: 45, received: 29, ... }` — dashboard reads live from DB | ✅ Pass | — |
+| MAT-WF-05 | Verify Reports update | Lot appears in cell reports `byLot` | `GET /api/reports/cells` → `byLot: [{ lotNumber: "LOT-MAT03-WF01", supplier: "BYD", total: 8, gradeA: 0 }]` | ✅ Pass | — |
+
+#### 2 — Data Integrity
+
+| ID | Description | Expected | Actual | Status | Defect |
+|----|-------------|----------|--------|--------|--------|
+| MAT-DI-01 | Transaction rollback on failure — invalid FK mid-create | Lot not created, no orphan cells | POST with non-existent `cellMasterId` (PG 23503) → HTTP 500; `0` lots matching `LOT-DI01-ROLLBACK`; cell count unchanged — lot INSERT failed atomically, no orphan records | ✅ Pass | DEF-CW01-017 (500 response) |
+| MAT-DI-02 | No orphan records after failed creation | Cell count unchanged | Confirmed via `/api/cells/inventory` total before/after — no cells created for the failed lot | ✅ Pass | — |
+| MAT-DI-03 | Foreign key integrity — invalid cellMasterId | HTTP 400/422 with FK error message | HTTP 500 — PG error code 23503 not caught by global error handler (handler only catches 23505). Transaction does roll back (data safe) but response is uninformative. | ❌ Fail | DEF-CW01-017 |
+| MAT-DI-04 | Revision consistency — history matches PATCH | History changeset = exact fields changed | PATCH `{ supplier: "BYD Updated", invoiceNumber: "INV-MAT03-002" }` → history: `{ changes: { supplier: { from: "BYD", to: "BYD Updated" }, invoiceNumber: { from: "INV-MAT03-001", to: "INV-MAT03-002" } } }` — exact match | ✅ Pass | — |
+| MAT-DI-05 | Audit consistency — history ordering correct | Events ordered newest-first | Events: `corrected @ 18:58:34` then `received @ 18:56:00` — `ORDER BY performedAt DESC` working | ✅ Pass | — |
+
+#### 3 — Concurrency
+
+| ID | Description | Expected | Actual | Status | Defect |
+|----|-------------|----------|--------|--------|--------|
+| MAT-CO-01 | Two operators creating different lots simultaneously | Both succeed — no interference | Concurrent POST with `LOT-CO01-OPA` and `LOT-CO01-OPB` (different lot numbers, same supplier) both returned HTTP 201 — no deadlock, no data corruption | ✅ Pass | — |
+| MAT-CO-02 | Duplicate lot race — same lot number submitted concurrently | Exactly one succeeds (201), one rejected (409) | Race on `LOT-CO02-RACE`: R1=201, R2=409 · DB query confirms exactly 1 record created — unique constraint + global 23505 handler enforces race safety | ✅ Pass | — |
+| MAT-CO-03 | GET during PATCH in flight | No corrupted intermediate state | Concurrent GET returned a consistent lot record (either pre- or post-PATCH state, not a half-written row). Final state after PATCH is correct. PostgreSQL row-level locking ensures atomicity. | ✅ Pass | — |
+
+#### 4 — Business Rules
+
+| ID | Description | Expected | Actual | Status | Defect |
+|----|-------------|----------|--------|--------|--------|
+| MAT-BR-01 | Lot cannot be edited after grading begins | PATCH returns 422/409 when any cell in lot is in grading/approved status | Cell CELL-20260627-000018 graded → `status: "approved"`. Lot status remains `"received"` (no auto-transition). Subsequent PATCH to lot returns HTTP 200 — no guard implemented. Lot supplier changed from "BYD Updated" to "BYD Re-edit During Grading" while a cell was approved. | ❌ Fail | DEF-CW01-018 |
+| MAT-BR-02 | History endpoint is write-protected | PATCH/DELETE/POST to `/lots/:id/history` return 404/405 | `PATCH /history → 404`, `DELETE /history → 404`, `POST /history → 404` — no write routes registered for the history endpoint | ✅ Pass | — |
+| MAT-BR-03 | Audit entries cannot be modified | No direct API access to mutate event records | `cell_lot_events` table has no exposed PATCH/DELETE route. The only write path is via the `PATCH /lots/:id` handler, which appends new events — it never modifies existing ones. | ✅ Pass | — |
+
+#### 5 — Recovery
+
+| ID | Description | Expected | Actual | Status | Defect |
+|----|-------------|----------|--------|--------|--------|
+| MAT-RC-01 | API restart during operation — data persists | All lots, cells, history survive restart | After full workflow restart: `LOT-MAT03-WF01` intact with all fields, `updatedAt` preserved, history shows all 3 events (received + 2× corrected), inventory total unchanged — PostgreSQL durability guarantees persistence | ✅ Pass | — |
+| MAT-RC-02 | Browser refresh during operation | Page re-fetches fresh data from server | TanStack Query config: `staleTime: 30_000`, `refetchOnWindowFocus: false`. Full page reload (F5) destroys the QueryClient and re-fetches all queries from server — latest server state always shown after reload | ✅ Pass | — |
+| MAT-RC-03 | Network interruption — error shown to user | User sees error notification, not silent failure | `onError` callbacks in `CellReceivingPage.tsx` call `notify.error("Error", { description: e?.response?.data?.error ?? e?.message ?? "Failed" })` for both create and edit. Server error message is surfaced directly to the operator. | ✅ Pass | — |
+
+---
+
+### MAT-03 Defects Raised
+
+| Defect ID | Title | Severity | Blocks Cert? | Found In |
+|-----------|-------|----------|-------------|---------|
+| DEF-CW01-017 | Invalid cellMasterId FK (23503) returns HTTP 500 instead of 400 | Medium | ⚠️ Fix before closure | DI-03 |
+| DEF-CW01-018 | Lot status does not transition on grading; no PATCH guard when cells being graded | Medium | ⚠️ Fix before closure | BR-01 |
+
+### MAT-03 Summary
+
+| Metric | Value |
+|--------|-------|
+| Total test cases | 19 |
+| Pass | 17 |
+| Fail | 2 |
+| **Pass rate** | **89.5%** |
+| New defects filed | 2 |
+| High | 0 |
+| Medium | 2 |
+
+### MAT-03 Decision
+
+⚠️ **CONDITIONAL PASS** — No High severity defects. Two Medium defects filed (DEF-CW01-017, DEF-CW01-018). Per certification policy, Medium defects must be resolved before CW-01 wave closure. Certification gate (zero open High) is met; MAT-03 is recorded as in-progress pending Medium defect resolution.
+
+---
+
+## Overall MAT Summary (updated after MAT-03)
+
+| Metric | MAT-01 | MAT-02 (re-run) | MAT-03 | **Total** |
+|--------|--------|-----------------|--------|-----------|
+| Test cases | 10 | 37 | 19 | **66** |
+| Pass | 10 | 33 | 17 | **60** |
+| Fail (open) | 0 | 0 | 2 | **2** |
+| Deferred (Low) | 0 | 3 | 0 | **3** |
+| Not run | 0 | 1 | 0 | **1** |
+| **Pass rate (actionable)** | **100%** | **91.7%** | **89.5%** | **92.3%** |
+| Defects filed | 5 | 11 | 2 | **18** |
+| Open High | 0 | 0 | 0 | **0** |
+| Open Medium | 0 | 0 | 2 | **2** |
+| Open Low (deferred) | 0 | 3 | 0 | **3** |
