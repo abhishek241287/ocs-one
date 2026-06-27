@@ -5,7 +5,7 @@
 **Date opened:** 2026-06-27
 **Authorization:** CTO, 2026-06-27
 **Prerequisite:** MAT-05 ✅ PASS (closed, all 4 closure criteria met)
-**Status:** 🟡 IN PROGRESS — first-pass systematic review complete; remediation pending
+**Status:** 🟡 IN PROGRESS — DEF-001 & DEF-002 (both HIGH/MED) REMEDIATED & VERIFIED 2026-06-27; deeper testing (areas 8–10) now authorized by CTO
 
 > **Honesty statement.** This wave is graded on what is *demonstrably true in the
 > running system*, not on intent. Where a control is partial, missing, or
@@ -181,34 +181,96 @@ label, not escaping of dangerous data. No action required for certification;
 
 | ID | Sev | Area | Summary | Status |
 |----|-----|------|---------|--------|
-| DEF-CW01-M06-001 | **HIGH** | Authz | Most mutating endpoints (mfg stages, QC approval, rework, test results, orders, all Masters, logistics dispatch, dealers, cell matching/grading) enforce `requireAuth` only — **no role check**; a `viewer` can mutate production/logistics/master data | OPEN |
-| DEF-CW01-M06-002 | **MEDIUM** | Authz / abuse | `/auth/register` is public and **not** under the auth rate limiter; enables unauthenticated account creation (→ viewer → DEF-001 blast radius) and registration flooding | OPEN |
+| DEF-CW01-M06-001 | **HIGH** | Authz | Most mutating endpoints (mfg stages, QC approval, rework, test results, orders, all Masters, logistics dispatch, dealers, cell matching/grading) enforce `requireAuth` only — **no role check**; a `viewer` can mutate production/logistics/master data | ✅ **VERIFIED 2026-06-27** |
+| DEF-CW01-M06-002 | **MEDIUM** | Authz / abuse | `/auth/register` is public and **not** under the auth rate limiter; enables unauthenticated account creation (→ viewer → DEF-001 blast radius) and registration flooding | ✅ **VERIFIED 2026-06-27** |
 | DEF-CW01-M06-003 | LOW | Audit | No persistent audit log for authentication events (login/logout/failure) or Masters mutations | OPEN |
 | DEF-CW01-M06-004 | LOW | XSS | Production CSP still allows `'unsafe-inline'` scripts (Vite dev need); must be tightened for the production build | OPEN |
 | DEF-CW01-M06-005 | LOW | Session | Stateless JWT has no server-side revocation; logout clears cookie only — a copied token stays valid until 8 h expiry | OPEN |
 
 ---
 
-## Recommended remediation (proposed — pending CTO direction on RBAC matrix)
+## Remediation — IMPLEMENTED & VERIFIED (CTO-approved 2026-06-27)
 
-**DEF-001 (the headline).** Apply `requireRole(...)` per surface. Proposed matrix
-(directors retain full access, so existing director e2e flows are unaffected):
+**DEF-001 (the headline) — DONE.** Introduced `requireWriteRole(...roles)` middleware
+(reads pass for any authed user → viewer is read-only everywhere; writes require a
+listed role; director always included). Mounted at sub-router level per the
+CTO-approved matrix below. Full per-endpoint detail in `docs/security-matrix.md`.
 
-| Surface | Proposed minimum role |
+| Surface | Minimum role (writes) |
 |---------|-----------------------|
-| Masters CRUD (all) | `supervisor`, `director` |
+| Masters CRUD (all, via `createMasterRouter`) | `supervisor`, `director` |
 | Manufacturing stage lifecycle (start/pause/resume/complete) | `operator`, `supervisor`, `director` |
-| QC approve / reject, rework | `supervisor`, `director` |
-| Production orders create | `supervisor`, `director` |
-| Cell matching / grading / grade config | `operator`, `supervisor`, `director` |
+| Stage sign-off (`/:stage/approve`, `/:stage/reject`) | `supervisor`, `director` (route-level guard, stricter than router) |
+| QC approve / reject | `supervisor`, `director` |
+| Rework execution, genealogy records | `operator`, `supervisor`, `director` |
+| Production orders (production planning) | `supervisor`, `director` |
+| Cell grading, matching | `operator`, `supervisor`, `director` |
+| Cell lots (receiving/editing) | `operator`, `supervisor`, `director` |
+| Grade config | `supervisor`, `director` |
+| Charger-unit (equipment) management | `supervisor`, `director` |
 | Logistics dispatch orders, dealers | `supervisor`, `director` |
+| Reports | `director`, `supervisor` (management capability) |
+| Developer / performance (cert admin) | `director` |
 
-**DEF-002.** Put `/auth/register` behind the auth limiter and, preferably, behind
-`requireAuth + requireRole("director")` (admin-created accounts) or disable it
-for the internal ERP. Confirm intended onboarding model with the CTO.
+**DEF-002 — DONE.** Public self-registration eliminated. `/auth/register` now requires
+`requireAuth + requireRole("director")`, is throttled by a dedicated `registerLimiter`
+(20/15 min), validates an optional `role` against the enum (defaults to least-privilege
+`viewer`), issues **no** session cookie for the created user, and logs a structured
+`user.created` audit event (actor + target + role). Frontend public RegisterPage,
+`/register` route, `useRegister` hook, and the LoginPage "Create account" link removed.
 
-**DEF-003.** Add an `auth_audit` (or generic `audit_log`) table; record login
-success/failure, logout, and privileged mutations with actor + timestamp + IP.
+### Verification evidence (curl against running server, 2026-06-27)
+
+| Check | Expected | Result |
+|-------|----------|--------|
+| Director login | 200 | ✅ 200 |
+| Director creates user via `/auth/register` | 201 | ✅ 201 |
+| **Unauthenticated** `/auth/register` | 401 | ✅ 401 |
+| Viewer `/auth/register` (create user) | 403 | ✅ 403 |
+| Viewer GET masters/products, orders, cells/config (reads) | 200 | ✅ 200 |
+| Viewer POST masters / cells / dealers / orders / stage-start / genealogy (writes) | 403 | ✅ 403 (all) |
+| Viewer PUT cells/config | 403 | ✅ 403 |
+| Operator POST masters (denied) / create-order (denied) / stage approve+reject (denied) | 403 | ✅ 403 |
+| Operator POST cell grade / stage start / stage complete / genealogy / test-results (allowed → reaches handler) | not 403 | ✅ 400/404 |
+| Supervisor POST masters / dealers / create-order / stage approve (allowed → reaches handler) | not 403 | ✅ 400/404 |
+| Supervisor POST developer/performance snapshot (denied) | 403 | ✅ 403 |
+
+`400`/`404` indicate the request passed the role gate and reached validation/handler
+(the intended "allowed" signal). Test accounts were removed after verification.
+
+### Code-review findings caught & fixed during verification
+
+An architect review of the remediation diff caught **three** bypasses before sign-off
+(honesty over speed — these were fixed and re-verified, not papered over):
+
+1. **Stage sign-off open to operators** — `/orders/:id/stages/:stage/approve` and
+   `/reject` sat under the router-level operator+ guard, so an operator could approve
+   or reject any stage (incl. `quality_control`). Fixed with a stricter route-level
+   `requireWriteRole("supervisor","director")` on both endpoints.
+2. **Write side-effect on a GET** — `GET /cells/config` called a get-or-create helper
+   that INSERTed the singleton row on first access, so a viewer's read could trigger a
+   DB write (breaking the method-based "viewer read-only" guarantee). Fixed: the config
+   row is now seeded at startup (`lib/seed.ts`) and GET is a pure read.
+3. **Routing-prefix shadow (the serious one)** — `ordersRouter` was mounted at `/orders`
+   with a router-level `requireWriteRole("supervisor","director")`. Because the sibling
+   routers (`/orders/:id/stages`, `/genealogy`, `/test-results` — operator+) share the
+   `/orders` URL prefix and orders is registered first, the supervisor+ guard fired for
+   **all** of them, wrongly blocking operators from legitimate stage execution. Fixed by
+   moving the guard from `router.use(...)` to per-route guards on orders' own POST/PATCH
+   only. Re-verified: operators can now start/complete stages, add genealogy and test
+   results, while still being denied order creation and stage sign-off.
+
+**Lesson:** with method-based RBAC, (a) GET handlers must never write, and (b) a
+router-level write guard on a parent URL prefix silently shadows every sibling router
+mounted underneath it — prefer per-route guards when prefixes overlap.
+
+**Security Standard SS-01** added as a permanent rule (top of `docs/security-matrix.md`
+and `replit.md`): every new endpoint must declare auth required? / minimum role /
+audit required? / rate limited? / input validation? / output sanitised? before merge.
+
+**DEF-003 (still LOW/OPEN).** User creation is now captured in the structured app log
+(`event: "user.created"`); a persistent, queryable `audit_log` table covering login
+success/failure, logout, and privileged mutations remains the planned follow-up.
 
 **DEF-004.** Gate `'unsafe-inline'` on `NODE_ENV !== "production"`; use a nonce or
 hashed scripts in the production CSP.
@@ -221,13 +283,15 @@ window as an accepted risk.
 
 ## Closure criteria (MAT-06 → PASS)
 
-1. DEF-CW01-M06-001 remediated and re-tested (low-privilege user is denied on all
-   privileged mutations). **← gating**
-2. DEF-002 resolved (registration gated and/or rate-limited).
-3. DEF-003/004/005 resolved or formally accepted as documented residual risk.
-4. Areas 8–10 (backup/recovery, failure recovery, penetration testing) assessed
+1. ✅ DEF-CW01-M06-001 remediated and re-tested (low-privilege user denied on all
+   privileged mutations). **← gating — DONE 2026-06-27**
+2. ✅ DEF-002 resolved (registration director-gated + rate-limited + audit-logged).
+3. ⬜ DEF-003/004/005 resolved or formally accepted as documented residual risk.
+4. ⬜ Areas 8–10 (backup/recovery, failure recovery, penetration testing) assessed
    with evidence.
-5. Re-run automated scanners clean.
+5. ⬜ Re-run automated scanners clean.
 
-**Current decision: NOT YET PASSED.** First-pass review complete; 1 HIGH + 1
-MEDIUM + 3 LOW defects open.
+**Current decision: NOT YET PASSED — but unblocked.** Both gating HIGH/MED defects
+(001, 002) are remediated and verified. Per CTO, deeper security testing (areas 8–10)
+is now authorized. 3 LOW defects (003/004/005) remain open for resolution or formal
+risk acceptance.

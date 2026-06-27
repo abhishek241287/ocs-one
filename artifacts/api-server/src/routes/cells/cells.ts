@@ -1,9 +1,13 @@
 import { Router, IRouter } from "express";
+import { requireWriteRole } from "../../middleware/auth";
 import { db, cellsTable, cellLotsTable, cellGradeConfigTable, cellLotEventsTable, mfgProductionOrdersTable, mfgBatteryGenealogyTable } from "@workspace/db";
 import { eq, ilike, and, or, desc, count } from "drizzle-orm";
 import { ListCellsQueryParams, GradeCellBody } from "@workspace/api-zod";
 
 const router: IRouter = Router({ mergeParams: true });
+
+// RBAC (DEF-M06-001): cell grading — operator, supervisor, director.
+router.use(requireWriteRole("operator", "supervisor", "director"));
 
 type CellStatus = typeof cellsTable.status._.data;
 type CellGrade = typeof cellsTable.grade._.data;

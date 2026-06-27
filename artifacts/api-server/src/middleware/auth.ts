@@ -58,6 +58,32 @@ export function requireRole(...roles: UserRole[]) {
   };
 }
 
+const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+/**
+ * Mount at router level: read methods (GET/HEAD) pass through for any
+ * authenticated user (viewer is read-only everywhere), while write methods
+ * (POST/PUT/PATCH/DELETE) require one of the given roles. Directors should be
+ * included in every list. Enforces RBAC per Security Standard SS-01.
+ */
+export function requireWriteRole(...roles: UserRole[]) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!WRITE_METHODS.has(req.method)) {
+      next();
+      return;
+    }
+    if (!req.user) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    if (!roles.includes(req.user.role)) {
+      res.status(403).json({ error: `Access denied. Required role: ${roles.join(" or ")}` });
+      return;
+    }
+    next();
+  };
+}
+
 export function signToken(payload: Omit<AuthTokenPayload, "iat" | "exp">): string {
   return jwt.sign(payload, getSecret(), { expiresIn: "8h" });
 }

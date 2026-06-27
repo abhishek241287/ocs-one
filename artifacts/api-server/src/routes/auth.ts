@@ -2,7 +2,10 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { requireAuth, signToken } from "../middleware/auth";
+import { requireAuth, requireRole, signToken } from "../middleware/auth";
+
+const ASSIGNABLE_ROLES = ["director", "supervisor", "operator", "viewer"] as const;
+type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
 
 const router: IRouter = Router();
 
@@ -53,10 +56,13 @@ router.post("/login", async (req, res) => {
   });
 });
 
-// POST /api/auth/register
-router.post("/register", async (req, res) => {
-  const { name, email, password } = req.body as {
-    name?: unknown; email?: unknown; password?: unknown;
+// POST /api/auth/register — director-only user creation (DEF-M06-002).
+// OCS One is factory software: users never self-register. Only a director may
+// create accounts; the endpoint is rate-limited (registerLimiter in app.ts) and
+// every creation is audit-logged. No session cookie is issued for the new user.
+router.post("/register", requireAuth, requireRole("director"), async (req, res) => {
+  const { name, email, password, role } = req.body as {
+    name?: unknown; email?: unknown; password?: unknown; role?: unknown;
   };
 
   if (typeof name !== "string" || !name.trim()) {
@@ -70,6 +76,16 @@ router.post("/register", async (req, res) => {
   if (typeof password !== "string" || password.length < 8) {
     res.status(400).json({ error: "Password must be at least 8 characters" });
     return;
+  }
+
+  // Role defaults to least-privilege viewer; if provided it must be valid.
+  let assignedRole: AssignableRole = "viewer";
+  if (role !== undefined) {
+    if (typeof role !== "string" || !ASSIGNABLE_ROLES.includes(role as AssignableRole)) {
+      res.status(400).json({ error: `Role must be one of: ${ASSIGNABLE_ROLES.join(", ")}` });
+      return;
+    }
+    assignedRole = role as AssignableRole;
   }
 
   const [existing] = await db
@@ -90,7 +106,7 @@ router.post("/register", async (req, res) => {
       name: name.trim(),
       email: email.toLowerCase(),
       passwordHash,
-      role: "viewer",
+      role: assignedRole,
       isActive: true,
     })
     .returning({
@@ -100,14 +116,20 @@ router.post("/register", async (req, res) => {
       role: usersTable.role,
     });
 
-  const token = signToken({
-    userId: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-  });
+  // DEF-M06-002: audit every user creation event (actor + target + role).
+  req.log.info(
+    {
+      event: "user.created",
+      actorId: req.user?.userId,
+      actorEmail: req.user?.email,
+      newUserId: user.id,
+      newUserEmail: user.email,
+      assignedRole: user.role,
+    },
+    "Director created a new user account"
+  );
 
-  res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+  // No cookie is set — the director stays logged in as themselves.
   res.status(201).json({
     user: { id: user.id, email: user.email, name: user.name, role: user.role },
   });

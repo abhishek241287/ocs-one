@@ -1,4 +1,5 @@
 import { Router, IRouter } from "express";
+import { requireWriteRole } from "../../middleware/auth";
 import { db, mfgReworkTicketsTable } from "@workspace/db";
 import { eq, desc, count, sql } from "drizzle-orm";
 import {
@@ -9,6 +10,9 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router({ mergeParams: true });
+
+// RBAC (DEF-M06-001): rework execution — operator, supervisor, director.
+router.use(requireWriteRole("operator", "supervisor", "director"));
 
 // GET /manufacturing/rework
 router.get("/", async (req, res) => {

@@ -1,9 +1,13 @@
 import { Router, IRouter } from "express";
+import { requireWriteRole } from "../../middleware/auth";
 import { db, cellsTable, cellMatchesTable, cellMatchItemsTable } from "@workspace/db";
 import { eq, desc, count, inArray } from "drizzle-orm";
 import { ListCellMatchesQueryParams, CreateCellMatchBody } from "@workspace/api-zod";
 
 const router: IRouter = Router({ mergeParams: true });
+
+// RBAC (DEF-M06-001): cell matching — operator, supervisor, director.
+router.use(requireWriteRole("operator", "supervisor", "director"));
 
 type MatchStatus = typeof cellMatchesTable.status._.data;
 

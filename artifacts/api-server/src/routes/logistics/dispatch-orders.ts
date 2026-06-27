@@ -1,4 +1,5 @@
 import { Router, IRouter } from "express";
+import { requireWriteRole } from "../../middleware/auth";
 import {
   db,
   logisticsDispatchOrdersTable,
@@ -21,6 +22,9 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+// RBAC (DEF-M06-001): dispatch management — supervisor, director only.
+router.use(requireWriteRole("supervisor", "director"));
 
 async function generateDispatchNumber(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0]

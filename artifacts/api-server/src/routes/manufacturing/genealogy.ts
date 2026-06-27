@@ -1,4 +1,5 @@
 import { Router, IRouter } from "express";
+import { requireWriteRole } from "../../middleware/auth";
 import { db, mfgBatteryGenealogyTable, mfgProductionOrdersTable } from "@workspace/db";
 import { eq, asc } from "drizzle-orm";
 import {
@@ -8,6 +9,9 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router({ mergeParams: true });
+
+// RBAC (DEF-M06-001): genealogy records (production execution) — operator, supervisor, director.
+router.use(requireWriteRole("operator", "supervisor", "director"));
 
 // GET /manufacturing/orders/:id/genealogy
 router.get("/", async (req, res) => {

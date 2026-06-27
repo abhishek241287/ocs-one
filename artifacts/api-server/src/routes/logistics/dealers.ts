@@ -1,4 +1,5 @@
 import { Router, IRouter } from "express";
+import { requireWriteRole } from "../../middleware/auth";
 import { db, logisticsDealersTable } from "@workspace/db";
 import { eq, ilike, count, or, sql } from "drizzle-orm";
 import {
@@ -11,6 +12,9 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+// RBAC (DEF-M06-001): dealer management — supervisor, director only.
+router.use(requireWriteRole("supervisor", "director"));
 
 // GET /logistics/dealers
 router.get("/", async (req, res) => {

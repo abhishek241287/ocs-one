@@ -215,7 +215,9 @@ Full SQL export: `docs/schema_v1.0_foundation.sql` (generated 2026-06-27)
 
 - JWT in httpOnly cookie (`ocs_token`, signed with `SESSION_SECRET`)
 - `router.use(requireAuth)` gates the entire route tree except `/healthz` and `/auth/*`
-- Per-route role enforcement via `requireRole(...roles)`
+- Per-route role enforcement via `requireRole(...roles)` and `requireWriteRole(...roles)` (reads pass for any authed user, writes gated to listed roles → viewer read-only everywhere)
+- No public registration — `/auth/register` is director-only, rate-limited, audit-logged, issues no session cookie
+- Per-endpoint auth/role reference: `docs/security-matrix.md` (Security Standard SS-01)
 
 ---
 
@@ -223,13 +225,13 @@ Full SQL export: `docs/schema_v1.0_foundation.sql` (generated 2026-06-27)
 
 | Metric | Count |
 |--------|-------|
-| **App routes (pages)** | 35 |
-| **Public routes** | 2 (`/login`, `/register`) |
+| **App routes (pages)** | 34 |
+| **Public routes** | 1 (`/login`) — public registration removed (DEF-M06-002) |
 | **Protected routes** | 33 |
 | **ODS components (v1.0, frozen)** | 19 |
 | **Layouts** | 5 |
 | **Feature modules** | 13 |
-| **Custom hooks** | 7 |
+| **Custom hooks** | 6 |
 | **Total React components** | 152 |
 | **Framework** | React 19 + Vite |
 | **Router** | Wouter v3 |
@@ -269,7 +271,7 @@ Full registry: `artifacts/ocs-one/docs/ods-component-registry.md`
 
 | Wave | Scope | Status | Target |
 |------|-------|--------|--------|
-| **CW-01** | Cell Receiving | 🟡 In Progress | MAT-01 ✅ PASSED 2026-06-27 · MAT-02 ❌ FAIL (3 High defects open) |
+| **CW-01** | Cell Receiving | 🟡 In Progress | MAT-01 ✅ PASS · MAT-05 ✅ PASS (historical baseline storage closed) · MAT-06 🟡 in progress — DEF-001 (HIGH RBAC) & DEF-002 (MED registration) REMEDIATED & VERIFIED 2026-06-27, areas 8–10 + 3 LOW open · MAT-02 ❌ FAIL (3 High defects open) |
 | **CW-02** | Cell Grading | ⬜ Not started | TBD |
 | **CW-03** | Manufacturing Orders | ⬜ Not started | TBD |
 | **CW-04** | Charging | ⬜ Not started | TBD |

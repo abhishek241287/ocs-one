@@ -1,0 +1,152 @@
+Excellent work.
+
+I approve the decision to stop before implementing RBAC.
+
+Authorization is one area where we should never guess.
+
+---
+
+# CTO Decision
+
+## DEF-M06-001
+
+**Approved for remediation immediately.**
+
+Adopt the proposed RBAC model.
+
+### Director
+
+Full access to every module.
+
+---
+
+### Supervisor
+
+May:
+
+* Manage Masters
+* Receive lots
+* Edit lots
+* Approve QC
+* Manage Dispatch
+* Manage Dealers
+* Production planning
+* Reports
+
+May NOT:
+
+* User administration
+* System settings
+* Certification administration
+
+---
+
+### Operator
+
+May:
+
+* Cell Receiving
+* Cell Grading
+* Cell Matching
+* Charging
+* Testing
+* Production stage execution
+
+May NOT:
+
+* Masters
+* QC approval
+* Dispatch approval
+* Dealer management
+* Reports administration
+
+---
+
+### Viewer
+
+Read-only everywhere.
+
+No POST
+
+No PATCH
+
+No DELETE
+
+No manufacturing state changes.
+
+---
+
+## DEF-M06-002
+
+I do **not** want public registration.
+
+OCS One is factory software.
+
+Users should never create their own accounts.
+
+Implement:
+
+* Disable `/auth/register` for public users.
+* Director-only user creation.
+* Rate limit any remaining registration endpoint.
+* Log every user creation event.
+
+---
+
+## Additional Security Standard
+
+Add a permanent security rule.
+
+### Security Standard SS-01
+
+Every new API endpoint must explicitly declare:
+
+* Authentication required?
+* Minimum role
+* Audit required?
+* Rate limited?
+* Input validation?
+* Output sanitised?
+
+No endpoint may be merged until all six questions are answered.
+
+---
+
+## Additional Documentation
+
+Create:
+
+`docs/security-matrix.md`
+
+The matrix should contain every endpoint.
+
+Columns:
+
+* Endpoint
+* Method
+* Authentication
+* Minimum Role
+* Rate Limited
+* Audit Logged
+* Certification Status
+
+This becomes the master security reference.
+
+---
+
+## MAT-06
+
+Do not continue deeper security testing until:
+
+* DEF-M06-001 Verified
+* DEF-M06-002 Verified
+
+Broken Access Control is OWASP Top 10.
+
+It must be eliminated before penetration testing continues.
+
+Once these two High findings are verified, authorization is granted to continue the remaining MAT-06 security certification.
+
+Excellent engineering discipline.
+
+This is exactly why certification exists.

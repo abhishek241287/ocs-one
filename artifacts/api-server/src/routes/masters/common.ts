@@ -1,4 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
+import { requireWriteRole } from "../../middleware/auth";
 import { eq, sql, and, or, ilike, count, desc } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { 
@@ -45,6 +46,9 @@ export function createMasterRouter<
 }) {
   const router: IRouter = Router();
   const { table, inputSchema, updateSchema, resourceName } = options;
+
+  // RBAC (DEF-M06-001): all masters CRUD — supervisor, director only.
+  router.use(requireWriteRole("supervisor", "director"));
 
   // List
   router.get("/", async (req: Request, res: Response): Promise<void> => {

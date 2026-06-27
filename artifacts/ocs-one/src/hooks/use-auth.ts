@@ -57,29 +57,6 @@ export function useLogin() {
   });
 }
 
-export function useRegister() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: { name: string; email: string; password: string }) => {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const body = await res.json() as { error?: string };
-        throw new Error(body.error ?? "Registration failed");
-      }
-      return res.json() as Promise<{ user: AuthUser }>;
-    },
-    onSuccess: ({ user }) => {
-      queryClient.setQueryData(AUTH_KEY, user);
-    },
-  });
-}
-
 export function useLogout() {
   const queryClient = useQueryClient();
 

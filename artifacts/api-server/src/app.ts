@@ -58,8 +58,18 @@ const authLimiter = rateLimit({
   message: { error: "Too many login attempts. Try again later." },
 });
 
+// DEF-M06-002: throttle the director-only user-creation endpoint.
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60_000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many account creation attempts. Try again later." },
+});
+
 app.use("/api", globalLimiter);
 app.use("/api/auth/login", authLimiter);
+app.use("/api/auth/register", registerLimiter);
 
 // ─── Request parsing ──────────────────────────────────────────────────────────
 app.use(

@@ -1,4 +1,5 @@
 import { Router, IRouter } from "express";
+import { requireWriteRole } from "../../middleware/auth";
 import {
   db,
   mfgQcApprovalsTable,
@@ -13,6 +14,9 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router({ mergeParams: true });
+
+// RBAC (DEF-M06-001): QC approval — supervisor, director only.
+router.use(requireWriteRole("supervisor", "director"));
 
 async function generateTicketNumber(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0]

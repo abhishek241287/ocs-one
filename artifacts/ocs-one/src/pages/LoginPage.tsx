@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { Zap, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,10 +72,7 @@ export default function LoginPage() {
           <div>
             <h2 className="text-3xl font-bold tracking-tight mb-2">Welcome back</h2>
             <p className="text-muted-foreground">
-              Sign in to OCS One · {" "}
-              <Link href="/register" className="text-primary font-medium hover:underline">
-                Create account
-              </Link>
+              Sign in to OCS One. Accounts are provisioned by your administrator.
             </p>
           </div>
 

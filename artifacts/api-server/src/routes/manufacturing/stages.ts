@@ -32,8 +32,12 @@ import {
   ResumeStageBody,
 } from "@workspace/api-zod";
 import { logEvent, getNextStage, type StageTypeValue } from "./helpers";
+import { requireWriteRole } from "../../middleware/auth";
 
 const router: IRouter = Router({ mergeParams: true });
+
+// RBAC (DEF-M06-001): production stage execution — operator, supervisor, director.
+router.use(requireWriteRole("operator", "supervisor", "director"));
 
 async function getStageOrFail(
   orderId: string,
@@ -523,7 +527,9 @@ router.post("/:stage/resume", async (req, res) => {
 });
 
 // POST /manufacturing/orders/:id/stages/:stage/approve — completed → approved
-router.post("/:stage/approve", async (req, res) => {
+// RBAC (DEF-M06-001): stage sign-off (approve/reject) is a supervisory action —
+// restricted to supervisor+ even though the router allows operators to execute stages.
+router.post("/:stage/approve", requireWriteRole("supervisor", "director"), async (req, res) => {
   const { id, stage } = ApproveStageParams.parse(req.params);
   const body = ApproveStageBody.parse(req.body);
 
@@ -575,7 +581,8 @@ router.post("/:stage/approve", async (req, res) => {
 });
 
 // POST /manufacturing/orders/:id/stages/:stage/reject — completed → rejected → pending (redo)
-router.post("/:stage/reject", async (req, res) => {
+// RBAC (DEF-M06-001): stage sign-off (approve/reject) is supervisor+ (see approve above).
+router.post("/:stage/reject", requireWriteRole("supervisor", "director"), async (req, res) => {
   const { id, stage } = RejectStageParams.parse(req.params);
   const body = RejectStageBody.parse(req.body);
 

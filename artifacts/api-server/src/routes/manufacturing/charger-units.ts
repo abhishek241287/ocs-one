@@ -1,4 +1,5 @@
 import { Router, IRouter } from "express";
+import { requireWriteRole } from "../../middleware/auth";
 import { db, mfgChargerUnitsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import {
@@ -12,6 +13,9 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+// RBAC (DEF-M06-001): charger equipment management — supervisor, director only.
+router.use(requireWriteRole("supervisor", "director"));
 
 // GET /manufacturing/charger-units
 router.get("/", async (req, res) => {

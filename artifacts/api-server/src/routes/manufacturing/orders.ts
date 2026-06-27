@@ -1,4 +1,5 @@
 import { Router, IRouter } from "express";
+import { requireWriteRole } from "../../middleware/auth";
 import { db, mfgProductionOrdersTable, mfgOrderStagesTable } from "@workspace/db";
 import { eq, ilike, and, desc, count, or } from "drizzle-orm";
 import {
@@ -16,6 +17,12 @@ import {
 } from "./helpers";
 
 const router: IRouter = Router({ mergeParams: true });
+
+// RBAC (DEF-M06-001): production planning (orders) — supervisor, director only.
+// NOTE: guard is applied PER ROUTE, not via router.use(). The sibling routers
+// (`/orders/:id/stages`, genealogy, test-results — operator+) share the `/orders`
+// URL prefix, so a router-level guard here would shadow them and wrongly block
+// operators from legitimate stage execution.
 
 // GET /manufacturing/orders
 router.get("/", async (req, res) => {
@@ -75,7 +82,7 @@ router.get("/", async (req, res) => {
 });
 
 // POST /manufacturing/orders
-router.post("/", async (req, res) => {
+router.post("/", requireWriteRole("supervisor", "director"), async (req, res) => {
   const body = CreateProductionOrderBody.parse(req.body);
 
   const result = await db.transaction(async (tx) => {
@@ -149,7 +156,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // PATCH /manufacturing/orders/:id
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", requireWriteRole("supervisor", "director"), async (req, res) => {
   const { id } = UpdateProductionOrderParams.parse(req.params);
   const body = UpdateProductionOrderBody.parse(req.body);
 

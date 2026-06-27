@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { db, pool, usersTable } from "@workspace/db";
+import { db, pool, usersTable, cellGradeConfigTable } from "@workspace/db";
 import { logger } from "./logger";
 
 export async function seedDatabase(): Promise<void> {
@@ -8,6 +8,13 @@ export async function seedDatabase(): Promise<void> {
     CREATE SEQUENCE IF NOT EXISTS mfg_order_seq START 1 INCREMENT 1;
     CREATE SEQUENCE IF NOT EXISTS mfg_battery_seq START 1 INCREMENT 1;
   `);
+
+  // Ensure the singleton grade-config row exists so reads (GET /cells/config)
+  // never need to perform a write. Schema defaults populate the values.
+  await db
+    .insert(cellGradeConfigTable)
+    .values({ id: 1 })
+    .onConflictDoNothing({ target: cellGradeConfigTable.id });
 
   // Seed default director account if no users exist
   const [existing] = await db

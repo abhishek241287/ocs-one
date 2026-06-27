@@ -6,7 +6,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OdsCommandPalette, DevModeProvider } from "@/components/ods";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/LoginPage";
-import RegisterPage from "@/pages/RegisterPage";
 import DesignSystemPage from "@/pages/DesignSystemPage";
 import ExecutiveDashboardPage from "@/features/reports/pages/ExecutiveDashboardPage";
 import ProductionReportPage from "@/features/reports/pages/ProductionReportPage";
@@ -57,7 +56,6 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={LoginPage} />
-      <Route path="/register" component={RegisterPage} />
       <Route path="/">
         <Redirect to="/dashboard" />
       </Route>

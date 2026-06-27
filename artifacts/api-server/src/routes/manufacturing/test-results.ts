@@ -1,4 +1,5 @@
 import { Router, IRouter } from "express";
+import { requireWriteRole } from "../../middleware/auth";
 import {
   db,
   mfgTestResultsTable,
@@ -11,6 +12,9 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router({ mergeParams: true });
+
+// RBAC (DEF-M06-001): testing — operator, supervisor, director.
+router.use(requireWriteRole("operator", "supervisor", "director"));
 
 type TestTypeValue = "capacity" | "charge_discharge" | "protection" | "internal_resistance";
 
