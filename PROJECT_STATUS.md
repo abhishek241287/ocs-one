@@ -330,6 +330,26 @@ These rules are non-negotiable and apply for the lifetime of the project.
 4. **No API changes without an OpenAPI update and code generation.** The spec in `lib/api-spec/openapi.yaml` is the contract. Run `pnpm --filter @workspace/api-spec run codegen` after every change.
 5. **Every module must pass certification before being marked complete.** `✅ Built` means implemented. `🔵 Certified` means tested, validated, and production-ready.
 6. **`PROJECT_STATUS.md` must be updated at the end of every Certification Wave.** It is the last commit in every wave — not an afterthought.
+7. **No new feature development during a Certification Wave.** The only code permitted is defect fixes found during that wave or work required to complete it. Scope creep is a defect.
+
+---
+
+## Certification Wave Process
+
+Every Certification Wave follows this sequence without exception. No wave is complete until all 8 steps are done.
+
+| Step | Name | Description |
+|------|------|-------------|
+| **1** | Module Acceptance Test (MAT) | Run the full test suite against the module. Every test in the 10-point scorecard (Create · Edit · Save · Search · Filter · Validation · Relationships · Security · Audit · Performance) must pass. |
+| **2** | Fix All Defects | Resolve every failure found in Step 1. No defect may be deferred to a later wave. The only permitted code changes during a wave are defect fixes or work required to complete the wave. |
+| **3** | Performance Test | Validate response times under realistic load. API endpoints must respond within acceptable thresholds; frontend pages must render without blocking. |
+| **4** | Integration Test | Verify the module's interactions with all dependent modules (API contracts, DB relationships, UI data flows). Cross-module regressions must be resolved before proceeding. |
+| **5** | Factory UAT | A director or supervisor accepts the module against real-world manufacturing scenarios. Sign-off is required before certification is granted. |
+| **6** | Certification | The module is stamped **🔵 Certified**. Freeze the module — no further changes except critical defect fixes. |
+| **7** | Update documentation | Update `PROJECT_STATUS.md` (Progress Trackers · Release Health · Module Status · Certification Status · Certification History · Known Issues · Next Milestone) and append a section to `CHANGELOG.md`. |
+| **8** | Move to next wave | The next Certification Wave begins. The previous module is frozen. |
+
+> **Scope rule:** No new feature development is permitted during a Certification Wave. The only permitted code is defect fixes found during that wave or work required to complete it. If a genuine new requirement surfaces, log it as a future wave item — do not build it now.
 
 ---
 
