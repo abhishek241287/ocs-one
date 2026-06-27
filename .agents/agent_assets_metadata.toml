@@ -24,3 +24,9 @@ id = "bxPg_Mco7sRwFGUr_Dqnt"
 uri = "file://refactoring_plan.md"
 type = "text"
 title = "Refactoring Plan"
+
+[[outputs]]
+id = "sr6z2QAPkt7iQRLyYF1_j"
+uri = "file://docs/ocs-one-v1.0-foundation-backup.tar.gz"
+type = "unspecified"
+title = "OCS One v1.0 Foundation — Source Backup (716K)"
