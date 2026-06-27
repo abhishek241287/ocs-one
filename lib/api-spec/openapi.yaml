@@ -2139,6 +2139,27 @@ paths:
         "401":
           description: Invalid credentials
 
+  /auth/register:
+    post:
+      operationId: authRegister
+      tags: [auth]
+      summary: Register a new account (defaults to viewer role)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterRequest" }
+      responses:
+        "201":
+          description: Account created — sets httpOnly cookie and auto-logs in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "400":
+          description: Validation error
+        "409":
+          description: Email already registered
+
   /auth/logout:
     post:
       operationId: authLogout
@@ -3500,6 +3521,14 @@ components:
       required: [user]
       properties:
         user: { $ref: "#/components/schemas/AuthUser" }
+
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
 
     # ─── Director Dashboard schema ────────────────────────────────────────────
     DirectorDashboard:

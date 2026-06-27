@@ -4,31 +4,48 @@ import { Zap, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useLogin } from "@/hooks/use-auth";
+import { useRegister } from "@/hooks/use-auth";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [clientError, setClientError] = useState<string | null>(null);
   const [, setLocation] = useLocation();
-  const login = useLogin();
+  const register = useRegister();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setClientError(null);
+
+    if (password.length < 8) {
+      setClientError("Password must be at least 8 characters");
+      return;
+    }
+    if (password !== confirm) {
+      setClientError("Passwords do not match");
+      return;
+    }
+
     try {
-      await login.mutateAsync({ email, password });
+      await register.mutateAsync({ name, email, password });
       setLocation("/dashboard");
     } catch {
-      // error displayed via login.error
+      // error displayed via register.error
     }
   };
 
+  const errorMsg = clientError ?? register.error?.message;
+
   return (
     <div className="min-h-screen w-full flex bg-background">
-      {/* Left Panel - Brand */}
+      {/* Left Panel */}
       <div className="hidden lg:flex flex-col w-1/2 bg-sidebar text-sidebar-foreground p-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-             style={{ backgroundImage: "radial-gradient(#ffffff 1px, transparent 1px)", backgroundSize: "32px 32px" }}
+        <div
+          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{ backgroundImage: "radial-gradient(#ffffff 1px, transparent 1px)", backgroundSize: "32px 32px" }}
         />
         <div className="relative z-10 flex items-center gap-3">
           <div className="bg-primary text-primary-foreground p-2 rounded-md">
@@ -43,20 +60,14 @@ export default function LoginPage() {
           <p className="text-lg text-sidebar-foreground/70 mb-12">
             The enterprise operating system for LiFePO4 batteries, hybrid solar inverters, and EV chargers manufacturing.
           </p>
-          <div className="grid grid-cols-2 gap-8 border-t border-sidebar-border pt-8">
-            <div>
-              <div className="text-3xl font-bold text-primary mb-1">12+</div>
-              <div className="text-sm text-sidebar-foreground/60 uppercase tracking-wider font-medium">Facilities</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary mb-1">2.4M</div>
-              <div className="text-sm text-sidebar-foreground/60 uppercase tracking-wider font-medium">Units Shipped</div>
-            </div>
+          <div className="rounded-xl border border-sidebar-border bg-sidebar-accent/30 p-5 text-sm text-sidebar-foreground/80 space-y-2">
+            <p className="font-semibold text-sidebar-foreground">New accounts start as Viewer</p>
+            <p>A director can grant you additional permissions after your account is created.</p>
           </div>
         </div>
       </div>
 
-      {/* Right Panel - Login Form */}
+      {/* Right Panel */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 sm:p-12 relative">
         <div className="w-full max-w-md space-y-8">
           <div className="lg:hidden flex items-center gap-3 mb-8">
@@ -67,47 +78,62 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <h2 className="text-3xl font-bold tracking-tight mb-2">Welcome back</h2>
+            <h2 className="text-3xl font-bold tracking-tight mb-2">Create account</h2>
             <p className="text-muted-foreground">
-              Sign in to OCS One · {" "}
-              <Link href="/register" className="text-primary font-medium hover:underline">
-                Create account
+              Already have one?{" "}
+              <Link href="/login" className="text-primary font-medium hover:underline">
+                Sign in
               </Link>
             </p>
           </div>
 
-          {login.error && (
+          {errorMsg && (
             <div className="rounded-md bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-              {login.error.message}
+              {errorMsg}
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="name">Full name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Your name"
+                required
+                className="h-11"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={register.isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Work email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="you@company.com"
                 required
                 className="h-11"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={login.isPending}
+                disabled={register.isPending}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder="At least 8 characters"
                   required
                   className="h-11 pr-10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={login.isPending}
+                  disabled={register.isPending}
                 />
                 <button
                   type="button"
@@ -119,18 +145,38 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full h-11 text-base font-medium" disabled={login.isPending}>
-              {login.isPending ? (
+
+            <div className="space-y-2">
+              <Label htmlFor="confirm">Confirm password</Label>
+              <Input
+                id="confirm"
+                type={showPassword ? "text" : "password"}
+                placeholder="Repeat your password"
+                required
+                className="h-11"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                disabled={register.isPending}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-11 text-base font-medium"
+              disabled={register.isPending}
+            >
+              {register.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in…
+                  Creating account…
                 </>
               ) : (
-                "Sign In"
+                "Create account"
               )}
             </Button>
           </form>
         </div>
+
         <div className="absolute bottom-8 left-0 right-0 text-center text-sm text-muted-foreground">
           OCS One v1.0 · © 2026 OCS Oorja Green Pvt. Ltd.
         </div>

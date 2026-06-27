@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import NotFound from "@/pages/not-found";
 import LoginPage from "@/pages/LoginPage";
+import RegisterPage from "@/pages/RegisterPage";
 import DirectorDashboardPage from "@/pages/DirectorDashboardPage";
 import ProductMasterPage from "@/features/masters/pages/ProductMasterPage";
 import CellMasterPage from "@/features/masters/pages/CellMasterPage";
@@ -45,6 +46,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={LoginPage} />
+      <Route path="/register" component={RegisterPage} />
       <Route path="/">
         <Redirect to="/dashboard" />
       </Route>
