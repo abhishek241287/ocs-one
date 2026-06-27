@@ -4,7 +4,7 @@
 |-------|-------|
 | **Wave** | CW-01 |
 | **Module** | Cell Receiving |
-| **Overall Status** | 🟡 In Progress |
+| **Overall Status** | 🟢 MAT-01→04 Passed · MAT-05 next |
 | **Last Updated** | 2026-06-27 |
 
 ---
@@ -16,7 +16,7 @@
 | MAT-01 | Page & Navigation | ✅ Passed | 2026-06-27 | 10/10 · 5 defects resolved |
 | MAT-02 | Functional Certification | ✅ Passed | 2026-06-27 | 33/36 · 8 defects resolved · 3 Low deferred |
 | MAT-03 | Workflow & Data Integrity | ✅ Pass | 2026-06-27 | 19/19 · all defects verified |
-| MAT-04 | UX & Operator Workflow | 🟡 Pending CTO | 2026-06-27 | 28/28 · 1 Medium deferred (DEF-M04-008) |
+| MAT-04 | UX & Operator Workflow | ✅ Pass | 2026-06-27 | 35/35 · DEF-M04-008 fixed & verified (ODS Standard 15) · login race (DEF-M04-010) fixed |
 
 ---
 
@@ -24,15 +24,15 @@
 
 | Metric | Value |
 |--------|-------|
-| Total test cases executed | 94 (MAT-01:10 + MAT-02:37 + MAT-03:19 + MAT-04:28) |
-| Passing | 90 |
+| Total test cases executed | 101 (MAT-01:10 + MAT-02:37 + MAT-03:19 + MAT-04:35) |
+| Passing | 97 |
 | Fail (open defects) | 0 |
-| Deferred (CTO-approved) | 3 Low (MAT-02) + 1 Medium (MAT-04 DEF-008) + 2 Low (MAT-04) |
+| Deferred (CTO-approved) | 3 Low (MAT-02) + 2 Low (MAT-04) |
 | Not run (browser metric) | 1 |
 | **Pass rate (actionable)** | **100%** |
-| Total defects filed (CW-01) | 27 (18 from MAT-01–03 + 9 from MAT-04) |
+| Total defects filed (CW-01) | 28 (18 from MAT-01–03 + 10 from MAT-04) |
 | Open High | **0** |
-| Open Medium | **1** (DEF-CW01-M04-008 — table keyboard nav, deferred pending CTO) |
+| Open Medium | **0** ✅ (DEF-CW01-M04-008 fixed & verified — ODS Standard 15) |
 | Open Low (deferred) | **5** (3 from MAT-02 + 2 from MAT-04) |
 
 ---
@@ -78,3 +78,9 @@
 | Timeline Enhancement | 2026-06-27 | CTO → Replit Agent | ✅ Richer event types + computed summaries implemented |
 | Begin MAT-04 | 2026-06-27 | CTO | ✅ |
 | MAT-04 Executed | 2026-06-27 | Replit Agent | 🟡 28/28 — 1 Medium deferred (DEF-M04-008), awaiting CTO decision |
+| DEF-M04-008 Deferral | 2026-06-27 | CTO | 🚫 **REJECTED** — full keyboard table nav required as ODS Standard 15 in shared OdsDataTable |
+| ODS Standard 15 + DEF-M04-008 Fix | 2026-06-27 | Replit Agent | ✅ `useTableKeyboardNav` hook + OdsDataTable integration + design-system docs |
+| DEF-M04-010 Fix | 2026-06-27 | Replit Agent | ✅ Login redirect race fixed (synchronous auth-cache set) — found during TK re-test |
+| MAT-04 Re-test (TK keyboard nav) | 2026-06-27 | Replit Agent | ✅ 7/7 e2e PASS (Playwright) |
+| MAT-04 Passed | 2026-06-27 | Replit Agent | ✅ 35/35 · 0 open High/Medium — MAT-04 closed |
+| Begin MAT-05 | 2026-06-27 | CTO | ⬜ Awaiting authorization |

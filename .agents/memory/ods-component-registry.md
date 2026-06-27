@@ -22,7 +22,14 @@ description: All ODS components, tokens, and the discipline rule — no UI outsi
 - `OdsToolbar` — search + filters slot + refresh + actions slot (right-aligned)
 - `OdsDrawer` — standard Sheet-based drawer; sizes sm/md/lg/xl/2xl; sticky header+footer; Ctrl+S; error display
 - `OdsDialog` — confirm/delete/warning dialogs; variants: default|danger|warning|success|confirm; Enter key confirm
-- `OdsDataTable` — full TanStack table: sorting, column visibility, density (compact/default/comfortable), row actions slot, pagination, loading, empty state
+- `OdsDataTable` — full TanStack table: sorting, column visibility, density (compact/default/comfortable), row actions slot, pagination, loading, empty state. Built-in keyboard nav (ODS Standard 15) via `useTableKeyboardNav`, `enableKeyboardNav` default on; callbacks `onRowEnter`/`onRowHistory`/`onRowSelect`.
+
+## ODS Standard 15 — Keyboard Table Navigation (mandatory)
+- Every data table must be fully operable mouse-free. Engine: `useTableKeyboardNav` hook — reuse it for any bespoke/raw table that can't use OdsDataTable directly (e.g. tables with expandable detail rows).
+- Bindings: ↑/↓ move active row · Home/End first/last · Enter open/edit · H history · Space toggle select · Esc clear.
+- **Gotcha:** the keydown handler sits on the table *container*, so it must bail out when the event target is (or is inside) an interactive descendant — `input, textarea, select, button, a[href], [role=button/menuitem/link], contenteditable` — via `target.closest(...)`. Without this it swallows Enter/Space meant for row action buttons (a real regression caught in review).
+- **A11y:** focusable wrapper around a native `<table>` uses `role="group"` + aria-label, NOT `role="grid"` (we don't implement the full grid widget pattern, so claiming it gives screen readers mixed/false semantics).
+- Documented on the in-app `/design-system` page under OdsDataTable.
 
 ## Command Palette (Phase 2)
 - `OdsCommandPalette` — Ctrl+K global; fuzzy search over all routes/modules; rendered in App.tsx

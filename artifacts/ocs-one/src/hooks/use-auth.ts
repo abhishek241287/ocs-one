@@ -51,8 +51,8 @@ export function useLogin() {
       }
       return res.json() as Promise<{ user: AuthUser }>;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_KEY });
+    onSuccess: ({ user }) => {
+      queryClient.setQueryData(AUTH_KEY, user);
     },
   });
 }
@@ -74,8 +74,8 @@ export function useRegister() {
       }
       return res.json() as Promise<{ user: AuthUser }>;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_KEY });
+    onSuccess: ({ user }) => {
+      queryClient.setQueryData(AUTH_KEY, user);
     },
   });
 }

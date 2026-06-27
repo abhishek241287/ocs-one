@@ -291,6 +291,23 @@ export default function DesignSystemPage() {
             enableSorting
             getRowId={(r) => r.id}
           />
+          <div className="mt-3 rounded-md border bg-gray-50 p-3 text-xs text-gray-600">
+            <p className="font-semibold text-gray-800 mb-1">
+              ODS Standard 15 — Keyboard Table Navigation (mandatory)
+            </p>
+            <p className="mb-2">
+              Click a table to focus it, then operate entirely from the keyboard. Every ODS data
+              table supports this automatically via <code>useTableKeyboardNav</code>.
+            </p>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0.5">
+              <li><kbd>↑</kbd> / <kbd>↓</kbd> — move between rows</li>
+              <li><kbd>Home</kbd> / <kbd>End</kbd> — first / last row</li>
+              <li><kbd>Enter</kbd> — open / edit the active record</li>
+              <li><kbd>H</kbd> — open history (where available)</li>
+              <li><kbd>Space</kbd> — select the active row</li>
+              <li><kbd>Esc</kbd> — clear selection</li>
+            </ul>
+          </div>
         </Section>
 
         {/* ── Skeletons ── */}

@@ -1,6 +1,8 @@
 import { useState, useRef, Fragment } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
+import { useTableKeyboardNav } from "@/hooks/use-table-keyboard-nav";
+import { cn } from "@/lib/utils";
 import { ModuleHeader, OdsToolbar, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -327,6 +329,20 @@ export default function CellReceivingPage() {
   const lots = data?.items ?? [];
   const meta = data?.meta;
 
+  // ODS Standard 15 — keyboard navigation for the lot table
+  const kbd = useTableKeyboardNav({
+    rowCount: lots.length,
+    enabled: !isLoading,
+    onEnter: (i) => {
+      const lot = lots[i];
+      if (lot) openEditDialog(lot);
+    },
+    onHistory: (i) => {
+      const lot = lots[i];
+      if (lot) setHistoryLotId(lot.id);
+    },
+  });
+
   return (
     <AppLayout>
       <div className="p-6 max-w-7xl mx-auto">
@@ -369,7 +385,10 @@ export default function CellReceivingPage() {
           </div>
         </div>
 
-        <div className="rounded-md border">
+        <div
+          {...(!isLoading && lots.length > 0 ? kbd.containerProps : {})}
+          className="rounded-md border outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -405,9 +424,24 @@ export default function CellReceivingPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                lots.map((lot) => (
+                lots.map((lot, rowIndex) => (
                   <Fragment key={lot.id}>
-                    <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => setExpandedLot(expandedLot === lot.id ? null : lot.id)}>
+                    <TableRow
+                      ref={kbd.registerRow(rowIndex)}
+                      role="row"
+                      aria-selected={kbd.selectedIndex === rowIndex}
+                      className={cn(
+                        "cursor-pointer",
+                        kbd.selectedIndex === rowIndex && "bg-blue-50",
+                        kbd.activeIndex === rowIndex
+                          ? "ring-2 ring-inset ring-blue-500 bg-blue-50/60"
+                          : "hover:bg-muted/50"
+                      )}
+                      onClick={() => {
+                        kbd.setActiveIndex(rowIndex);
+                        setExpandedLot(expandedLot === lot.id ? null : lot.id);
+                      }}
+                    >
                       <TableCell className="font-mono font-medium">{lot.lotNumber}</TableCell>
                       <TableCell>{lot.supplier}</TableCell>
                       <TableCell>{lot.manufacturer}</TableCell>
@@ -464,6 +498,17 @@ export default function CellReceivingPage() {
             </TableBody>
           </Table>
         </div>
+
+        {!isLoading && lots.length > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Tip: click the table, then use <kbd className="rounded border px-1">↑</kbd>{" "}
+            <kbd className="rounded border px-1">↓</kbd> to move,{" "}
+            <kbd className="rounded border px-1">Enter</kbd> to edit,{" "}
+            <kbd className="rounded border px-1">H</kbd> for history,{" "}
+            <kbd className="rounded border px-1">Space</kbd> to select,{" "}
+            <kbd className="rounded border px-1">Esc</kbd> to clear.
+          </p>
+        )}
 
         {meta && meta.totalPages > 1 && (
           <div className="flex gap-2 justify-end mt-4">

@@ -3,9 +3,11 @@
  * The universal table for OCS One. No module should build its own.
  *
  * Features: sorting, column visibility, density, sticky header,
- * row selection, row actions, loading skeleton, empty state, pagination.
+ * row selection, row actions, loading skeleton, empty state, pagination,
+ * and ODS Standard 15 keyboard navigation (↑↓ Home End Enter H Space Esc).
  */
 import { useState, useCallback } from "react";
+import { useTableKeyboardNav } from "@/hooks/use-table-keyboard-nav";
 import {
   ColumnDef,
   flexRender,
@@ -96,6 +98,12 @@ interface OdsDataTableProps<T extends object> {
   getRowId?: (row: T) => string;
   selectedId?: string | null;
 
+  // ODS Standard 15 — Keyboard navigation
+  enableKeyboardNav?: boolean;
+  onRowEnter?: (row: T) => void; // Enter on active row
+  onRowHistory?: (row: T) => void; // "H" on active row
+  onRowSelect?: (row: T | null) => void; // Space toggles selection
+
   // Row actions appended as last column
   rowActions?: (row: T) => React.ReactNode;
 
@@ -127,6 +135,10 @@ export function OdsDataTable<T extends object>({
   onRowClick,
   getRowId,
   selectedId,
+  enableKeyboardNav = true,
+  onRowEnter,
+  onRowHistory,
+  onRowSelect,
   rowActions,
   pagination,
   enableSorting = true,
@@ -184,6 +196,27 @@ export function OdsDataTable<T extends object>({
     },
     [selectedId, getRowId]
   );
+
+  // ── ODS Standard 15 — Keyboard navigation ──
+  const visibleRows = table.getRowModel().rows;
+  const kbd = useTableKeyboardNav({
+    rowCount: visibleRows.length,
+    enabled: enableKeyboardNav && !isLoading,
+    onEnter: (i) => {
+      const row = visibleRows[i]?.original;
+      if (row) (onRowEnter ?? onRowClick)?.(row);
+    },
+    onHistory: onRowHistory
+      ? (i) => {
+          const row = visibleRows[i]?.original;
+          if (row) onRowHistory(row);
+        }
+      : undefined,
+    onSelectChange: (i) => {
+      const row = i === null ? null : visibleRows[i]?.original ?? null;
+      onRowSelect?.(row);
+    },
+  });
 
   // ── Feature buttons (density + column visibility) ──
   const featureButtons = (
@@ -252,7 +285,13 @@ export function OdsDataTable<T extends object>({
       )}
 
       {/* Table */}
-      <div className={cn("rounded-lg border bg-white shadow-sm overflow-hidden", stickyHeader && "overflow-auto max-h-[70vh]")}>
+      <div
+        {...(enableKeyboardNav && !isLoading && data.length > 0 ? kbd.containerProps : {})}
+        className={cn(
+          "rounded-lg border bg-white shadow-sm overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40",
+          stickyHeader && "overflow-auto max-h-[70vh]"
+        )}
+      >
         {isLoading ? (
           <OdsTableSkeleton rows={6} columns={colCount} />
         ) : data.length === 0 ? (
@@ -302,18 +341,27 @@ export function OdsDataTable<T extends object>({
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows.map((row) => {
+              {visibleRows.map((row, rowIndex) => {
                 const isSelected = getRowSelected(row.original);
+                const isActive = enableKeyboardNav && kbd.activeIndex === rowIndex;
+                const isKbdSelected = enableKeyboardNav && kbd.selectedIndex === rowIndex;
                 return (
                   <TableRow
                     key={row.id}
-                    onClick={() => onRowClick?.(row.original)}
+                    ref={kbd.registerRow(rowIndex)}
+                    role="row"
+                    aria-selected={isKbdSelected || isSelected}
+                    onClick={() => {
+                      kbd.setActiveIndex(rowIndex);
+                      onRowClick?.(row.original);
+                    }}
                     className={cn(
                       DENSITY_ROW[density],
                       onRowClick && "cursor-pointer",
-                      isSelected
+                      isSelected || isKbdSelected
                         ? "bg-blue-50 ring-1 ring-inset ring-blue-200"
-                        : "hover:bg-gray-50/80"
+                        : "hover:bg-gray-50/80",
+                      isActive && "ring-2 ring-inset ring-blue-500 bg-blue-50/60"
                     )}
                   >
                     {row.getVisibleCells().map((cell) => (
