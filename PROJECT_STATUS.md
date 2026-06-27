@@ -13,9 +13,80 @@
 | **Release Date** | 2026-06-27 |
 | **Git Tag** | `v1.0-foundation` |
 | **Branch** | `main` |
-| **Overall Progress** | **35%** — Foundation complete; Certification Waves not yet started |
 
-Progress scale: Foundation (0–35%) → Certification Waves CW-01 to CW-08 (35–100%)
+### Progress Trackers
+
+| Dimension | Progress | Detail |
+|-----------|----------|--------|
+| Foundation Build | `██████████` **100%** | All 28 modules built and integrated |
+| Certification Waves | `░░░░░░░░░░` **0%** | 0 of 8 waves complete |
+| Test Coverage | `░░░░░░░░░░` **0%** | No automated test suite yet (KI-02) |
+| Documentation | `██████████` **100%** | CHANGELOG · RELEASE_NOTES · ODS registry · Architecture map |
+| **Overall** | `███░░░░░░░` **35%** | Foundation complete; certification not yet started |
+
+Progress scale: Foundation complete = 35% baseline. Each of the 8 Certification Waves = +8.125% → 100% at CW-08.
+
+---
+
+## Current Release Goal
+
+**Target:** `v1.0-certified` — all 8 Certification Waves stamped complete.
+
+| Wave | Module | Scope |
+|------|--------|-------|
+| **CW-01** | Cell Receiving | Playwright e2e · 10-point scorecard · DB migration workflow |
+| **CW-02** | Cell Grading | Scorecard · barcode scanner integration · bulk CSV import |
+| **CW-03** | Manufacturing Orders | Scorecard · file attachments · stage SLA monitoring |
+| **CW-04** | Charging | Scorecard · charge curve logging · maintenance scheduling |
+| **CW-05** | Quality Control | Scorecard · image capture · corrective action tracking |
+| **CW-06** | Dispatch & Logistics | Scorecard · e-Way Bill · GPS tracking · delivery proof |
+| **CW-07** | Reports & Analytics | Scorecard · PDF export · scheduled delivery · Excel export |
+| **CW-08** | Warranty & Service | Scorecard · warranty registration · service tickets · repair history |
+
+Each wave earns a **🔵 Certified** stamp in the Module Status table and increments test coverage.
+**`PROJECT_STATUS.md` is the only document that must be updated at the end of every wave.**
+
+---
+
+## Release Health
+
+| Signal | Status | Detail |
+|--------|--------|--------|
+| TypeScript | ✅ Clean | 0 errors across all workspace packages |
+| ESLint | ✅ Clean | 0 warnings, flat config, strict rules |
+| Build | ✅ Clean | esbuild (API) + Vite (frontend) both passing |
+| Automated Tests | ⚠️ None | No test suite — first deliverable of CW-01 |
+| Security | ✅ Enforced | JWT httpOnly · Helmet · rate limiting · Zod validation |
+| API Contract | ✅ Enforced | OpenAPI spec → Orval codegen (hooks + Zod schemas) |
+| Auth Coverage | ✅ Complete | All 76 protected endpoints behind `requireAuth` |
+| DB Schema Export | ✅ Current | `docs/schema_v1.0_foundation.sql` — 1,717 lines, 2026-06-27 |
+| ODS Design System | 🔵 Frozen | v1.0 · 19 components · no breaking changes allowed |
+| Source Backup | ✅ Current | `docs/ocs-one-v1.0-foundation-backup.tar.gz` — 631 files |
+| Open Issues | ⚠️ 7 open | 0 critical · 2 medium · 5 low — see Known Issues |
+| Last Checkpoint | `6a098f94` | 2026-06-27 |
+
+---
+
+## Project Scale
+
+| Layer | Metric | Value |
+|-------|--------|-------|
+| **API Server** | Handwritten TypeScript | ~5,000 lines |
+| **Frontend** | Handwritten TypeScript / TSX | ~22,300 lines |
+| **DB Schema** | Drizzle ORM TypeScript | ~985 lines |
+| **OpenAPI Spec** | YAML | ~3,600 lines |
+| **Generated Code** | Orval codegen (hooks + Zod) | ~19,000 lines |
+| **Total handwritten** | All layers combined | **~32,000 lines** |
+| **Total incl. generated** | | **~51,000 lines** |
+| **Source files** | `.ts` + `.tsx` + `.yaml` | 492 files |
+| **Workspace packages** | pnpm monorepo | 7 packages |
+| **API endpoints** | Express routes | 81 |
+| **React components** | `.tsx` files | 152 |
+| **DB tables** | Drizzle schema | 29 tables |
+| **DB enums** | Drizzle schema | 19 enums |
+| **DB indexes** | Drizzle schema | 31 indexes |
+| **ODS components** | Frozen v1.0 | 19 components |
+| **App routes** | Wouter v3 | 35 pages |
 
 ---
 
@@ -218,12 +289,15 @@ Outcome: Cell Receiving module stamped **Certified** and scorecard added to this
 
 After every Certification Wave:
 
-1. Change the module row from `✅ Built` → `🔵 Certified` in the Module Status table.
-2. Update the Certification Status table with the completion date.
-3. Increment **Overall Progress (%)** by ~8% per wave completed.
-4. Resolve any Known Issues resolved in the wave.
-5. Update **Next Milestone** to the following wave.
-6. Commit with message: `cert(CW-NN): certify <module> — update PROJECT_STATUS.md`
+1. **Progress Trackers** — increment Certification Waves bar (each wave = +1 filled block `█`), update Test Coverage %, update Overall % (+8.125% per wave).
+2. **Release Health** — update Automated Tests row with new coverage figure, resolve any health signals that improved, update Last Checkpoint hash and date.
+3. **Module Status** — change completed module rows from `✅ Built` → `🔵 Certified`.
+4. **Certification Status** — mark wave complete with date.
+5. **Known Issues** — close any issues resolved by the wave.
+6. **Next Milestone** — advance to the following wave.
+7. Commit with message: `cert(CW-NN): certify <module> — update PROJECT_STATUS.md`
+
+> Only `PROJECT_STATUS.md` needs updating after each wave. `CHANGELOG.md` and `RELEASE_NOTES_v1.0_FOUNDATION.md` are historical documents — do not edit them.
 
 ---
 
