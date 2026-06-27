@@ -41,6 +41,7 @@ import DealerMasterPage from "@/features/logistics/pages/DealerMasterPage";
 import DispatchOrdersPage from "@/features/logistics/pages/DispatchOrdersPage";
 import DispatchOrderDetailPage from "@/features/logistics/pages/DispatchOrderDetailPage";
 import ArchitecturePage from "@/pages/ArchitecturePage";
+import PerformancePage from "@/pages/PerformancePage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +64,7 @@ function Router() {
       <Route path="/dashboard" component={DirectorDashboardPage} />
       <Route path="/design-system" component={DesignSystemPage} />
       <Route path="/developer/architecture" component={ArchitecturePage} />
+      <Route path="/developer/performance" component={PerformancePage} />
 
       {/* Masters */}
       <Route path="/masters/products" component={ProductMasterPage} />

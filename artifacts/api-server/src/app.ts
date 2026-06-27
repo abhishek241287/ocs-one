@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { recordRequest } from "./lib/metrics";
 
 const app: Express = express();
 
@@ -77,6 +78,18 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ─── API latency metrics collector ────────────────────────────────────────────
+// Records per-route request duration into an in-memory ring buffer that powers
+// the /developer/performance engineering health dashboard. Must run before routes.
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint();
+  res.on("finish", () => {
+    const ms = Number(process.hrtime.bigint() - start) / 1e6;
+    recordRequest(req.method, req.originalUrl, ms, res.statusCode);
+  });
+  next();
+});
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use("/api", router);

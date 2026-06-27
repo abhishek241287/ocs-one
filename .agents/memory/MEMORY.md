@@ -8,4 +8,5 @@
 - [JWT httpOnly cookie auth](jwt-cookie-auth.md) — cookie `ocs_token`, signed with SESSION_SECRET; trust proxy required; public routes: /api/healthz and /api/auth/* only.
 - [ODS 2.0 component registry](ods-component-registry.md) — all ODS components and tokens; do not add new UI patterns outside ODS.
 - [Drizzle wraps PG errors](drizzle-pg-error-wrapping.md) — PG error code 23505 lives on `err.cause.code`, not `err.code`; check both in Express error handlers.
+- [Performance regression framework](perf-regression-framework.md) — gate regressions behind a min sample count (cold-start noise), never fake N/A figures, baseline≠stress dataset, never silently move a baseline.
 - [Auth login redirect race](auth-redirect-race.md) — seed auth cache via setQueryData in login onSuccess; invalidateQueries races a synchronous redirect and bounces back to /login.

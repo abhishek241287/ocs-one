@@ -4,7 +4,7 @@
 |-------|-------|
 | **Wave** | CW-01 |
 | **Module** | Cell Receiving |
-| **Overall Status** | 🟢 MAT-01→05 Passed · MAT-06 next |
+| **Overall Status** | 🟢 MAT-01→05 Passed · MAT-05 CTO deliverables complete · MAT-06 authorized |
 | **Last Updated** | 2026-06-27 |
 
 ---
@@ -17,7 +17,7 @@
 | MAT-02 | Functional Certification | ✅ Passed | 2026-06-27 | 33/36 · 8 defects resolved · 3 Low deferred |
 | MAT-03 | Workflow & Data Integrity | ✅ Pass | 2026-06-27 | 19/19 · all defects verified |
 | MAT-04 | UX & Operator Workflow | ✅ Pass | 2026-06-27 | 35/35 · DEF-M04-008 fixed & verified (ODS Standard 15) · login race (DEF-M04-010) fixed |
-| MAT-05 | Performance & Stress | ✅ Pass w/ notes | 2026-06-27 | All *measured* thresholds met @ 1,014 lots / 10,058 cells · DEF-M05-001 (missing index) fixed · DEF-M05-002 (code-split) deferred · FE render/memory micro-metrics not instrumented (follow-up) |
+| MAT-05 | Performance & Stress | ✅ Pass w/ notes | 2026-06-27 | All *measured* thresholds met @ 1,014 lots / 10,058 cells · DEF-M05-001 (missing index) fixed · DEF-M05-002 (code-split) deferred · FE render/memory micro-metrics not instrumented (follow-up) · **3 CTO deliverables complete:** Performance Baseline v1.0 (in MAT-05.md), permanent Performance Regression Framework (`certification/Performance-Regression-Framework.md`), live `/developer/performance` Engineering Health dashboard |
 
 ---
 
@@ -89,3 +89,7 @@
 | MAT-04 Accepted | 2026-06-27 | CTO | ✅ Standard 15, DEF-M04-008, DEF-M04-010, MAT-04 all officially accepted |
 | ODS Standard 16 (Focus Management) | 2026-06-27 | CTO → Replit Agent | ✅ Documented in Design System — mandatory for all future components |
 | Begin MAT-05 | 2026-06-27 | CTO | ✅ Authorized — Performance & Stress Certification |
+| MAT-05 Pass w/ notes | 2026-06-27 | Replit Agent | ✅ All measured thresholds met; 2 honest measurement gaps noted (FE micro-metrics, write-path load) |
+| MAT-05 CTO deliverables required | 2026-06-27 | CTO | 📋 3 required before MAT-05 closes: Performance Baseline v1.0, permanent Regression Framework (>10% auto-defect), live `/developer/performance` dashboard |
+| MAT-05 deliverables complete | 2026-06-27 | Replit Agent | ✅ Baseline v1.0 (measured, honest N/A for client-side Export) + `Performance-Regression-Framework.md` (permanent, all waves) + live director-only Engineering Health dashboard (e2e-verified) |
+| Begin MAT-06 | 2026-06-27 | CTO | ✅ Authorized — MAT-05 deliverables satisfied |

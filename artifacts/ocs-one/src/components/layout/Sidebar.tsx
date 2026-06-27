@@ -28,6 +28,8 @@ import {
   TrendingUp,
   Download,
   BrainCircuit,
+  Network,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -115,6 +117,13 @@ const navSections: NavSection[] = [
       { label: "Inventory Analytics", href: "/reports/inventory", icon: Archive },
       { label: "Logistics Analytics", href: "/reports/logistics", icon: Truck },
       { label: "Export Center", href: "/reports/export", icon: Download },
+    ],
+  },
+  {
+    title: "Developer",
+    items: [
+      { label: "Architecture Map", href: "/developer/architecture", icon: Network },
+      { label: "Engineering Health", href: "/developer/performance", icon: Activity },
     ],
   },
 ];

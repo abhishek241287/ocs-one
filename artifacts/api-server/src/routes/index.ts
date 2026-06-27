@@ -16,6 +16,7 @@ import cellsRouter from "./cells/index";
 import logisticsRouter from "./logistics/index";
 import dashboardRouter from "./dashboard/index";
 import reportsRouter from "./reports/index";
+import developerRouter from "./developer/index";
 
 const router: IRouter = Router();
 
@@ -51,5 +52,8 @@ router.use("/dashboard", dashboardRouter);
 
 // Reports
 router.use("/reports", reportsRouter);
+
+// Developer / Engineering Health (director-only routes inside)
+router.use("/developer", developerRouter);
 
 export default router;
