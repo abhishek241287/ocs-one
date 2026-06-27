@@ -1,0 +1,332 @@
+OCS One has now entered Version 2 of UI Design
+
+We now have our own design language.
+
+Think about companies:
+
+SAP → Fiori Design
+Google → Material Design
+Apple → Human Interface
+Microsoft → Fluent UI
+
+I want OCS OORJA to have:
+
+OCS One Design System (ODS)
+
+Everything from now onwards must follow it.
+
+I'd divide it into standards.
+Standard 1 — Keyboard
+
+Already done ✅
+
+Enter
+Shift+Enter
+Ctrl+S
+Ctrl+N
+Ctrl+F
+F2
+Esc
+
+Excellent.
+
+Standard 2 — Colors
+
+Never use random colors.
+
+Example
+
+🟢 Green
+
+Active
+Passed
+Approved
+Completed
+
+🟡 Yellow
+
+Pending
+Waiting
+Under Review
+
+🔵 Blue
+
+Running
+In Progress
+Information
+
+🔴 Red
+
+Reject
+Error
+Failed
+Critical
+
+⚫ Gray
+
+Disabled
+Locked
+Archived
+
+One meaning forever.
+
+Standard 3 — Icons
+
+One icon per concept.
+
+Battery
+
+always
+
+🔋
+
+User
+
+👤
+
+Dealer
+
+🏢
+
+Factory
+
+🏭
+
+Charging
+
+⚡
+
+QC
+
+✔
+
+Dispatch
+
+🚚
+
+Never change them between modules.
+
+Standard 4 — Tables
+
+Every table should have
+
+✓ Search
+
+✓ Export
+
+✓ Refresh
+
+✓ Density
+
+✓ Column Hide
+
+✓ Column Resize
+
+✓ Sort
+
+✓ Filter
+
+✓ Pagination
+
+✓ Row Selection
+
+✓ Bulk Action
+
+Every table.
+
+Standard 5 — Forms
+
+Every form
+
+Same button position
+
+Cancel     Save
+
+Never
+
+Save Cancel
+
+Consistency reduces user mistakes.
+
+Standard 6 — Notifications
+
+Only 4 types.
+
+Green
+
+Saved Successfully
+
+Blue
+
+Information
+
+Yellow
+
+Warning
+
+Red
+
+Error
+
+No other colors.
+
+Standard 7 — Loading
+
+Every page
+
+Skeleton
+
+Never spinner.
+
+Spinners only for
+
+Button loading
+
+Standard 8 — Empty States
+
+Never blank page.
+
+Instead
+
+📄
+
+No Product Found
+
+Click
+
+New Product
+
+Standard 9 — Confirmation
+
+Delete
+
+Deactivate
+
+Dispatch
+
+QC Approve
+
+Always ask confirmation.
+
+Standard 10 — Shortcuts
+
+I want one more.
+
+F1
+
+Help
+
+Every module.
+
+Example
+
+Cell Matching
+
+↓
+
+F1
+
+↓
+
+Opens
+
+Help
+
+Workflow
+
+Video
+
+Documentation
+
+Standard 11 — QR Everywhere
+
+Battery
+
+QR
+
+Dealer
+
+QR
+
+Cell Lot
+
+QR
+
+Production Order
+
+QR
+
+Every entity.
+
+Standard 12 — Smart Search
+
+Eventually, one global search.
+
+Search
+
+BAT-20260627-0042
+
+↓
+
+Battery opens
+
+Search
+
+Dealer Delhi
+
+↓
+
+Dealer opens
+
+Search
+
+CELL000234
+
+↓
+
+Cell opens
+
+Search
+
+PO-20260627
+
+↓
+
+Production Order opens
+
+One search bar for the entire ERP.
+
+Standard 13 — Module Header
+
+Every module should have the same header layout:
+
+────────────────────────────────────────────
+
+🏭 Product Master
+
+Engineering Master
+
+Last Updated
+
+Version
+
+Status
+
+────────────────────────────────────────────
+Standard 14 — Certification Badge
+
+I absolutely love this idea.
+
+Every module header should show:
+
+🟢 Certified
+
+or
+
+🟡 Under Validation
+
+or
+
+🔴 Development
+
+When a customer visits your factory, they immediately know the maturity of each module

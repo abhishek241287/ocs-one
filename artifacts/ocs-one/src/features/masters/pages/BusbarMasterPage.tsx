@@ -44,6 +44,8 @@ const config: MasterConfig<BusbarMaster> = {
   resource: "busbars",
   title: "Busbar Master",
   description: "Manage busbar definitions and specifications",
+  icon: "🔩",
+  certification: "certified",
   columns,
   fields: fields as any,
 };

@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
+import { ModuleHeader, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -220,20 +221,17 @@ export default function CellMatchingPage() {
         <div className={`flex flex-col border-r ${selectedMatchId ? "w-96 shrink-0" : "flex-1 p-6"}`}>
           {!selectedMatchId && (
             <div className="max-w-7xl mx-auto w-full">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <BrainCircuit className="text-primary" size={24} />
-                    Intelligent Cell Matching
-                  </h1>
-                  <p className="text-muted-foreground text-sm mt-1">
-                    Algorithm selects optimally-matched cell groups for each battery
-                  </p>
-                </div>
-                <Button onClick={() => setOpen(true)}>
-                  <Plus size={16} className="mr-1" /> New Match
-                </Button>
-              </div>
+              <ModuleHeader
+                icon="🧠"
+                title="Intelligent Cell Matching"
+                description="Algorithm selects optimally-matched cell groups for each battery"
+                certification="certified"
+                actions={
+                  <Button onClick={() => setOpen(true)}>
+                    <Plus size={16} className="mr-1" /> New Match
+                  </Button>
+                }
+              />
             </div>
           )}
 
@@ -249,20 +247,14 @@ export default function CellMatchingPage() {
 
           <div className={selectedMatchId ? "overflow-y-auto flex-1" : ""}>
             {isLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="animate-spin text-muted-foreground" />
-              </div>
+              <OdsTableSkeleton rows={5} columns={5} />
             ) : matches.length === 0 ? (
-              <div className="text-center py-20 text-muted-foreground">
-                <BrainCircuit size={32} className="mx-auto mb-3 opacity-30" />
-                <p>No matches yet</p>
-                <p className="text-sm">Create a match to group cells for a battery</p>
-                {!selectedMatchId && (
-                  <Button className="mt-4" onClick={() => setOpen(true)}>
-                    <Plus size={14} className="mr-1" /> New Match
-                  </Button>
-                )}
-              </div>
+              <OdsEmptyState
+                icon="🧠"
+                title="No matches yet"
+                description="Create a match to group cells for a battery."
+                action={!selectedMatchId ? { label: "New Match", onClick: () => setOpen(true) } : undefined}
+              />
             ) : (
               <div className={selectedMatchId ? "divide-y" : "rounded-md border"}>
                 {selectedMatchId ? (

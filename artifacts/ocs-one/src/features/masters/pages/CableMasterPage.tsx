@@ -35,6 +35,8 @@ const config: MasterConfig<CableMaster> = {
   resource: "cables",
   title: "Cable Master",
   description: "Manage cable definitions and specifications",
+  icon: "🧵",
+  certification: "certified",
   columns,
   fields: fields as any,
 };

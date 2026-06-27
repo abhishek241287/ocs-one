@@ -61,6 +61,8 @@ const config: MasterConfig<TestEquipmentMaster> = {
   resource: "test-equipment",
   title: "Test Equipment",
   description: "Manage test equipment definitions and specifications",
+  icon: "🔬",
+  certification: "certified",
   columns,
   fields: fields as any,
 };

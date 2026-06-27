@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
 import {
   Select,
   SelectContent,
@@ -18,35 +17,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Loader2, ChevronLeft, ChevronRight, Factory } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { useListProductionOrders } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import CreateOrderDrawer from "../components/CreateOrderDrawer";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
-
-const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-700",
-  released: "bg-blue-100 text-blue-700",
-  in_progress: "bg-yellow-100 text-yellow-800",
-  completed: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
-};
+import { ModuleHeader, OdsTableSkeleton, OdsEmptyState, OdsStatusBadge } from "@/components/ods";
 
 const PRIORITY_COLORS: Record<string, string> = {
-  low: "bg-slate-100 text-slate-600",
+  low:    "bg-slate-100 text-slate-600",
   medium: "bg-orange-100 text-orange-700",
-  high: "bg-red-100 text-red-700",
+  high:   "bg-red-100 text-red-700",
 };
 
 const STAGE_LABELS: Record<string, string> = {
   cell_allocation: "Cell Allocation",
-  bms_allocation: "BMS Allocation",
-  assembly: "Assembly",
-  compression: "Compression",
-  charging: "Charging",
-  testing: "Testing",
+  bms_allocation:  "BMS Allocation",
+  assembly:        "Assembly",
+  compression:     "Compression",
+  charging:        "Charging",
+  testing:         "Testing",
   quality_control: "Quality Control",
-  packing: "Packing",
+  packing:         "Packing",
 };
 
 export default function OrdersListPage() {
@@ -81,25 +73,24 @@ export default function OrdersListPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Factory className="h-6 w-6 text-orange-600" />
-              Production Orders
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {meta?.total ?? 0} orders total
-            </p>
-          </div>
-          <Button onClick={() => setCreateOpen(true)} className="bg-orange-600 hover:bg-orange-700">
-            <Plus className="h-4 w-4 mr-2" />
-            New Order
-          </Button>
-        </div>
+      <div className="p-6 space-y-5">
+        <ModuleHeader
+          icon="🏭"
+          title="Production Orders"
+          description={`${meta?.total ?? 0} orders total`}
+          certification="certified"
+          actions={
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+              </Button>
+              <Button onClick={() => setCreateOpen(true)} className="bg-orange-600 hover:bg-orange-700">
+                <Plus className="h-4 w-4 mr-2" /> New Order
+              </Button>
+            </div>
+          }
+        />
 
-        {/* Filters */}
         <div className="flex gap-3 flex-wrap">
           <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -137,35 +128,31 @@ export default function OrdersListPage() {
           </Select>
         </div>
 
-        {/* Table */}
-        <div className="border rounded-lg bg-white overflow-hidden shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead>Order #</TableHead>
-                <TableHead>Battery #</TableHead>
-                <TableHead>Factory Manager</TableHead>
-                <TableHead>Current Stage</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" />
-                  </TableCell>
+        {isLoading ? (
+          <OdsTableSkeleton rows={8} columns={7} />
+        ) : items.length === 0 ? (
+          <OdsEmptyState
+            icon="🏭"
+            title="No production orders found"
+            description={debouncedSearch || status !== "all" ? "Try adjusting your filters." : "Create your first production order to get started."}
+            action={!debouncedSearch && status === "all" ? { label: "New Order", onClick: () => setCreateOpen(true) } : undefined}
+          />
+        ) : (
+          <div className="border rounded-lg bg-white overflow-hidden shadow-sm">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead>Order #</TableHead>
+                  <TableHead>Battery #</TableHead>
+                  <TableHead>Factory Manager</TableHead>
+                  <TableHead>Current Stage</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Created</TableHead>
                 </TableRow>
-              ) : items.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-gray-400">
-                    No production orders found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                items.map((order) => (
+              </TableHeader>
+              <TableBody>
+                {items.map((order) => (
                   <TableRow key={order.id} className="hover:bg-gray-50 cursor-pointer">
                     <TableCell>
                       <Link href={`/manufacturing/orders/${order.id}`}>
@@ -186,9 +173,7 @@ export default function OrdersListPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[order.status] ?? ""}`}>
-                        {order.status.replace(/_/g, " ")}
-                      </span>
+                      <OdsStatusBadge status={order.status} />
                     </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${PRIORITY_COLORS[order.priority] ?? ""}`}>
@@ -199,13 +184,12 @@ export default function OrdersListPage() {
                       {new Date(order.createdAt).toLocaleDateString()}
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
-        {/* Pagination */}
         {meta && meta.totalPages > 1 && (
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">

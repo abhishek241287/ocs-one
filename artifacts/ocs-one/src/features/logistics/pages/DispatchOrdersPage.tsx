@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -19,19 +18,11 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Truck, Plus, Loader2, RefreshCw, ArrowRight } from "lucide-react";
+import { Plus, Loader2, RefreshCw, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
-
-const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-600",
-  confirmed: "bg-blue-100 text-blue-700",
-  loaded: "bg-yellow-100 text-yellow-700",
-  in_transit: "bg-orange-100 text-orange-700",
-  delivered: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-600",
-};
+import { ModuleHeader, OdsTableSkeleton, OdsEmptyState, OdsStatusBadge } from "@/components/ods";
 
 const EMPTY_FORM: DispatchOrderInput = {
   dealerId: undefined, customerName: "", transporter: "", vehicleNumber: "",
@@ -75,21 +66,27 @@ export default function DispatchOrdersPage() {
     }
   };
 
+  const items = data?.items ?? [];
+
   return (
     <AppLayout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Truck className="h-6 w-6 text-blue-600" />Dispatch Orders
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">Manage battery dispatch orders and shipments</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw className="h-4 w-4 mr-1" />Refresh</Button>
-            <Button size="sm" onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-1" />New Dispatch Order</Button>
-          </div>
-        </div>
+      <div className="p-6 space-y-5">
+        <ModuleHeader
+          icon="🚚"
+          title="Dispatch Orders"
+          description="Manage battery dispatch orders and shipments"
+          certification="certified"
+          actions={
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+              </Button>
+              <Button size="sm" onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" /> New Dispatch Order
+              </Button>
+            </div>
+          }
+        />
 
         <div className="flex gap-2 flex-wrap">
           {["all", "draft", "confirmed", "loaded", "in_transit", "delivered", "cancelled"].map((s) => (
@@ -103,54 +100,57 @@ export default function DispatchOrdersPage() {
           ))}
         </div>
 
-        <Card>
-          <CardContent className="pt-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Dispatch #</TableHead>
-                  <TableHead>Dealer / Customer</TableHead>
-                  <TableHead>Transporter</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Dispatch Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading && (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
-                )}
-                {!isLoading && data?.items.length === 0 && (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No dispatch orders found.</TableCell></TableRow>
-                )}
-                {data?.items.map((o) => (
-                  <TableRow key={o.id}>
-                    <TableCell className="font-mono text-xs font-bold text-blue-700">{o.dispatchNumber}</TableCell>
-                    <TableCell className="text-sm">{o.customerName ?? "—"}</TableCell>
-                    <TableCell className="text-xs">{o.transporter ?? "—"}</TableCell>
-                    <TableCell className="text-xs font-mono">{o.vehicleNumber ?? "—"}</TableCell>
-                    <TableCell className="text-xs">{o.dispatchDate ?? "—"}</TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[o.status] ?? ""}`}>
-                        {o.status.replace("_", " ")}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Link href={`/logistics/dispatch-orders/${o.id}`}>
-                        <Button size="sm" variant="outline" className="gap-1">
-                          View <ArrowRight className="h-3 w-3" />
-                        </Button>
-                      </Link>
-                    </TableCell>
+        {isLoading ? (
+          <OdsTableSkeleton rows={6} columns={7} />
+        ) : items.length === 0 ? (
+          <OdsEmptyState
+            icon="🚚"
+            title="No dispatch orders found"
+            description={statusFilter !== "all" ? "Try a different status filter." : "Create your first dispatch order to get started."}
+            action={statusFilter === "all" ? { label: "New Dispatch Order", onClick: () => setDialogOpen(true) } : undefined}
+          />
+        ) : (
+          <Card>
+            <CardContent className="pt-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Dispatch #</TableHead>
+                    <TableHead>Dealer / Customer</TableHead>
+                    <TableHead>Transporter</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Dispatch Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {items.map((o) => (
+                    <TableRow key={o.id} className="hover:bg-muted/50">
+                      <TableCell className="font-mono text-xs font-bold text-blue-700">{o.dispatchNumber}</TableCell>
+                      <TableCell className="text-sm">{o.customerName ?? "—"}</TableCell>
+                      <TableCell className="text-xs">{o.transporter ?? "—"}</TableCell>
+                      <TableCell className="text-xs font-mono">{o.vehicleNumber ?? "—"}</TableCell>
+                      <TableCell className="text-xs">{o.dispatchDate ?? "—"}</TableCell>
+                      <TableCell>
+                        <OdsStatusBadge status={o.status} />
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Link href={`/logistics/dispatch-orders/${o.id}`}>
+                          <Button size="sm" variant="outline" className="gap-1">
+                            View <ArrowRight className="h-3 w-3" />
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

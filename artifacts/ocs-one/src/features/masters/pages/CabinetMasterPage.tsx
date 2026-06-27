@@ -47,6 +47,8 @@ const config: MasterConfig<CabinetMaster> = {
   resource: "cabinets",
   title: "Cabinet Master",
   description: "Manage cabinet definitions and specifications",
+  icon: "📦",
+  certification: "certified",
   columns,
   fields: fields as any,
 };

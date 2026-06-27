@@ -1,14 +1,9 @@
-import { Badge } from "@/components/ui/badge";
+import { OdsStatusBadge } from "@/components/ods";
 
 interface MasterStatusBadgeProps {
   status: "active" | "inactive";
 }
 
 export function MasterStatusBadge({ status }: MasterStatusBadgeProps) {
-  const variant = status === "active" ? "default" : "secondary";
-  return (
-    <Badge variant={variant} className="capitalize">
-      {status}
-    </Badge>
-  );
+  return <OdsStatusBadge status={status} />;
 }

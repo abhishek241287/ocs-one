@@ -42,6 +42,8 @@ const config: MasterConfig<BmsMaster> = {
   resource: "bms",
   title: "BMS Master",
   description: "Manage BMS definitions and specifications",
+  icon: "💡",
+  certification: "certified",
   columns,
   fields: fields as any,
 };

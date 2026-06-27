@@ -37,6 +37,8 @@ const config: MasterConfig<ChargerMaster> = {
   resource: "chargers",
   title: "Charger Master",
   description: "Manage charger definitions and specifications",
+  icon: "🔌",
+  certification: "certified",
   columns,
   fields: fields as any,
 };

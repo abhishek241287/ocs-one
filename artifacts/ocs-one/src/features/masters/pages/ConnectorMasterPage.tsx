@@ -36,6 +36,8 @@ const config: MasterConfig<ConnectorMaster> = {
   resource: "connectors",
   title: "Connector Master",
   description: "Manage connector definitions and specifications",
+  icon: "🔗",
+  certification: "certified",
   columns,
   fields: fields as any,
 };

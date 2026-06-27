@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
+import { ModuleHeader, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useListCells, useGradeCell } from "@workspace/api-client-react";
-import { FlaskConical, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 const GRADE_BADGE: Record<string, string> = {
@@ -134,15 +135,12 @@ export default function CellGradingPage() {
   return (
     <AppLayout>
       <div className="p-6 max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FlaskConical className="text-primary" size={24} />
-            Cell Grading
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Record grading measurements — grade is auto-calculated from tolerance rules
-          </p>
-        </div>
+        <ModuleHeader
+          icon="🔬"
+          title="Cell Grading"
+          description="Record grading measurements — grade is auto-calculated from tolerance rules"
+          certification="certified"
+        />
 
         <div className="flex gap-3 mb-4 flex-wrap items-center">
           <div className="flex rounded-md border overflow-hidden">
@@ -186,14 +184,18 @@ export default function CellGradingPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                    Loading cells...
+                  <TableCell colSpan={8} className="p-0">
+                    <OdsTableSkeleton rows={6} columns={8} />
                   </TableCell>
                 </TableRow>
               ) : cells.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                    {tab === "pending" ? "No cells pending grading" : "No cells found"}
+                  <TableCell colSpan={8} className="p-0">
+                    <OdsEmptyState
+                      icon="🔬"
+                      title={tab === "pending" ? "No cells pending grading" : "No cells found"}
+                      description={tab === "pending" ? "All received cells have been graded." : "Receive and grade cells to see them here."}
+                    />
                   </TableCell>
                 </TableRow>
               ) : (

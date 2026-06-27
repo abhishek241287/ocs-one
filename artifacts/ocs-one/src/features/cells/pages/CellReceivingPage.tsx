@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
+import { ModuleHeader, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useListCellLots, useCreateCellLot, useGetCellLot } from "@workspace/api-client-react";
-import { Plus, Package, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 function LotStatsRow({ lotId }: { lotId: string }) {
@@ -114,20 +115,17 @@ export default function CellReceivingPage() {
   return (
     <AppLayout>
       <div className="p-6 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Package className="text-primary" size={24} />
-              Cell Receiving
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              {meta?.total ?? 0} lots received
-            </p>
-          </div>
-          <Button onClick={() => setOpen(true)}>
-            <Plus size={16} className="mr-1" /> Receive New Lot
-          </Button>
-        </div>
+        <ModuleHeader
+          icon="📦"
+          title="Cell Receiving"
+          description={`${meta?.total ?? 0} lots received`}
+          certification="certified"
+          actions={
+            <Button onClick={() => setOpen(true)}>
+              <Plus size={16} className="mr-1" /> Receive New Lot
+            </Button>
+          }
+        />
 
         <div className="mb-4">
           <Input
@@ -158,14 +156,19 @@ export default function CellReceivingPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-10 text-muted-foreground">
-                    Loading lots...
+                  <TableCell colSpan={10} className="p-0">
+                    <OdsTableSkeleton rows={6} columns={10} />
                   </TableCell>
                 </TableRow>
               ) : lots.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-10 text-muted-foreground">
-                    No lots received yet
+                  <TableCell colSpan={10} className="p-0">
+                    <OdsEmptyState
+                      icon="📦"
+                      title="No lots received yet"
+                      description="Receive your first cell lot to get started."
+                      action={{ label: "Receive New Lot", onClick: () => setOpen(true) }}
+                    />
                   </TableCell>
                 </TableRow>
               ) : (

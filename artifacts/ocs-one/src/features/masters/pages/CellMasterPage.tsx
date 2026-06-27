@@ -43,6 +43,8 @@ const config: MasterConfig<CellMaster> = {
   resource: "cells",
   title: "Cell Master",
   description: "Manage cell definitions and specifications",
+  icon: "⚡",
+  certification: "certified",
   columns,
   fields: fields as any,
 };

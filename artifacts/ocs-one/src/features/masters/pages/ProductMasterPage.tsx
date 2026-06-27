@@ -60,6 +60,8 @@ const config: MasterConfig<ProductMaster> = {
   resource: "products",
   title: "Product Master",
   description: "Manage product definitions and specifications",
+  icon: "🔋",
+  certification: "certified",
   columns,
   fields: fields as any,
 };

@@ -9,7 +9,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -19,11 +18,12 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Building2, Plus, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
+import { ModuleHeader, OdsTableSkeleton, OdsEmptyState, OdsStatusBadge } from "@/components/ods";
 
-const EMPTY_FORM: Omit<DealerInput, 'creditLimit'> & { creditLimit: string } = {
+const EMPTY_FORM: Omit<DealerInput, "creditLimit"> & { creditLimit: string } = {
   dealerCode: "", dealerName: "", gstNumber: "", address: "", contactPerson: "",
   mobile: "", email: "", territory: "", creditLimit: "0", status: "active",
 };
@@ -48,7 +48,6 @@ export default function DealerMasterPage() {
 
   const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setDialogOpen(true); };
   const openEdit = (d: Dealer) => {
-    // also called via F2 from useModuleShortcuts
     setEditing(d);
     setForm({
       dealerCode: d.dealerCode, dealerName: d.dealerName,
@@ -108,87 +107,104 @@ export default function DealerMasterPage() {
   };
 
   const isSaving = createDealer.isPending || updateDealer.isPending;
+  const items = data?.items ?? [];
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Building2 className="h-6 w-6 text-blue-600" />Dealer Master
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">Manage dealer accounts and territories</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw className="h-4 w-4 mr-1" />Refresh</Button>
-            <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4 mr-1" />New Dealer</Button>
-          </div>
-        </div>
+      <div className="p-6 space-y-5">
+        <ModuleHeader
+          icon="🏢"
+          title="Dealer Master"
+          description="Manage dealer accounts and territories"
+          certification="certified"
+          actions={
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+              </Button>
+              <Button size="sm" onClick={openCreate}>
+                <Plus className="h-4 w-4 mr-1" /> New Dealer
+              </Button>
+            </div>
+          }
+        />
 
         <div className="flex gap-3">
-          <Input ref={searchRef} placeholder="Search by name, code, territory..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+          <Input
+            ref={searchRef}
+            placeholder="Search by name, code, territory..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-sm"
+          />
         </div>
 
-        <Card>
-          <CardContent className="pt-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>GST</TableHead>
-                  <TableHead>Territory</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Mobile</TableHead>
-                  <TableHead>Credit Limit</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading && (
-                  <TableRow><TableCell colSpan={9} className="text-center py-8"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></TableCell></TableRow>
-                )}
-                {!isLoading && data?.items.length === 0 && (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No dealers found. Create one to get started.</TableCell></TableRow>
-                )}
-                {data?.items.map((d) => (
-                  <TableRow
-                    key={d.id}
-                    onClick={() => setSelectedDealer(d)}
-                    className={
-                      selectedDealer?.id === d.id
-                        ? "bg-blue-50 ring-1 ring-inset ring-blue-200 cursor-pointer"
-                        : "cursor-pointer hover:bg-muted/50"
-                    }
-                  >
-                    <TableCell className="font-mono text-xs font-semibold">{d.dealerCode}</TableCell>
-                    <TableCell className="font-medium">{d.dealerName}</TableCell>
-                    <TableCell className="text-xs">{d.gstNumber ?? "—"}</TableCell>
-                    <TableCell className="text-xs">{d.territory ?? "—"}</TableCell>
-                    <TableCell className="text-xs">{d.contactPerson ?? "—"}</TableCell>
-                    <TableCell className="text-xs">{d.mobile ?? "—"}</TableCell>
-                    <TableCell className="text-xs">₹{Number(d.creditLimit ?? 0).toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Badge variant={d.status === "active" ? "default" : "secondary"} className={d.status === "active" ? "bg-green-100 text-green-700 hover:bg-green-100" : ""}>
-                        {d.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); openEdit(d); }}><Pencil className="h-3 w-3" /></Button>
-                        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setDeleteId(d.id); }} className="text-red-500 hover:text-red-700"><Trash2 className="h-3 w-3" /></Button>
-                      </div>
-                    </TableCell>
+        {isLoading ? (
+          <OdsTableSkeleton rows={6} columns={8} />
+        ) : items.length === 0 ? (
+          <OdsEmptyState
+            icon="🏢"
+            title="No dealers found"
+            description={search ? "Try a different search term." : "Add your first dealer to get started."}
+            action={!search ? { label: "New Dealer", onClick: openCreate } : undefined}
+          />
+        ) : (
+          <Card>
+            <CardContent className="pt-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>GST</TableHead>
+                    <TableHead>Territory</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Mobile</TableHead>
+                    <TableHead>Credit Limit</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {items.map((d) => (
+                    <TableRow
+                      key={d.id}
+                      onClick={() => setSelectedDealer(d)}
+                      className={
+                        selectedDealer?.id === d.id
+                          ? "bg-blue-50 ring-1 ring-inset ring-blue-200 cursor-pointer"
+                          : "cursor-pointer hover:bg-muted/50"
+                      }
+                    >
+                      <TableCell className="font-mono text-xs font-semibold">{d.dealerCode}</TableCell>
+                      <TableCell className="font-medium">{d.dealerName}</TableCell>
+                      <TableCell className="text-xs">{d.gstNumber ?? "—"}</TableCell>
+                      <TableCell className="text-xs">{d.territory ?? "—"}</TableCell>
+                      <TableCell className="text-xs">{d.contactPerson ?? "—"}</TableCell>
+                      <TableCell className="text-xs">{d.mobile ?? "—"}</TableCell>
+                      <TableCell className="text-xs">₹{Number(d.creditLimit ?? 0).toLocaleString()}</TableCell>
+                      <TableCell>
+                        <OdsStatusBadge status={d.status} />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); openEdit(d); }}>
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setDeleteId(d.id); }} className="text-red-500 hover:text-red-700">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>{editing ? "Edit Dealer" : "New Dealer"}</DialogTitle></DialogHeader>
@@ -222,7 +238,6 @@ export default function DealerMasterPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirm */}
       {deleteId && (
         <Dialog open onOpenChange={() => setDeleteId(null)}>
           <DialogContent className="max-w-sm">

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MasterConfig } from "../types/master.types";
@@ -7,8 +7,8 @@ import { MasterDataGrid } from "./MasterDataGrid";
 import { MasterEditDrawer } from "./MasterEditDrawer";
 import { useMasterCrud } from "../hooks/useMasterCrud";
 import AppLayout from "@/layouts/AppLayout";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
+import { ModuleHeader, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
 
 interface MasterPageProps<T> {
   config: MasterConfig<T>;
@@ -56,20 +56,31 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
     }
   };
 
+  const items = listQuery.data?.items ?? [];
+  const filtered = searchTerm
+    ? items.filter((item: any) =>
+        Object.values(item).some((v) =>
+          String(v ?? "").toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      )
+    : items;
+
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{config.title}</h1>
-            <p className="text-muted-foreground">{config.description}</p>
-          </div>
-          <Button onClick={handleAdd}>
-            <Plus className="mr-2 h-4 w-4" /> Add {config.title}
-          </Button>
-        </div>
+      <div className="space-y-5 p-6">
+        <ModuleHeader
+          icon={config.icon ?? "📋"}
+          title={config.title}
+          description={config.description}
+          certification={config.certification ?? "certified"}
+          actions={
+            <Button onClick={handleAdd}>
+              <Plus className="mr-2 h-4 w-4" /> Add {config.title}
+            </Button>
+          }
+        />
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -81,16 +92,28 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => listQuery.refetch()}
+            title="Refresh"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
         </div>
 
         {listQuery.isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </div>
+          <OdsTableSkeleton rows={6} columns={config.columns.length + 2} />
+        ) : filtered.length === 0 ? (
+          <OdsEmptyState
+            icon={config.icon ?? "📋"}
+            title={`No ${config.title.toLowerCase()} found`}
+            description={searchTerm ? "Try a different search term." : `Add your first ${config.title.toLowerCase()} to get started.`}
+            action={!searchTerm ? { label: `Add ${config.title}`, onClick: handleAdd } : undefined}
+          />
         ) : (
           <MasterDataGrid
-            data={listQuery.data?.items || []}
+            data={filtered}
             columns={config.columns}
             onEdit={handleEdit}
             onToggleStatus={(id, status) => handleToggleStatus(id, status)}
