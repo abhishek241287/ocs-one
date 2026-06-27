@@ -19,24 +19,25 @@ const columns: ColumnDef<BusbarMaster>[] = [
 ];
 
 const fields = [
-  { name: "code", label: "Code", type: "text", required: true },
-  { name: "name", label: "Name", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea" },
+  { name: "code", label: "Code", type: "text", required: true, placeholder: "e.g. BUS-CU-200" },
+  { name: "name", label: "Name", type: "text", required: true, placeholder: "e.g. Copper Busbar 200mm" },
+  { name: "description", label: "Description", type: "textarea", placeholder: "Optional description" },
   {
     name: "material",
     label: "Material",
     type: "select",
+    required: true,
     options: [
-      { label: "Copper", value: "Copper" },
-      { label: "Aluminium", value: "Aluminium" },
+      { label: "Copper", value: "copper" },
+      { label: "Aluminium", value: "aluminium" },
     ],
   },
-  { name: "thickness_mm", label: "Thickness (mm)", type: "number" },
-  { name: "width_mm", label: "Width (mm)", type: "number" },
-  { name: "length_mm", label: "Length (mm)", type: "number" },
-  { name: "surface_finish", label: "Surface Finish", type: "text" },
+  { name: "thickness_mm", label: "Thickness (mm)", type: "number", required: true, placeholder: "e.g. 3" },
+  { name: "width_mm", label: "Width (mm)", type: "number", required: true, placeholder: "e.g. 20" },
+  { name: "length_mm", label: "Length (mm)", type: "number", required: true, placeholder: "e.g. 200" },
+  { name: "surface_finish", label: "Surface Finish", type: "text", required: true, placeholder: "e.g. Tin plated" },
   { name: "effective_date", label: "Effective Date", type: "date" },
-  { name: "notes", label: "Notes", type: "textarea" },
+  { name: "notes", label: "Notes", type: "textarea", placeholder: "Additional notes or remarks" },
 ];
 
 const config: MasterConfig<BusbarMaster> = {

@@ -19,23 +19,23 @@ const columns: ColumnDef<BmsMaster>[] = [
 ];
 
 const fields = [
-  { name: "code", label: "Code", type: "text", required: true },
-  { name: "name", label: "Name", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea" },
-  { name: "manufacturer", label: "Manufacturer", type: "text" },
-  { name: "model", label: "Model", type: "text" },
-  { name: "current_rating_a", label: "Current Rating (A)", type: "number" },
-  { name: "min_voltage_v", label: "Min Voltage (V)", type: "number" },
-  { name: "max_voltage_v", label: "Max Voltage (V)", type: "number" },
-  { name: "cell_support_count", label: "Cell Support Count", type: "number" },
+  { name: "code", label: "Code", type: "text", required: true, placeholder: "e.g. BMS-48V200" },
+  { name: "name", label: "Name", type: "text", required: true, placeholder: "e.g. 48V 200A Smart BMS" },
+  { name: "description", label: "Description", type: "textarea", placeholder: "Optional description" },
+  { name: "manufacturer", label: "Manufacturer", type: "text", required: true, placeholder: "e.g. Daly" },
+  { name: "model", label: "Model", type: "text", required: true, placeholder: "e.g. 48V200A-16S" },
+  { name: "current_rating_a", label: "Current Rating (A)", type: "number", required: true, placeholder: "e.g. 200" },
+  { name: "min_voltage_v", label: "Min Voltage (V)", type: "number", required: true, placeholder: "e.g. 40" },
+  { name: "max_voltage_v", label: "Max Voltage (V)", type: "number", required: true, placeholder: "e.g. 60" },
+  { name: "cell_support_count", label: "Cell Support Count", type: "number", required: true, placeholder: "e.g. 16" },
   { name: "has_bluetooth", label: "Bluetooth", type: "boolean" },
-  { name: "has_can", label: "CAN", type: "boolean" },
-  { name: "has_rs485", label: "RS485", type: "boolean" },
+  { name: "has_can", label: "CAN Bus", type: "boolean" },
+  { name: "has_rs485", label: "RS-485", type: "boolean" },
   { name: "has_uart", label: "UART", type: "boolean" },
-  { name: "firmware_version", label: "Firmware Version", type: "text" },
-  { name: "datasheet_url", label: "Datasheet URL", type: "text" },
+  { name: "firmware_version", label: "Firmware Version", type: "text", placeholder: "e.g. v2.1.3" },
+  { name: "datasheet_url", label: "Datasheet URL", type: "text", placeholder: "https://..." },
   { name: "effective_date", label: "Effective Date", type: "date" },
-  { name: "notes", label: "Notes", type: "textarea" },
+  { name: "notes", label: "Notes", type: "textarea", placeholder: "Additional notes or remarks" },
 ];
 
 const config: MasterConfig<BmsMaster> = {

@@ -19,17 +19,17 @@ const columns: ColumnDef<ConnectorMaster>[] = [
 ];
 
 const fields = [
-  { name: "code", label: "Code", type: "text", required: true },
-  { name: "name", label: "Name", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea" },
-  { name: "manufacturer", label: "Manufacturer", type: "text" },
-  { name: "model", label: "Model", type: "text" },
-  { name: "current_rating_a", label: "Current Rating (A)", type: "number" },
-  { name: "voltage_rating_v", label: "Voltage Rating (V)", type: "number" },
-  { name: "connector_type", label: "Connector Type", type: "text" },
-  { name: "datasheet_url", label: "Datasheet URL", type: "text" },
+  { name: "code", label: "Code", type: "text", required: true, placeholder: "e.g. CONN-XT90" },
+  { name: "name", label: "Name", type: "text", required: true, placeholder: "e.g. XT90 Male Connector" },
+  { name: "description", label: "Description", type: "textarea", placeholder: "Optional description" },
+  { name: "manufacturer", label: "Manufacturer", type: "text", required: true, placeholder: "e.g. Amphenol" },
+  { name: "model", label: "Model", type: "text", required: true, placeholder: "e.g. XT90-M" },
+  { name: "connector_type", label: "Connector Type", type: "text", required: true, placeholder: "e.g. XT90" },
+  { name: "current_rating_a", label: "Current Rating (A)", type: "number", required: true, placeholder: "e.g. 90" },
+  { name: "voltage_rating_v", label: "Voltage Rating (V)", type: "number", required: true, placeholder: "e.g. 60" },
+  { name: "datasheet_url", label: "Datasheet URL", type: "text", placeholder: "https://..." },
   { name: "effective_date", label: "Effective Date", type: "date" },
-  { name: "notes", label: "Notes", type: "textarea" },
+  { name: "notes", label: "Notes", type: "textarea", placeholder: "Additional notes or remarks" },
 ];
 
 const config: MasterConfig<ConnectorMaster> = {

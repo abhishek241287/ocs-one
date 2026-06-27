@@ -20,14 +20,16 @@ const columns: ColumnDef<ProductMaster>[] = [
 ];
 
 const fields = [
-  { name: "code", label: "Code", type: "text", required: true },
-  { name: "name", label: "Name", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea" },
+  { name: "code", label: "Code", type: "text", required: true, placeholder: "e.g. PRD-48V280" },
+  { name: "name", label: "Name", type: "text", required: true, placeholder: "e.g. OCS 48V 280Ah Battery Pack" },
+  { name: "description", label: "Description", type: "textarea", placeholder: "Optional description" },
   {
     name: "category",
     label: "Category",
     type: "select",
+    required: true,
     options: [
+      { label: "Energy Storage", value: "energy_storage" },
       { label: "Battery", value: "Battery" },
       { label: "Inverter", value: "Inverter" },
       { label: "EV Charger", value: "EV Charger" },
@@ -37,20 +39,21 @@ const fields = [
     name: "chemistry",
     label: "Chemistry",
     type: "select",
+    required: true,
     options: [
       { label: "LiFePO4", value: "LiFePO4" },
       { label: "NMC", value: "NMC" },
       { label: "LCO", value: "LCO" },
     ],
   },
-  { name: "nominal_voltage_v", label: "Nominal Voltage (V)", type: "number" },
-  { name: "capacity_ah", label: "Capacity (Ah)", type: "number" },
-  { name: "energy_kwh", label: "Energy (kWh)", type: "number" },
-  { name: "configuration", label: "Configuration (e.g. 16S2P)", type: "text" },
-  { name: "cell_count", label: "Cell Count", type: "number" },
-  { name: "warranty_period_months", label: "Warranty (Months)", type: "number" },
+  { name: "nominal_voltage_v", label: "Nominal Voltage (V)", type: "number", required: true, placeholder: "e.g. 48" },
+  { name: "capacity_ah", label: "Capacity (Ah)", type: "number", required: true, placeholder: "e.g. 280" },
+  { name: "energy_kwh", label: "Energy (kWh)", type: "number", required: true, placeholder: "e.g. 13.44" },
+  { name: "configuration", label: "Configuration", type: "text", required: true, placeholder: "e.g. 16S1P" },
+  { name: "cell_count", label: "Cell Count", type: "number", required: true, placeholder: "e.g. 16" },
+  { name: "warranty_period_months", label: "Warranty (Months)", type: "number", required: true, placeholder: "e.g. 24" },
   { name: "effective_date", label: "Effective Date", type: "date" },
-  { name: "notes", label: "Notes", type: "textarea" },
+  { name: "notes", label: "Notes", type: "textarea", placeholder: "Additional notes or remarks" },
 ];
 
 const config: MasterConfig<ProductMaster> = {
