@@ -966,6 +966,15 @@ export interface ProductionOrderUpdate {
   notes?: string | null;
 }
 
+export type CellLotStatus = typeof CellLotStatus[keyof typeof CellLotStatus];
+
+
+export const CellLotStatus = {
+  received: 'received',
+  grading: 'grading',
+  complete: 'complete',
+} as const;
+
 export interface CellLot {
   id: string;
   supplier: string;
@@ -981,6 +990,9 @@ export interface CellLot {
   receivedBy: string;
   /** @nullable */
   remarks?: string | null;
+  status: CellLotStatus;
+  /** @nullable */
+  cellMasterId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1014,6 +1026,43 @@ export interface CellLotInput {
   receivedBy: string;
   /** @nullable */
   remarks?: string | null;
+  /** @nullable */
+  cellMasterId?: string | null;
+}
+
+export interface PatchCellLotBody {
+  supplier?: string;
+  manufacturer?: string;
+  cellModel?: string;
+  cellChemistry?: string;
+  nominalCapacityAh?: number;
+  /** @nullable */
+  invoiceNumber?: string | null;
+  dateReceived?: string;
+  receivedBy?: string;
+  /** @nullable */
+  remarks?: string | null;
+  /** @nullable */
+  cellMasterId?: string | null;
+  /** Reason for correction — required for audit trail */
+  reason: string;
+}
+
+/**
+ * @nullable
+ */
+export type CellLotEventChanges = { [key: string]: unknown } | null;
+
+export interface CellLotEvent {
+  id: string;
+  lotId: string;
+  eventType: string;
+  performedBy: string;
+  performedAt: string;
+  /** @nullable */
+  changes?: CellLotEventChanges;
+  /** @nullable */
+  reason?: string | null;
 }
 
 export type CellStatus = typeof CellStatus[keyof typeof CellStatus];
@@ -1836,11 +1885,27 @@ export type ListCellLotsParams = {
 page?: PageParamParameter;
 pageSize?: PageSizeParamParameter;
 search?: SearchParamParameter;
+status?: ListCellLotsStatus;
+cellModel?: string;
 };
+
+export type ListCellLotsStatus = typeof ListCellLotsStatus[keyof typeof ListCellLotsStatus];
+
+
+export const ListCellLotsStatus = {
+  received: 'received',
+  grading: 'grading',
+  complete: 'complete',
+} as const;
 
 export type ListCellLots200 = {
   items: CellLot[];
   meta: PaginationMeta;
+};
+
+export type GetCellLotHistory200 = {
+  lotId: string;
+  events: CellLotEvent[];
 };
 
 export type ListCellMatchesParams = {

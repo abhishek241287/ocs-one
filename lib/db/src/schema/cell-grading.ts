@@ -8,8 +8,10 @@ import {
   timestamp,
   doublePrecision,
   index,
+  json,
 } from "drizzle-orm/pg-core";
 import { masterProductsTable } from "./master-products";
+import { masterCellsTable } from "./master-cells";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -32,6 +34,12 @@ export const cellMatchStatusEnum = pgEnum("cell_match_status", [
   "cancelled",
 ]);
 
+export const cellLotStatusEnum = pgEnum("cell_lot_status", [
+  "received",
+  "grading",
+  "complete",
+]);
+
 // ─── Tables ──────────────────────────────────────────────────────────────────
 
 export const cellLotsTable = pgTable("cell_lots", {
@@ -47,6 +55,8 @@ export const cellLotsTable = pgTable("cell_lots", {
   quantityReceived: integer("quantity_received").notNull(),
   receivedBy: text("received_by").notNull(),
   remarks: text("remarks"),
+  status: cellLotStatusEnum("status").notNull().default("received"),
+  cellMasterId: uuid("cell_master_id").references(() => masterCellsTable.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
@@ -134,6 +144,25 @@ export const cellMatchItemsTable = pgTable(
   ]
 );
 
+export const cellLotEventsTable = pgTable(
+  "cell_lot_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lotId: uuid("lot_id")
+      .notNull()
+      .references(() => cellLotsTable.id, { onDelete: "cascade" }),
+    eventType: text("event_type").notNull(),
+    performedBy: text("performed_by").notNull(),
+    performedAt: timestamp("performed_at", { withTimezone: true }).notNull().defaultNow(),
+    changes: json("changes"),
+    reason: text("reason"),
+  },
+  (table) => [
+    index("idx_cell_lot_events_lot_id").on(table.lotId),
+    index("idx_cell_lot_events_performed_at").on(table.performedAt),
+  ]
+);
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type CellLot = typeof cellLotsTable.$inferSelect;
@@ -150,3 +179,6 @@ export type InsertCellMatch = typeof cellMatchesTable.$inferInsert;
 
 export type CellMatchItem = typeof cellMatchItemsTable.$inferSelect;
 export type InsertCellMatchItem = typeof cellMatchItemsTable.$inferInsert;
+
+export type CellLotEvent = typeof cellLotEventsTable.$inferSelect;
+export type InsertCellLotEvent = typeof cellLotEventsTable.$inferInsert;

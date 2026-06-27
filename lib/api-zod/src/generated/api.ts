@@ -3397,7 +3397,9 @@ export const listCellLotsQueryPageSizeDefault = 25;
 export const ListCellLotsQueryParams = zod.object({
   "page": zod.coerce.number().default(listCellLotsQueryPageDefault),
   "pageSize": zod.coerce.number().default(listCellLotsQueryPageSizeDefault),
-  "search": zod.coerce.string().optional()
+  "search": zod.coerce.string().optional(),
+  "status": zod.enum(['received', 'grading', 'complete']).optional(),
+  "cellModel": zod.coerce.string().optional()
 })
 
 export const ListCellLotsResponse = zod.object({
@@ -3414,6 +3416,8 @@ export const ListCellLotsResponse = zod.object({
   "quantityReceived": zod.number(),
   "receivedBy": zod.string(),
   "remarks": zod.string().nullish(),
+  "status": zod.enum(['received', 'grading', 'complete']),
+  "cellMasterId": zod.string().uuid().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })),
@@ -3443,7 +3447,8 @@ export const CreateCellLotBody = zod.object({
   "dateReceived": zod.string(),
   "quantityReceived": zod.number().min(1),
   "receivedBy": zod.string(),
-  "remarks": zod.string().nullish()
+  "remarks": zod.string().nullish(),
+  "cellMasterId": zod.string().uuid().nullish()
 })
 
 export const CreateCellLotResponse = zod.object({
@@ -3459,6 +3464,8 @@ export const CreateCellLotResponse = zod.object({
   "quantityReceived": zod.number(),
   "receivedBy": zod.string(),
   "remarks": zod.string().nullish(),
+  "status": zod.enum(['received', 'grading', 'complete']),
+  "cellMasterId": zod.string().uuid().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
@@ -3494,6 +3501,8 @@ export const GetCellLotResponse = zod.object({
   "quantityReceived": zod.number(),
   "receivedBy": zod.string(),
   "remarks": zod.string().nullish(),
+  "status": zod.enum(['received', 'grading', 'complete']),
+  "cellMasterId": zod.string().uuid().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
@@ -3507,6 +3516,70 @@ export const GetCellLotResponse = zod.object({
   "allocated": zod.number().optional()
 }).optional()
 }))
+
+
+/**
+ * @summary Correct editable fields on a received lot (records full audit event)
+ */
+export const PatchCellLotParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const PatchCellLotBody = zod.object({
+  "supplier": zod.string().optional(),
+  "manufacturer": zod.string().optional(),
+  "cellModel": zod.string().optional(),
+  "cellChemistry": zod.string().optional(),
+  "nominalCapacityAh": zod.number().optional(),
+  "invoiceNumber": zod.string().nullish(),
+  "dateReceived": zod.string().optional(),
+  "receivedBy": zod.string().optional(),
+  "remarks": zod.string().nullish(),
+  "cellMasterId": zod.string().uuid().nullish(),
+  "reason": zod.string().describe('Reason for correction — required for audit trail')
+})
+
+export const PatchCellLotResponse = zod.object({
+  "id": zod.string().uuid(),
+  "supplier": zod.string(),
+  "manufacturer": zod.string(),
+  "cellModel": zod.string(),
+  "cellChemistry": zod.string(),
+  "nominalCapacityAh": zod.number(),
+  "lotNumber": zod.string(),
+  "invoiceNumber": zod.string().nullish(),
+  "dateReceived": zod.string(),
+  "quantityReceived": zod.number(),
+  "receivedBy": zod.string(),
+  "remarks": zod.string().nullish(),
+  "status": zod.enum(['received', 'grading', 'complete']),
+  "cellMasterId": zod.string().uuid().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get the audit event history for a cell lot
+ */
+export const GetCellLotHistoryParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetCellLotHistoryResponse = zod.object({
+  "lotId": zod.string().uuid(),
+  "events": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "lotId": zod.string().uuid(),
+  "eventType": zod.string(),
+  "performedBy": zod.string(),
+  "performedAt": zod.coerce.date(),
+  "changes": zod.object({
+
+}).passthrough().nullish(),
+  "reason": zod.string().nullish()
+}))
+})
 
 
 /**
@@ -3835,6 +3908,8 @@ export const GetCellResponse = zod.object({
   "quantityReceived": zod.number(),
   "receivedBy": zod.string(),
   "remarks": zod.string().nullish(),
+  "status": zod.enum(['received', 'grading', 'complete']),
+  "cellMasterId": zod.string().uuid().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).optional(),

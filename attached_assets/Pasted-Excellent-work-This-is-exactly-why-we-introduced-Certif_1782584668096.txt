@@ -1,0 +1,67 @@
+Excellent work. This is exactly why we introduced Certification Waves. MAT-02 has exposed design and implementation gaps that would have been much harder to discover after deployment.
+
+According to our governance framework:
+
+CW-01 remains OPEN.
+
+MAT-02: FAILED (Blocked).
+
+Certification cannot proceed until all High severity defects are resolved and verified.
+
+CTO Decision
+
+Authorize fixes for:
+
+High (Mandatory)
+DEF-CW01-006 — Global ZodError handler returning HTTP 400 instead of 500.
+DEF-CW01-007 — Implement PATCH /api/cells/lots/:id with validation, revision tracking, updated_at handling, and audit evidence.
+DEF-CW01-008 — Enforce role-based authorization so only Operator, Supervisor, and Director roles can create or edit lots.
+
+These three defects must be fixed before MAT-02 can be re-run.
+
+Medium (Fix during CW-01)
+
+Please fix these in the same development cycle rather than deferring them:
+
+DEF-CW01-009 — Duplicate lot number should return HTTP 409 instead of 500.
+DEF-CW01-010 — Extend search to supplier and model.
+DEF-CW01-011 — Add status and model filters to the API and UI.
+DEF-CW01-012 — Replace free-text cell model with a foreign key to the Engineering Master.
+DEF-CW01-013 — Add an audit/history endpoint for received lots.
+
+These are important for production usability and traceability, so I want them completed before Cell Receiving is certified.
+
+Low (Approved for Deferral)
+
+These may be deferred to the first maintenance release after CW-01 if they do not introduce production risk:
+
+DEF-CW01-014 — Maximum string length validation.
+DEF-CW01-015 — Future-date validation.
+DEF-CW01-016 — DELETE endpoint (only if deletion is truly part of the business process; otherwise consider replacing DELETE with archive/deactivate to preserve traceability).
+One design recommendation
+
+Before implementing the PATCH endpoint, review the business rule:
+
+Should a received lot ever be editable?
+
+In many manufacturing execution systems, receiving records are immutable after acceptance. Instead of editing the original record, authorized users perform a Correction action that creates an audit entry while preserving the original data.
+
+If OCS Oorja's factory requires full traceability, evaluate whether a Receive → Correct → Audit Trail workflow is more appropriate than unrestricted editing.
+
+If business users confirm that edits are genuinely required before grading begins, then the PATCH endpoint is appropriate—but every change should be recorded in the audit history with:
+
+User
+Timestamp
+Changed fields
+Previous value
+New value
+Reason for change
+After fixes
+Resolve all High and Medium defects.
+Run full typecheck and lint.
+Re-execute all 37 MAT-02 test cases from the beginning.
+Do not test only the failed cases.
+Update Defects.md with Fixed → Verified status.
+Record all evidence in MAT.md.
+
+Only after MAT-02 achieves a complete PASS with no remaining High severity defects will authorization be granted to proceed to MAT-03.

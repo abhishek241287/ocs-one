@@ -42,6 +42,7 @@ import type {
   CellGradeConfigInput,
   CellGradeInput,
   CellInventorySummary,
+  CellLot,
   CellLotDetail,
   CellLotInput,
   CellMaster,
@@ -71,6 +72,7 @@ import type {
   GenealogyInput,
   GenealogyRecord,
   GetAllocatedCells200,
+  GetCellLotHistory200,
   GetOrderGenealogy200,
   GetOrderTimeline200,
   HealthStatus,
@@ -115,6 +117,7 @@ import type {
   MasterStatusToggle,
   OrderStage,
   PackingDashboard,
+  PatchCellLotBody,
   ProductMaster,
   ProductMasterInput,
   ProductMasterUpdate,
@@ -6261,6 +6264,154 @@ export function useGetCellLot<TData = Awaited<ReturnType<typeof getCellLot>>, TE
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetCellLotQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPatchCellLotUrl = (id: string,) => {
+
+
+
+
+  return `/api/cells/lots/${id}`
+}
+
+/**
+ * @summary Correct editable fields on a received lot (records full audit event)
+ */
+export const patchCellLot = async (id: string,
+    patchCellLotBody: PatchCellLotBody, options?: RequestInit): Promise<CellLot> => {
+
+  return customFetch<CellLot>(getPatchCellLotUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(patchCellLotBody)
+  }
+);}
+
+
+
+
+export const getPatchCellLotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchCellLot>>, TError,{id: string;data: BodyType<PatchCellLotBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchCellLot>>, TError,{id: string;data: BodyType<PatchCellLotBody>}, TContext> => {
+
+const mutationKey = ['patchCellLot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchCellLot>>, {id: string;data: BodyType<PatchCellLotBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  patchCellLot(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchCellLotMutationResult = NonNullable<Awaited<ReturnType<typeof patchCellLot>>>
+    export type PatchCellLotMutationBody = BodyType<PatchCellLotBody>
+    export type PatchCellLotMutationError = ErrorType<void>
+
+    /**
+ * @summary Correct editable fields on a received lot (records full audit event)
+ */
+export const usePatchCellLot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchCellLot>>, TError,{id: string;data: BodyType<PatchCellLotBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof patchCellLot>>,
+        TError,
+        {id: string;data: BodyType<PatchCellLotBody>},
+        TContext
+      > => {
+      return useMutation(getPatchCellLotMutationOptions(options));
+    }
+
+export const getGetCellLotHistoryUrl = (id: string,) => {
+
+
+
+
+  return `/api/cells/lots/${id}/history`
+}
+
+/**
+ * @summary Get the audit event history for a cell lot
+ */
+export const getCellLotHistory = async (id: string, options?: RequestInit): Promise<GetCellLotHistory200> => {
+
+  return customFetch<GetCellLotHistory200>(getGetCellLotHistoryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCellLotHistoryQueryKey = (id: string,) => {
+    return [
+    `/api/cells/lots/${id}/history`
+    ] as const;
+    }
+
+
+export const getGetCellLotHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getCellLotHistory>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCellLotHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCellLotHistoryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCellLotHistory>>> = ({ signal }) => getCellLotHistory(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCellLotHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCellLotHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getCellLotHistory>>>
+export type GetCellLotHistoryQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the audit event history for a cell lot
+ */
+
+export function useGetCellLotHistory<TData = Awaited<ReturnType<typeof getCellLotHistory>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCellLotHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCellLotHistoryQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

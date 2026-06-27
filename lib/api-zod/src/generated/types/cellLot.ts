@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CellLotStatus } from './cellLotStatus';
 
 export interface CellLot {
   id: string;
@@ -21,6 +22,9 @@ export interface CellLot {
   receivedBy: string;
   /** @nullable */
   remarks?: string | null;
+  status: CellLotStatus;
+  /** @nullable */
+  cellMasterId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

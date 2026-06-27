@@ -1596,6 +1596,17 @@ paths:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
         - $ref: "#/components/parameters/SearchParam"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [received, grading, complete]
+        - name: cellModel
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: List of lots
@@ -1643,6 +1654,59 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CellLotDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: patchCellLot
+      tags: [cells]
+      summary: Correct editable fields on a received lot (records full audit event)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchCellLotBody"
+      responses:
+        "200":
+          description: Updated lot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellLot"
+        "400":
+          description: Validation error
+        "403":
+          description: Insufficient role
+        "404":
+          description: Not found
+        "409":
+          description: Conflict
+
+  /cells/lots/{id}/history:
+    get:
+      operationId: getCellLotHistory
+      tags: [cells]
+      summary: Get the audit event history for a cell lot
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Lot audit history
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [lotId, events]
+                properties:
+                  lotId:
+                    type: string
+                    format: uuid
+                  events:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CellLotEvent"
         "404":
           description: Not found
 
@@ -3099,7 +3163,7 @@ components:
 
     CellLot:
       type: object
-      required: [id, supplier, manufacturer, cellModel, cellChemistry, nominalCapacityAh, lotNumber, dateReceived, quantityReceived, receivedBy, createdAt, updatedAt]
+      required: [id, supplier, manufacturer, cellModel, cellChemistry, nominalCapacityAh, lotNumber, dateReceived, quantityReceived, receivedBy, status, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         supplier: { type: string }
@@ -3113,6 +3177,10 @@ components:
         quantityReceived: { type: integer }
         receivedBy: { type: string }
         remarks: { type: ["string", "null"] }
+        status:
+          type: string
+          enum: [received, grading, complete]
+        cellMasterId: { type: ["string", "null"], format: uuid }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 
@@ -3147,6 +3215,37 @@ components:
         quantityReceived: { type: integer, minimum: 1 }
         receivedBy: { type: string }
         remarks: { type: ["string", "null"] }
+        cellMasterId: { type: ["string", "null"], format: uuid }
+
+    PatchCellLotBody:
+      type: object
+      required: [reason]
+      properties:
+        supplier: { type: string }
+        manufacturer: { type: string }
+        cellModel: { type: string }
+        cellChemistry: { type: string }
+        nominalCapacityAh: { type: number }
+        invoiceNumber: { type: ["string", "null"] }
+        dateReceived: { type: string }
+        receivedBy: { type: string }
+        remarks: { type: ["string", "null"] }
+        cellMasterId: { type: ["string", "null"], format: uuid }
+        reason:
+          type: string
+          description: "Reason for correction — required for audit trail"
+
+    CellLotEvent:
+      type: object
+      required: [id, lotId, eventType, performedBy, performedAt]
+      properties:
+        id: { type: string, format: uuid }
+        lotId: { type: string, format: uuid }
+        eventType: { type: string }
+        performedBy: { type: string }
+        performedAt: { type: string, format: date-time }
+        changes: { type: ["object", "null"] }
+        reason: { type: ["string", "null"] }
 
     Cell:
       type: object

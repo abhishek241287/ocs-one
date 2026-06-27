@@ -14,6 +14,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -22,9 +29,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useOdsNotify } from "@/hooks/use-ods-notify";
-import { useListCellLots, useCreateCellLot, useGetCellLot } from "@workspace/api-client-react";
-import { Plus, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import {
+  useListCellLots,
+  useCreateCellLot,
+  useGetCellLot,
+  usePatchCellLot,
+  useGetCellLotHistory,
+} from "@workspace/api-client-react";
+import { Plus, ChevronDown, ChevronUp, Loader2, Pencil, History } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+
+// ─── Lot stats pill row (lazy-loaded per lot) ────────────────────────────────
 
 function LotStatsRow({ lotId }: { lotId: string }) {
   const { data } = useGetCellLot(lotId);
@@ -43,6 +58,60 @@ function LotStatsRow({ lotId }: { lotId: string }) {
   );
 }
 
+// ─── Status badge ─────────────────────────────────────────────────────────────
+
+function LotStatusBadge({ status }: { status: string }) {
+  if (status === "received") return <Badge variant="outline">Received</Badge>;
+  if (status === "grading") return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Grading</Badge>;
+  if (status === "complete") return <Badge className="bg-green-100 text-green-800 border-green-200">Complete</Badge>;
+  return <Badge variant="outline">{status}</Badge>;
+}
+
+// ─── History dialog ───────────────────────────────────────────────────────────
+
+function LotHistoryDialog({ lotId, open, onClose }: { lotId: string; open: boolean; onClose: () => void }) {
+  const { data, isLoading } = useGetCellLotHistory(lotId);
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Lot History</DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+            <Loader2 size={14} className="animate-spin" /> Loading…
+          </div>
+        ) : data?.events.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">No events recorded.</p>
+        ) : (
+          <ul className="space-y-3 text-sm">
+            {data?.events.map((ev) => (
+              <li key={ev.id} className="border rounded-md p-3 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium capitalize">{ev.eventType}</span>
+                  <span className="text-xs text-muted-foreground">{new Date(ev.performedAt).toLocaleString()}</span>
+                </div>
+                <div className="text-muted-foreground">By: {ev.performedBy}</div>
+                {ev.reason && <div className="text-muted-foreground">Reason: {ev.reason}</div>}
+                {ev.changes && typeof ev.changes === "object" && Object.keys(ev.changes).length > 0 && (
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-xs text-muted-foreground">Changes</summary>
+                    <pre className="mt-1 text-xs bg-muted p-2 rounded overflow-x-auto">
+                      {JSON.stringify(ev.changes, null, 2)}
+                    </pre>
+                  </details>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Create form defaults ─────────────────────────────────────────────────────
+
 const DEFAULT_FORM = {
   supplier: "",
   manufacturer: "",
@@ -57,20 +126,52 @@ const DEFAULT_FORM = {
   remarks: "",
 };
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function CellReceivingPage() {
   const notify = useOdsNotify();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+
+  // List filters
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
-  const [form, setForm] = useState(DEFAULT_FORM);
-  const [expandedLot, setExpandedLot] = useState<string | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  // Create dialog
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(DEFAULT_FORM);
+  const formRef = useRef<HTMLFormElement>(null);
   useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
   useModuleShortcuts({ onNew: () => setOpen(true), searchRef });
 
-  const { data, isLoading, isFetching, refetch } = useListCellLots({ page, pageSize: 25, search: search || undefined });
+  // Row expand + action dialogs
+  const [expandedLot, setExpandedLot] = useState<string | null>(null);
+  const [editLotId, setEditLotId] = useState<string | null>(null);
+  const [historyLotId, setHistoryLotId] = useState<string | null>(null);
+
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    supplier: "",
+    manufacturer: "",
+    cellModel: "",
+    cellChemistry: "",
+    nominalCapacityAh: "",
+    invoiceNumber: "",
+    dateReceived: "",
+    receivedBy: "",
+    remarks: "",
+    reason: "",
+  });
+
+  // API hooks
+  const { data, isLoading, isFetching, refetch } = useListCellLots({
+    page,
+    pageSize: 25,
+    search: search || undefined,
+    status: statusFilter !== "all" ? (statusFilter as "received" | "grading" | "complete") : undefined,
+  });
+
   const createLot = useCreateCellLot({
     mutation: {
       onSuccess: () => {
@@ -79,10 +180,22 @@ export default function CellReceivingPage() {
         setForm(DEFAULT_FORM);
         notify.success("Lot received", { description: "Individual cell records generated." });
       },
-      onError: (e: any) => notify.error("Error", { description: e?.message ?? "Failed" }),
+      onError: (e: any) => notify.error("Error", { description: e?.response?.data?.error ?? e?.message ?? "Failed" }),
     },
   });
 
+  const patchLot = usePatchCellLot({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/cells/lots"] });
+        setEditLotId(null);
+        notify.success("Lot updated", { description: "Changes recorded in audit history." });
+      },
+      onError: (e: any) => notify.error("Error", { description: e?.response?.data?.error ?? e?.message ?? "Failed" }),
+    },
+  });
+
+  // Create submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.supplier || !form.manufacturer || !form.cellModel || !form.nominalCapacityAh || !form.lotNumber || !form.dateReceived || !form.quantityReceived || !form.receivedBy) {
@@ -109,6 +222,50 @@ export default function CellReceivingPage() {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  // Edit submit
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editLotId) return;
+    if (!editForm.reason.trim()) {
+      notify.error("Reason required", { description: "Please provide a reason for this correction." });
+      return;
+    }
+    patchLot.mutate({
+      id: editLotId,
+      data: {
+        supplier: editForm.supplier || undefined,
+        manufacturer: editForm.manufacturer || undefined,
+        cellModel: editForm.cellModel || undefined,
+        cellChemistry: editForm.cellChemistry || undefined,
+        nominalCapacityAh: editForm.nominalCapacityAh ? parseFloat(editForm.nominalCapacityAh) : undefined,
+        invoiceNumber: editForm.invoiceNumber || null,
+        dateReceived: editForm.dateReceived || undefined,
+        receivedBy: editForm.receivedBy || undefined,
+        remarks: editForm.remarks || null,
+        reason: editForm.reason,
+      },
+    });
+  };
+
+  const setEdit = (k: keyof typeof editForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setEditForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const openEditDialog = (lot: NonNullable<typeof data>["items"][number]) => {
+    setEditForm({
+      supplier: lot.supplier,
+      manufacturer: lot.manufacturer,
+      cellModel: lot.cellModel,
+      cellChemistry: lot.cellChemistry,
+      nominalCapacityAh: String(lot.nominalCapacityAh),
+      invoiceNumber: lot.invoiceNumber ?? "",
+      dateReceived: lot.dateReceived,
+      receivedBy: lot.receivedBy,
+      remarks: lot.remarks ?? "",
+      reason: "",
+    });
+    setEditLotId(lot.id);
+  };
+
   const lots = data?.items ?? [];
   const meta = data?.meta;
 
@@ -126,16 +283,32 @@ export default function CellReceivingPage() {
           }
         />
 
-        <OdsToolbar
-          search={{
-            value: search,
-            onChange: (v) => { setSearch(v); setPage(1); },
-            placeholder: "Search lot number…",
-            ref: searchRef,
-          }}
-          onRefresh={() => refetch()}
-          isRefreshing={isFetching}
-        />
+        <div className="flex gap-3 items-end mb-4 flex-wrap">
+          <OdsToolbar
+            search={{
+              value: search,
+              onChange: (v) => { setSearch(v); setPage(1); },
+              placeholder: "Search lot number, supplier, model…",
+              ref: searchRef,
+            }}
+            onRefresh={() => refetch()}
+            isRefreshing={isFetching}
+          />
+          <div className="flex items-center gap-2">
+            <Label className="text-sm whitespace-nowrap">Status</Label>
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+              <SelectTrigger className="w-36 h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="received">Received</SelectItem>
+                <SelectItem value="grading">Grading</SelectItem>
+                <SelectItem value="complete">Complete</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
         <div className="rounded-md border">
           <Table>
@@ -150,23 +323,24 @@ export default function CellReceivingPage() {
                 <TableHead>Date Received</TableHead>
                 <TableHead>Received By</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Grading</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="p-0">
-                    <OdsTableSkeleton rows={6} columns={10} />
+                  <TableCell colSpan={11} className="p-0">
+                    <OdsTableSkeleton rows={6} columns={11} />
                   </TableCell>
                 </TableRow>
               ) : lots.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="p-0">
+                  <TableCell colSpan={11} className="p-0">
                     <OdsEmptyState
                       icon="📦"
-                      title="No lots received yet"
-                      description="Receive your first cell lot to get started."
+                      title="No lots found"
+                      description="Adjust filters or receive a new lot."
                       action={{ label: "Receive New Lot", onClick: () => setOpen(true) }}
                     />
                   </TableCell>
@@ -174,10 +348,7 @@ export default function CellReceivingPage() {
               ) : (
                 lots.map((lot) => (
                   <Fragment key={lot.id}>
-                    <TableRow
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setExpandedLot(expandedLot === lot.id ? null : lot.id)}
-                    >
+                    <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => setExpandedLot(expandedLot === lot.id ? null : lot.id)}>
                       <TableCell className="font-mono font-medium">{lot.lotNumber}</TableCell>
                       <TableCell>{lot.supplier}</TableCell>
                       <TableCell>{lot.manufacturer}</TableCell>
@@ -186,16 +357,35 @@ export default function CellReceivingPage() {
                       <TableCell className="text-right font-medium">{lot.quantityReceived}</TableCell>
                       <TableCell>{lot.dateReceived}</TableCell>
                       <TableCell>{lot.receivedBy}</TableCell>
+                      <TableCell><LotStatusBadge status={lot.status} /></TableCell>
+                      <TableCell><LotStatsRow lotId={lot.id} /></TableCell>
                       <TableCell>
-                        <LotStatsRow lotId={lot.id} />
-                      </TableCell>
-                      <TableCell>
-                        {expandedLot === lot.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            title="Edit lot"
+                            onClick={() => openEditDialog(lot)}
+                          >
+                            <Pencil size={14} />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            title="View history"
+                            onClick={() => setHistoryLotId(lot.id)}
+                          >
+                            <History size={14} />
+                          </Button>
+                          {expandedLot === lot.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </div>
                       </TableCell>
                     </TableRow>
                     {expandedLot === lot.id && (
                       <TableRow>
-                        <TableCell colSpan={10} className="bg-muted/30 px-6 py-3 text-sm">
+                        <TableCell colSpan={11} className="bg-muted/30 px-6 py-3 text-sm">
                           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                             <div><span className="text-muted-foreground">Chemistry:</span> {lot.cellChemistry}</div>
                             <div><span className="text-muted-foreground">Invoice #:</span> {lot.invoiceNumber ?? "—"}</div>
@@ -223,6 +413,7 @@ export default function CellReceivingPage() {
         )}
       </div>
 
+      {/* ── Create dialog ── */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -285,6 +476,76 @@ export default function CellReceivingPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ── Edit dialog ── */}
+      <Dialog open={!!editLotId} onOpenChange={(v) => !v && setEditLotId(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Cell Lot</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Supplier</Label>
+                <Input value={editForm.supplier} onChange={setEdit("supplier")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Manufacturer</Label>
+                <Input value={editForm.manufacturer} onChange={setEdit("manufacturer")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Cell Model</Label>
+                <Input value={editForm.cellModel} onChange={setEdit("cellModel")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Cell Chemistry</Label>
+                <Input value={editForm.cellChemistry} onChange={setEdit("cellChemistry")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Nominal Capacity (Ah)</Label>
+                <Input type="number" step="0.1" value={editForm.nominalCapacityAh} onChange={setEdit("nominalCapacityAh")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Invoice Number</Label>
+                <Input value={editForm.invoiceNumber} onChange={setEdit("invoiceNumber")} placeholder="INV-12345" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Date Received</Label>
+                <Input type="date" value={editForm.dateReceived} onChange={setEdit("dateReceived")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Received By</Label>
+                <Input value={editForm.receivedBy} onChange={setEdit("receivedBy")} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Remarks</Label>
+              <Input value={editForm.remarks} onChange={setEdit("remarks")} placeholder="Any additional notes..." />
+            </div>
+            <div className="space-y-1.5 border-t pt-3">
+              <Label>Reason for correction *</Label>
+              <Input value={editForm.reason} onChange={setEdit("reason")} placeholder="e.g. Corrected invoice number after vendor confirmation" />
+              <p className="text-xs text-muted-foreground">Required — recorded in audit history.</p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setEditLotId(null)}>Cancel</Button>
+              <Button type="submit" disabled={patchLot.isPending}>
+                {patchLot.isPending && <Loader2 size={14} className="mr-1 animate-spin" />}
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── History dialog ── */}
+      {historyLotId && (
+        <LotHistoryDialog
+          lotId={historyLotId}
+          open={!!historyLotId}
+          onClose={() => setHistoryLotId(null)}
+        />
+      )}
     </AppLayout>
   );
 }

@@ -6,21 +6,20 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CellLotInput {
-  supplier: string;
-  manufacturer: string;
-  cellModel: string;
+export interface PatchCellLotBody {
+  supplier?: string;
+  manufacturer?: string;
+  cellModel?: string;
   cellChemistry?: string;
-  nominalCapacityAh: number;
-  lotNumber: string;
+  nominalCapacityAh?: number;
   /** @nullable */
   invoiceNumber?: string | null;
-  dateReceived: string;
-  /** @minimum 1 */
-  quantityReceived: number;
-  receivedBy: string;
+  dateReceived?: string;
+  receivedBy?: string;
   /** @nullable */
   remarks?: string | null;
   /** @nullable */
   cellMasterId?: string | null;
+  /** Reason for correction — required for audit trail */
+  reason: string;
 }

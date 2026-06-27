@@ -18,17 +18,17 @@
 | DEF-CW01-003 | React Fragment missing `key` prop in `lots.map()` | Low | Verified | 2026-06-27 | 2026-06-27 | Replit Agent | `<>` replaced with `<Fragment key={lot.id}>` |
 | DEF-CW01-004 | `@/components/ods/OdsNotify` import error — DealerMasterPage + DispatchOrdersPage | High | Verified | 2026-06-27 | pre-existing | Prior commit | Both files confirmed using correct path |
 | DEF-CW01-005 | Sidebar stub routes `#qr`, `#warranty`, `#service` non-functional | Low | Verified | 2026-06-27 | 2026-06-27 | Replit Agent | Disabled state with "soon" label added |
-| DEF-CW01-006 | ZodError unhandled — invalid input returns HTTP 500 instead of 400 | **High** | **Open** | 2026-06-27 | — | — | Blocks MAT-02. Affects CR-04, VL-01, VL-04 |
-| DEF-CW01-007 | No PATCH endpoint — cell lots cannot be edited after creation | **High** | **Open** | 2026-06-27 | — | — | Blocks MAT-02. Affects ED-01, ED-02, AU-02 |
-| DEF-CW01-008 | Viewer role can create lots — missing `requireRole` on POST route | **High** | **Open** | 2026-06-27 | — | — | Blocks MAT-02. Security defect. Affects SC-02 |
-| DEF-CW01-009 | Duplicate lotNumber returns HTTP 500 instead of 409 | Medium | Open | 2026-06-27 | — | — | DB unique constraint `lot_number` error not caught |
-| DEF-CW01-010 | Search only filters by lotNumber — supplier, cellModel excluded | Medium | Open | 2026-06-27 | — | — | SR-01 fails; users cannot find lots by supplier |
-| DEF-CW01-011 | No filter functionality at API or UI layer | Medium | Open | 2026-06-27 | — | — | FL-01 through FL-04 fail; no status/model/date filters |
-| DEF-CW01-012 | cellModel is free text — no FK linkage to Cell Master table | Medium | Open | 2026-06-27 | — | — | RL-01 fails; lot and master records disconnected |
-| DEF-CW01-013 | No lot history / audit trail endpoint | Medium | Open | 2026-06-27 | — | — | AU-03 fails; `GET /api/cells/lots/:id/history` → 404 |
-| DEF-CW01-014 | No max-length validation on string fields | Low | Open | 2026-06-27 | — | — | VL-02 fails; 5000-char supplier accepted (HTTP 201) |
-| DEF-CW01-015 | Future dates accepted in `dateReceived` | Low | Open | 2026-06-27 | — | — | VL-03 fails; date "2099-12-31" accepted (HTTP 201) |
-| DEF-CW01-016 | No DELETE endpoint for cell lots | Low | Open | 2026-06-27 | — | — | RL-03 fails; erroneous lots cannot be removed |
+| DEF-CW01-006 | ZodError unhandled — invalid input returns HTTP 500 instead of 400 | **High** | **Verified** | 2026-06-27 | 2026-06-27 | Replit Agent | Global error handler added to app.ts; duck-typed ZodError → 400 |
+| DEF-CW01-007 | No PATCH endpoint — cell lots cannot be edited after creation | **High** | **Verified** | 2026-06-27 | 2026-06-27 | Replit Agent | PATCH /:id implemented; audit event written to cell_lot_events |
+| DEF-CW01-008 | Viewer role can create lots — missing `requireRole` on POST route | **High** | **Verified** | 2026-06-27 | 2026-06-27 | Replit Agent | `requireRole("operator","supervisor","director")` added to POST + PATCH |
+| DEF-CW01-009 | Duplicate lotNumber returns HTTP 500 instead of 409 | Medium | **Verified** | 2026-06-27 | 2026-06-27 | Replit Agent | Error handler checks `err.cause.code === "23505"` (Drizzle wraps PG error) |
+| DEF-CW01-010 | Search only filters by lotNumber — supplier, cellModel excluded | Medium | **Verified** | 2026-06-27 | 2026-06-27 | Replit Agent | OR clause now covers lotNumber + supplier + cellModel |
+| DEF-CW01-011 | No filter functionality at API or UI layer | Medium | **Verified** | 2026-06-27 | 2026-06-27 | Replit Agent | `status` + `cellModel` query params added to API + UI status dropdown |
+| DEF-CW01-012 | cellModel is free text — no FK linkage to Cell Master table | Medium | **Verified** | 2026-06-27 | 2026-06-27 | Replit Agent | `cellMasterId` UUID FK column added to `cell_lots` table |
+| DEF-CW01-013 | No lot history / audit trail endpoint | Medium | **Verified** | 2026-06-27 | 2026-06-27 | Replit Agent | `GET /:id/history` + `cell_lot_events` table implemented |
+| DEF-CW01-014 | No max-length validation on string fields | Low | **Deferred** | 2026-06-27 | — | — | CTO authorized deferral; target: maintenance wave |
+| DEF-CW01-015 | Future dates accepted in `dateReceived` | Low | **Deferred** | 2026-06-27 | — | — | CTO authorized deferral; target: maintenance wave |
+| DEF-CW01-016 | No DELETE endpoint for cell lots | Low | **Deferred** | 2026-06-27 | — | — | CTO authorized deferral; pending product decision (hard vs. soft delete) |
 
 ---
 
@@ -73,242 +73,303 @@ Sidebar `disabled: true` flag on stub items. Render branch added: `cursor-not-al
 
 ---
 
-## Defect Detail — MAT-02 Defects (all Open)
+## Defect Detail — MAT-02 Defects
 
-### DEF-CW01-006 — ZodError unhandled → HTTP 500
+### DEF-CW01-006 ✅ Verified — ZodError unhandled → HTTP 500
 
 | Field | Value |
 |-------|-------|
 | **ID** | DEF-CW01-006 |
 | **Severity** | High |
-| **Status** | Open |
+| **Status** | Verified |
 | **Found** | 2026-06-27 (MAT-02) |
+| **Fixed** | 2026-06-27 |
+| **Fixed By** | Replit Agent |
 | **Test cases** | MAT-CR-04, MAT-VL-01, MAT-VL-04 |
-| **File** | `artifacts/api-server/src/routes/cells/lots.ts` |
+| **File** | `artifacts/api-server/src/app.ts` |
 
 **Description:**
-`CreateCellLotBody.parse(req.body)` throws a `ZodError` for any invalid request body (empty object, missing required fields, `quantityReceived: 0`). Express does not have a global error handler that catches `ZodError`, so these fall through to Express's default error handler, which returns an HTML 500 page. The API client receives no structured error message.
+`CreateCellLotBody.parse(req.body)` throws a `ZodError` for any invalid request body (empty object, missing required fields, `quantityReceived: 0`). Express had no global error handler that catches `ZodError`, so these fell through to Express's default error handler, which returned an HTML 500 page.
 
-**Evidence:**
+**Fix:**
+Added a 4-argument error handler at the bottom of `app.ts` (after all routes). The handler duck-types `ZodError` by checking `err.name === "ZodError" && Array.isArray(err.issues)` to avoid requiring a direct `zod` import. Returns `HTTP 400 { error: "Validation failed", issues: [...] }`.
+
+**Evidence (re-test):**
 ```
-POST /api/cells/lots {}                       → HTTP 500 (empty body)
-POST /api/cells/lots { quantityReceived: 0 }  → HTTP 500 (fails min(1))
-POST /api/cells/lots { cellModel missing }    → HTTP 500 (required field)
+POST /api/cells/lots {}                       → HTTP 400 "Validation failed"
+POST /api/cells/lots { quantityReceived: 0 }  → HTTP 400 "Validation failed"
+POST /api/cells/lots { cellModel missing }    → HTTP 400 "Validation failed"
 ```
-
-**Expected:** HTTP 400 with JSON `{ error: "Validation failed", issues: [...] }`
-
-**Remediation:** Add a global Express error handler that catches `ZodError` and returns `res.status(400).json({ error: "Validation failed", issues: err.issues })`. Or wrap each `Zod.parse()` call in try/catch and return 400 explicitly.
 
 ---
 
-### DEF-CW01-007 — No PATCH endpoint — lots cannot be edited
+### DEF-CW01-007 ✅ Verified — No PATCH endpoint
 
 | Field | Value |
 |-------|-------|
 | **ID** | DEF-CW01-007 |
 | **Severity** | High |
-| **Status** | Open |
+| **Status** | Verified |
 | **Found** | 2026-06-27 (MAT-02) |
+| **Fixed** | 2026-06-27 |
+| **Fixed By** | Replit Agent |
 | **Test cases** | MAT-ED-01, MAT-ED-02, MAT-AU-02 |
-| **File** | `artifacts/api-server/src/routes/cells/lots.ts` |
+| **Files** | `artifacts/api-server/src/routes/cells/lots.ts`, `lib/db/src/schema/cell-grading.ts`, `lib/api-spec/openapi.yaml` |
 
 **Description:**
-`artifacts/api-server/src/routes/cells/lots.ts` implements only `GET /` (list), `POST /` (create), and `GET /:id` (detail). There is no `PATCH /:id` or `PUT /:id` endpoint. Once a lot is created, none of its fields (supplier, remarks, receivedBy, quantity) can be corrected. A factory operator who enters a wrong quantity or supplier name cannot fix it.
+No `PATCH /:id` endpoint existed. Once a lot was created, none of its fields could be corrected.
 
-**Evidence:**
+**Fix:**
+- Added `PATCH /api/cells/lots/:id` accepting editable fields (`supplier`, `manufacturer`, `cellModel`, `cellChemistry`, `nominalCapacityAh`, `invoiceNumber`, `dateReceived`, `receivedBy`, `remarks`, `cellMasterId`) plus a required `reason` field.
+- Only changed fields are applied (changeset diff before writing).
+- Each PATCH writes a `corrected` event to `cell_lot_events` with the full changeset, performer, and reason.
+- `updatedAt` auto-increments via Drizzle `.$onUpdate()`.
+- `PatchCellLotBody` schema added to OpenAPI spec + codegen.
+
+**Evidence (re-test):**
 ```
-PATCH /api/cells/lots/7b5837c7-2e0c-4c5c-877f-ee3404aa725a
-{ "remarks": "Updated" }
-→ HTTP 404 Not Found
+PATCH /api/cells/lots/:id { invoiceNumber: "INV-2026-999", reason: "..." }
+→ HTTP 200 { ..., invoiceNumber: "INV-2026-999", updatedAt: "2026-06-27T18:41:56.278Z" }
+updatedAt before: 18:41:56.278Z → after: 18:43:03.318Z ✅
 ```
-
-**Impact:** ED-01, ED-02 fail. AU-02 (updatedAt change on edit) cannot be tested. This is a core workflow gap — lots are immutable once received.
-
-**Remediation:** Implement `PATCH /api/cells/lots/:id` accepting a subset of updateable fields (`supplier`, `manufacturer`, `remarks`, `invoiceNumber`, `receivedBy`). Fields that should be locked after cells are allocated (`quantityReceived`, `lotNumber`) should be validated as read-only once grading begins.
 
 ---
 
-### DEF-CW01-008 — Viewer role can create lots — missing `requireRole`
+### DEF-CW01-008 ✅ Verified — Viewer role can create lots
 
 | Field | Value |
 |-------|-------|
 | **ID** | DEF-CW01-008 |
 | **Severity** | High |
-| **Status** | Open |
+| **Status** | Verified |
 | **Found** | 2026-06-27 (MAT-02) |
+| **Fixed** | 2026-06-27 |
+| **Fixed By** | Replit Agent |
 | **Test cases** | MAT-SC-02 |
 | **File** | `artifacts/api-server/src/routes/cells/lots.ts` |
 
 **Description:**
-The `POST /api/cells/lots` route is protected by `requireAuth` (via the parent router) but has no `requireRole` middleware. A user with role `viewer` can successfully create new cell lots. The RBAC model defines `viewer` as read-only; write operations should require at least `operator`.
+`POST /api/cells/lots` had no `requireRole` middleware. A `viewer` role user successfully created lot `LOT-SC02-VIEWER`.
 
-**Evidence:**
+**Fix:**
+Added `requireRole("operator", "supervisor", "director")` as middleware on both `POST /` and `PATCH /:id`. `GET` routes remain accessible to all authenticated roles.
+
+**Evidence (re-test):**
 ```
-# Login as viewer role: mat02viewer@ocs.local
+# Login as mat02viewer@ocs.local (viewer role)
 POST /api/cells/lots { ...valid payload... }
-→ HTTP 201 — lot "LOT-SC02-VIEWER" created by viewer account
+→ HTTP 403 { "error": "Access denied. Required role: operator or supervisor or director" }
+
+PATCH /api/cells/lots/:id { ...valid payload... }
+→ HTTP 403 { "error": "Access denied. Required role: operator or supervisor or director" }
 ```
-
-**Expected:** HTTP 403 Forbidden for viewer role on POST
-
-**Remediation:** Add `requireRole("operator", "supervisor", "director")` middleware to the `POST /` route (and the future `PATCH /:id` route) in `lots.ts`. The GET routes may remain accessible to all authenticated roles.
 
 ---
 
-### DEF-CW01-009 — Duplicate lotNumber returns HTTP 500 instead of 409
+### DEF-CW01-009 ✅ Verified — Duplicate lotNumber returns HTTP 500
 
 | Field | Value |
 |-------|-------|
 | **ID** | DEF-CW01-009 |
 | **Severity** | Medium |
-| **Status** | Open |
+| **Status** | Verified |
 | **Found** | 2026-06-27 (MAT-02) |
+| **Fixed** | 2026-06-27 |
+| **Fixed By** | Replit Agent |
 | **Test case** | MAT-CR-03 |
 
 **Description:**
-The `lot_number` column has a `UNIQUE` constraint (confirmed in schema: `varchar("lot_number", { length: 100 }).notNull().unique()`). Inserting a duplicate lot number causes a PostgreSQL unique constraint violation, which is not caught in the route handler. The unhandled DB error propagates as HTTP 500.
+Inserting a duplicate `lot_number` caused a PostgreSQL unique constraint violation (`23505`) that was not caught. Returned HTTP 500.
 
-**Evidence:**
-```
-POST /api/cells/lots { lotNumber: "LOT-MAT02-001" }  (first time) → HTTP 201
-POST /api/cells/lots { lotNumber: "LOT-MAT02-001" }  (duplicate)  → HTTP 500
-```
+**Fix:**
+Global error handler in `app.ts` checks `err.cause?.code === "23505"` (Drizzle wraps the original PG `DatabaseError` in `_DrizzleQueryError`; the real error code is on `err.cause`). Returns `HTTP 409 { error: "lot_number \"VALUE\" already exists" }`.
 
-**Remediation:** Catch PostgreSQL error code `23505` (unique_violation) in the lots POST handler and return `HTTP 409 { error: "Lot number already exists" }`.
+**Evidence (re-test):**
+```
+POST /api/cells/lots { lotNumber: "LOT-SC02-VIEWER" }  (duplicate)
+→ HTTP 409 { "error": "lot_number \"LOT-SC02-VIEWER\" already exists" }
+```
 
 ---
 
-### DEF-CW01-010 — Search only filters by lotNumber
+### DEF-CW01-010 ✅ Verified — Search only filters by lotNumber
 
 | Field | Value |
 |-------|-------|
 | **ID** | DEF-CW01-010 |
 | **Severity** | Medium |
-| **Status** | Open |
+| **Status** | Verified |
 | **Found** | 2026-06-27 (MAT-02) |
+| **Fixed** | 2026-06-27 |
+| **Fixed By** | Replit Agent |
 | **Test case** | MAT-SR-01 |
 
 **Description:**
-`GET /api/cells/lots?search=CATL` returns zero results even though a lot with `supplier: "CATL"` exists. The search implementation uses only `ilike(cellLotsTable.lotNumber, '%CATL%')`. Operators typically look up lots by supplier name (e.g. "find all CATL lots"), which is not supported.
+`GET /api/cells/lots?search=CATL` returned zero results because search only used `ilike(lotNumber, ...)`.
 
-**Evidence:**
-```javascript
-// lots.ts search clause
-conditions.push(ilike(cellLotsTable.lotNumber, `%${search}%`));
-// supplier, manufacturer, cellModel columns excluded
-```
-
-**Remediation:** Extend the OR clause to include `supplier`, `manufacturer`, and `cellModel`:
-```javascript
-conditions.push(or(
+**Fix:**
+Search clause extended to OR across `lotNumber`, `supplier`, and `cellModel` using Drizzle's `or()`:
+```typescript
+or(
   ilike(cellLotsTable.lotNumber, `%${search}%`),
   ilike(cellLotsTable.supplier, `%${search}%`),
-  ilike(cellLotsTable.cellModel, `%${search}%`),
-));
+  ilike(cellLotsTable.cellModel, `%${search}%`)
+)
+```
+
+**Evidence (re-test):**
+```
+GET /api/cells/lots?search=CATL  → HTTP 200 { total: 1, items: [{ supplier: "CATL" }] } ✅
+GET /api/cells/lots?search=LFP-280  → HTTP 200 { total: 1, items: [{ cellModel: "LFP-280Ah" }] } ✅
 ```
 
 ---
 
-### DEF-CW01-011 — No filter functionality
+### DEF-CW01-011 ✅ Verified — No filter functionality
 
 | Field | Value |
 |-------|-------|
 | **ID** | DEF-CW01-011 |
 | **Severity** | Medium |
-| **Status** | Open |
+| **Status** | Verified |
 | **Found** | 2026-06-27 (MAT-02) |
+| **Fixed** | 2026-06-27 |
+| **Fixed By** | Replit Agent |
 | **Test cases** | MAT-FL-01 through MAT-FL-04 |
 
 **Description:**
-`GET /api/cells/lots` accepts only `page`, `pageSize`, and `search`. There is no `status`, `cellModel`, `supplier`, or date-range filter. The OdsToolbar renders only a search input — no filter dropdown or date picker. Factory supervisors need to view lots by status (e.g. "all lots currently in grading") or by cell model.
+`GET /api/cells/lots` had no `status` or `cellModel` filter params. No filter UI existed.
 
-**Remediation:** Add optional query parameters (`status`, `cellModel`, `dateFrom`, `dateTo`) to `GET /api/cells/lots`. Add filter UI (OdsToolbar filter slot or dropdown) in `CellReceivingPage.tsx`.
+**Fix:**
+- Added `status` (enum: `received | grading | complete`) and `cellModel` (string, ILIKE) query params to the OpenAPI spec, codegen, and route handler.
+- Added a `cellLotStatusEnum` PG enum and `status` column (default `"received"`) to `cellLotsTable`.
+- Added a status dropdown filter to `CellReceivingPage.tsx` (Select component with All/Received/Grading/Complete options).
+
+**Evidence (re-test):**
+```
+GET /api/cells/lots?status=received  → HTTP 200 { total: 8, items all with status: "received" } ✅
+GET /api/cells/lots?cellModel=LFP    → HTTP 200 { total: 1, items: [{ cellModel: "LFP-280Ah" }] } ✅
+```
 
 ---
 
-### DEF-CW01-012 — cellModel free text — no FK to Cell Master
+### DEF-CW01-012 ✅ Verified — cellModel free text — no FK to Cell Master
 
 | Field | Value |
 |-------|-------|
 | **ID** | DEF-CW01-012 |
 | **Severity** | Medium |
-| **Status** | Open |
+| **Status** | Verified |
 | **Found** | 2026-06-27 (MAT-02) |
+| **Fixed** | 2026-06-27 |
+| **Fixed By** | Replit Agent |
 | **Test case** | MAT-RL-01 |
 
 **Description:**
-`cellLotsTable.cellModel` is a `varchar` free-text column with no foreign key to the cell masters table. A lot received for model "INR21700-50E" cannot be traced back to the corresponding cell master record. This breaks lot→master traceability.
+`cellLotsTable.cellModel` was a free-text `varchar` with no FK to the cell masters table. Lot→master traceability was broken.
 
-**Remediation:** Add a `cellMasterId` UUID FK column to `cellLotsTable` referencing the cell masters table. Add a dropdown (or type-ahead) in the Create Lot form to select from registered cell masters. Keep `cellModel` as a denormalized display field (populated from the selected master).
+**Fix:**
+Added nullable `cellMasterId UUID` FK column to `cellLotsTable` referencing `masterCellsTable.id`. Column added to DB schema, `cellMasterId` exposed in all lot responses. `PatchCellLotBody` and `CellLotInput` accept optional `cellMasterId`. Edit dialog in `CellReceivingPage.tsx` exposes the field. DB migration run with `drizzle-kit push`.
+
+**Evidence (re-test):**
+```
+GET /api/cells/lots?pageSize=1
+→ { id, status: "received", cellMasterId: null }  — field present ✅
+```
 
 ---
 
-### DEF-CW01-013 — No lot history / audit trail endpoint
+### DEF-CW01-013 ✅ Verified — No lot history / audit trail endpoint
 
 | Field | Value |
 |-------|-------|
 | **ID** | DEF-CW01-013 |
 | **Severity** | Medium |
-| **Status** | Open |
+| **Status** | Verified |
 | **Found** | 2026-06-27 (MAT-02) |
+| **Fixed** | 2026-06-27 |
+| **Fixed By** | Replit Agent |
 | **Test case** | MAT-AU-03 |
 
 **Description:**
-`GET /api/cells/lots/:id/history` returns HTTP 404. There is no event log or audit trail for a cell lot. Changes to lot status (e.g. grading started, all cells approved) are not recorded in a structured timeline.
+`GET /api/cells/lots/:id/history` returned HTTP 404. No event log existed.
 
-**Remediation:** Implement a `cell_lot_events` table with columns `(id, lotId, eventType, performedBy, performedAt, metadata)`. Record events on lot creation and on all future state transitions.
+**Fix:**
+- Created `cell_lot_events` table with columns `(id, lotId, eventType, performedBy, performedAt, changes JSON, reason)`. Indexed on `lotId` and `performedAt`.
+- `POST /cells/lots` records a `received` event on lot creation.
+- `PATCH /cells/lots/:id` records a `corrected` event with full changeset diff and reason.
+- `GET /api/cells/lots/:id/history` returns `{ lotId, events: [...] }` ordered by `performedAt DESC`.
+- History dialog added to `CellReceivingPage.tsx` (History icon button per row).
+
+**Evidence (re-test):**
+```
+GET /api/cells/lots/:id/history
+→ HTTP 200 {
+    lotId: "e27f0de0-...",
+    events: [
+      { eventType: "corrected", performedBy: "admin@ocs.local",
+        changes: { invoiceNumber: { from: null, to: "INV-UPDATED-001" } },
+        reason: "Corrected invoice number after vendor confirmation" }
+    ]
+  }
+```
 
 ---
 
-### DEF-CW01-014 — No max-length validation on string fields
+### DEF-CW01-014 ⬜ Deferred — No max-length validation on string fields
 
 | Field | Value |
 |-------|-------|
 | **ID** | DEF-CW01-014 |
 | **Severity** | Low |
-| **Status** | Open |
+| **Status** | Deferred |
 | **Found** | 2026-06-27 (MAT-02) |
-| **Test case** | MAT-VL-02 |
+| **Deferred By** | CTO |
+| **Reason** | Low severity; no production impact in current controlled environment |
+| **Target Wave** | Maintenance wave (post-CW-01) |
 
 **Description:**
-A 5000-character supplier name is accepted (HTTP 201). The Zod schema uses bare `zod.string()` with no `.max()`. DB columns use `varchar` without an explicit length in Drizzle (defaults to `text` behaviour in PostgreSQL). Long strings waste storage and can break UI rendering.
+A 5000-character supplier name is accepted (HTTP 201). Zod schema uses bare `zod.string()` with no `.max()`. Long strings waste storage and can break UI rendering.
 
-**Remediation:** Add `.max(255)` (or appropriate limits) to `supplier`, `manufacturer`, `cellModel`, `receivedBy`, `invoiceNumber`, and `remarks` in `CreateCellLotBody`. Mirror the constraints in the Drizzle schema.
+**Remediation (deferred):** Add `.max(255)` (or appropriate limits) to `supplier`, `manufacturer`, `cellModel`, `receivedBy`, `invoiceNumber`, and `remarks` in `CreateCellLotBody` and `PatchCellLotBody`. Mirror constraints in Drizzle schema.
 
 ---
 
-### DEF-CW01-015 — Future dates accepted in `dateReceived`
+### DEF-CW01-015 ⬜ Deferred — Future dates accepted in `dateReceived`
 
 | Field | Value |
 |-------|-------|
 | **ID** | DEF-CW01-015 |
 | **Severity** | Low |
-| **Status** | Open |
+| **Status** | Deferred |
 | **Found** | 2026-06-27 (MAT-02) |
-| **Test case** | MAT-VL-03 |
+| **Deferred By** | CTO |
+| **Reason** | Low severity; no immediate production impact |
+| **Target Wave** | Maintenance wave (post-CW-01) |
 
 **Description:**
-`dateReceived: "2099-12-31"` is accepted without error. The Zod schema uses `zod.string()` with no date parsing or range check. Lots with future receive dates would corrupt inventory and production timelines.
+`dateReceived: "2099-12-31"` is accepted without error. Lots with future receive dates could corrupt inventory timelines.
 
-**Remediation:** Change to `zod.string().date()` (Zod v4) and add a `.refine(d => d <= today)` check to reject future dates.
+**Remediation (deferred):** Change to `zod.string().date()` (Zod v4) and add `.refine(d => d <= today)` to reject future dates.
 
 ---
 
-### DEF-CW01-016 — No DELETE endpoint for cell lots
+### DEF-CW01-016 ⬜ Deferred — No DELETE endpoint for cell lots
 
 | Field | Value |
 |-------|-------|
 | **ID** | DEF-CW01-016 |
 | **Severity** | Low |
-| **Status** | Open |
+| **Status** | Deferred |
 | **Found** | 2026-06-27 (MAT-02) |
-| **Test case** | MAT-RL-03 |
+| **Deferred By** | CTO |
+| **Reason** | Pending product decision: hard delete vs. soft delete (traceability requirement) |
+| **Target Wave** | Maintenance wave (post-CW-01) |
 
 **Description:**
-`DELETE /api/cells/lots/:id` returns HTTP 404. Test lots created during MAT-02 (including a lot with a 5000-char supplier and one with a 2099 date) cannot be removed from the system.
+`DELETE /api/cells/lots/:id` returns HTTP 404. Test lots with erroneous data (5000-char supplier, 2099 date) cannot be removed from the system.
 
-**Note:** Whether lots should be deletable by design is a product decision. If traceability requires that received lots are never deleted (soft-delete only), this should be documented as a policy decision rather than a defect, and the test case updated accordingly. If hard delete is acceptable, implement the endpoint with cascade rules verified.
+**Note:** Whether lots should be deletable by design is a product decision. If traceability requires lots are never hard-deleted, implement soft-delete with `deletedAt` and document as policy.
 
 ---
 
@@ -318,18 +379,22 @@ A 5000-character supplier name is accepted (HTTP 201). The Zod schema uses bare 
 |--------|-------|
 | Total defects found | 16 |
 | Critical | 0 |
-| High | 4 (DEF-CW01-004 through -008, excl. verified) |
+| High | 4 |
 | Medium | 6 |
 | Low | 6 |
-| Fixed & verified (MAT-01) | 5 |
-| Open High | **3** (DEF-CW01-006, -007, -008) |
-| Open Medium | 5 |
-| Open Low | 3 |
+| **Verified (fixed + re-tested)** | **13** |
+| **Deferred (Low, CTO-authorized)** | **3** |
+| Open High | **0** |
+| Open Medium | **0** |
+| Open Low | 0 (all deferred) |
 
 > **Certification gate:** Open Critical or High count must be **0** before certification is granted.
-> **Current status: 3 open High defects — gate BLOCKED.**
+> **Current status: 0 open High defects — gate CLEAR. ✅**
 
-## Deferred Defects (if any)
+## Deferred Defects
 
 | ID | Title | Severity | Reason for Deferral | Approved By | Target Wave |
 |----|-------|----------|---------------------|-------------|-------------|
+| DEF-CW01-014 | No max-length validation on string fields | Low | Controlled env; no prod impact | CTO | Maintenance |
+| DEF-CW01-015 | Future dates accepted in dateReceived | Low | No immediate prod impact | CTO | Maintenance |
+| DEF-CW01-016 | No DELETE endpoint for cell lots | Low | Product decision pending (hard vs soft delete) | CTO | Maintenance |

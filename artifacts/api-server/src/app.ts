@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -80,5 +80,40 @@ app.use(express.urlencoded({ extended: true }));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use("/api", router);
+
+// ─── Global error handler ────────────────────────────────────────────────────
+// Must be registered after all routes. Express 5 forwards async throws here.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  // Zod v4 validation error — duck-typed to avoid direct zod dependency
+  if (
+    typeof err === "object" &&
+    err !== null &&
+    err.name === "ZodError" &&
+    Array.isArray(err.issues)
+  ) {
+    res.status(400).json({ error: "Validation failed", issues: err.issues });
+    return;
+  }
+  // PostgreSQL unique constraint violation (code 23505) → 409
+  // Drizzle wraps pg errors in _DrizzleQueryError so check both err and err.cause
+  const pgCode = (err as any)?.code ?? (err as any)?.cause?.code;
+  if (pgCode === "23505") {
+    const detail = String(
+      (err as any)?.detail ?? (err as any)?.cause?.detail ?? ""
+    );
+    const match = detail.match(/Key \((.+?)\)=\((.+?)\)/);
+    const field = match?.[1] ?? "field";
+    const value = match?.[2] ?? "";
+    const msg = field !== "field"
+      ? `${field} "${value}" already exists`
+      : "A record with that value already exists";
+    res.status(409).json({ error: msg });
+    return;
+  }
+  // All other errors → 500
+  logger.error({ err }, "Unhandled error");
+  res.status(500).json({ error: "Internal server error" });
+});
 
 export default app;

@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ListCellLotsStatus } from './listCellLotsStatus';
 import type { PageParamParameter } from './pageParamParameter';
 import type { PageSizeParamParameter } from './pageSizeParamParameter';
 import type { SearchParamParameter } from './searchParamParameter';
@@ -13,4 +14,6 @@ export type ListCellLotsParams = {
 page?: PageParamParameter;
 pageSize?: PageSizeParamParameter;
 search?: SearchParamParameter;
+status?: ListCellLotsStatus;
+cellModel?: string;
 };
