@@ -1,5 +1,31 @@
 # OCS One — Project Status
 
+## Project Identity
+
+| Field | Value |
+|-------|-------|
+| **Project** | OCS One — Manufacturing ERP |
+| **Foundation Release** | v1.0 |
+| **Release Date** | 2026-06-27 |
+| **Repository** | `ocs-oorja/ocs-one` |
+| **Current Branch** | `main` |
+| **Release Tag** | `v1.0-foundation` |
+| **Last Updated** | 2026-06-27 |
+
+---
+
+## Document Ownership
+
+**Owner:** OCS Oorja Engineering Team
+
+This is the **authoritative project status document** for OCS One. It reflects the current state of the system at all times — not history, not aspirations.
+
+- All Certification Waves must update this file before the wave is considered complete.
+- All releases and milestones must update this file before they are closed.
+- `CHANGELOG.md` records history. `RELEASE_NOTES_*.md` captures launch context. This document captures **now**.
+
+---
+
 > **This file reflects the current state of the project.**
 > Update it after every Certification Wave. Do not confuse it with `CHANGELOG.md` (history) or `RELEASE_NOTES_v1.0_FOUNDATION.md` (launch notes).
 
@@ -257,6 +283,15 @@ Create · Edit · Save · Search · Filter · Validation · Relationships · Sec
 
 ---
 
+## Certification History
+
+Every completed Certification Wave appends one row to this table.
+
+| Wave | Module | Version | Date | Status |
+|------|--------|---------|------|--------|
+
+---
+
 ## Known Issues
 
 | # | Severity | Area | Description |
@@ -282,6 +317,19 @@ Scope:
 - API contract enforcement (response envelopes, error codes)
 
 Outcome: Cell Receiving module stamped **Certified** and scorecard added to this file.
+
+---
+
+## Project Principles
+
+These rules are non-negotiable and apply for the lifetime of the project.
+
+1. **ODS v1.0 is frozen.** No modifications to existing ODS components. New components require a design review and a version increment.
+2. **All new UI must use ODS components.** No one-off styling, no ad hoc Tailwind components that duplicate ODS behaviour.
+3. **No database schema changes without a migration.** `drizzle-kit push` is development-only. All schema changes in production must go through versioned migration files.
+4. **No API changes without an OpenAPI update and code generation.** The spec in `lib/api-spec/openapi.yaml` is the contract. Run `pnpm --filter @workspace/api-spec run codegen` after every change.
+5. **Every module must pass certification before being marked complete.** `✅ Built` means implemented. `🔵 Certified` means tested, validated, and production-ready.
+6. **`PROJECT_STATUS.md` must be updated at the end of every Certification Wave.** It is the last commit in every wave — not an afterthought.
 
 ---
 
