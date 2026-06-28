@@ -24,5 +24,11 @@ export { OdsMetricCard, type OdsMetricCardProps, type MetricStatus, type MetricT
 export { OdsMetricGrid, type OdsMetricGridProps } from "./OdsMetricGrid";
 export { OdsChartCard, type OdsChartCardProps } from "./OdsChartCard";
 export { OdsTimeline, type OdsTimelineItem, type OdsTimelineProps, type TimelineColor } from "./OdsTimeline";
+export {
+  OdsCorrectionHistory,
+  type OdsCorrectionEntry,
+  type OdsCorrectionField,
+  type OdsCorrectionHistoryProps,
+} from "./OdsCorrectionHistory";
 export { OdsStepper, type OdsStep, type OdsStepperProps, type StepStatus } from "./OdsStepper";
 export { OdsPageLayout, type OdsPageLayoutProps } from "./OdsPageLayout";

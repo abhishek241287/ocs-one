@@ -1,0 +1,177 @@
+Build Mode Authorized.
+
+Proceed with the Engineering Correction Framework (ECF) implementation.
+
+Additional architectural requirements:
+
+### 1. Keep the service generic
+
+Do not reference Cell Grading anywhere inside the ECF library.
+
+The framework must know only:
+
+* entityType
+* entityId
+* previousValue
+* newValue
+* correctionReason
+* performedBy
+* approvedBy
+* auditEventType
+
+Business logic stays inside the module.
+
+---
+
+### 2. Use a versioned ledger
+
+Instead of treating sequence only as ordering, treat it as the engineering version.
+
+Example:
+
+Version 1
+Original measurement
+
+Version 2
+Correction
+
+Version 3
+Supervisor correction
+
+Version 4
+Engineering review
+
+This becomes extremely valuable during warranty investigations.
+
+---
+
+### 3. Include metadata JSONB
+
+Every correction should allow optional metadata.
+
+Examples:
+
+* Machine serial number
+* Test equipment
+* Firmware version
+* Shift
+* Operator station
+* Calibration certificate
+* Ambient temperature
+
+Do not model these as columns.
+
+Use metadata JSONB.
+
+---
+
+### 4. Future-proof entity types
+
+Current enum:
+
+CELL
+BATTERY
+PACK
+SHIPMENT
+QC_RECORD
+CHARGING_SESSION
+TEST_RESULT
+WARRANTY_CASE
+
+Reserve additional values now:
+
+INVERTER
+SOLAR_SYSTEM
+EV_CHARGER
+RAW_MATERIAL
+BMS
+CABINET
+
+Even if unused today.
+
+---
+
+### 5. Every correction must have a unique Correction ID
+
+Do not rely only on entityId + sequence.
+
+Create:
+
+CORR-20260628-000001
+
+This will become the reference used by:
+
+* Customer support
+* Warranty
+* Audit
+* ERP
+* Reports
+
+---
+
+### 6. Every correction must be reversible only by another correction
+
+Never update a correction record.
+
+Never delete a correction record.
+
+If an operator made a correction incorrectly, create another correction.
+
+The ledger remains append-only forever.
+
+---
+
+### 7. Build one reusable UI component
+
+Create an ODS component now:
+
+OdsCorrectionHistory
+
+Every future module will reuse it.
+
+Cell Grading becomes the reference implementation.
+
+Charging, Testing, QC, Dispatch, Warranty simply plug it in later.
+
+---
+
+### 8. Do not migrate additional modules
+
+Remain within approved scope.
+
+Only:
+
+* Build ECF
+* Migrate Cell Grading
+* Keep API contracts unchanged
+* Keep certification suites green
+
+All other module migrations happen during their own certification waves.
+
+---
+
+Acceptance Criteria
+
+✓ Generic EngineeringCorrectionService
+
+✓ Generic engineering_corrections ledger
+
+✓ Versioned correction history
+
+✓ Metadata support
+
+✓ Correction ID
+
+✓ OdsCorrectionHistory component
+
+✓ Cell Grading migrated
+
+✓ SS-02 PASS
+
+✓ SS-03 PASS
+
+✓ SS-04 PASS
+
+✓ Architect Review PASS
+
+No additional feature work beyond this scope.

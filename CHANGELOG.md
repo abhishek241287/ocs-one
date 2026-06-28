@@ -7,6 +7,44 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased] — CW-02 Cell Grading (in progress)
 
+### 🧬 Engineering Correction Framework (ECF) — platform extraction (CTO-approved, pre-MAT-03)
+
+The proven Cell-Grading correction engine (DEF-CW02-006) is extracted into a reusable
+platform framework so **every** module corrects certified engineering records the same
+audited way — instead of re-implementing append-only/immutability/authorization logic
+per module. **Only Cell Grading is migrated now** (the reference consumer); no other
+module is touched, by direction.
+
+- **Generic ledger (`engineering_corrections`).** One module-agnostic append-only store
+  is the immutable correction history across all modules; the module table stays the
+  source of truth for *current* state. Columns carry no module vocabulary —
+  `entityType` / `entityId` / `sequence` (engineering version) / `correctionType` /
+  `previousValue` / `newValue` (JSONB) / `reason` / `performedBy` / `approvedBy` /
+  `auditEventType` / `metadata` (JSONB). `entityType` enum ships 14 values (8 base +
+  INVERTER / SOLAR_SYSTEM / EV_CHARGER / RAW_MATERIAL / BMS / CABINET).
+- **Unique Correction ID on every row.** `CORR-YYYYMMDD-NNNNNN` (originals included),
+  numbered from a global Postgres sequence (`ecf_correction_seq`) — collision-free under
+  concurrency.
+- **Service lib `@workspace/ecf`.** `EngineeringCorrectionService` —
+  `recordOriginal` / `correct` / `getHistory` / `validateCorrection`, all writes inside a
+  caller-provided transaction. The framework owns storage, version generation, Correction
+  ID generation, reason+actor validation, role authorization, and immutability; the module
+  owns its row lock, business rules, value recalculation, snapshot update, and its own
+  audit event.
+- **Cell Grading migrated (behavior + API contract unchanged).** Grade →
+  `recordOriginal` (entityType `CELL`); correct → `correct` (mandatory reason, prev/new
+  snapshot, role-gated, still emits `cell_grade_corrected` on `cell_lot_events`);
+  `GET /cells/{id}/measurements` → `getHistory` mapped to the identical `CellMeasurement`
+  shape (now also carrying `correctionId`). `cell_grade_measurements` dropped.
+- **Reusable ODS `OdsCorrectionHistory`.** Module-agnostic genealogy view (version,
+  Correction ID, actor, reason, previous→new field diff). Cell Grading's grading page is
+  the reference consumer — a **History** action on any graded cell.
+- **SS-03 extended to the ledger.** `engineering_corrections` is now in the
+  audit-immutability suite (static: no app route updates/deletes it; runtime: a captured
+  row is byte-identical after a full run). SS-02 / SS-03 / SS-04 all PASS; full typecheck
+  and lint (0 warnings) green.
+
+
 > **Certification Wave 02 — Cell Grading.** MAT-01 (Page & Navigation) and MAT-02 (CRUD &
 > Data Integrity) both executed and closed at FULL PASS (10/10 each). Platform/ODS remains
 > frozen except CTO-approved cert-driven corrections.

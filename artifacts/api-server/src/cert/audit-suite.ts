@@ -35,7 +35,7 @@ import {
   cellLotsTable,
   cellsTable,
   cellLotEventsTable,
-  cellGradeMeasurementsTable,
+  engineeringCorrectionsTable,
   securityEventsTable,
   usersTable,
 } from "@workspace/db";
@@ -374,8 +374,11 @@ function staticImmutabilityViolations(): string[] {
   const here = dirname(fileURLToPath(import.meta.url));
   const srcRoot = join(here, ".."); // artifacts/api-server/src
   const violations: string[] = [];
-  const drizzleTables = ["securityEventsTable", "cellLotEventsTable"];
-  const physicalTables = ["security_events", "cell_lot_events"];
+  // The ECF ledger (engineering_corrections) is append-only forever, so it is
+  // protected by the same no-UPDATE/DELETE static + runtime guards as the two
+  // audit stores. The cert dir (this suite's own teardown) is excluded above.
+  const drizzleTables = ["securityEventsTable", "cellLotEventsTable", "engineeringCorrectionsTable"];
+  const physicalTables = ["security_events", "cell_lot_events", "engineering_corrections"];
   const drizzleRe = new RegExp(`\\.(update|delete)\\(\\s*(${drizzleTables.join("|")})\\b`);
   const rawRe = new RegExp(
     `\\b(update|delete\\s+from|truncate(?:\\s+table)?|insert\\s+into)\\b[\\s\\S]{0,80}?\\b(${physicalTables.join("|")})\\b`,
@@ -432,8 +435,23 @@ async function deepEqualPersisted(
 // ─── Cleanup — remove the throwaway fixture (cells → events → lot → user) ─────
 async function cleanup(): Promise<void> {
   if (certLotId) {
-    // cell_grade_measurements references cells (no cascade) — delete it first.
-    await db.delete(cellGradeMeasurementsTable).where(eq(cellGradeMeasurementsTable.lotId, certLotId)).catch(() => undefined);
+    // Remove the ECF ledger rows for the cert lot's cells (entityId = cell id).
+    const certCells = await db
+      .select({ id: cellsTable.id })
+      .from(cellsTable)
+      .where(eq(cellsTable.lotId, certLotId))
+      .catch(() => [] as { id: string }[]);
+    if (certCells.length > 0) {
+      await db
+        .delete(engineeringCorrectionsTable)
+        .where(
+          and(
+            eq(engineeringCorrectionsTable.entityType, "CELL"),
+            inArray(engineeringCorrectionsTable.entityId, certCells.map((c) => c.id)),
+          ),
+        )
+        .catch(() => undefined);
+    }
     await db.delete(cellsTable).where(eq(cellsTable.lotId, certLotId)).catch(() => undefined);
     await db.delete(cellLotEventsTable).where(eq(cellLotEventsTable.lotId, certLotId)).catch(() => undefined);
     await db.delete(cellLotsTable).where(eq(cellLotsTable.id, certLotId)).catch(() => undefined);
@@ -486,6 +504,32 @@ async function main(): Promise<void> {
         .where(eq(securityEventsTable.id, viewerLoginRowId))
         .limit(1);
       loginSnapshot = r ? JSON.stringify(r) : null;
+    }
+
+    // Snapshot a real ECF ledger record (the cert correction appended one) to
+    // prove the append-only ledger is byte-identical after the run.
+    let ledgerSnapshotId: string | null = null;
+    let ledgerSnapshot: string | null = null;
+    if (certLotId) {
+      const certCellIds = await db
+        .select({ id: cellsTable.id })
+        .from(cellsTable)
+        .where(eq(cellsTable.lotId, certLotId));
+      if (certCellIds.length > 0) {
+        const [ledgerRow] = await db
+          .select()
+          .from(engineeringCorrectionsTable)
+          .where(
+            and(
+              eq(engineeringCorrectionsTable.entityType, "CELL"),
+              inArray(engineeringCorrectionsTable.entityId, certCellIds.map((c) => c.id)),
+            ),
+          )
+          .orderBy(desc(engineeringCorrectionsTable.createdAt))
+          .limit(1);
+        ledgerSnapshotId = (ledgerRow?.id as string) ?? null;
+        ledgerSnapshot = ledgerRow ? JSON.stringify(ledgerRow) : null;
+      }
     }
 
     // Verify each matrix check.
@@ -572,6 +616,24 @@ async function main(): Promise<void> {
       } else {
         immutabilityNotes.push("runtime: security_events record byte-identical after run ✓");
       }
+    }
+
+    if (ledgerSnapshotId && ledgerSnapshot) {
+      const [row] = await db
+        .select()
+        .from(engineeringCorrectionsTable)
+        .where(eq(engineeringCorrectionsTable.id, ledgerSnapshotId))
+        .limit(1);
+      const same = row ? JSON.stringify(row) === ledgerSnapshot : false;
+      if (!same) {
+        immutabilityOk = false;
+        immutabilityNotes.push("runtime: engineering_corrections row changed during run ✗");
+      } else {
+        immutabilityNotes.push("runtime: engineering_corrections record byte-identical after run ✓");
+      }
+    } else {
+      immutabilityOk = false;
+      immutabilityNotes.push("runtime: could not capture an engineering_corrections record to re-read ✗");
     }
 
     // ── Report ──

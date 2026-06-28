@@ -1,8 +1,10 @@
 import { Router, IRouter } from "express";
 import { requireWriteRole, requireRole } from "../../middleware/auth";
-import { db, cellsTable, cellLotsTable, cellGradeConfigTable, cellLotEventsTable, cellGradeMeasurementsTable, mfgProductionOrdersTable, mfgBatteryGenealogyTable } from "@workspace/db";
-import { eq, ilike, and, or, desc, asc, count, max } from "drizzle-orm";
+import { db, cellsTable, cellLotsTable, cellGradeConfigTable, cellLotEventsTable, mfgProductionOrdersTable, mfgBatteryGenealogyTable } from "@workspace/db";
+import type { EngineeringCorrection } from "@workspace/db";
+import { eq, ilike, and, or, desc, count } from "drizzle-orm";
 import { ListCellsQueryParams, GradeCellBody, CorrectCellBody } from "@workspace/api-zod";
+import { EngineeringCorrectionService, EcfValidationError, EcfAuthorizationError } from "@workspace/ecf";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -21,6 +23,34 @@ class CorrectionStateError extends Error {
     super(message);
     this.name = "CorrectionStateError";
   }
+}
+
+// Map a generic ECF ledger row back to the Cell Grading-specific CellMeasurement
+// response shape (API contract unchanged). The measured values live in newValue;
+// lotId is carried in metadata; the human Correction ID is surfaced as-is.
+function toCellMeasurement(row: EngineeringCorrection) {
+  const nv = (row.newValue ?? {}) as Record<string, unknown>;
+  const meta = (row.metadata ?? {}) as Record<string, unknown>;
+  return {
+    id: row.id,
+    cellId: row.entityId,
+    lotId: (meta.lotId as string | undefined) ?? null,
+    sequence: row.sequence,
+    measurementType: row.correctionType,
+    voltageV: nv.voltageV as number,
+    capacityAh: nv.capacityAh as number,
+    internalResistanceMohm: nv.internalResistanceMohm as number,
+    temperatureC: (nv.temperatureC as number | null) ?? null,
+    gradingMachineId: (nv.gradingMachineId as string | null) ?? null,
+    grade: (nv.grade as string | null) ?? null,
+    status: nv.status as string,
+    overrideStatus: (nv.overrideStatus as string | null) ?? null,
+    gradedBy: row.performedBy,
+    correctionReason: row.reason ?? null,
+    gradingNotes: (nv.gradingNotes as string | null) ?? null,
+    createdAt: row.createdAt,
+    correctionId: row.correctionId,
+  };
 }
 
 function calcGrade(
@@ -227,24 +257,27 @@ router.post("/:id/grade", async (req, res) => {
       .where(eq(cellsTable.id, req.params.id))
       .returning();
 
-    // DEF-CW02-006: append the original measurement (sequence 1) to the
-    // append-only history so corrections can preserve full genealogy.
-    await tx.insert(cellGradeMeasurementsTable).values({
-      cellId: updatedCell.id,
-      lotId: updatedCell.lotId,
-      sequence: 1,
-      measurementType: "original",
-      voltageV: body.voltageV,
-      capacityAh: body.capacityAh,
-      internalResistanceMohm: body.internalResistanceMohm,
-      temperatureC: body.temperatureC ?? null,
-      gradingMachineId: body.gradingMachineId ?? null,
-      grade: finalGrade,
-      status: finalStatus,
-      overrideStatus: body.overrideStatus && body.overrideStatus !== "null" ? body.overrideStatus : null,
-      gradedBy,
-      correctionReason: null,
-      gradingNotes: body.gradingNotes ?? null,
+    // Record the original measurement (engineering version 1) in the platform
+    // Engineering Correction Framework ledger (append-only history) so later
+    // corrections preserve the full genealogy.
+    await EngineeringCorrectionService.recordOriginal(tx, {
+      entityType: "CELL",
+      entityId: updatedCell.id,
+      performedBy: gradedBy,
+      auditEventType: "cell_graded",
+      newValue: {
+        voltageV: body.voltageV,
+        capacityAh: body.capacityAh,
+        internalResistanceMohm: body.internalResistanceMohm,
+        temperatureC: body.temperatureC ?? null,
+        gradingMachineId: body.gradingMachineId ?? null,
+        grade: finalGrade,
+        status: finalStatus,
+        overrideStatus: body.overrideStatus && body.overrideStatus !== "null" ? body.overrideStatus : null,
+        gradedBy,
+        gradingNotes: body.gradingNotes ?? null,
+      },
+      metadata: { lotId: updatedCell.lotId },
     });
 
     if (lotRow) {
@@ -422,13 +455,6 @@ router.post("/:id/correct", requireRole("supervisor", "director"), async (req, r
 
     const finalGrade: CellGrade = autoGrade;
 
-    // Next sequence in the append-only history (original is sequence 1).
-    const [{ maxSeq }] = await tx
-      .select({ maxSeq: max(cellGradeMeasurementsTable.sequence) })
-      .from(cellGradeMeasurementsTable)
-      .where(eq(cellGradeMeasurementsTable.cellId, cell.id));
-    const nextSequence = (maxSeq ?? 0) + 1;
-
     const [updatedCell] = await tx
       .update(cellsTable)
       .set({
@@ -446,23 +472,40 @@ router.post("/:id/correct", requireRole("supervisor", "director"), async (req, r
       .where(eq(cellsTable.id, id))
       .returning();
 
-    // Append the correction — the original record is left untouched (immutable).
-    await tx.insert(cellGradeMeasurementsTable).values({
-      cellId: updatedCell.id,
-      lotId: updatedCell.lotId,
-      sequence: nextSequence,
-      measurementType: "correction",
-      voltageV: body.voltageV,
-      capacityAh: body.capacityAh,
-      internalResistanceMohm: body.internalResistanceMohm,
-      temperatureC: body.temperatureC ?? null,
-      gradingMachineId: body.gradingMachineId ?? null,
-      grade: finalGrade,
-      status: finalStatus,
-      overrideStatus: body.overrideStatus && body.overrideStatus !== "null" ? body.overrideStatus : null,
-      gradedBy: correctedBy,
+    // Append the correction (next engineering version) to the platform ECF
+    // ledger — the original record is left untouched (immutable). ECF assigns the
+    // version and a unique Correction ID under the cell row lock held above.
+    const correction = await EngineeringCorrectionService.correct(tx, {
+      entityType: "CELL",
+      entityId: updatedCell.id,
       correctionReason,
-      gradingNotes: body.gradingNotes ?? null,
+      performedBy: correctedBy,
+      approvedBy: correctedBy,
+      actorRole: req.user?.role,
+      allowedRoles: ["supervisor", "director"],
+      auditEventType: "cell_grade_corrected",
+      previousValue: {
+        voltageV: lockedCell.voltageV,
+        capacityAh: lockedCell.capacityAh,
+        internalResistanceMohm: lockedCell.internalResistanceMohm,
+        temperatureC: lockedCell.temperatureC,
+        gradingMachineId: lockedCell.gradingMachineId,
+        grade: lockedCell.grade,
+        status: lockedCell.status,
+      },
+      newValue: {
+        voltageV: body.voltageV,
+        capacityAh: body.capacityAh,
+        internalResistanceMohm: body.internalResistanceMohm,
+        temperatureC: body.temperatureC ?? null,
+        gradingMachineId: body.gradingMachineId ?? null,
+        grade: finalGrade,
+        status: finalStatus,
+        overrideStatus: body.overrideStatus && body.overrideStatus !== "null" ? body.overrideStatus : null,
+        gradedBy: correctedBy,
+        gradingNotes: body.gradingNotes ?? null,
+      },
+      metadata: { lotId: updatedCell.lotId },
     });
 
     // Audit the correction on the lot timeline (mandatory reason captured).
@@ -473,7 +516,8 @@ router.post("/:id/correct", requireRole("supervisor", "director"), async (req, r
       reason: correctionReason,
       changes: {
         cellId: updatedCell.cellId,
-        sequence: nextSequence,
+        sequence: correction.sequence,
+        correctionId: correction.correctionId,
         grade: { from: lockedCell.grade, to: finalGrade },
         status: { from: lockedCell.status, to: finalStatus },
         capacityAh: body.capacityAh,
@@ -487,6 +531,14 @@ router.post("/:id/correct", requireRole("supervisor", "director"), async (req, r
   } catch (err) {
     if (err instanceof CorrectionStateError) {
       res.status(err.status).json({ error: err.message });
+      return;
+    }
+    if (err instanceof EcfValidationError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    if (err instanceof EcfAuthorizationError) {
+      res.status(403).json({ error: err.message });
       return;
     }
     throw err;
@@ -507,13 +559,8 @@ router.get("/:id/measurements", async (req, res) => {
     return;
   }
 
-  const measurements = await db
-    .select()
-    .from(cellGradeMeasurementsTable)
-    .where(eq(cellGradeMeasurementsTable.cellId, req.params.id))
-    .orderBy(asc(cellGradeMeasurementsTable.sequence));
-
-  res.json(measurements);
+  const history = await EngineeringCorrectionService.getHistory(db, "CELL", req.params.id);
+  res.json(history.map(toCellMeasurement));
 });
 
 export default router;

@@ -1225,8 +1225,11 @@ export const CellMeasurementGrade = {
 
 export interface CellMeasurement {
   id: string;
+  /** Globally-unique engineering Correction ID (CORR-YYYYMMDD-NNNNNN) from the Engineering Correction Framework. */
+  correctionId: string;
   cellId: string;
-  lotId?: string;
+  /** @nullable */
+  lotId?: string | null;
   sequence: number;
   measurementType: CellMeasurementMeasurementType;
   voltageV: number;

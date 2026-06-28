@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
-import { ModuleHeader, OdsToolbar, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
+import { ModuleHeader, OdsToolbar, OdsTableSkeleton, OdsEmptyState, OdsCorrectionHistory, type OdsCorrectionEntry } from "@/components/ods";
 import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useOdsNotify } from "@/hooks/use-ods-notify";
-import { useListCells, useGradeCell, useCorrectCell } from "@workspace/api-client-react";
+import { useListCells, useGradeCell, useCorrectCell, useListCellMeasurements, getListCellMeasurementsQueryKey } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -90,6 +90,8 @@ export default function CellGradingPage() {
   const [correctCellId, setCorrectCellId] = useState<string | null>(null);
   const [correctCellLabel, setCorrectCellLabel] = useState<string>("");
   const [correctForm, setCorrectForm] = useState<CorrectForm>(DEFAULT_CORRECT_FORM);
+  const [historyCellId, setHistoryCellId] = useState<string | null>(null);
+  const [historyCellLabel, setHistoryCellLabel] = useState<string>("");
   const { user } = useAuth();
   const canCorrect = user?.role === "supervisor" || user?.role === "director";
   const formRef = useRef<HTMLFormElement>(null);
@@ -136,6 +138,36 @@ export default function CellGradingPage() {
       onError: (e: any) =>
         notify.error("Correction failed", { description: e?.message }),
     },
+  });
+
+  const { data: historyData, isLoading: historyLoading } = useListCellMeasurements(
+    historyCellId ?? "",
+    {
+      query: {
+        enabled: !!historyCellId,
+        queryKey: getListCellMeasurementsQueryKey(historyCellId ?? ""),
+      },
+    },
+  );
+
+  const historyEntries: OdsCorrectionEntry[] = (historyData ?? []).map((m, idx, arr) => {
+    const prev = idx > 0 ? arr[idx - 1] : undefined;
+    return {
+      id: m.id ?? m.correctionId ?? String(m.sequence),
+      version: m.sequence,
+      type: m.measurementType === "correction" ? "correction" : "original",
+      correctionId: m.correctionId,
+      performedBy: m.gradedBy ?? "—",
+      reason: m.correctionReason ?? null,
+      timestamp: m.createdAt,
+      status: m.grade ? `Grade ${m.grade}` : m.status,
+      fields: [
+        { label: "Voltage (V)", previous: prev?.voltageV, value: m.voltageV },
+        { label: "Capacity (Ah)", previous: prev?.capacityAh, value: m.capacityAh },
+        { label: "IR (mΩ)", previous: prev?.internalResistanceMohm, value: m.internalResistanceMohm },
+        { label: "Temp (°C)", previous: prev?.temperatureC, value: m.temperatureC },
+      ],
+    };
   });
 
   const handleCorrect = (e: React.FormEvent) => {
@@ -302,6 +334,18 @@ export default function CellGradingPage() {
                               }}
                             >
                               Grade
+                            </Button>
+                          )}
+                          {GRADED_STATUSES.has(cell.status) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setHistoryCellId(cell.id);
+                                setHistoryCellLabel(cell.cellId);
+                              }}
+                            >
+                              History
                             </Button>
                           )}
                           {canCorrect && GRADED_STATUSES.has(cell.status) && (
@@ -480,6 +524,27 @@ export default function CellGradingPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!historyCellId} onOpenChange={(o) => !o && setHistoryCellId(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Correction History — <span className="font-mono text-primary">{historyCellLabel}</span></DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground -mt-2 mb-1">
+            Append-only engineering genealogy from the Engineering Correction Framework. The
+            original measurement is immutable; each correction is a new version with a unique
+            Correction ID.
+          </p>
+          <div className="max-h-[60vh] overflow-y-auto pr-1">
+            <OdsCorrectionHistory
+              entries={historyEntries}
+              isLoading={historyLoading}
+              emptyTitle="No grading record yet"
+              emptyDescription="This cell has not been graded."
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </AppLayout>

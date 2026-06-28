@@ -57,6 +57,18 @@ RBAC is enforced at the sub-router via `requireWriteRole(...)`: grading = operat
 director; config = supervisor/director. Reads pass for any authenticated user (viewer is
 read-only everywhere).
 
+> **ECF note (post-MAT-02, pre-MAT-03 — CTO-approved platform extraction).** The Cell-Grading
+> correction engine certified under DEF-CW02-006 has been extracted into the reusable
+> **Engineering Correction Framework (ECF)** — a single generic `engineering_corrections`
+> ledger (immutable history) consumed via `@workspace/ecf`, with Cell Grading as the
+> reference module. **Behavior and the API contract are unchanged:** grade still writes the
+> `original` (now ECF version 1), `POST /cells/{id}/correct` still appends a supervisor/director
+> correction with a mandatory reason and emits `cell_grade_corrected` on `cell_lot_events`, and
+> `GET /cells/{id}/measurements` returns the identical `CellMeasurement` shape (now also
+> carrying the unique `correctionId`). The legacy `cell_grade_measurements` table is dropped.
+> SS-02 / SS-03 (now extended to cover the ledger's immutability) / SS-04 all re-verified PASS;
+> full typecheck + lint (0 warnings) green. See `docs/engineering-correction-framework.md`.
+
 ---
 
 ## 2. Acceptance Criteria

@@ -12,6 +12,8 @@ export async function seedDatabase(): Promise<void> {
   await pool.query(`
     CREATE SEQUENCE IF NOT EXISTS mfg_order_seq START 1 INCREMENT 1;
     CREATE SEQUENCE IF NOT EXISTS mfg_battery_seq START 1 INCREMENT 1;
+    -- ECF: global monotonic counter for the human Correction ID (CORR-YYYYMMDD-NNNNNN).
+    CREATE SEQUENCE IF NOT EXISTS ecf_correction_seq START 1 INCREMENT 1;
   `);
 
   // Ensure the singleton grade-config row exists so reads (GET /cells/config)

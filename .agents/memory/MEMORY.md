@@ -18,3 +18,4 @@
 - [Method-based RBAC guard pitfalls](rbac-method-guards.md) — a router-level write guard on a parent URL prefix shadows sibling routers; GET handlers must never write (get-or-create on read leaks writes to viewers).
 - [Performance regression framework](perf-regression-framework.md) — gate regressions behind a min sample count (cold-start noise), never fake N/A figures, baseline≠stress dataset, never silently move a baseline.
 - [Auth login redirect race](auth-redirect-race.md) — seed auth cache via setQueryData in login onSuccess; invalidateQueries races a synchronous redirect and bounces back to /login.
+- [Engineering Correction Framework (ECF)](ecf-framework.md) — one generic immutable engineering_corrections ledger across modules; module table = current state; lib stays module-agnostic; fail-closed authz.

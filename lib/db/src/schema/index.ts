@@ -29,6 +29,7 @@ export * from "./master-chargers";
 export * from "./master-test-equipment";
 export * from "./manufacturing";
 export * from "./cell-grading";
+export * from "./engineering-corrections";
 export * from "./logistics";
 export * from "./users";
 export * from "./performance-snapshots";

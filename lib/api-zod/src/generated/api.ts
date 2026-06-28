@@ -4030,8 +4030,9 @@ export const ListCellMeasurementsParams = zod.object({
 
 export const ListCellMeasurementsResponseItem = zod.object({
   "id": zod.string().uuid(),
+  "correctionId": zod.string().describe('Globally-unique engineering Correction ID (CORR-YYYYMMDD-NNNNNN) from the Engineering Correction Framework.'),
   "cellId": zod.string().uuid(),
-  "lotId": zod.string().uuid().optional(),
+  "lotId": zod.string().uuid().nullish(),
   "sequence": zod.number(),
   "measurementType": zod.enum(['original', 'correction']),
   "voltageV": zod.number(),

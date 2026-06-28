@@ -3389,11 +3389,12 @@ components:
 
     CellMeasurement:
       type: object
-      required: [id, cellId, sequence, measurementType, voltageV, capacityAh, internalResistanceMohm, grade, status, gradedBy, createdAt]
+      required: [id, correctionId, cellId, sequence, measurementType, voltageV, capacityAh, internalResistanceMohm, grade, status, gradedBy, createdAt]
       properties:
         id: { type: string, format: uuid }
+        correctionId: { type: string, description: "Globally-unique engineering Correction ID (CORR-YYYYMMDD-NNNNNN) from the Engineering Correction Framework." }
         cellId: { type: string, format: uuid }
-        lotId: { type: string, format: uuid }
+        lotId: { type: ["string", "null"], format: uuid }
         sequence: { type: integer }
         measurementType: { type: string, enum: [original, correction] }
         voltageV: { type: number }

@@ -9,7 +9,6 @@ import {
   doublePrecision,
   index,
   json,
-  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { masterProductsTable } from "./master-products";
 import { masterCellsTable } from "./master-cells";
@@ -102,42 +101,11 @@ export const cellsTable = pgTable(
   ]
 );
 
-// DEF-CW02-006: append-only measurement history. Every grading event (the
-// original plus every correction) is one immutable row. The active measurement
-// is the one with the highest `sequence` for a cell — no row is ever updated or
-// deleted, so the grading genealogy is always reconstructable. The `cells` table
-// holds the active snapshot for fast queries.
-export const cellGradeMeasurementsTable = pgTable(
-  "cell_grade_measurements",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    cellId: uuid("cell_id").notNull().references(() => cellsTable.id),
-    lotId: uuid("lot_id").notNull().references(() => cellLotsTable.id),
-    sequence: integer("sequence").notNull(),
-    // "original" = first grading; "correction" = supervisor/director re-grade.
-    measurementType: text("measurement_type").notNull(),
-    voltageV: doublePrecision("voltage_v").notNull(),
-    capacityAh: doublePrecision("capacity_ah").notNull(),
-    internalResistanceMohm: doublePrecision("internal_resistance_mohm").notNull(),
-    temperatureC: doublePrecision("temperature_c"),
-    gradingMachineId: text("grading_machine_id"),
-    grade: cellGradeEnum("grade"),
-    status: cellStatusEnum("status").notNull(),
-    overrideStatus: text("override_status"),
-    // Operator/supervisor who recorded this measurement.
-    gradedBy: text("graded_by").notNull(),
-    // Null for the original; mandatory for every correction.
-    correctionReason: text("correction_reason"),
-    gradingNotes: text("grading_notes"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [
-    index("idx_cell_grade_measurements_cell_id").on(table.cellId),
-    index("idx_cell_grade_measurements_lot_id").on(table.lotId),
-    // One row per (cell, sequence) — concurrent corrections cannot collide.
-    uniqueIndex("uq_cell_grade_measurements_cell_seq").on(table.cellId, table.sequence),
-  ]
-);
+// NOTE: the cell grade measurement/correction history is no longer a bespoke
+// table. It now lives in the generic Engineering Correction Framework ledger
+// (`engineering_corrections`, entityType "CELL") — see lib/db/src/schema/
+// engineering-corrections.ts and the @workspace/ecf service. The `cells` table
+// continues to hold the active snapshot for fast queries.
 
 export const cellGradeConfigTable = pgTable("cell_grade_config", {
   id: integer("id").primaryKey().default(1),
@@ -219,9 +187,6 @@ export type InsertCellLot = typeof cellLotsTable.$inferInsert;
 
 export type Cell = typeof cellsTable.$inferSelect;
 export type InsertCell = typeof cellsTable.$inferInsert;
-
-export type CellGradeMeasurement = typeof cellGradeMeasurementsTable.$inferSelect;
-export type InsertCellGradeMeasurement = typeof cellGradeMeasurementsTable.$inferInsert;
 
 export type CellGradeConfig = typeof cellGradeConfigTable.$inferSelect;
 export type InsertCellGradeConfig = typeof cellGradeConfigTable.$inferInsert;
