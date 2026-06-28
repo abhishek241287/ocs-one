@@ -25,6 +25,43 @@ Templates (these files) may be improved for future waves. Once a wave is certifi
 
 ---
 
+## Standard Certification Testing Practices
+
+These practices are **permanent and apply to every certification wave (CW-02 → CW-08)**.
+
+### Batch MAT methodology (per phase)
+
+Run the **whole phase as one batch**, then triage: (1) execute the entire phase's test suite —
+every case, no stopping; (2) collect ALL findings; (3) classify each defect Critical / High /
+Medium / Low **and** module-specific vs. platform-improvement; (4) present the consolidated
+report to the CTO and get approval **before any fix**; (5) fix all Critical/High/Medium together
+in a single remediation cycle; (6) re-run the FULL phase; (7) close the gate only on a full PASS.
+No per-defect test→fix→retest loops. Mantra: **Measure. Verify. Document.** — before any change.
+
+### Standard fixture teardown — set-based, prefix-scoped (CTO-accepted 2026-06-28, CW-02 MAT-04)
+
+Every live certification harness that creates fixtures MUST tear them down so the wave leaves
+**0 residual** certification data. The accepted standard:
+
+1. **Prefix-tag every fixture** with one stable, searchable token (e.g. `CW0X-CERT-…`).
+2. **Tear down by prefix, set-based** — delete with `WHERE … LIKE 'PREFIX-%'` (and equivalent
+   `created_by` / actor columns), **never by IDs captured in the run**. Captured-ID teardown
+   only cleans the current run, so a prior partial run's orphans persist and their FKs can block
+   the current cleanup — residual silently accumulates.
+3. **Break foreign keys before deleting parents** — null child FK columns first, then delete
+   leaf → root in FK-safe order.
+4. **Surface every teardown error** — a SQL helper may return DB/FK errors as *text* without
+   throwing, so `try/catch` alone can hide a failed delete. Print each statement's result and
+   then run an explicit **residual-count assertion (must equal 0)** across every table touched.
+5. **Account for cascading platform writes** — e.g. grading appends an ECF
+   `engineering_corrections` original row per cell, so a grading harness must also clear that
+   ledger (keyed on the harness actor). Enumerate every table a tested operation writes.
+
+> Rationale: certification must never pollute the live dataset. A wave is not closeable until
+> its teardown is proven to 0 residual.
+
+---
+
 ## Certification Waves
 
 ### CW-01 — Cell Receiving

@@ -7,7 +7,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased] — CW-02 Cell Grading (in progress)
 
-### ✅ MAT-04 — Integration Certification — EXECUTED, 0 defects (2026-06-28, gate-close pending CTO)
+### 🟦 MAT-05 — Performance & Stress Certification — EXECUTED, decision PASS WITH NOTES (2026-06-28, CTO sign-off pending)
+
+Full-batch performance & stress certification of the Cell Grading module against a representative
+1,058-cell dataset. **All measured API + stress thresholds met by 28–60× · scorecard 10/10 ·
+0 Critical/High/Medium.** No production code or configuration was changed — measurement only.
+
+- **Dataset:** seeded `CW02-PERF-` lot + 1,000 cells (100 received / 700 approved A·B·C / 200
+  rejected) → 1,058 cells total. Prefix-tagged for set-based teardown.
+- **API P95:** GET reads 3–12 ms (list/filter/deep-page/search/single-cell/config/measurements);
+  write paths `POST /grade` and `POST /correct` 14 ms — all far under their 200–500 ms thresholds.
+- **Query plans (`EXPLAIN ANALYZE`):** resolves **OBS-CW02-002** — `cells` indexes are *used* when
+  the filter is selective (`grade=A`→`idx_cells_grade`, `status+grade`→`idx_cells_status_grade`) and
+  a seq-scan is *correctly* chosen only when non-selective (`status=approved` 67%, `lot_id` 94%).
+  Optimal cost-based planning, **not** a missing index. Closed.
+- **Stress:** 25/50 concurrent → 75/75 OK (≤ 186 ms, 269 req/s); rapid 100-loop P95 6 ms; rate
+  limiter sheds 235/360 under flood (as designed). **Teardown 0 residual**, pre-seed baseline
+  restored exactly (58 cells / 14 lots / 1 ECF / 23 events).
+- **Findings (presented to CTO before any fix — batch methodology):** (1) **OBS-CW02-003 (Low,
+  module-specific)** — no `idx_cells_created_at`; list `ORDER BY created_at DESC` does a top-N
+  heapsort (negligible: 0.20 ms / 32 kB at 1,058 rows). Recommend the index for consistency with
+  the receiving-side `DEF-CW01-M05-001`; **deferred, not fixed**. (2) **Baseline extension (platform,
+  additive)** — grading routes are absent from `PERFORMANCE_BASELINE_V1`; recommend additive
+  registration so `/developer/performance` defends them — frozen baseline **not** modified
+  unilaterally; CTO decision.
+- **Gate:** MAT-05 **awaiting CTO sign-off** (decision PASS WITH NOTES). On approval → close gate,
+  then MAT-06.
+
+### ✅ MAT-04 — Integration Certification — CERTIFIED & gate CLOSED (2026-06-28)
 
 Full-batch integration certification of the Cell Grading module's contracts with the rest of
 the line. **17/17 integration cases PASS · 10/10 scorecard · 0 defects.** No production code or
@@ -27,8 +54,10 @@ configuration was changed — verification only.
 - **Verified findings (positive):** ECF engages at the grading boundary (first grade writes an
   `engineering_corrections` original row); back-pressure is bidirectional and reason-correct
   ("committed to production"); allocation is atomic (no partial reservation on conflict).
-- **Gate:** MAT-04 **executed, 0 open Critical/High** — requesting CTO gate-close sign-off
-  (nothing to triage). Next: MAT-05.
+- **Gate:** MAT-04 **CLOSED by CTO (2026-06-28)** — 0 defects, 0 open Critical/High. The
+  set-based, prefix-scoped teardown is accepted as the **permanent standard teardown methodology
+  for all remaining cert waves (CW-02 → CW-08)** (`certification/README.md`). Next: MAT-05
+  (Performance & Stress).
 
 ### ✅ MAT-03 — Business-Rule Certification — EXECUTED & gate CLOSED (2026-06-28)
 

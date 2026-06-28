@@ -557,6 +557,96 @@ honored — verification only).
 
 ---
 
+## MAT-05 — Performance & Stress Certification
+
+**Executed:** 2026-06-28 · **Tester:** Replit Agent (QA) · **Batch methodology** (run whole phase → collect → classify → present → fix).
+**Environment:** Replit dev container · Express 5 · PostgreSQL · all traffic via `localhost:80` proxy.
+**Dataset:** seeded `CW02-PERF-` lot + **1,000 cells** (100 received, 700 approved A/B/C, 200 rejected) → 1,058 cells total. Prefix-tagged for set-based teardown.
+**Method:** Node `fetch` timing loops (30–50 samples/endpoint, warmup discarded, rate-window paced); `EXPLAIN (ANALYZE, BUFFERS)` for list query plans; concurrency + rapid-loop + rate-limiter-flood stress. Reference: `certification/Performance-Regression-Framework.md` (10% rule).
+
+### API Performance (P95)
+
+| Endpoint | Method | Dataset | P95 | Threshold | Status |
+|----------|--------|---------|-----|-----------|--------|
+| `/api/cells` (list pg1, 20/pg) | GET | 1,058 | 7 ms | < 400 ms | ✅ |
+| `/api/cells?status=approved` | GET | 710 match | 5 ms | < 400 ms | ✅ |
+| `/api/cells?grade=A` | GET | 326 match | 12 ms | < 400 ms | ✅ |
+| `/api/cells?status=&grade=` | GET | 310 match | 9 ms | < 400 ms | ✅ |
+| `/api/cells?lotId=` | GET | 1,000 match | 6 ms | < 400 ms | ✅ |
+| `/api/cells?search=` (ILIKE) | GET | 999 match | 6 ms | < 500 ms | ✅ |
+| `/api/cells?page=40` (deep page) | GET | 1,058 | 5 ms | < 400 ms | ✅ |
+| `/api/cells?pageSize=100` | GET | 1,058 | 7 ms | < 500 ms | ✅ |
+| `/api/cells/:id` (+ lot + genealogy) | GET | — | 7 ms | < 300 ms | ✅ |
+| `/api/cells/config` (grade-config) | GET | — | 3 ms | < 200 ms | ✅ |
+| `/api/cells/:id/measurements` (ECF history) | GET | — | 6 ms | < 300 ms | ✅ |
+| `/api/cells/:id/grade` (write txn) | POST | 32/32 200 | 14 ms | < 400 ms | ✅ |
+| `/api/cells/:id/correct` (write txn) | POST | 32/32 200 | 14 ms | < 400 ms | ✅ |
+
+> Every endpoint clears its threshold by **28–60×**. The grade/correct write paths (cell update + ECF ledger row + lot-timeline event, all in one transaction) stay at 14 ms P95.
+
+### Query plans (`EXPLAIN ANALYZE`, 1,058 rows) — OBS-CW02-002 resolution
+
+| Filter | Selectivity | Plan | Time |
+|--------|-------------|------|------|
+| `status='approved'` | 710/1,058 (67%) | **Seq Scan** + top-N heapsort | 0.20 ms |
+| `grade='A'` | 326 (31%) | **Index Scan** `idx_cells_grade` | 0.14 ms |
+| `status='approved' AND grade='A'` | 310 (29%) | **Index Scan** `idx_cells_status_grade` | 0.14 ms |
+| `lot_id=…` | 1,000 (94%) | **Seq Scan** | 0.23 ms |
+| `cell_id ILIKE '%…%'` | leading wildcard | **Seq Scan** (un-indexable by btree) | 0.61 ms |
+| no filter (default list) | — | **Seq Scan** + top-N heapsort | 0.23 ms |
+
+**OBS-CW02-002 → RESOLVED, NOT a defect.** The `cells` table already carries `idx_cells_status`, `idx_cells_grade`, `idx_cells_lot_id`, and composite `idx_cells_status_grade`. The planner **uses** them when the filter is selective (`grade=A`, `status+grade`) and **correctly chooses a Seq Scan only when the filter matches most rows** (`status=approved` 67%, `lot_id` 94%) — index access there would cost *more*. This is optimal cost-based planning, not a missing index. All plans complete < 1 ms at representative volume.
+
+### Stress
+
+| Scenario | Result | Status |
+|----------|--------|--------|
+| 1,000-cell read volume | no degradation (all GET P95 ≤ 12 ms) | ✅ |
+| 25 concurrent (list) | 25/25 OK · 146 ms wall · 171 req/s | ✅ |
+| 50 concurrent (list) | 50/50 OK · 186 ms wall · 269 req/s | ✅ |
+| rapid 100-request loop | P95 6 ms · no degradation/leak | ✅ |
+| rate-limiter flood (360 burst) | 125 × 200 / **235 × 429 shed (as designed)** | ✅ |
+
+**Teardown:** set-based, prefix-scoped (cells by `cell_id` prefix · ECF by actor · lot-events by lot · lot by prefix) → **0 residual** across all four stores; pre-seed baseline restored exactly (58 cells / 14 lots / 1 ECF / 23 events).
+
+### Frontend
+
+The Cell Grading page is part of the **shared ocs-one SPA bundle already certified in CW-01/MAT-05** (364.68 kB gzip, single chunk — `DEF-CW01-M05-002` deferred Low) and renders server-paginated (≤ pageSize DOM rows, O(pageSize)), so render cost is independent of dataset size. Client micro-metrics (FCP) are **design-assessed, not instrumented** (honesty principle — no fabricated figures), the same posture accepted for CW-01.
+
+### Findings & classification
+
+| ID | Sev | Module-specific vs Platform | Finding | Recommendation |
+|----|-----|-----------------------------|---------|----------------|
+| OBS-CW02-002 | — | — | Closed: indexes present & used; seq-scan on non-selective filters is correct | **No action** (resolved) |
+| OBS-CW02-003 | **Low** | Module-specific (cell-grading schema) | No `idx` on `cells.created_at`; list always `ORDER BY created_at DESC` → top-N heapsort (0.20 ms / 32 kB at 1,058 rows — negligible). Receiving side got the analogous index in `DEF-CW01-M05-001`. | Add `idx_cells_created_at` for consistency/future-proofing — **deferred Low**, present to CTO (not fixed; batch methodology) |
+| (doc) | — | Template | CW-02 `Performance.md` listed `/api/cells/grade-config`; actual route is `/api/cells/config` | Corrected in the sheet |
+| (decision) | — | Platform (additive) | Grading routes are not in `PERFORMANCE_BASELINE_V1`, so `/developer/performance` does not yet watch them for regression | Recommend **additive** baseline extension so the dashboard defends grading perf — CTO decision (frozen-framework additive change, post-approval) |
+
+**No Critical / High / Medium defects.** All measured API + stress thresholds met by a wide margin.
+
+### Performance scorecard (10-pt)
+
+| # | Criterion | Result |
+|---|-----------|--------|
+| 1 | List endpoint P95 < threshold | ✅ 7 ms |
+| 2 | Filtered list P95 < threshold | ✅ 5–12 ms |
+| 3 | Write paths (grade/correct) P95 < threshold | ✅ 14 ms |
+| 4 | Single-cell + genealogy P95 < threshold | ✅ 7 ms |
+| 5 | Index usage verified under load (EXPLAIN) | ✅ selective→index, non-selective→seq (optimal) |
+| 6 | No N+1 / unbounded query | ✅ paginated, count + page in 2 queries |
+| 7 | Concurrency (25/50) no errors | ✅ 75/75 OK |
+| 8 | Rate limiter sheds under flood | ✅ 235/360 → 429 |
+| 9 | Teardown 0 residual | ✅ confirmed |
+| 10 | Honesty (no fabricated metrics) | ✅ client FCP marked design-assessed |
+
+**Score: 10/10.**
+
+### Performance Decision
+
+**PASS WITH NOTES** — all *measured* API and stress thresholds met by 28–60×; OBS-CW02-002 resolved (no defect); one **Low** observation (`OBS-CW02-003`, `cells.created_at` index) recommended for consistency and **deferred** pending CTO; frontend client micro-metrics design-assessed (not instrumented), consistent with CW-01. **0 Critical/High/Medium.** Awaiting CTO sign-off to close the MAT-05 gate.
+
+---
+
 ## Open Defects (CW-02)
 
 | ID | Sev | Status | Phase |
@@ -571,7 +661,8 @@ honored — verification only).
 | Observation | For |
 |-------------|-----|
 | OBS-CW02-001 — `nominalIrMohm`=25 makes IR non-binding (capacity-only grading) — **VERIFIED in MAT-03 (BR-30)**; **CTO ruling 2026-06-28: Engineering Calibration Observation, not a cert defect → MEB-001, review after CW-08** | **Closed** (→ MEB-001) |
-| OBS-CW02-002 — cells list status filter seq-scans (low volume; verify index under representative load) | MAT-05 |
+| OBS-CW02-002 — cells list status filter seq-scans (low volume; verify index under representative load) — **RESOLVED in MAT-05**: `cells` indexes present & used when selective; seq-scan on non-selective filters is optimal cost-based planning, not a missing index | **Closed** (MAT-05) |
+| OBS-CW02-003 — no `idx_cells_created_at`; list `ORDER BY created_at DESC` does a top-N heapsort (0.20 ms / 32 kB at 1,058 rows — negligible). Recommend index for consistency with `DEF-CW01-M05-001`. Module-specific. | **Low — deferred**, pending CTO (MAT-05) |
 
 ---
 
@@ -589,7 +680,11 @@ honored — verification only).
 - [x] **CTO ruling on OBS-CW02-001 (2026-06-28)** — classified as an **Engineering Calibration Observation, NOT a cert defect**. No grading engine/config change during CW-02. Recorded in Manufacturing Engineering Backlog (MEB-001); grading algorithm + config review deferred to Manufacturing Engineering Optimization after CW-08.
 - [x] **MAT-03 gate CLOSED (2026-06-28)** — 30/30 PASS, 0 defects, 0 open Critical/High.
 - [x] **MAT-04 executed (full batch, 2026-06-28)** — 17/17 IT cases PASS; 10/10 scorecard; **0 defects**. Upstream (Receiving→Grading) + downstream (Grading→Matching→Manufacturing allocation) + end-to-end traceability all verified live with DB assertions. ECF confirmed engaging at the grading boundary; back-pressure bidirectional; allocation atomic. All throwaway cert fixtures torn down (set-based, prefix-scoped) → **0 residual** (lots/matches/orders/corrections).
-- [ ] **CTO sign-off on MAT-04** — 17/17 PASS, **0 defects** → nothing to triage; requesting gate-close approval. No grading engine/config change made (verification only).
-- [ ] **MAT-04 gate CLOSE** (pending CTO sign-off) → then MAT-05, MAT-06.
+- [x] **CTO sign-off on MAT-04 (2026-06-28)** — APPROVED. 17/17 PASS, 0 defects, 0 residual accepted; no production code changes; integration contracts verified end-to-end. **Set-based, prefix-scoped teardown accepted as the permanent standard teardown methodology for all remaining cert waves (CW-02 → CW-08)** — recorded in `certification/README.md`.
+- [x] **MAT-04 gate CLOSED (2026-06-28)** — 0 open Critical/High.
+- [x] **MAT-05 executed (full batch, 2026-06-28)** — 13 endpoints + 6 query plans + 5 stress scenarios measured against a 1,058-cell dataset. All API P95 within threshold by 28–60× (GET 3–12 ms, write paths 14 ms); concurrency 75/75 OK; rate limiter sheds 235/360 under flood; teardown 0 residual (baseline restored exactly). **Scorecard 10/10. 0 Critical/High/Medium.**
+- [x] **OBS-CW02-002 RESOLVED (MAT-05)** — `EXPLAIN ANALYZE` proves `cells` indexes are used when the filter is selective and a seq-scan is correctly chosen only when non-selective (optimal cost-based planning). Not a missing-index defect; closed.
+- [ ] **CTO sign-off on MAT-05** — pending. Decision = **PASS WITH NOTES**. Two items for CTO: (1) **OBS-CW02-003 (Low)** — add `idx_cells_created_at` for consistency with `DEF-CW01-M05-001` (deferred, not fixed); (2) **baseline extension** — whether to additively register grading routes in `PERFORMANCE_BASELINE_V1` so `/developer/performance` defends them (frozen-framework additive change, do NOT modify unilaterally).
+- [ ] **MAT-05 gate** — close after CTO sign-off → then MAT-06.
 
 **Plan signed:** Replit Agent (QA) · 2026-06-28
