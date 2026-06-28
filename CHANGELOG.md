@@ -7,6 +7,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased] — CW-02 Cell Grading (in progress)
 
+### 📥 Grading Import Framework — architecture review + Phase 1 extension points (CTO-approved)
+
+Prepares Cell Grading for future bulk / machine grading imports **without a second grading
+engine and without changing the certified manual-entry behaviour**. Manual entry remains the
+certified reference implementation; the live `POST /:id/grade` route is untouched.
+
+- **Architecture review** (`docs/architecture/grading-import-framework-review.md`): verified
+  exactly **one grading engine** — `calcGrade()` in `routes/cells/cells.ts`, shared by both the
+  grade and correct routes. No grading-logic duplication. Two *non-engine* blocks
+  (status-derivation + config-default fallback) are duplicated verbatim across the two routes —
+  noted as a minor future consolidation, not a second engine.
+- **Recommended pipeline** (all sources funnel through it): Source → `GradingImportSource` adapter
+  → normalized `GradingMeasurementRecord[]` → Validation → Preview → Operator Approval → the
+  existing engine → ECF → Audit.
+- **Phase 1 (additive only)** — new module `artifacts/api-server/src/routes/cells/import/`:
+  `GradingImportSource` adapter interface, normalized `GradingMeasurementRecord`, a
+  `ManualGradingSource` reference (manual entry = the one-row import case), and
+  `validateRecord()`/`validateContext()`/`buildPreview()` Validation+Preview helpers that
+  faithfully mirror the certified `GradeCellBody` contract (measurement bounds, `overrideStatus`
+  enum domain, non-blank operator attribution).
+- **Scope guard:** `"manual"` active; `"excel"`/`"csv"` **reserved** (no parsers);
+  PDF / Word / Machine API / OPC-UA / Modbus explicitly excluded (no code, no enum values).
+- **Verified:** typecheck + lint (0 warnings) + SS-02/SS-03/SS-04 cert suites all green; certified
+  codebase byte-identical.
+
 ### 🧬 Engineering Correction Framework (ECF) — platform extraction (CTO-approved, pre-MAT-03)
 
 The proven Cell-Grading correction engine (DEF-CW02-006) is extracted into a reusable
