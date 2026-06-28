@@ -1,0 +1,217 @@
+# Architecture Refinement Request – Unified Product Platform v1.0
+
+The Architecture Impact Report is approved in principle.
+
+Before implementation begins, I want one final architecture refinement so that the Product Platform becomes the permanent foundation for all future manufacturing modules.
+
+This is an architecture activity only.
+
+**Do not implement code yet.**
+
+---
+
+# 1. Separate Four Different Concepts
+
+The architecture shall explicitly distinguish the following entities.
+
+## A. Product Category
+
+Represents the business category.
+
+Version 1.0 contains only:
+
+* Battery Pack
+* Inbuilt Lithium Inverter
+* Hybrid Inverter
+
+This shall be configurable through Product Category Master.
+
+---
+
+## B. Product Model
+
+Represents the engineering definition (SKU).
+
+The existing **master_products** table already fulfills this purpose and shall remain the Product Model master.
+
+It must **not** become the serialized product table.
+
+---
+
+## C. Manufacturing Workflow
+
+Represents the manufacturing process.
+
+Current workflows:
+
+* BATTERY
+* INBUILT_LITHIUM
+* HYBRID
+
+Future workflows may include:
+
+* ESS
+* EV_AC_CHARGER
+* EV_DC_CHARGER
+* BMS
+
+Workflow Master shall remain independent of Product Category.
+
+---
+
+## D. Product
+
+Represents one serialized manufactured unit leaving QC.
+
+Every downstream module shall reference Product.
+
+---
+
+# 2. Product Relationship Diagram
+
+Please add an Entity Relationship Diagram showing the relationship between:
+
+* Product Category
+* Product Model
+* Manufacturing Workflow
+* Product
+* Manufacturing Genealogy
+* Engineering Correction Framework (ECF)
+* QC
+* Packing
+* Dispatch
+* Dealer
+
+Also reserve extension points (do not implement) for:
+
+* Installation
+* Warranty
+* Service
+* AMC
+
+---
+
+# 3. Product Genealogy
+
+Every Product shall own its manufacturing genealogy.
+
+Examples:
+
+### Battery Pack
+
+Cells
+
+↓
+
+Matching
+
+↓
+
+Assembly
+
+↓
+
+Testing
+
+↓
+
+QC
+
+↓
+
+Product
+
+---
+
+### Inbuilt Lithium Inverter
+
+Imported PCB
+
+↓
+
+OCS Battery
+
+↓
+
+Assembly
+
+↓
+
+Testing
+
+↓
+
+QC
+
+↓
+
+Product
+
+---
+
+### Hybrid Inverter
+
+Incoming Inspection
+
+↓
+
+Functional Testing
+
+↓
+
+QC
+
+↓
+
+Product
+
+No battery genealogy shall exist for Hybrid Inverter.
+
+External batteries belong to future Installation/Service modules only.
+
+---
+
+# 4. Migration Strategy
+
+Migration shall remain additive.
+
+Do not rename or remove any certified database tables.
+
+Instead:
+
+* keep existing certified structures operational,
+* introduce new Product entities,
+* migrate downstream modules gradually,
+* remove legacy references only after every module has migrated.
+
+---
+
+# 5. Platform Alignment
+
+The new Product Platform shall consume the frozen platforms without modification.
+
+Specifically:
+
+* ODS
+* Engineering Correction Framework (ECF)
+* Security Standards (SS-01 to SS-04)
+* Certification Framework
+
+No platform changes are expected.
+
+The Product Platform shall be implemented as manufacturing capability built on top of the frozen baseline.
+
+---
+
+# Deliverable
+
+Before any implementation begins, produce an updated Architecture Impact Report containing:
+
+1. Updated Entity Relationship Diagram.
+2. Updated Manufacturing Architecture Diagram.
+3. Product Genealogy Diagram.
+4. Updated Database Migration Strategy.
+5. Risk Review.
+6. Final Recommendation for implementation.
+
+No code until this architecture review is complete.

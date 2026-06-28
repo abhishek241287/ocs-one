@@ -5,8 +5,25 @@ description: Key durable findings/decisions from the CTO architecture review for
 
 # Unified Product Platform (architecture review — pending CTO approval)
 
-Full deliverable: `docs/architecture/unified-product-platform-review.md`. Recommendation issued:
-**APPROVED WITH CHANGES**. This is architecture only — no code was written.
+Full deliverable: `docs/architecture/unified-product-platform-review.md` (original report + a
+"Refinement v1.0 — Four-Concept Foundation" section). Recommendation progressed from **APPROVED
+WITH CHANGES** → **APPROVED FOR IMPLEMENTATION** after the CTO refinement. Architecture only — no
+code written.
+
+## Four-concept model (CTO refinement — the permanent foundation)
+
+The naming-collision risk is **resolved** by separating four distinct concepts, each its own
+master, all orthogonal:
+- **A. Product Category** — NEW `product_categories` master (Battery Pack / Inbuilt Lithium
+  Inverter / Hybrid Inverter; configurable).
+- **B. Product Model (SKU)** — EXISTING `master_products`, **permanently the Model master; never
+  becomes the serialized table**.
+- **C. Manufacturing Workflow** — NEW `product_workflows` master; **independent of Category**
+  (codes BATTERY/INBUILT_LITHIUM/HYBRID; future ESS/EV_*/BMS reserved).
+- **D. Product** — NEW `products` serialized-unit table; the single identity every downstream
+  module references after QC.
+A `products` row carries `category_id` AND `workflow_code` as TWO orthogonal FKs — never hardcode
+a category→workflow mapping (risk R10).
 
 ## The durable facts that shaped the recommendation
 

@@ -268,3 +268,195 @@ with the directive to focus engineering on manufacturing capability.
 closes**, so Cell Grading certification is not disturbed.
 
 > No implementation begins until this review is approved.
+
+---
+---
+
+# Refinement v1.0 — Four-Concept Foundation (supersedes §6 where they differ)
+
+> The Architecture Impact Report above is **approved in principle**. This refinement makes the
+> Product Platform the permanent foundation for all future manufacturing modules. It **resolves
+> the §8 R1 naming collision** by separating four concepts explicitly. Still **architecture only —
+> no code.** _Added: 2026-06-28._
+
+## R1. Four concepts, explicitly separated
+
+| # | Concept | Backing table | Role | Status in v1.0 |
+|---|---------|---------------|------|----------------|
+| **A** | **Product Category** | **NEW** `product_categories` (Product Category Master) | Business category | Configurable; seeded: Battery Pack · Inbuilt Lithium Inverter · Hybrid Inverter |
+| **B** | **Product Model (SKU)** | **EXISTING** `master_products` — **unchanged role** | Engineering definition / SKU | Stays the Model master; **never** becomes serialized |
+| **C** | **Manufacturing Workflow** | **NEW** `product_workflows` (Workflow Master) | Manufacturing process | Codes BATTERY/INBUILT_LITHIUM/HYBRID; **independent of Category**; future ESS/EV_AC_CHARGER/EV_DC_CHARGER/BMS reserved |
+| **D** | **Product** | **NEW** `products` | One serialized unit leaving QC | The single identity every downstream module references |
+
+**Key invariants this locks in:**
+- `master_products` is **permanently the Product Model master** — it is *not* the serialized
+  table. (Closes R1.)
+- **Workflow Master is independent of Product Category.** A `products` row carries `category_id`
+  **and** `workflow_code` as two orthogonal references — the category→workflow mapping is never
+  hardcoded into the category.
+- **Product** is the only handle downstream modules use after QC.
+
+## D1. Updated Entity Relationship Diagram
+
+```
+ product_categories (A: Category Master)          product_workflows (C: Workflow Master)
+ ┌───────────────────────────┐                    ┌──────────────────────────────────────┐
+ │ id (uuid)                 │                    │ id (uuid)                             │
+ │ code  (unique)            │                    │ code (BATTERY|INBUILT_LITHIUM|HYBRID) │
+ │ name, status              │                    │ name, stage_sequence (jsonb), status  │
+ └────────────┬──────────────┘                    └──────────────────┬───────────────────┘
+              │ 1                                                     │ 1
+              │                                                       │
+              │ *            ┌──────────────────────────────┐        │
+              └─────────────▶│ master_products (B: MODEL/SKU)│        │   (orthogonal —
+       category_id (add,null)│ id, code, voltage, capacity,  │        │    Category does NOT
+                             │ config, FKs bms/cabinet/cell  │        │    own Workflow)
+                             └───────────────┬──────────────┘        │
+                                             │ 1                      │
+                                             │                        │
+                                             │ *                      │
+                            ┌────────────────▼────────────────────────▼─────────────┐
+                            │ products (D: serialized UNIT identity)                 │
+                            │  id (uuid)                                             │
+                            │  category_id   → product_categories   (A)             │
+                            │  model_id      → master_products      (B)             │
+                            │  workflow_code → product_workflows    (C)             │
+                            │  source_production_order_id → mfg_production_orders    │
+                            │       (nullable; BATTERY/INBUILT_LITHIUM only)        │
+                            │  ocs_product_serial (unique) · manufacturer_serial    │
+                            │  qc_status · product_status · current_location        │
+                            │  dealer_id → logistics_dealers                        │
+                            └───┬───────────────┬───────────────┬──────────────┬────┘
+                            1 │             1 │             *   │           (polymorphic)
+                              │               │                 │                │
+                ┌─────────────▼──┐  ┌──────────▼─────────┐  ┌────▼──────────┐  ┌──▼───────────────────┐
+                │ product_       │  │ product_events     │  │ QC result     │  │ engineering_         │
+                │ genealogy      │  │ (append-only audit │  │ (gate → emits │  │ corrections (ECF)    │
+                │ (category-     │  │  timeline)         │  │  Product)     │  │ entity_type=PRODUCT/ │
+                │  aware lineage)│  └────────────────────┘  └───────────────┘  │ BATTERY/INVERTER     │
+                └────────────────┘                                             │ entity_id=products.id│
+                                                                              └──────────────────────┘
+                            products ──> Packing ──> Dispatch ──> Dealer
+                                                                    │
+            reserved extension points (RESERVED, NOT implemented): Installation · Warranty · Service · AMC
+                            (these will hang off products.id in a future phase)
+```
+
+Cardinality summary: Category **1—*** Model; Model **1—*** Product; Category **1—*** Product;
+Workflow **1—*** Product; Product **1—1** source production order (nullable); Product **1—***
+genealogy; Product **1—*** events; Product **1—*** ECF corrections (polymorphic); Product **\*—1**
+Dealer.
+
+## D2. Updated Manufacturing Architecture Diagram (workflow-driven)
+
+```
+                    product_workflows (Workflow Master) — stage_sequence is DATA, not an enum
+                                          │ drives
+                                          ▼
+        ┌──────────────────────┬────────────────────────────┬───────────────────────────┐
+        │  workflow=BATTERY    │  workflow=INBUILT_LITHIUM   │  workflow=HYBRID          │
+        │  cell_allocation     │  pcb_receiving             │  incoming_inspection      │
+        │  assembly            │  battery_installation*     │  functional_testing       │
+        │  compression         │  assembly                  │  quality_control          │
+        │  bms_allocation      │  testing                   │                           │
+        │  bms_programming     │  quality_control           │  (no battery stages)      │
+        │  charging            │                            │                           │
+        │  testing             │  *consumes an OCS Battery   │                           │
+        │  quality_control     │   Pack (4S1P/8S1P) as a    │                           │
+        │  packing             │   permanent component       │                           │
+        └──────────┬───────────┴─────────────┬──────────────┴────────────┬──────────────┘
+                   └──────────── QC-PASS gate (single creation point) ─────┘
+                                          ▼
+                              products row created (serial per category rule)
+                                          ▼
+            Product status lifecycle:  manufacturing → qc_passed → ready_for_packing
+                                       → packed → dispatched → delivered_to_dealer
+                                       (future states RESERVED: installed/in_service/returned/scrapped)
+
+  Stage engine note: today the sequence + "previous stage approved" guard are HARDCODED in
+  routes/manufacturing/stages.ts. The refactor reads stage_sequence from the Workflow Master.
+  BATTERY path stays byte-identical & feature-flagged; re-certified before new workflows go live.
+```
+
+## D3. Product Genealogy Diagram (per category — Product owns its lineage)
+
+```
+ BATTERY PACK                  INBUILT LITHIUM INVERTER          HYBRID INVERTER
+ ───────────                   ────────────────────────          ───────────────
+   Cells                          Imported PCB                     Incoming Inspection
+     ↓                               ↓                                ↓
+   Matching                       OCS Battery (permanent)          Functional Testing
+     ↓                               ↓                                ↓
+   Assembly                       Assembly                         QC
+     ↓                               ↓                                ↓
+   Testing                        Testing                          PRODUCT
+     ↓                               ↓
+   QC                             QC                               (NO battery genealogy —
+     ↓                               ↓                              external batteries belong
+   PRODUCT                        PRODUCT                           to future Install/Service)
+```
+
+All three lineages persist in **one** `product_genealogy` table keyed by `product_id`; the
+content set is category-aware (battery lineage present only for Battery Pack and Inbuilt Lithium).
+
+## D4. Updated Database Migration Strategy (strictly additive)
+
+**Hard rule (CTO): do not rename or remove any certified table.** Legacy references are removed
+**only after every module has migrated.**
+
+New tables (all additive): `product_categories`, `product_workflows`, `products`,
+`product_genealogy`, `product_events`, `master_inverters`. Additive nullable columns only:
+`master_products.category_id` (→ product_categories), `mfg_production_orders.product_id`
+(→ products), `logistics_dispatch_items.product_id` (→ products, dual-key with the existing UNIQUE
+`production_order_id`).
+
+| Phase | Action | Certified tables touched |
+|-------|--------|--------------------------|
+| 1 | Create new tables + enums; seed 3 categories + 3 workflows; add nullable FKs; **idempotent backfill** of `products` for existing completed/dispatched battery orders | None renamed/removed (additive columns only) |
+| 2 | Emit Product at the QC-pass gate (BATTERY first); dispatch items dual-key on `product_id` | None |
+| 3 | Generalize stage engine to workflow-driven (flagged, BATTERY unchanged); add INBUILT_LITHIUM + HYBRID + `master_inverters` | None |
+| 4 | Repoint downstream (Packing/Dispatch/Dealer/Inventory/Reports/Director) to `product_id`; relabel UI "Battery"→"Product" | None |
+| 5 | **Post-cert only:** retire direct `production_order_id` downstream references once every module reads `product_id` | Legacy refs removed only here |
+
+Each phase is independently certifiable through the standard Batch MAT cycle + cert gate.
+
+## D5. Risk Review (delta from §8)
+
+| # | Risk | Sev | Change |
+|---|------|-----|--------|
+| R1 | Model-vs-unit naming collision | ~~High~~ → **Closed** | **Resolved** by the four-concept separation: `master_products` stays the Model master; `products` is the new serialized unit. |
+| R2 | Workflow-driven stage-engine refactor on the certified module | **High** | Unchanged — still the highest-risk phase; flagged + BATTERY-unchanged + re-cert. |
+| R3 | Breaking certified logistics (`production_order_id` UNIQUE) | Med | Unchanged — nullable `product_id`, dual-key, legacy removed only in Phase 5. |
+| R4 | HYBRID external-serial reuse / collision | Med | Unchanged — validate presence, non-colliding serial space. |
+| R5 | INBUILT_LITHIUM battery-as-component genealogy | Med | Unchanged. |
+| R6 | Scope creep past Dealer | Med | **Reduced** — Installation/Warranty/Service/AMC are now explicit *reserved extension points* hanging off `products.id`, not designed now. |
+| R7 | Backfill correctness | Med | Unchanged — idempotent + reconciliation count. |
+| R8 | Certification regression on frozen modules | Med | Unchanged — additive-only + full re-cert each phase. |
+| R9 | Timing vs CW-02 | Low | Unchanged — start after CW-02 closes. |
+| **R10** | **Category↔Workflow coupling** (someone hardcodes category→workflow, breaking orthogonality) | Low | **New** — enforce two independent FKs on `products`; no derived mapping. |
+
+## D6. Final Recommendation
+
+### ✅ APPROVED FOR IMPLEMENTATION
+
+The refinement resolves the single blocking concern (R1) by permanently fixing `master_products`
+as the **Product Model** master and introducing a separate serialized **Product** identity, with
+**Product Category** and **Manufacturing Workflow** as independent masters. The design is additive
+(no certified table renamed/removed), consumes the frozen platforms (ODS, ECF, Security Standards,
+Certification) **without modification**, and is delivered as manufacturing capability on the frozen
+baseline.
+
+**Conditions carried into implementation:**
+1. Implement in the **phased, additive** order of §D4; legacy references retired only in Phase 5
+   (post-cert).
+2. The **workflow-driven stage-engine** generalization (R2) is the highest-risk phase — feature-
+   flagged, BATTERY path byte-identical, re-certified before INBUILT_LITHIUM/HYBRID go live.
+3. Preserve **Category↔Workflow orthogonality** (R10): two independent FKs, no hardcoded mapping.
+4. Keep the v1.0 boundary at **Dealer**; Installation/Warranty/Service/AMC remain *reserved
+   extension points* off `products.id`.
+5. The Product Platform follows **SS-01..04** per endpoint and earns a **Platform Scorecard** row
+   once it stabilizes.
+6. **Sequence after CW-02 closes** so Cell Grading certification is undisturbed.
+
+> No code until this architecture review is approved. On approval, implementation proceeds per
+> the phased plan above.
