@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { useCreateProductionOrder } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 
 interface Props {
@@ -29,7 +29,7 @@ interface Props {
 }
 
 export default function CreateOrderDrawer({ open, onClose, onSuccess }: Props) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const createOrder = useCreateProductionOrder();
 
   const [form, setForm] = useState({
@@ -46,7 +46,7 @@ export default function CreateOrderDrawer({ open, onClose, onSuccess }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.factoryManager.trim()) {
-      toast({ title: "Factory Manager is required", variant: "destructive" });
+      notify.error("Factory Manager is required");
       return;
     }
     try {
@@ -59,11 +59,11 @@ export default function CreateOrderDrawer({ open, onClose, onSuccess }: Props) {
           notes: form.notes || null,
         },
       });
-      toast({ title: "Production order created", description: "Battery number auto-assigned" });
+      notify.success("Production order created", { description: "Battery number auto-assigned" });
       setForm({ factoryManager: "", priority: "medium", plannedStartDate: "", plannedEndDate: "", notes: "" });
       onSuccess();
     } catch {
-      toast({ title: "Failed to create order", variant: "destructive" });
+      notify.error("Failed to create order");
     }
   };
 

@@ -23,7 +23,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Wrench, Loader2, AlertCircle, RefreshCw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 
 type StatusFilter = "all" | "open" | "in_progress" | "resolved" | "closed";
 
@@ -35,7 +35,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function ReworkQueuePage() {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selected, setSelected] = useState<ReworkTicket | null>(null);
@@ -66,11 +66,11 @@ export default function ReworkQueuePage() {
           correctiveAction: form.correctiveAction || null,
         },
       });
-      toast({ title: "Rework ticket updated" });
+      notify.success("Rework ticket updated");
       queryClient.invalidateQueries({ queryKey: getListReworkTicketsQueryKey() });
       setSelected(null);
     } catch {
-      toast({ title: "Failed to update ticket", variant: "destructive" });
+      notify.error("Failed to update ticket");
     }
   };
 

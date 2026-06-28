@@ -18,7 +18,7 @@ import {
   usePauseStage, useResumeStage,
   useListChargerUnits,
 } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 import StageApprovalSection from "./StageApprovalSection";
 
 interface OrderStage {
@@ -48,7 +48,7 @@ function balancingBadge(status: string | null | undefined) {
 }
 
 export default function ChargingCard({ orderId, stage, onRefresh }: Props) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const sd = (stage.stageData ?? {}) as Record<string, unknown>;
 
   const [operatorName, setOperatorName] = useState(stage.operatorName ?? "");
@@ -116,8 +116,8 @@ export default function ChargingCard({ orderId, stage, onRefresh }: Props) {
   });
 
   const handleStart = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
-    if (!chargerUnitId) { toast({ title: "Select a charger", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
+    if (!chargerUnitId) { notify.error("Select a charger"); return; }
     const now = new Date().toISOString();
     const stageData = { ...getStageData(), chargeStartTime: chargeStartTime || now };
     try {
@@ -125,44 +125,44 @@ export default function ChargingCard({ orderId, stage, onRefresh }: Props) {
         id: orderId, stage: "charging",
         data: { operatorName: operatorName.trim(), stageData },
       });
-      toast({ title: "Charging started — charger reserved" });
+      notify.success("Charging started — charger reserved");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to start charging", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to start charging");
     }
   };
 
   const handlePause = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
     try {
       await pauseStage.mutateAsync({
         id: orderId, stage: "charging",
         data: { operatorName: operatorName.trim() },
       });
-      toast({ title: "Charging paused" });
+      notify.success("Charging paused");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to pause", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to pause");
     }
   };
 
   const handleResume = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
     try {
       await resumeStage.mutateAsync({
         id: orderId, stage: "charging",
         data: { operatorName: operatorName.trim() },
       });
-      toast({ title: "Charging resumed" });
+      notify.success("Charging resumed");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to resume", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to resume");
     }
   };
 
   const handleComplete = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
-    if (!finalVoltageV) { toast({ title: "Final voltage required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
+    if (!finalVoltageV) { notify.error("Final voltage required"); return; }
     const now = new Date().toISOString();
     const stageData = { ...getStageData(), chargeEndTime: chargeEndTime || now };
     try {
@@ -174,10 +174,10 @@ export default function ChargingCard({ orderId, stage, onRefresh }: Props) {
           notes: `Charging complete — Final: ${finalVoltageV}V @ ${chargingCurrentA}A${topBalancingRequired ? `, Balancing: ${balancingStatus ?? "—"}` : ""}`,
         },
       });
-      toast({ title: "Charging complete — Formation Report generated" });
+      notify.success("Charging complete — Formation Report generated");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to complete", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to complete");
     }
   };
 

@@ -21,7 +21,7 @@ import {
   useUpdateChargerUnit,
   useUpdateChargerUnitStatus,
 } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 
 type ChargerStatus = "available" | "busy" | "maintenance";
 
@@ -56,7 +56,7 @@ const EMPTY_FORM: FormData = {
 };
 
 export default function ChargerManagementPage() {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
@@ -98,7 +98,7 @@ export default function ChargerManagementPage() {
 
   const handleSave = async () => {
     if (!form.chargerCode.trim() || !form.model.trim() || !form.manufacturer.trim() || !form.serialNumber.trim()) {
-      toast({ title: "Charger Code, Model, Manufacturer, Serial Number are required", variant: "destructive" });
+      notify.error("Charger Code, Model, Manufacturer, Serial Number are required");
       return;
     }
     try {
@@ -113,25 +113,25 @@ export default function ChargerManagementPage() {
       };
       if (editId) {
         await updateUnit.mutateAsync({ id: editId, data: payload });
-        toast({ title: "Charger updated" });
+        notify.success("Charger updated");
       } else {
         await createUnit.mutateAsync({ data: { ...payload, status: "available" } });
-        toast({ title: "Charger registered" });
+        notify.success("Charger registered");
       }
       setShowForm(false);
       refetch();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to save", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to save");
     }
   };
 
   const handleSetStatus = async (id: string, status: ChargerStatus) => {
     try {
       await updateStatus.mutateAsync({ id, data: { status } });
-      toast({ title: `Charger set to ${status}` });
+      notify.success(`Charger set to ${status}`);
       refetch();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to update status", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to update status");
     }
   };
 

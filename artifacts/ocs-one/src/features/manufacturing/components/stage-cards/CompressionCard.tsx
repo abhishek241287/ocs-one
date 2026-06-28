@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Gauge, PlayCircle, CheckCircle2, Loader2, Square, CheckSquare } from "lucide-react";
 import { useStartStage, useCompleteStage } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 import StageApprovalSection from "./StageApprovalSection";
 
 interface OrderStage {
@@ -25,7 +25,7 @@ const CHECKLIST_ITEMS = [
 ];
 
 export default function CompressionCard({ orderId, stage, onRefresh }: Props) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const sd = (stage.stageData ?? {}) as Record<string, unknown>;
 
   const [operatorName, setOperatorName] = useState(stage.operatorName ?? "");
@@ -52,20 +52,20 @@ export default function CompressionCard({ orderId, stage, onRefresh }: Props) {
   };
 
   const handleStart = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
     try {
       await startStage.mutateAsync({ id: orderId, stage: "compression", data: { operatorName: operatorName.trim() } });
-      toast({ title: "Compression stage started" });
+      notify.success("Compression stage started");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to start", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to start");
     }
   };
 
   const handleComplete = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
-    if (!allChecked) { toast({ title: "All checklist items must be verified", variant: "destructive" }); return; }
-    if (!torqueValue) { toast({ title: "Torque value required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
+    if (!allChecked) { notify.error("All checklist items must be verified"); return; }
+    if (!torqueValue) { notify.error("Torque value required"); return; }
     try {
       await completeStage.mutateAsync({
         id: orderId, stage: "compression",
@@ -75,10 +75,10 @@ export default function CompressionCard({ orderId, stage, onRefresh }: Props) {
           notes: `Torque: ${torqueValue} Nm — all checks passed`,
         },
       });
-      toast({ title: "Compression completed — awaiting approval" });
+      notify.success("Compression completed — awaiting approval");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to complete", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to complete");
     }
   };
 

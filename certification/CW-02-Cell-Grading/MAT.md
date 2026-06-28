@@ -220,15 +220,31 @@ route + API + auth-guard all healthy.
 > **MAT-01 status: complete, awaiting CTO triage decision on DEF-CW02-002 before any code is
 > changed.** DEF-CW02-001 and -003 are ready to fix immediately on approval.
 
+### MAT-01 Remediation — EXECUTED 2026-06-28 (CTO triage: Option 1 approved)
+
+CTO approved **Option 1** — DEF-CW02-002 treated as a **platform certification defect**: migrate
+**all** modules from deprecated `useToast` to ODS-certified `useOdsNotify` once, so every module
+benefits (per standing cert-wave triage preference).
+
+| ID | Resolution | Verification |
+|----|------------|--------------|
+| DEF-CW02-002 | **CLOSED — platform fix.** Migrated **145 calls across 18 files** to `useOdsNotify` (mapping: `variant:"destructive"` → `notify.error(title,{description})`, else → `notify.success(...)`, text preserved verbatim). `useToast` now confined to the 3 infra files (primitive, renderer, wrapper). ODS registry updated: `useToast` DEPRECATED, `useOdsNotify` MANDATORY. | `rg` confirms zero `useToast`/bare `toast(` calls in consumers; `typecheck` + `lint` (0 warnings) green; SS-02/03/04 all PASS; smoke test — 18 files hot-reloaded, zero console errors. |
+| DEF-CW02-001 | **CLOSED — module fix.** `ModuleHeader certification` changed `"certified"` → `"development"` (badge no longer claims certification before CW-02 closes). | Renders development badge; `typecheck` green. |
+| DEF-CW02-003 | **CLOSED — module fix.** Added `onRefresh={() => refetch()}` + `isRefreshing={isFetching}` to `OdsToolbar`; destructured `isFetching, refetch` from `useListCells` (mirrors certified receiving page). | Refresh control present with spinner state; `typecheck` green. |
+
+**Re-run MAT-01 result: 10 Pass · 0 Partial · 0 Fail — FULL PASS.** Rows 5/6/10 now pass:
+header carries the honest `development` badge, toolbar has refresh + fetch indicator, and the
+module is fully ODS-compliant via `useOdsNotify`. MAT-01 is **closed**; MAT-02 may begin.
+
 ---
 
 ## Open Defects (CW-02)
 
 | ID | Sev | Status | Phase |
 |----|-----|--------|-------|
-| DEF-CW02-001 | Low | Open | MAT-01 |
-| DEF-CW02-002 | Medium | Open (triage) | MAT-01 |
-| DEF-CW02-003 | Low | Open | MAT-01 |
+| DEF-CW02-001 | Low | **Closed** (MAT-01 remediation) | MAT-01 |
+| DEF-CW02-002 | Medium | **Closed** (platform — `useToast`→`useOdsNotify`) | MAT-01 |
+| DEF-CW02-003 | Low | **Closed** (MAT-01 remediation) | MAT-01 |
 
 | Observation | For |
 |-------------|-----|
@@ -239,7 +255,8 @@ route + API + auth-guard all healthy.
 ## MAT Decision Log
 
 - [x] **MAT-01 executed** — 7 Pass / 2 Partial / 1 Fail; 3 defects filed; triage pending.
-- [ ] MAT-01 defects remediated + re-tested → PASS
-- [ ] MAT-02 → MAT-06 (pending MAT-01 closure)
+- [x] **CTO triage decision** — Option 1 approved: DEF-CW02-002 fixed as a platform certification defect.
+- [x] **MAT-01 defects remediated + re-tested → FULL PASS** (10/10; DEF-001/002/003 all Closed).
+- [ ] MAT-02 → MAT-06 (MAT-01 now closed; MAT-02 may begin)
 
 **Plan signed:** Replit Agent (QA) · 2026-06-28

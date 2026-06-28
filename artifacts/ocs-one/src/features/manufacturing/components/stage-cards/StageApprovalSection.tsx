@@ -8,7 +8,7 @@ import {
   useApproveStage,
   useRejectStage,
 } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 
 type StageKey = "cell_allocation" | "assembly" | "compression" | "bms_allocation" | "bms_programming" | "charging" | "testing" | "quality_control" | "packing";
 
@@ -20,7 +20,7 @@ interface Props {
 }
 
 export default function StageApprovalSection({ orderId, stageKey, existingNotes, onRefresh }: Props) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const [supervisor, setSupervisor] = useState("");
   const [rejectNotes, setRejectNotes] = useState("");
   const [showReject, setShowReject] = useState(false);
@@ -31,30 +31,30 @@ export default function StageApprovalSection({ orderId, stageKey, existingNotes,
 
   const handleApprove = async () => {
     if (!supervisor.trim()) {
-      toast({ title: "Supervisor name required", variant: "destructive" });
+      notify.error("Supervisor name required");
       return;
     }
     try {
       await approveStage.mutateAsync({ id: orderId, stage: stageKey, data: { supervisorName: supervisor.trim(), notes: existingNotes ?? null } });
-      toast({ title: "Stage approved ✓" });
+      notify.success("Stage approved ✓");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to approve", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to approve");
     }
   };
 
   const handleReject = async () => {
     if (!supervisor.trim() || !rejectNotes.trim()) {
-      toast({ title: "Supervisor name and reason required", variant: "destructive" });
+      notify.error("Supervisor name and reason required");
       return;
     }
     try {
       await rejectStage.mutateAsync({ id: orderId, stage: stageKey, data: { supervisorName: supervisor.trim(), notes: rejectNotes.trim() } });
-      toast({ title: "Stage rejected — returned to pending" });
+      notify.success("Stage rejected — returned to pending");
       setShowReject(false);
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to reject", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to reject");
     }
   };
 

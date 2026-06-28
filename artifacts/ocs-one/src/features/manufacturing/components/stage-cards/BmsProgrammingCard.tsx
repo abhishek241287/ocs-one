@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Code2, PlayCircle, CheckCircle2, Loader2, Square, CheckSquare } from "lucide-react";
 import { useStartStage, useCompleteStage } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 import StageApprovalSection from "./StageApprovalSection";
 
 interface OrderStage {
@@ -28,7 +28,7 @@ const COMM_TESTS = [
 ];
 
 export default function BmsProgrammingCard({ orderId, stage, onRefresh }: Props) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const sd = (stage.stageData ?? {}) as Record<string, unknown>;
 
   const [operatorName, setOperatorName] = useState(stage.operatorName ?? "");
@@ -57,20 +57,20 @@ export default function BmsProgrammingCard({ orderId, stage, onRefresh }: Props)
   };
 
   const handleStart = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
     try {
       await startStage.mutateAsync({ id: orderId, stage: "bms_programming", data: { operatorName: operatorName.trim() } });
-      toast({ title: "BMS Programming stage started" });
+      notify.success("BMS Programming stage started");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to start", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to start");
     }
   };
 
   const handleComplete = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
-    if (!programmingResult) { toast({ title: "Programming result required", variant: "destructive" }); return; }
-    if (programmingResult === "pass" && !allPassed) { toast({ title: "All communication tests must pass", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
+    if (!programmingResult) { notify.error("Programming result required"); return; }
+    if (programmingResult === "pass" && !allPassed) { notify.error("All communication tests must pass"); return; }
     try {
       await completeStage.mutateAsync({
         id: orderId, stage: "bms_programming",
@@ -80,10 +80,10 @@ export default function BmsProgrammingCard({ orderId, stage, onRefresh }: Props)
           notes: `Programming ${programmingResult === "pass" ? "PASSED" : "FAILED"} — FW: ${firmwareVersion}`,
         },
       });
-      toast({ title: "BMS Programming completed — awaiting approval" });
+      notify.success("BMS Programming completed — awaiting approval");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to complete", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to complete");
     }
   };
 

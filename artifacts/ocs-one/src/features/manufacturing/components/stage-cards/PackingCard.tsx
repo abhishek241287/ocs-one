@@ -17,7 +17,7 @@ import {
 import {
   PlayCircle, CheckCircle2, ThumbsUp, ThumbsDown, Loader2, Package,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 
 interface OrderStage {
   id: string; stageType: string; stageOrder: number; status: string;
@@ -48,7 +48,7 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 const sd = (stage: OrderStage) => (stage.stageData ?? {}) as Record<string, unknown>;
 
 export default function PackingCard({ orderId, stage, onRefresh }: Props) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const existingData = sd(stage);
 
   const [operatorName, setOperatorName] = useState(stage.operatorName ?? "");
@@ -79,7 +79,7 @@ export default function PackingCard({ orderId, stage, onRefresh }: Props) {
   const statusInfo = STATUS_BADGE[stage.status] ?? STATUS_BADGE.pending;
 
   const handleStart = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
     try {
       await startStage.mutateAsync({
         id: orderId, stage: "packing",
@@ -89,16 +89,16 @@ export default function PackingCard({ orderId, stage, onRefresh }: Props) {
           stageData: { packingDate, boxNumber, boxType, grossWeightKg: parseFloat(grossWeight) || null, netWeightKg: parseFloat(netWeight) || null },
         },
       });
-      toast({ title: "Packing stage started" });
+      notify.success("Packing stage started");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to start", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to start");
     }
   };
 
   const handleComplete = async () => {
     if (!operatorName.trim() || !boxNumber.trim()) {
-      toast({ title: "Operator name and box number required", variant: "destructive" }); return;
+      notify.error("Operator name and box number required"); return;
     }
     try {
       await completeStage.mutateAsync({
@@ -114,35 +114,35 @@ export default function PackingCard({ orderId, stage, onRefresh }: Props) {
           },
         },
       });
-      toast({ title: "Packing complete" });
+      notify.success("Packing complete");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to complete", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to complete");
     }
   };
 
   const handleApprove = async () => {
-    if (!supervisorName.trim()) { toast({ title: "Supervisor name required", variant: "destructive" }); return; }
+    if (!supervisorName.trim()) { notify.error("Supervisor name required"); return; }
     try {
       await approveStage.mutateAsync({ id: orderId, stage: "packing", data: { supervisorName: supervisorName.trim(), notes: notes || null } });
-      toast({ title: "Packing approved — battery ready for dispatch" });
+      notify.success("Packing approved — battery ready for dispatch");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to approve", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to approve");
     }
   };
 
   const handleReject = async () => {
     if (!supervisorName.trim() || !rejectNotes.trim()) {
-      toast({ title: "Supervisor name and reason required", variant: "destructive" }); return;
+      notify.error("Supervisor name and reason required"); return;
     }
     try {
       await rejectStage.mutateAsync({ id: orderId, stage: "packing", data: { supervisorName: supervisorName.trim(), notes: rejectNotes.trim() } });
-      toast({ title: "Packing rejected" });
+      notify.success("Packing rejected");
       setShowReject(false);
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to reject", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to reject");
     }
   };
 

@@ -28,7 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 import { useListCells, useGradeCell } from "@workspace/api-client-react";
 import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -62,7 +62,7 @@ const DEFAULT_GRADE_FORM = {
 type GradeForm = typeof DEFAULT_GRADE_FORM;
 
 export default function CellGradingPage() {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"pending" | "all">("pending");
   const [page, setPage] = useState(1);
@@ -77,7 +77,7 @@ export default function CellGradingPage() {
 
   const status = tab === "pending" ? "received" : undefined;
 
-  const { data, isLoading } = useListCells({
+  const { data, isLoading, isFetching, refetch } = useListCells({
     page,
     pageSize: 50,
     search: search || undefined,
@@ -93,13 +93,10 @@ export default function CellGradingPage() {
         setForm(DEFAULT_GRADE_FORM);
         const grade = (result as any).grade ?? "unknown";
         const status = (result as any).status;
-        toast({
-          title: `Cell graded — Grade ${grade}`,
-          description: `Status set to ${status}`,
-        });
+        notify.success(`Cell graded — Grade ${grade}`, { description: `Status set to ${status}` });
       },
       onError: (e: any) =>
-        toast({ title: "Grading failed", description: e?.message, variant: "destructive" }),
+        notify.error("Grading failed", { description: e?.message }),
     },
   });
 
@@ -107,7 +104,7 @@ export default function CellGradingPage() {
     e.preventDefault();
     if (!selectedCellId) return;
     if (!form.voltageV || !form.capacityAh || !form.internalResistanceMohm || !form.gradedBy) {
-      toast({ title: "Required fields missing", variant: "destructive" });
+      notify.error("Required fields missing");
       return;
     }
     gradeCell.mutate({
@@ -139,10 +136,12 @@ export default function CellGradingPage() {
           icon="🔬"
           title="Cell Grading"
           description="Record grading measurements — grade is auto-calculated from tolerance rules"
-          certification="certified"
+          certification="development"
         />
 
         <OdsToolbar
+          onRefresh={() => refetch()}
+          isRefreshing={isFetching}
           search={{
             value: search,
             onChange: (v) => { setSearch(v); setPage(1); },

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Wrench, PlayCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { useStartStage, useCompleteStage } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 import StageApprovalSection from "./StageApprovalSection";
 
 interface OrderStage {
@@ -28,7 +28,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function AssemblyCard({ orderId, stage, onRefresh }: Props) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const sd = (stage.stageData ?? {}) as Record<string, string>;
 
   const [form, setForm] = useState({
@@ -54,22 +54,22 @@ export default function AssemblyCard({ orderId, stage, onRefresh }: Props) {
   const isInProgress = stage.status === "in_progress";
 
   const handleStart = async () => {
-    if (!form.operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
+    if (!form.operatorName.trim()) { notify.error("Operator name required"); return; }
     try {
       await startStage.mutateAsync({
         id: orderId, stage: "assembly",
         data: { operatorName: form.operatorName.trim(), notes: form.notes || null },
       });
-      toast({ title: "Assembly stage started" });
+      notify.success("Assembly stage started");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to start", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to start");
     }
   };
 
   const handleComplete = async () => {
-    if (!form.operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
-    if (!form.cabinetSerialNumber.trim()) { toast({ title: "Cabinet serial number required", variant: "destructive" }); return; }
+    if (!form.operatorName.trim()) { notify.error("Operator name required"); return; }
+    if (!form.cabinetSerialNumber.trim()) { notify.error("Cabinet serial number required"); return; }
     try {
       await completeStage.mutateAsync({
         id: orderId, stage: "assembly",
@@ -86,10 +86,10 @@ export default function AssemblyCard({ orderId, stage, onRefresh }: Props) {
           },
         },
       });
-      toast({ title: "Assembly completed — awaiting approval" });
+      notify.success("Assembly completed — awaiting approval");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to complete", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to complete");
     }
   };
 

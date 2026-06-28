@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 import {
   useListCellMatches,
   useCreateCellMatch,
@@ -50,7 +50,7 @@ function ScoreBadge({ score }: { score: number }) {
 }
 
 function MatchDetailPanel({ matchId, onClose }: { matchId: string; onClose: () => void }) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const queryClient = useQueryClient();
   const { data, isLoading } = useGetCellMatch(matchId);
   const accept = useAcceptCellMatch({
@@ -59,18 +59,18 @@ function MatchDetailPanel({ matchId, onClose }: { matchId: string; onClose: () =
         queryClient.invalidateQueries({ queryKey: ["/api/cells/matches"] });
         queryClient.invalidateQueries({ queryKey: [`/api/cells/matches/${matchId}`] });
         queryClient.invalidateQueries({ queryKey: ["/api/cells/inventory"] });
-        toast({ title: "Cells reserved", description: "All selected cells are now reserved for this match." });
+        notify.success("Cells reserved", { description: "All selected cells are now reserved for this match." });
       },
-      onError: (e: any) => toast({ title: "Error", description: e?.message, variant: "destructive" }),
+      onError: (e: any) => notify.error("Error", { description: e?.message }),
     },
   });
   const regenerate = useRegenerateCellMatch({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [`/api/cells/matches/${matchId}`] });
-        toast({ title: "New match generated" });
+        notify.success("New match generated");
       },
-      onError: (e: any) => toast({ title: "Error", description: e?.message, variant: "destructive" }),
+      onError: (e: any) => notify.error("Error", { description: e?.message }),
     },
   });
 
@@ -166,7 +166,7 @@ const DEFAULT_FORM = {
 };
 
 export default function CellMatchingPage() {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
@@ -184,17 +184,17 @@ export default function CellMatchingPage() {
         setOpen(false);
         setForm(DEFAULT_FORM);
         setSelectedMatchId((result as any).id);
-        toast({ title: "Match generated", description: `Score: ${(result as any).matchScore?.toFixed(1)}%` });
+        notify.success("Match generated", { description: `Score: ${(result as any).matchScore?.toFixed(1)}%` });
       },
       onError: (e: any) =>
-        toast({ title: "Matching failed", description: e?.message ?? "Not enough approved cells", variant: "destructive" }),
+        notify.error("Matching failed", { description: e?.message ?? "Not enough approved cells" }),
     },
   });
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.batteryModel || !form.quantity || !form.createdBy) {
-      toast({ title: "Required fields missing", variant: "destructive" });
+      notify.error("Required fields missing");
       return;
     }
     createMatch.mutate({

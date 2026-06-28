@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Cpu, PlayCircle, CheckCircle2, Loader2, Wifi, Bluetooth, Radio } from "lucide-react";
 import { useStartStage, useCompleteStage, useListBmsMasters } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 import StageApprovalSection from "./StageApprovalSection";
 
 interface OrderStage {
@@ -27,7 +27,7 @@ function BoolIcon({ value }: { value: boolean }) {
 }
 
 export default function BmsInstallCard({ orderId, stage, onRefresh }: Props) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const sd = (stage.stageData ?? {}) as Record<string, unknown>;
 
   const [selectedBmsId, setSelectedBmsId] = useState((sd.bmsId as string | undefined) ?? "");
@@ -48,9 +48,9 @@ export default function BmsInstallCard({ orderId, stage, onRefresh }: Props) {
   const isInProgress = stage.status === "in_progress";
 
   const handleStart = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
-    if (!selectedBmsId) { toast({ title: "Select a BMS from inventory", variant: "destructive" }); return; }
-    if (!bmsSerialNumber.trim()) { toast({ title: "BMS serial number required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
+    if (!selectedBmsId) { notify.error("Select a BMS from inventory"); return; }
+    if (!bmsSerialNumber.trim()) { notify.error("BMS serial number required"); return; }
     try {
       await startStage.mutateAsync({
         id: orderId, stage: "bms_allocation",
@@ -59,17 +59,17 @@ export default function BmsInstallCard({ orderId, stage, onRefresh }: Props) {
           notes: `Installing ${selectedBms ? `${selectedBms.manufacturer} ${selectedBms.model}` : selectedBmsId} S/N: ${bmsSerialNumber}`,
         },
       });
-      toast({ title: "BMS Installation stage started" });
+      notify.success("BMS Installation stage started");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to start", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to start");
     }
   };
 
   const handleComplete = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
-    if (!selectedBmsId) { toast({ title: "BMS selection required", variant: "destructive" }); return; }
-    if (!bmsSerialNumber.trim()) { toast({ title: "BMS serial number required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
+    if (!selectedBmsId) { notify.error("BMS selection required"); return; }
+    if (!bmsSerialNumber.trim()) { notify.error("BMS serial number required"); return; }
     try {
       await completeStage.mutateAsync({
         id: orderId, stage: "bms_allocation",
@@ -89,10 +89,10 @@ export default function BmsInstallCard({ orderId, stage, onRefresh }: Props) {
           notes: `BMS S/N ${bmsSerialNumber} installed`,
         },
       });
-      toast({ title: "BMS Installation completed — awaiting approval" });
+      notify.success("BMS Installation completed — awaiting approval");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to complete", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to complete");
     }
   };
 

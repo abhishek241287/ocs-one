@@ -3,7 +3,7 @@ import AppLayout from "@/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 import { useGetCellGradeConfig, useUpdateCellGradeConfig } from "@workspace/api-client-react";
 import { Settings, Loader2, Save } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -43,16 +43,16 @@ function ConfigRow({ label, value, onChange, unit, hint }: { label: string; valu
 }
 
 export default function GradeConfigPage() {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const queryClient = useQueryClient();
   const { data: config, isLoading } = useGetCellGradeConfig();
   const update = useUpdateCellGradeConfig({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/cells/config"] });
-        toast({ title: "Configuration saved" });
+        notify.success("Configuration saved");
       },
-      onError: (e: any) => toast({ title: "Error saving config", description: e?.message, variant: "destructive" }),
+      onError: (e: any) => notify.error("Error saving config", { description: e?.message }),
     },
   });
 

@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 
 interface MutationOptions {
   onSuccess?: () => void;
@@ -17,6 +17,7 @@ export function useMasterCrud<_T extends { id: string }>(
   }
 ) {
   const queryClient = useQueryClient();
+  const notify = useOdsNotify();
 
   const listQuery = hooks.useList();
   const createMutation = hooks.useCreate();
@@ -27,14 +28,10 @@ export function useMasterCrud<_T extends { id: string }>(
     try {
       await createMutation.mutateAsync({ data });
       queryClient.invalidateQueries({ queryKey: hooks.listQueryKey });
-      toast({ title: "Success", description: "Item created successfully" });
+      notify.success("Success", { description: "Item created successfully" });
       options?.onSuccess?.();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create item",
-        variant: "destructive",
-      });
+      notify.error("Error", { description: error.message || "Failed to create item" });
       options?.onError?.(error);
     }
   };
@@ -43,14 +40,10 @@ export function useMasterCrud<_T extends { id: string }>(
     try {
       await updateMutation.mutateAsync({ id, data });
       queryClient.invalidateQueries({ queryKey: hooks.listQueryKey });
-      toast({ title: "Success", description: "Item updated successfully" });
+      notify.success("Success", { description: "Item updated successfully" });
       options?.onSuccess?.();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update item",
-        variant: "destructive",
-      });
+      notify.error("Error", { description: error.message || "Failed to update item" });
       options?.onError?.(error);
     }
   };
@@ -59,13 +52,9 @@ export function useMasterCrud<_T extends { id: string }>(
     try {
       await toggleStatusMutation.mutateAsync({ id, data: { status } });
       queryClient.invalidateQueries({ queryKey: hooks.listQueryKey });
-      toast({ title: "Success", description: `Item status updated to ${status}` });
+      notify.success("Success", { description: `Item status updated to ${status}` });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to toggle status",
-        variant: "destructive",
-      });
+      notify.error("Error", { description: error.message || "Failed to toggle status" });
     }
   };
 

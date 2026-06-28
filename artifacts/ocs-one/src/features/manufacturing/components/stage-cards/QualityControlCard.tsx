@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   ShieldCheck, Loader2, CheckCircle2, XCircle, AlertCircle, PlayCircle,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 
 interface OrderStage {
   id: string; stageType: string; stageOrder: number; status: string;
@@ -40,7 +40,7 @@ const TEST_LABELS: Record<string, string> = {
 };
 
 export default function QualityControlCard({ orderId, stage, onRefresh }: Props) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const [operatorName, setOperatorName] = useState(stage.operatorName ?? "");
   const [inspectorName, setInspectorName] = useState("Sujeet");
   const [inspectorRole, setInspectorRole] = useState("Plant Manager");
@@ -65,21 +65,21 @@ export default function QualityControlCard({ orderId, stage, onRefresh }: Props)
   };
 
   const handleStart = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
     try {
       await startStage.mutateAsync({ id: orderId, stage: "quality_control", data: { operatorName: operatorName.trim(), notes: null } });
-      toast({ title: "QC stage started" });
+      notify.success("QC stage started");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to start QC", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to start QC");
     }
   };
 
   const handleSubmitQc = async () => {
-    if (!inspectorName.trim()) { toast({ title: "Inspector name required", variant: "destructive" }); return; }
-    if (!decision) { toast({ title: "Select Approve or Reject", variant: "destructive" }); return; }
+    if (!inspectorName.trim()) { notify.error("Inspector name required"); return; }
+    if (!decision) { notify.error("Select Approve or Reject"); return; }
     if (decision === "rejected" && !failureReason.trim()) {
-      toast({ title: "Failure reason required for rejection", variant: "destructive" }); return;
+      notify.error("Failure reason required for rejection"); return;
     }
     try {
       await createApproval.mutateAsync({
@@ -94,10 +94,10 @@ export default function QualityControlCard({ orderId, stage, onRefresh }: Props)
           failureReason: failureReason.trim() || null,
         },
       });
-      toast({ title: decision === "approved" ? "✓ Battery QC Approved!" : "Battery sent to rework queue" });
+      notify.success(decision === "approved" ? "✓ Battery QC Approved!" : "Battery sent to rework queue");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to submit QC", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to submit QC");
     }
   };
 

@@ -7,7 +7,7 @@ description: The discipline rule for the ODS design system plus the non-obvious 
 
 **The rule:** No module may build its own table, toolbar, drawer, dialog, search bar, or other interactive UI. If the pattern doesn't exist in ODS, add it to ODS first, then use it. Everything is barrel-exported from `@/components/ods`; design tokens from `@/ods/theme` (Tailwind class strings only — no raw CSS values). The in-app `/design-system` route is the live catalogue. To see what components exist, read `src/components/ods/index.ts` — don't rely on a list here going stale.
 
-**Notification rule:** modules must never call `useToast()` directly — always `useOdsNotify()` semantic variants, so UX stays consistent.
+**Notification rule (MANDATORY):** `useToast()` is DEPRECATED for application code — modules must never call it directly. Always use `useOdsNotify()` semantic variants (`notify.success` / `notify.error` / etc.) so UX stays consistent. The only legitimate `useToast` callers are the shadcn primitive, its renderer, and the `useOdsNotify` wrapper itself — grep `src/hooks/use-ods-notify.ts` to see the canonical mapping rather than duplicating it here. **Why:** a prior cert wave found ~18 surfaces calling raw `useToast`, producing inconsistent UX; consolidating on the wrapper is the only way semantic styling + emoji affordances stay uniform. Note the wrapper prepends an emoji (✅/❌) to the title at render time, so "preserve text verbatim" applies to the call-site string, not the rendered title.
 
 ## ODS Standard 15 — Keyboard Table Navigation (mandatory)
 Every data table must be fully operable mouse-free. Engine is the `useTableKeyboardNav` hook — reuse it for any bespoke/raw table that can't use OdsDataTable directly.

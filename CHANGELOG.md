@@ -5,6 +5,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased] — CW-02 Cell Grading (in progress)
+
+> **Certification Wave 02 — Cell Grading.** MAT-01 (Page & Navigation) executed and closed at
+> FULL PASS (10/10). Platform/ODS remains frozen except CTO-approved cert-driven corrections.
+
+### ♻️ Platform certification defect — notifications unified on ODS (DEF-CW02-002)
+
+- **`useToast` → `useOdsNotify` (platform-wide).** MAT-01 found the Cell Grading module (and ~17
+  other surfaces) calling the raw shadcn `useToast` instead of the ODS-certified `useOdsNotify`
+  wrapper. Per the standing cert-wave triage rule, the CTO classified this as a **platform
+  improvement** (Option 1) and authorized a one-time migration so every module benefits, not just
+  the module under cert.
+  - **145 calls migrated across 18 files.** Mapping: `variant:"destructive"` → `notify.error(title, { description })`; everything else → `notify.success(title, { description })`. All title/description text preserved verbatim.
+  - `useToast` is now **DEPRECATED** for application code and confined to its 3 infra files
+    (`hooks/use-toast.ts` primitive, `components/ui/toaster.tsx` renderer, `hooks/use-ods-notify.ts`
+    wrapper). `useOdsNotify` is **MANDATORY** for all modules. ODS registry updated accordingly.
+  - **Verification:** zero `useToast`/bare `toast(` calls remain in consumers; `typecheck` +
+    `lint` (0 warnings) green; SS-02 (225/225), SS-03 (11/11 + immutable), SS-04 (31 pass · 3
+    dev-warn · 0 fail) all PASS; smoke test — all 18 files hot-reloaded with zero console errors.
+
+### 🩹 Module fixes — Cell Grading (DEF-CW02-001, DEF-CW02-003)
+
+- **DEF-CW02-001** — removed premature `certification="certified"` badge on the Cell Grading
+  `ModuleHeader` (set to `development`); the module no longer claims certification before CW-02 closes.
+- **DEF-CW02-003** — added refresh action (`onRefresh` + `isRefreshing`) to the Cell Grading
+  `OdsToolbar`, mirroring the certified Cell Receiving page.
+
+---
+
 ## [1.0.1] — CW-01 Cell Receiving CERTIFIED — 2026-06-28 (tag `CW-01-CERTIFIED`)
 
 > **Certification Wave 01 — Cell Receiving — CERTIFIED.** MAT-01 → MAT-06 all PASS; 37 defects

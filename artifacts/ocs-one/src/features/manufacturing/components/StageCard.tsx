@@ -22,7 +22,7 @@ import {
 import {
   useStartStage, useCompleteStage, useApproveStage, useRejectStage,
 } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 
 interface OrderStage {
   id: string;
@@ -103,7 +103,7 @@ const STATUS_BADGE: Record<string, { label: string; className: string; Icon: Rea
 type StageKey = "cell_allocation" | "assembly" | "compression" | "bms_allocation" | "bms_programming" | "charging" | "testing" | "quality_control" | "packing";
 
 function GenericStageCard({ orderId, stage, onRefresh }: Props) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const [operatorName, setOperatorName] = useState(stage.operatorName ?? "");
   const [supervisorName, setSupervisorName] = useState(stage.supervisorName ?? "");
   const [notes, setNotes] = useState(stage.notes ?? "");
@@ -120,47 +120,47 @@ function GenericStageCard({ orderId, stage, onRefresh }: Props) {
   const isBusy = startStage.isPending || completeStage.isPending || approveStage.isPending || rejectStage.isPending;
 
   const handleStart = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
     try {
       await startStage.mutateAsync({ id: orderId, stage: stageKey, data: { operatorName: operatorName.trim(), notes: notes || null } });
-      toast({ title: "Stage started" });
+      notify.success("Stage started");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to start stage", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to start stage");
     }
   };
 
   const handleComplete = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
     try {
       await completeStage.mutateAsync({ id: orderId, stage: stageKey, data: { operatorName: operatorName.trim(), notes: notes || null } });
-      toast({ title: "Stage completed — awaiting supervisor approval" });
+      notify.success("Stage completed — awaiting supervisor approval");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to complete stage", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to complete stage");
     }
   };
 
   const handleApprove = async () => {
-    if (!supervisorName.trim()) { toast({ title: "Supervisor name required", variant: "destructive" }); return; }
+    if (!supervisorName.trim()) { notify.error("Supervisor name required"); return; }
     try {
       await approveStage.mutateAsync({ id: orderId, stage: stageKey, data: { supervisorName: supervisorName.trim(), notes: notes || null } });
-      toast({ title: "Stage approved" });
+      notify.success("Stage approved");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to approve stage", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to approve stage");
     }
   };
 
   const handleReject = async () => {
-    if (!supervisorName.trim() || !rejectNotes.trim()) { toast({ title: "Supervisor name and reason required", variant: "destructive" }); return; }
+    if (!supervisorName.trim() || !rejectNotes.trim()) { notify.error("Supervisor name and reason required"); return; }
     try {
       await rejectStage.mutateAsync({ id: orderId, stage: stageKey, data: { supervisorName: supervisorName.trim(), notes: rejectNotes.trim() } });
-      toast({ title: "Stage rejected — returned to pending" });
+      notify.success("Stage rejected — returned to pending");
       setShowReject(false);
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to reject stage", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to reject stage");
     }
   };
 

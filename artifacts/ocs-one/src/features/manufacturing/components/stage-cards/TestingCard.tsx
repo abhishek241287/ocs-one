@@ -21,7 +21,7 @@ import {
   PlayCircle, CheckCircle2, ThumbsUp, ThumbsDown, Loader2, ChevronDown, ChevronRight,
   FlaskConical, Save,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 
 interface OrderStage {
   id: string; stageType: string; stageOrder: number; status: string;
@@ -57,7 +57,7 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 
 // ─── Capacity Test Panel ───────────────────────────────────────────────────────
 function CapacityPanel({ orderId, existing, operatorName }: { orderId: string; existing?: TestResult; operatorName: string; }) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const upsert = useUpsertTestResult();
   const [rated, setRated] = useState(String(existing?.testData?.ratedCapacityAh ?? ""));
   const [measured, setMeasured] = useState(String(existing?.testData?.measuredCapacityAh ?? ""));
@@ -72,7 +72,7 @@ function CapacityPanel({ orderId, existing, operatorName }: { orderId: string; e
   const autoResult = capacityPct === null ? null : capacityPct >= 80 ? "pass" : capacityPct >= 70 ? "warning" : "fail";
 
   const save = async () => {
-    if (!rated || !measured) { toast({ title: "Rated and measured capacity required", variant: "destructive" }); return; }
+    if (!rated || !measured) { notify.error("Rated and measured capacity required"); return; }
     try {
       await upsert.mutateAsync({
         id: orderId, testType: "capacity",
@@ -84,8 +84,8 @@ function CapacityPanel({ orderId, existing, operatorName }: { orderId: string; e
           notes: notes || null,
         },
       });
-      toast({ title: `Capacity test saved — ${autoResult?.toUpperCase()}` });
-    } catch { toast({ title: "Failed to save capacity test", variant: "destructive" }); }
+      notify.success(`Capacity test saved — ${autoResult?.toUpperCase()}`);
+    } catch { notify.error("Failed to save capacity test"); }
   };
 
   return (
@@ -116,7 +116,7 @@ function CapacityPanel({ orderId, existing, operatorName }: { orderId: string; e
 
 // ─── Charge/Discharge Panel ───────────────────────────────────────────────────
 function ChargeDischargePanel({ orderId, existing, operatorName }: { orderId: string; existing?: TestResult; operatorName: string; }) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const upsert = useUpsertTestResult();
   const [chargeEff, setChargeEff] = useState(String(existing?.testData?.chargeEfficiencyPct ?? ""));
   const [dischargeEff, setDischargeEff] = useState(String(existing?.testData?.dischargeEfficiencyPct ?? ""));
@@ -143,8 +143,8 @@ function ChargeDischargePanel({ orderId, existing, operatorName }: { orderId: st
           notes: notes || null,
         },
       });
-      toast({ title: `Charge/Discharge test saved — ${result.toUpperCase()}` });
-    } catch { toast({ title: "Failed to save test", variant: "destructive" }); }
+      notify.success(`Charge/Discharge test saved — ${result.toUpperCase()}`);
+    } catch { notify.error("Failed to save test"); }
   };
 
   return (
@@ -186,7 +186,7 @@ const PROTECTIONS = [
 ];
 
 function ProtectionPanel({ orderId, existing, operatorName }: { orderId: string; existing?: TestResult; operatorName: string; }) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const upsert = useUpsertTestResult();
   const td = existing?.testData as Record<string, string> | null | undefined;
   const [checks, setChecks] = useState<Record<string, string>>(
@@ -210,8 +210,8 @@ function ProtectionPanel({ orderId, existing, operatorName }: { orderId: string;
           notes: notes || null,
         },
       });
-      toast({ title: `Protection test saved — ${autoResult.toUpperCase()}` });
-    } catch { toast({ title: "Failed to save test", variant: "destructive" }); }
+      notify.success(`Protection test saved — ${autoResult.toUpperCase()}`);
+    } catch { notify.error("Failed to save test"); }
   };
 
   return (
@@ -249,7 +249,7 @@ function ProtectionPanel({ orderId, existing, operatorName }: { orderId: string;
 
 // ─── Internal Resistance Panel ────────────────────────────────────────────────
 function IrPanel({ orderId, existing, operatorName }: { orderId: string; existing?: TestResult; operatorName: string; }) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const upsert = useUpsertTestResult();
   const [ir, setIr] = useState(String(existing?.testData?.internalResistanceMohm ?? ""));
   const [limit, setLimit] = useState(String(existing?.testData?.acceptableLimitMohm ?? "80"));
@@ -264,7 +264,7 @@ function IrPanel({ orderId, existing, operatorName }: { orderId: string; existin
     : null;
 
   const save = async () => {
-    if (!ir) { toast({ title: "IR measurement required", variant: "destructive" }); return; }
+    if (!ir) { notify.error("IR measurement required"); return; }
     try {
       await upsert.mutateAsync({
         id: orderId, testType: "internal_resistance",
@@ -276,8 +276,8 @@ function IrPanel({ orderId, existing, operatorName }: { orderId: string; existin
           notes: notes || null,
         },
       });
-      toast({ title: `IR test saved — ${(autoResult ?? "fail").toUpperCase()}` });
-    } catch { toast({ title: "Failed to save test", variant: "destructive" }); }
+      notify.success(`IR test saved — ${(autoResult ?? "fail").toUpperCase()}`);
+    } catch { notify.error("Failed to save test"); }
   };
 
   return (
@@ -353,7 +353,7 @@ function TestPanel({ info, existing, orderId, operatorName, active }: {
 
 // ─── Main TestingCard ─────────────────────────────────────────────────────────
 export default function TestingCard({ orderId, stage, onRefresh }: Props) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const [operatorName, setOperatorName] = useState(stage.operatorName ?? "");
   const [supervisorName, setSupervisorName] = useState(stage.supervisorName ?? "");
   const [notes, _setNotes] = useState(stage.notes ?? "");
@@ -376,51 +376,51 @@ export default function TestingCard({ orderId, stage, onRefresh }: Props) {
   const isActive = stage.status === "in_progress";
 
   const handleStart = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
     try {
       await startStage.mutateAsync({ id: orderId, stage: "testing", data: { operatorName: operatorName.trim(), notes: null } });
-      toast({ title: "Testing stage started" });
+      notify.success("Testing stage started");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to start stage", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to start stage");
     }
   };
 
   const handleComplete = async () => {
-    if (!operatorName.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
+    if (!operatorName.trim()) { notify.error("Operator name required"); return; }
     const results = Object.values(resultsByType);
     if (results.length === 0) {
-      toast({ title: "Record at least one test result before completing", variant: "destructive" }); return;
+      notify.error("Record at least one test result before completing"); return;
     }
     try {
       await completeStage.mutateAsync({ id: orderId, stage: "testing", data: { operatorName: operatorName.trim(), notes: notes || null } });
-      toast({ title: "Testing complete — awaiting QC approval" });
+      notify.success("Testing complete — awaiting QC approval");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to complete stage", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to complete stage");
     }
   };
 
   const handleApprove = async () => {
-    if (!supervisorName.trim()) { toast({ title: "Supervisor name required", variant: "destructive" }); return; }
+    if (!supervisorName.trim()) { notify.error("Supervisor name required"); return; }
     try {
       await approveStage.mutateAsync({ id: orderId, stage: "testing", data: { supervisorName: supervisorName.trim(), notes: notes || null } });
-      toast({ title: "Testing stage approved" });
+      notify.success("Testing stage approved");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to approve", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to approve");
     }
   };
 
   const handleReject = async () => {
-    if (!supervisorName.trim() || !rejectNotes.trim()) { toast({ title: "Supervisor name and reason required", variant: "destructive" }); return; }
+    if (!supervisorName.trim() || !rejectNotes.trim()) { notify.error("Supervisor name and reason required"); return; }
     try {
       await rejectStage.mutateAsync({ id: orderId, stage: "testing", data: { supervisorName: supervisorName.trim(), notes: rejectNotes.trim() } });
-      toast({ title: "Stage rejected — returned to pending" });
+      notify.success("Stage rejected — returned to pending");
       setShowReject(false);
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to reject", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to reject");
     }
   };
 

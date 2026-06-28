@@ -17,7 +17,7 @@ import {
   useStartStage,
   useCompleteStage,
 } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useOdsNotify } from "@/hooks/use-ods-notify";
 import StageApprovalSection from "./StageApprovalSection";
 
 interface OrderStage {
@@ -36,7 +36,7 @@ const GRADE_COLORS: Record<string, string> = {
 };
 
 export default function CellAllocationCard({ orderId, stage, onRefresh }: Props) {
-  const { toast } = useToast();
+  const notify = useOdsNotify();
   const [operator, setOperator] = useState(stage.operatorName ?? "");
   const [selectedMatchId, setSelectedMatchId] = useState<string>(
     (stage.stageData?.matchId as string | undefined) ?? ""
@@ -58,24 +58,24 @@ export default function CellAllocationCard({ orderId, stage, onRefresh }: Props)
   const isInProgress = stage.status === "in_progress";
 
   const handleStart = async () => {
-    if (!operator.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
-    if (!selectedMatchId) { toast({ title: "Select a reserved cell match first", variant: "destructive" }); return; }
+    if (!operator.trim()) { notify.error("Operator name required"); return; }
+    if (!selectedMatchId) { notify.error("Select a reserved cell match first"); return; }
     try {
       await startStage.mutateAsync({
         id: orderId, stage: "cell_allocation",
         data: { operatorName: operator.trim(), notes: `Match ID: ${selectedMatchId}` },
       });
-      toast({ title: "Cell Allocation stage started" });
+      notify.success("Cell Allocation stage started");
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to start", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to start");
     }
   };
 
   const handleConfirm = async () => {
-    if (!operator.trim()) { toast({ title: "Operator name required", variant: "destructive" }); return; }
+    if (!operator.trim()) { notify.error("Operator name required"); return; }
     const matchId = (stage.stageData?.matchId as string | undefined) ?? selectedMatchId;
-    if (!matchId) { toast({ title: "No match linked to this stage", variant: "destructive" }); return; }
+    if (!matchId) { notify.error("No match linked to this stage"); return; }
     try {
       await completeStage.mutateAsync({
         id: orderId, stage: "cell_allocation",
@@ -85,10 +85,10 @@ export default function CellAllocationCard({ orderId, stage, onRefresh }: Props)
           notes: `Confirmed allocation of ${allocatedCells.length} cells`,
         },
       });
-      toast({ title: `✓ Cell allocation confirmed — ${allocatedCells.length} cells allocated` });
+      notify.success(`✓ Cell allocation confirmed — ${allocatedCells.length} cells allocated`);
       onRefresh();
     } catch (e: any) {
-      toast({ title: e?.response?.data?.error ?? "Failed to confirm allocation", variant: "destructive" });
+      notify.error(e?.response?.data?.error ?? "Failed to confirm allocation");
     }
   };
 
