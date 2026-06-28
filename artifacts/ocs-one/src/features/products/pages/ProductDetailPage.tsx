@@ -146,8 +146,8 @@ export default function ProductDetailPage() {
                     </div>
                   )}
                   <div>
-                    <p className="text-xs text-gray-500 mb-0.5">Created</p>
-                    <p className="font-medium">{new Date(product.created_at).toLocaleDateString()}</p>
+                    <p className="text-xs text-gray-500 mb-0.5">Manufactured</p>
+                    <p className="font-medium">{new Date(product.manufacturing_completed_at).toLocaleDateString()}</p>
                   </div>
                 </div>
               </div>
@@ -199,6 +199,14 @@ export default function ProductDetailPage() {
                   <div>
                     <p className="text-xs text-gray-500">Source Production Order</p>
                     <p className="font-mono text-xs">{product.source_production_order_id ?? "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Manufactured (QC PASS)</p>
+                    <p className="font-medium">{new Date(product.manufacturing_completed_at).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Record Created</p>
+                    <p className="font-medium">{new Date(product.created_at).toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Last Updated</p>

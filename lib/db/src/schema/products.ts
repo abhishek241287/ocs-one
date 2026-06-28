@@ -78,6 +78,16 @@ export const productsTable = pgTable(
     productStatus: productStatusEnum("product_status").notNull().default("qc_passed"),
     currentLocation: varchar("current_location", { length: 255 }),
     dealerId: uuid("dealer_id").references(() => logisticsDealersTable.id),
+    // Manufacturing completion timestamp — written EXACTLY ONCE at Product creation
+    // (the QC-PASS gate) and never updated thereafter. This is the permanent
+    // reference point for all downstream time-based logic: Warranty start, Inventory
+    // Ageing, Dealer Stock ageing, Reports & Analytics (CTO CW-03 Phase 0 enhancement).
+    // Sourced from the QC stage's immutable `approved_at` (the literal QC-PASS moment),
+    // NOT the order's mutable `updated_at` — so it cannot drift if a completed order is
+    // later edited. Accurate for both the live QC-pass emit and the historical backfill.
+    manufacturingCompletedAt: timestamp("manufacturing_completed_at", {
+      withTimezone: true,
+    }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
@@ -92,6 +102,8 @@ export const productsTable = pgTable(
     index("idx_products_workflow").on(table.workflowCode),
     index("idx_products_model").on(table.modelId),
     index("idx_products_source_order").on(table.sourceProductionOrderId),
+    // Indexed: ageing/warranty/analytics queries filter and sort on this timestamp.
+    index("idx_products_mfg_completed").on(table.manufacturingCompletedAt),
   ]
 );
 

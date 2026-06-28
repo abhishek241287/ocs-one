@@ -23,6 +23,41 @@ export async function seedDatabase(): Promise<void> {
     CREATE SEQUENCE IF NOT EXISTS ecf_correction_seq START 1 INCREMENT 1;
   `);
 
+  // Forward-only resync of each id sequence to the max value already persisted in
+  // its table. Every business id (PO-/BAT-/CORR-YYYYMMDD-NNNNNN) embeds the raw
+  // padded sequence value, and each backing column is UNIQUE. A checkpoint
+  // rollback or DB restore can reset a sequence BELOW its table's max (the table
+  // rows survive, the sequence counter does not) — then nextval() mints a
+  // DUPLICATE id and the unique constraint throws 23505 (surfaced as HTTP 409),
+  // crashing the very first insert (e.g. cell grading via the ECF ledger). We
+  // never move a sequence backward: a fresh DB (empty table, m=0) keeps id 1, and
+  // setval(max, true) makes the next nextval = max+1, which is provably unused
+  // because max is the current maximum. The regex guard skips any malformed
+  // legacy value so a stray id can never crash startup.
+  await pool.query(`
+    DO $$
+    DECLARE m bigint;
+    BEGIN
+      SELECT COALESCE(MAX(split_part(order_number, '-', 3)::bigint), 0) INTO m
+        FROM mfg_production_orders WHERE order_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
+      IF m > 0 THEN
+        PERFORM setval('mfg_order_seq', GREATEST((SELECT last_value FROM mfg_order_seq), m), true);
+      END IF;
+
+      SELECT COALESCE(MAX(split_part(battery_number, '-', 3)::bigint), 0) INTO m
+        FROM mfg_production_orders WHERE battery_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
+      IF m > 0 THEN
+        PERFORM setval('mfg_battery_seq', GREATEST((SELECT last_value FROM mfg_battery_seq), m), true);
+      END IF;
+
+      SELECT COALESCE(MAX(split_part(correction_id, '-', 3)::bigint), 0) INTO m
+        FROM engineering_corrections WHERE correction_id ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
+      IF m > 0 THEN
+        PERFORM setval('ecf_correction_seq', GREATEST((SELECT last_value FROM ecf_correction_seq), m), true);
+      END IF;
+    END $$;
+  `);
+
   // Ensure the singleton grade-config row exists so reads (GET /cells/config)
   // never need to perform a write. Schema defaults populate the values.
   await db

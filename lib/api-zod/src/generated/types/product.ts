@@ -24,6 +24,7 @@ export interface Product {
   current_location?: string | null;
   /** @nullable */
   dealer_id?: string | null;
+  manufacturing_completed_at: Date;
   created_at: Date;
   updated_at: Date;
   /** @nullable */

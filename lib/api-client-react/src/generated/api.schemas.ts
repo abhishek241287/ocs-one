@@ -1800,6 +1800,7 @@ export interface Product {
   current_location?: string | null;
   /** @nullable */
   dealer_id?: string | null;
+  manufacturing_completed_at: string;
   created_at: string;
   updated_at: string;
   /** @nullable */

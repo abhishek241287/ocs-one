@@ -4082,6 +4082,7 @@ components:
         - official_product_serial
         - serial_source
         - product_status
+        - manufacturing_completed_at
         - created_at
         - updated_at
       properties:
@@ -4096,6 +4097,8 @@ components:
         product_status: { $ref: "#/components/schemas/ProductStatus" }
         current_location: { type: ["string", "null"] }
         dealer_id: { type: ["string", "null"], format: uuid }
+        # Manufacturing completion — written once at QC PASS; downstream time reference.
+        manufacturing_completed_at: { type: string, format: date-time }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
         # Enriched (read-only) display fields joined for the UI.

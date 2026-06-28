@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import {
   type Transaction,
   productsTable,
@@ -6,6 +6,7 @@ import {
   productEventsTable,
   productCategoriesTable,
   mfgProductionOrdersTable,
+  mfgOrderStagesTable,
   mfgBatteryGenealogyTable,
 } from "@workspace/db";
 
@@ -78,6 +79,8 @@ export async function createProductFromOrder(
       batteryNumber: mfgProductionOrdersTable.batteryNumber,
       modelId: mfgProductionOrdersTable.productId,
       status: mfgProductionOrdersTable.status,
+      // Last-resort fallback only (see manufacturing_completed_at resolution below).
+      updatedAt: mfgProductionOrdersTable.updatedAt,
     })
     .from(mfgProductionOrdersTable)
     .where(eq(mfgProductionOrdersTable.id, orderId))
@@ -128,6 +131,33 @@ export async function createProductFromOrder(
     };
   }
 
+  // Manufacturing completion timestamp — written ONCE here at the QC-PASS gate and
+  // never updated; the permanent downstream reference for Warranty / Inventory
+  // Ageing / Dealer Stock / Reports / Analytics. The authoritative source is the
+  // QC stage's `approvedAt` — the literal QC-PASS moment. It is IMMUTABLE for our
+  // purposes: it lives on the stage row, set once at approval, and is never touched
+  // by order edits (`PATCH /orders/:id` only mutates order columns), so unlike the
+  // order's `updated_at` it cannot drift if a completed order is later edited. It is
+  // already set in the same tx before the live QC-pass emit calls us, and persists
+  // for historical orders consumed by the backfill. `updated_at` is only a defensive
+  // last resort for the (anomalous) case of a completed order with no QC stage row.
+  const [qcStage] = await tx
+    .select({ approvedAt: mfgOrderStagesTable.approvedAt })
+    .from(mfgOrderStagesTable)
+    .where(
+      and(
+        eq(mfgOrderStagesTable.productionOrderId, order.id),
+        eq(mfgOrderStagesTable.stageType, "quality_control"),
+      ),
+    )
+    // Deterministic in the anomalous case of duplicate QC stage rows: pick the
+    // latest approval (the actual QC-PASS moment). Explicit NULLS LAST (Postgres
+    // DESC defaults to NULLS FIRST) so an unapproved duplicate (approvedAt NULL)
+    // never shadows a real approved row.
+    .orderBy(sql`${mfgOrderStagesTable.approvedAt} desc nulls last`)
+    .limit(1);
+  const manufacturingCompletedAt = qcStage?.approvedAt ?? order.updatedAt;
+
   // DP-2: reuse the order's battery_number as the single official serial.
   const [product] = await tx
     .insert(productsTable)
@@ -140,6 +170,7 @@ export async function createProductFromOrder(
       serialSource: classification.serialSource,
       qcStatus: "passed",
       productStatus: "qc_passed",
+      manufacturingCompletedAt,
     })
     .returning({ id: productsTable.id });
 
@@ -177,6 +208,7 @@ export async function createProductFromOrder(
       categoryCode: classification.categoryCode,
       workflowCode: classification.workflowCode,
       genealogyCopied: lineage.length,
+      manufacturingCompletedAt: manufacturingCompletedAt.toISOString(),
     },
   });
 
