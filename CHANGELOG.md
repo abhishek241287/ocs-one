@@ -84,6 +84,12 @@ module is touched, by direction.
   Critical cert defect; implementation starts after CW-02 closes; future ideas tracked in the
   Product Platform Enhancement Backlog (PP-001…PP-006). Full review + ERD/diagrams + freeze +
   backlog: `docs/architecture/unified-product-platform-review.md`.
+- **Documentation Refactoring Sprint — PLANNED for immediately after CW-02 closes (CTO).** Doc-only
+  cleanup, deferred to avoid churn during certification. During CW-02, keep updating existing
+  documentation locations. After CW-02: keep `replit.md` a lightweight index + dev guide; move
+  detailed architecture → `docs/architecture/`, governance → `docs/governance/`, Product Platform
+  docs → `docs/product/`; preserve all content and cross-reference (no duplication). **Maintenance
+  only — no implementation changes; the certified codebase must not be touched.**
 
 
 > **Certification Wave 02 — Cell Grading.** MAT-01 (Page & Navigation) and MAT-02 (CRUD &
