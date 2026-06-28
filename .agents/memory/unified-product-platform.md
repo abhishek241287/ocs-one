@@ -97,8 +97,31 @@ a category→workflow mapping (risk R10).
   cases there (category/workflow/serial_source derivation); `createProductFromOrder` itself never
   changes. Keep that separation — it's the whole point of the generic creation engine.
 
+## Workflow-driven Product Creation Trigger (CW-03 Phase 0 — implemented)
+
+The WORKFLOW decides WHEN a Product is minted, not a hardcoded QC-PASS condition. The Workflow
+Master carries `product_creation_trigger` (pgEnum `QC_PASS | INCOMING_INSPECTION_PASS`). Seed:
+BATTERY/INBUILT_LITHIUM → `QC_PASS`, HYBRID → `INCOMING_INSPECTION_PASS`.
+- **Why an enum, not free-form data like `stage_sequence`:** each trigger maps to BEHAVIORAL
+  dispatch in the creation engine (a distinct completion gate + manufacturing-completion timestamp
+  source), so the closed enum + exhaustive `switch` (with a `never` default) keeps dispatch honest;
+  adding a trigger is intentionally code (a new handler) + migration together.
+- **Engine:** `createProductFromOrder` looks up the workflow's trigger and dispatches
+  `resolveCreationTrigger`. `QC_PASS` = the prior behavior verbatim (gate `order.status==='completed'`
+  + QC-stage `approvedAt` NULLS LAST, fallback `updatedAt`). `INCOMING_INSPECTION_PASS` = guarded
+  skip (`trigger_not_implemented`) — Hybrid incoming-inspection flow doesn't exist in CW-03; the
+  handler lands later with NO change to the engine's structure. Category genericity still lives only
+  in `classifyOrderProduct`.
+- **Seed is authoritative for the trigger** via `onConflictDoUpdate(set excluded.product_creation_trigger)`
+  so existing rows get corrected on restart WITHOUT clobbering director-editable name/status/stageSequence.
+  Trigger is NOT exposed via the master write API/UI in CW-03 (platform config, not day-to-day editable).
+- **Follow-up (deferred to CW-03 MAT certification, not built now):** a focused regression test for
+  trigger dispatch (QC_PASS creates / INCOMING_INSPECTION_PASS skips). Architect rated high-impact but
+  it's certification-phase scope.
+
 ## Consistency with platform freeze
 
 This is **new capability on top of frozen platforms** (ODS/ECF/Security/Cert/Audit reused by
 adoption, not expansion) — allowed under the freeze. Product corrections must go through ECF.
-Sequence implementation **after CW-02 closes** so Cell Grading cert isn't disturbed.
+The workflow-driven trigger is **additive and v1.0-compatible** (CTO-directed, explicitly "not a
+scope change"): a new column + enum, no certified table touched, downstream contract unchanged.

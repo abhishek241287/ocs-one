@@ -5,6 +5,7 @@ import {
   productGenealogyTable,
   productEventsTable,
   productCategoriesTable,
+  productWorkflowsTable,
   mfgProductionOrdersTable,
   mfgOrderStagesTable,
   mfgBatteryGenealogyTable,
@@ -101,15 +102,6 @@ export async function createProductFromOrder(
     return { status: "exists", productId: existing.id, serial: existing.serial };
   }
 
-  // Permanent rule: NO Product before QC PASS. Enforced HERE at the single
-  // creation boundary (not just by caller convention) so future integrations
-  // cannot accidentally mint a Product for an un-passed order. An order reaches
-  // `completed` only through the QC gate — qc-approval sets it on approval, and
-  // the sequential stage flow can only complete the order after QC is approved.
-  if (order.status !== "completed") {
-    return { status: "skipped", reason: `order_not_qc_passed:${order.status}` };
-  }
-
   // Identity contract: a Product DERIVES its manufacturer from its model
   // (model → manufacturer, never duplicated). An order with no model cannot
   // satisfy that contract — skip-and-report rather than create a broken identity.
@@ -118,6 +110,32 @@ export async function createProductFromOrder(
   }
 
   const classification = classifyOrderProduct(order);
+
+  // Workflow-driven creation (CTO CW-03 Phase 0): the WORKFLOW decides WHEN a
+  // Product is minted, via its configured product_creation_trigger — NOT a hardcoded
+  // QC-PASS condition. BATTERY / INBUILT_LITHIUM trigger at QC_PASS; HYBRID at
+  // INCOMING_INSPECTION_PASS. New categories plug in by adding a trigger handler,
+  // never by editing this engine's structure.
+  const [workflow] = await tx
+    .select({ trigger: productWorkflowsTable.productCreationTrigger })
+    .from(productWorkflowsTable)
+    .where(eq(productWorkflowsTable.code, classification.workflowCode))
+    .limit(1);
+  if (!workflow) {
+    return {
+      status: "skipped",
+      reason: `workflow_missing:${classification.workflowCode}`,
+    };
+  }
+
+  // Resolve the workflow's completion event → the immutable manufacturing-completion
+  // timestamp, or a skip reason if the order has not reached it. Each trigger owns
+  // its own gate + timestamp source (see resolveCreationTrigger).
+  const resolved = await resolveCreationTrigger(tx, workflow.trigger, order);
+  if ("skip" in resolved) {
+    return { status: "skipped", reason: resolved.skip };
+  }
+  const manufacturingCompletedAt = resolved.completedAt;
 
   const [category] = await tx
     .select({ id: productCategoriesTable.id })
@@ -130,33 +148,6 @@ export async function createProductFromOrder(
       reason: `category_missing:${classification.categoryCode}`,
     };
   }
-
-  // Manufacturing completion timestamp — written ONCE here at the QC-PASS gate and
-  // never updated; the permanent downstream reference for Warranty / Inventory
-  // Ageing / Dealer Stock / Reports / Analytics. The authoritative source is the
-  // QC stage's `approvedAt` — the literal QC-PASS moment. It is IMMUTABLE for our
-  // purposes: it lives on the stage row, set once at approval, and is never touched
-  // by order edits (`PATCH /orders/:id` only mutates order columns), so unlike the
-  // order's `updated_at` it cannot drift if a completed order is later edited. It is
-  // already set in the same tx before the live QC-pass emit calls us, and persists
-  // for historical orders consumed by the backfill. `updated_at` is only a defensive
-  // last resort for the (anomalous) case of a completed order with no QC stage row.
-  const [qcStage] = await tx
-    .select({ approvedAt: mfgOrderStagesTable.approvedAt })
-    .from(mfgOrderStagesTable)
-    .where(
-      and(
-        eq(mfgOrderStagesTable.productionOrderId, order.id),
-        eq(mfgOrderStagesTable.stageType, "quality_control"),
-      ),
-    )
-    // Deterministic in the anomalous case of duplicate QC stage rows: pick the
-    // latest approval (the actual QC-PASS moment). Explicit NULLS LAST (Postgres
-    // DESC defaults to NULLS FIRST) so an unapproved duplicate (approvedAt NULL)
-    // never shadows a real approved row.
-    .orderBy(sql`${mfgOrderStagesTable.approvedAt} desc nulls last`)
-    .limit(1);
-  const manufacturingCompletedAt = qcStage?.approvedAt ?? order.updatedAt;
 
   // DP-2: reuse the order's battery_number as the single official serial.
   const [product] = await tx
@@ -200,17 +191,94 @@ export async function createProductFromOrder(
     productId,
     eventType: "product.created",
     actor,
-    description: `Product created at QC PASS from order ${order.batteryNumber}`,
+    description: `Product created from order ${order.batteryNumber} (trigger: ${workflow.trigger})`,
     metadata: {
       sourceProductionOrderId: order.id,
       officialProductSerial: order.batteryNumber,
       serialSource: classification.serialSource,
       categoryCode: classification.categoryCode,
       workflowCode: classification.workflowCode,
+      creationTrigger: workflow.trigger,
       genealogyCopied: lineage.length,
       manufacturingCompletedAt: manufacturingCompletedAt.toISOString(),
     },
   });
 
   return { status: "created", productId, serial: order.batteryNumber };
+}
+
+// ─── Workflow-driven creation triggers ───────────────────────────────────────
+// Each Workflow's `product_creation_trigger` maps to exactly one handler that (a)
+// gates creation on the workflow's completion event and (b) sources the immutable
+// manufacturing-completion timestamp. Dispatch is exhaustive over the DB enum; a new
+// trigger is added as a new case here in lockstep with the enum migration — so the
+// Product Platform stays generic across categories without touching createProductFromOrder.
+
+type OrderForTrigger = {
+  id: string;
+  status: string;
+  updatedAt: Date;
+};
+
+type TriggerResolution = { completedAt: Date } | { skip: string };
+
+// Derived from the schema enum (no new import) so the dispatch below is checked
+// for exhaustiveness at compile time: adding a value to product_creation_trigger
+// without a handler here is a type error at the `never` assertion in `default`.
+type CreationTrigger = (typeof productWorkflowsTable.$inferSelect)["productCreationTrigger"];
+
+async function resolveCreationTrigger(
+  tx: Transaction,
+  trigger: CreationTrigger,
+  order: OrderForTrigger,
+): Promise<TriggerResolution> {
+  switch (trigger) {
+    case "QC_PASS":
+      return resolveQcPassTrigger(tx, order);
+    case "INCOMING_INSPECTION_PASS":
+      // Reserved for HYBRID (no manufacturing assembly / battery genealogy; the
+      // Product is available immediately after incoming-inspection approval). That
+      // flow does not exist in CW-03 — mint nothing until its handler is built.
+      return { skip: `trigger_not_implemented:${trigger}` };
+    default: {
+      // Exhaustiveness guard + runtime safety net for a DB value outside the type.
+      const unhandled: never = trigger;
+      return { skip: `unknown_trigger:${String(unhandled)}` };
+    }
+  }
+}
+
+/**
+ * QC_PASS — the BATTERY / INBUILT_LITHIUM completion event. Permanent rule: NO
+ * Product before QC PASS, enforced HERE at the single creation boundary so no
+ * integration can mint a Product for an un-passed order. An order reaches
+ * `completed` only through the QC gate (qc-approval sets it on approval; the
+ * sequential stage flow cannot complete the order before QC is approved).
+ *
+ * Completion timestamp = the QC stage's immutable `approved_at` (the literal QC-PASS
+ * moment), never the order's mutable `updated_at`, so it cannot drift if a completed
+ * order is later edited. Deterministic on the anomalous duplicate-QC-stage case:
+ * latest approval, explicit NULLS LAST (Postgres DESC defaults NULLS FIRST) so an
+ * unapproved duplicate never shadows a real approval. `updated_at` is only a
+ * defensive last resort for a completed order with no QC stage row.
+ */
+async function resolveQcPassTrigger(
+  tx: Transaction,
+  order: OrderForTrigger,
+): Promise<TriggerResolution> {
+  if (order.status !== "completed") {
+    return { skip: `order_not_qc_passed:${order.status}` };
+  }
+  const [qcStage] = await tx
+    .select({ approvedAt: mfgOrderStagesTable.approvedAt })
+    .from(mfgOrderStagesTable)
+    .where(
+      and(
+        eq(mfgOrderStagesTable.productionOrderId, order.id),
+        eq(mfgOrderStagesTable.stageType, "quality_control"),
+      ),
+    )
+    .orderBy(sql`${mfgOrderStagesTable.approvedAt} desc nulls last`)
+    .limit(1);
+  return { completedAt: qcStage?.approvedAt ?? order.updatedAt };
 }

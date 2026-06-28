@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { sql } from "drizzle-orm";
 import {
   db,
   pool,
@@ -80,6 +81,10 @@ export async function seedDatabase(): Promise<void> {
   // Workflow master: BATTERY is active and carries the canonical 9-stage sequence
   // (DATA, not wired to any engine in CW-03 — the workflow-driven stage engine is
   // UPP Phase 3). INBUILT_LITHIUM / HYBRID are reserved data only (inactive).
+  // `productCreationTrigger` is platform config (workflow-driven Product creation),
+  // so re-seeding reasserts the canonical trigger per workflow via onConflictDoUpdate
+  // (from `excluded`) — this also corrects pre-existing rows (e.g. HYBRID) without
+  // touching director-editable name/status/stageSequence.
   await db
     .insert(productWorkflowsTable)
     .values([
@@ -87,6 +92,7 @@ export async function seedDatabase(): Promise<void> {
         code: "BATTERY",
         name: "Battery Pack Manufacturing",
         status: "active",
+        productCreationTrigger: "QC_PASS",
         stageSequence: [
           "cell_allocation",
           "assembly",
@@ -99,10 +105,13 @@ export async function seedDatabase(): Promise<void> {
           "packing",
         ],
       },
-      { code: "INBUILT_LITHIUM", name: "Inbuilt Lithium Inverter Manufacturing", status: "inactive", stageSequence: [] },
-      { code: "HYBRID", name: "Hybrid Inverter Manufacturing", status: "inactive", stageSequence: [] },
+      { code: "INBUILT_LITHIUM", name: "Inbuilt Lithium Inverter Manufacturing", status: "inactive", productCreationTrigger: "QC_PASS", stageSequence: [] },
+      { code: "HYBRID", name: "Hybrid Inverter Manufacturing", status: "inactive", productCreationTrigger: "INCOMING_INSPECTION_PASS", stageSequence: [] },
     ])
-    .onConflictDoNothing({ target: productWorkflowsTable.code });
+    .onConflictDoUpdate({
+      target: productWorkflowsTable.code,
+      set: { productCreationTrigger: sql`excluded.product_creation_trigger` },
+    });
 
   // Seed default director account if no users exist
   const [existing] = await db

@@ -1,0 +1,188 @@
+# CTO Direction — Product Platform Foundation (Implementation Sequence & Workflow-Driven Product Creation)
+
+The work completed so far is approved.
+
+The manufacturing completion timestamp implementation and the sequence synchronization improvements are accepted.
+
+Before continuing with Product APIs, I want to clarify the remaining implementation sequence for Phase 0.
+
+This is **not** a scope change.
+
+It is an implementation-order clarification and one architectural refinement to ensure the Product Platform remains generic for all future product categories.
+
+---
+
+# Phase 0 Implementation Order
+
+Complete the Product Platform foundation before exposing Product APIs.
+
+The implementation order shall be:
+
+## 1. Database Foundation
+
+Complete all Product Platform database objects.
+
+This includes:
+
+* Product Categories
+* Product Workflows
+* Products
+* Product Genealogy
+* Product Events
+* Product Lifecycle
+* Unified Product Serial Model
+
+---
+
+## 2. Core Product Services
+
+Complete all internal Product Platform services.
+
+This includes:
+
+* Product Creation Helper
+* Product Event generation
+* Product Genealogy creation
+* Product lifecycle transitions
+* Product status management
+
+These services should be fully complete before Product APIs are exposed.
+
+---
+
+## 3. Manufacturing Integration
+
+Integrate Manufacturing Orders with the Product Platform.
+
+For the BATTERY workflow this includes:
+
+* QC PASS creates Product
+* Genealogy copied
+* Product Event created
+* Manufacturing completion timestamp recorded
+* Official Product Serial assigned
+
+At this point the Product Platform should be internally complete.
+
+---
+
+# IMPORTANT ARCHITECTURAL CLARIFICATION
+
+I do **not** want Product creation to be hardcoded to **QC PASS**.
+
+Instead, Product creation shall be **workflow-driven**.
+
+The workflow defines **when a Product becomes a finished Product**.
+
+Examples:
+
+### BATTERY
+
+Product Creation Trigger
+
+**QC PASS**
+
+---
+
+### INBUILT_LITHIUM
+
+Product Creation Trigger
+
+**QC PASS**
+
+---
+
+### HYBRID
+
+Product Creation Trigger
+
+**Incoming Inspection PASS**
+
+There is no manufacturing assembly for Hybrid Inverters.
+
+There is no battery genealogy.
+
+The Product becomes available immediately after Incoming Inspection approval.
+
+---
+
+This approach keeps the Product Platform generic and prevents another architectural change when Hybrid Inverter inventory is implemented.
+
+The Product Platform provides one unified Product identity.
+
+The Manufacturing Workflow determines **when** that Product is created.
+
+Product creation must therefore use the configured workflow trigger rather than a hardcoded QC PASS condition.
+
+I recommend introducing a configurable Product Creation Trigger as part of the Workflow Master so future workflows can define their own completion event without changing Product Platform code.
+
+Examples:
+
+* BATTERY → QC_PASS
+* INBUILT_LITHIUM → QC_PASS
+* HYBRID → INCOMING_INSPECTION_PASS
+
+This keeps the architecture extensible while remaining fully compatible with the frozen Product Platform v1.0.
+
+---
+
+## 4. Product APIs
+
+Only after the Product Platform foundation is complete should Product APIs be implemented.
+
+Implement:
+
+* Product List
+* Product Details
+* Product Search
+* Product History
+* Product Genealogy
+
+Avoid exposing partially implemented APIs during Phase 0.
+
+---
+
+## 5. Product UI
+
+After the APIs are stable, implement:
+
+* Product List
+* Product Details
+* Product Timeline
+* Product Genealogy
+* Product Search
+
+---
+
+## 6. Manufacturing Certification
+
+Only after the complete Product Platform has been integrated with Manufacturing shall the CW-03 certification begin.
+
+Execute:
+
+* MAT-01
+* MAT-02
+* MAT-03
+* MAT-04
+* MAT-05
+* MAT-06
+
+against the Product-based Manufacturing module.
+
+---
+
+# Design Principle
+
+The Product Platform should become internally complete before anything external consumes it.
+
+The objective is to build the Product Platform once, expose it once, and certify it once.
+
+This avoids:
+
+* API contract changes during CW-03
+* repeated UI refactoring
+* duplicated business logic
+* future architectural redesign
+* repeated certification effort
+
+Please revise the remaining Phase 0 implementation sequence accordingly and continue implementation following this architecture.
