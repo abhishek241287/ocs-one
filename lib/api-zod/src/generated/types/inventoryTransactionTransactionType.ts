@@ -11,4 +11,7 @@ export type InventoryTransactionTransactionType = typeof InventoryTransactionTra
 
 export const InventoryTransactionTransactionType = {
   GRN_RECEIPT: 'GRN_RECEIPT',
+  INSPECTION_RELEASE: 'INSPECTION_RELEASE',
+  INSPECTION_ACCEPT: 'INSPECTION_ACCEPT',
+  INSPECTION_REJECT: 'INSPECTION_REJECT',
 } as const;

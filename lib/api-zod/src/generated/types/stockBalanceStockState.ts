@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type InventoryTransactionStockState = typeof InventoryTransactionStockState[keyof typeof InventoryTransactionStockState];
+export type StockBalanceStockState = typeof StockBalanceStockState[keyof typeof StockBalanceStockState];
 
 
-export const InventoryTransactionStockState = {
+export const StockBalanceStockState = {
   inspection_pending: 'inspection_pending',
   available: 'available',
   rejected: 'rejected',

@@ -234,13 +234,22 @@ export const grnLineItemsTable = pgTable(
 // never mutated.
 export const inventoryTransactionTypeEnum = pgEnum("inventory_transaction_type", [
   "GRN_RECEIPT",
+  // Incoming Inspection movements (one inspection finalisation writes up to 3 per line):
+  //   INSPECTION_RELEASE → frees the inspection_pending hold (negative quantity)
+  //   INSPECTION_ACCEPT  → accepted quantity becomes available stock
+  //   INSPECTION_REJECT  → rejected quantity is segregated into rejected stock
+  "INSPECTION_RELEASE",
+  "INSPECTION_ACCEPT",
+  "INSPECTION_REJECT",
 ]);
 
 // Where the moved quantity sits. inspection_pending = received but awaiting Incoming
-// Inspection; available = usable stock (DIRECT_TO_INVENTORY).
+// Inspection; available = usable stock (passed inspection or DIRECT_TO_INVENTORY);
+// rejected = failed inspection, segregated from usable stock.
 export const inventoryStockStateEnum = pgEnum("inventory_stock_state", [
   "inspection_pending",
   "available",
+  "rejected",
 ]);
 
 export const inventoryTransactionsTable = pgTable(
@@ -267,3 +276,91 @@ export const inventoryTransactionsTable = pgTable(
     index("inventory_transactions_type_idx").on(t.transactionType),
   ],
 );
+
+// ─── Incoming Inspection ──────────────────────────────────────────────────────
+// Incoming Inspection records what OCS ACCEPTED vs REJECTED from a posted GRN — a
+// SEPARATE document from the receipt. ARCHITECTURAL RULE (CTO): inspection NEVER
+// modifies the GRN's receipt data (quantity_received / material / supplier / uom stay
+// immutable). The GRN says what the supplier DELIVERED; the inspection says what OCS
+// did with it. Inspection is LINE-BY-LINE: each pending GRN line gets its own
+// accept/reject outcome (materials on one GRN may pass or fail independently), and the
+// inventory ledger moves the held quantity inspection_pending → available + rejected.
+
+// Per-line inspection outcome. partial = some accepted AND some rejected on one line.
+export const incomingInspectionResultEnum = pgEnum("incoming_inspection_result", [
+  "passed",
+  "rejected",
+  "partial",
+]);
+
+// Inspection header — one inspection per GRN (grn_id UNIQUE in v1.0; an inspection
+// covers all of that GRN's inspection-pending lines). inspection_number is a race-safe
+// document number (INSP-YYYYMMDD-NNNN) from incoming_inspection_seq.
+export const incomingInspectionsTable = pgTable(
+  "incoming_inspections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    inspectionNumber: varchar("inspection_number", { length: 32 })
+      .unique("incoming_inspections_number_unique")
+      .notNull(),
+    grnId: uuid("grn_id")
+      .notNull()
+      .unique("incoming_inspections_grn_unique")
+      .references(() => grnHeadersTable.id),
+    remarks: text("remarks"),
+    inspectedBy: uuid("inspected_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("incoming_inspections_grn_idx").on(t.grnId)],
+);
+
+// Inspection line — one row per inspected GRN line. accepted_qty + rejected_qty MUST
+// equal the GRN line's quantity_received (enforced in the route, both >= 0). quantity
+// fields are a snapshot for an immutable record. grn_line_id is UNIQUE: a GRN line is
+// inspected exactly once in v1.0.
+export const incomingInspectionLinesTable = pgTable(
+  "incoming_inspection_lines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    inspectionId: uuid("inspection_id")
+      .notNull()
+      .references(() => incomingInspectionsTable.id, { onDelete: "cascade" }),
+    grnLineId: uuid("grn_line_id")
+      .notNull()
+      .unique("incoming_inspection_lines_grn_line_unique")
+      .references(() => grnLineItemsTable.id),
+    grnId: uuid("grn_id")
+      .notNull()
+      .references(() => grnHeadersTable.id),
+    materialId: uuid("material_id")
+      .notNull()
+      .references(() => materialsTable.id),
+    quantityReceived: numeric("quantity_received", { precision: 14, scale: 3 }).notNull(),
+    acceptedQty: numeric("accepted_qty", { precision: 14, scale: 3 }).notNull(),
+    rejectedQty: numeric("rejected_qty", { precision: 14, scale: 3 }).notNull(),
+    result: incomingInspectionResultEnum("result").notNull(),
+    // Required (route-enforced) whenever rejected_qty > 0 — factory traceability.
+    rejectionReason: text("rejection_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("incoming_inspection_lines_inspection_idx").on(t.inspectionId),
+    index("incoming_inspection_lines_grn_idx").on(t.grnId),
+    index("incoming_inspection_lines_material_idx").on(t.materialId),
+  ],
+);
+
+export const insertIncomingInspectionSchema = createInsertSchema(incomingInspectionsTable).omit(
+  {
+    id: true,
+    createdAt: true,
+  },
+);
+export type InsertIncomingInspection = z.infer<typeof insertIncomingInspectionSchema>;
+export type IncomingInspection = typeof incomingInspectionsTable.$inferSelect;
+
+export const insertIncomingInspectionLineSchema = createInsertSchema(
+  incomingInspectionLinesTable,
+).omit({ id: true, createdAt: true });
+export type InsertIncomingInspectionLine = z.infer<typeof insertIncomingInspectionLineSchema>;
+export type IncomingInspectionLine = typeof incomingInspectionLinesTable.$inferSelect;

@@ -26,6 +26,10 @@ import MaterialWorkflowAssignmentPage from "@/features/inventory/pages/MaterialW
 import GrnListPage from "@/features/inventory/pages/GrnListPage";
 import GrnCreatePage from "@/features/inventory/pages/GrnCreatePage";
 import GrnDetailPage from "@/features/inventory/pages/GrnDetailPage";
+import InspectionListPage from "@/features/inventory/pages/InspectionListPage";
+import InspectionCreatePage from "@/features/inventory/pages/InspectionCreatePage";
+import InspectionDetailPage from "@/features/inventory/pages/InspectionDetailPage";
+import StockPage from "@/features/inventory/pages/StockPage";
 import ProductsListPage from "@/features/products/pages/ProductsListPage";
 import ProductDetailPage from "@/features/products/pages/ProductDetailPage";
 import CellMasterPage from "@/features/masters/pages/CellMasterPage";
@@ -108,6 +112,10 @@ function Router() {
       <Route path="/inventory/grns" component={GrnListPage} />
       <Route path="/inventory/grns/new" component={GrnCreatePage} />
       <Route path="/inventory/grns/:id" component={GrnDetailPage} />
+      <Route path="/inventory/inspections" component={InspectionListPage} />
+      <Route path="/inventory/inspections/new" component={InspectionCreatePage} />
+      <Route path="/inventory/inspections/:id" component={InspectionDetailPage} />
+      <Route path="/inventory/stock" component={StockPage} />
       <Route path="/inventory/workflow-assignments" component={MaterialWorkflowAssignmentPage} />
 
       {/* Manufacturing */}

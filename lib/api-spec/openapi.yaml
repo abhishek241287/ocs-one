@@ -3074,6 +3074,91 @@ paths:
                     items:
                       $ref: "#/components/schemas/InventoryTransaction"
 
+  /inventory/inspections:
+    get:
+      operationId: listInspections
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of incoming inspections
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/IncomingInspection"
+    post:
+      operationId: createInspection
+      tags: [inventory]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IncomingInspectionInput" }
+      responses:
+        "201":
+          description: Inspection recorded; inventory moved (pending → accepted + rejected)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IncomingInspectionDetail" }
+
+  /inventory/inspections/eligible:
+    get:
+      operationId: listEligibleGrns
+      tags: [inventory]
+      responses:
+        "200":
+          description: Posted GRNs with inspection-pending lines and no inspection yet
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/EligibleGrn"
+
+  /inventory/inspections/{id}:
+    get:
+      operationId: getInspection
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single inspection with lines
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IncomingInspectionDetail" }
+
+  /inventory/stock:
+    get:
+      operationId: listStockBalances
+      tags: [inventory]
+      responses:
+        "200":
+          description: On-hand stock projected from the inventory ledger, by material + state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StockBalance"
+
 components:
   parameters:
     IdParam:
@@ -4871,13 +4956,99 @@ components:
         [id, transaction_type, material_id, quantity, uom, stock_state, source_document_type, source_document_id, source_line_id, created_at]
       properties:
         id: { type: string, format: uuid }
-        transaction_type: { type: string, enum: [GRN_RECEIPT] }
+        transaction_type:
+          type: string
+          enum: [GRN_RECEIPT, INSPECTION_RELEASE, INSPECTION_ACCEPT, INSPECTION_REJECT]
         material_id: { type: string, format: uuid }
         quantity: { type: number }
         uom: { $ref: "#/components/schemas/InventoryUom" }
-        stock_state: { type: string, enum: [inspection_pending, available] }
+        stock_state: { type: string, enum: [inspection_pending, available, rejected] }
         source_document_type: { type: string }
         source_document_id: { type: string, format: uuid }
         source_line_id: { type: string, format: uuid }
         created_by: { type: ["string", "null"], format: uuid }
         created_at: { type: string, format: date-time }
+
+    IncomingInspectionResult:
+      type: string
+      enum: [passed, rejected, partial]
+
+    IncomingInspection:
+      type: object
+      required: [id, inspection_number, grn_id, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        inspection_number: { type: string }
+        grn_id: { type: string, format: uuid }
+        grn_number: { type: ["string", "null"] }
+        remarks: { type: ["string", "null"] }
+        inspected_by: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+
+    IncomingInspectionLine:
+      type: object
+      required:
+        [id, inspection_id, grn_line_id, grn_id, material_id, quantity_received, accepted_qty, rejected_qty, result, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        inspection_id: { type: string, format: uuid }
+        grn_line_id: { type: string, format: uuid }
+        grn_id: { type: string, format: uuid }
+        material_id: { type: string, format: uuid }
+        quantity_received: { type: number }
+        accepted_qty: { type: number }
+        rejected_qty: { type: number }
+        result: { $ref: "#/components/schemas/IncomingInspectionResult" }
+        rejection_reason: { type: ["string", "null"] }
+        created_at: { type: string, format: date-time }
+
+    IncomingInspectionDetail:
+      allOf:
+        - $ref: "#/components/schemas/IncomingInspection"
+        - type: object
+          required: [lines]
+          properties:
+            lines:
+              type: array
+              items: { $ref: "#/components/schemas/IncomingInspectionLine" }
+
+    IncomingInspectionLineInput:
+      type: object
+      required: [grn_line_id, accepted_qty, rejected_qty]
+      properties:
+        grn_line_id: { type: string, format: uuid }
+        accepted_qty: { type: number, minimum: 0 }
+        rejected_qty: { type: number, minimum: 0 }
+        rejection_reason: { type: ["string", "null"] }
+
+    IncomingInspectionInput:
+      type: object
+      required: [grn_id, lines]
+      properties:
+        grn_id: { type: string, format: uuid }
+        remarks: { type: ["string", "null"] }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/IncomingInspectionLineInput" }
+
+    EligibleGrn:
+      type: object
+      required: [grn_id, grn_number, supplier_id, received_date, pending_line_count]
+      properties:
+        grn_id: { type: string, format: uuid }
+        grn_number: { type: string }
+        supplier_id: { type: string, format: uuid }
+        received_date: { type: string }
+        pending_line_count: { type: integer }
+
+    StockBalance:
+      type: object
+      required: [material_id, material_code, material_name, uom, stock_state, quantity]
+      properties:
+        material_id: { type: string, format: uuid }
+        material_code: { type: string }
+        material_name: { type: string }
+        uom: { $ref: "#/components/schemas/InventoryUom" }
+        stock_state: { type: string, enum: [inspection_pending, available, rejected] }
+        quantity: { type: number }

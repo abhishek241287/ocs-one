@@ -129,6 +129,18 @@ unless a minimum role is stated.
 | `/grns` | POST | ✅ | **supervisor, director** | global | ✅ (`grn.created`) | ✅ (qty>0 via zod gt(0); unknown material_id / FK → 400; uom snapshot from Material) |
 | `/grns/:id/post` | POST | ✅ | **supervisor, director** | global | ✅ (`grn.posted`) | ✅ (draft→posted guarded FOR UPDATE inside tx (TOCTOU); per-line workflow routing; atomic txn gen; non-draft → 409) |
 | `/grns/:id` | DELETE | ✅ | **supervisor, director** | global | no | ✅ (only draft deletable, guarded FOR UPDATE; posted → 409) |
+| `/inspections` | GET | ✅ | viewer (read) | global | no | ✅ |
+| `/inspections/eligible` | GET | ✅ | viewer (read) | global | no | ✅ (posted GRNs with pending lines, not yet inspected; literal path registered before `/:id`) |
+| `/inspections/:id` | GET | ✅ | viewer (read) | global | no | ✅ |
+| `/inspections` | POST | ✅ | **supervisor, director** | global | ✅ (`inspection.completed`) | ✅ (GRN must be posted+uninspected guarded FOR UPDATE inside tx (TOCTOU); grn_id UNIQUE → already-inspected 409; submitted lines must exactly cover pending lines → 400; per-line accepted+rejected==received & both≥0 → 400; rejection_reason required if rejected>0 → 400; atomic ledger writes; NEVER mutates GRN receipt qty/material/uom) |
+| `/stock` | GET | ✅ | viewer (read) | global | no | ✅ (read-only SUM(quantity) projection of the immutable ledger by material+stock_state) |
+
+> **Incoming Inspection (Inventory Platform v1.0):** a SEPARATE document from the GRN — it records what OCS
+> ACCEPTED vs REJECTED and NEVER modifies the GRN's receipt data (quantity_received/material/supplier/uom stay
+> immutable; only each line's `inspection_status` badge reflects the outcome). Line-by-line: each pending GRN line
+> gets its own accept/reject. Inventory moves via signed ledger entries: `INSPECTION_RELEASE` −received @inspection_pending,
+> `INSPECTION_ACCEPT` +accepted @available, `INSPECTION_REJECT` +rejected @rejected (zero-qty rows skipped) — netting
+> the inspection_pending hold to 0. One inspection per GRN (grn_id UNIQUE).
 
 > **Workflow-driven receipt routing:** posting reads each line's Material → Category →
 > assigned Material Workflow → `post_receipt_action` (exhaustive switch, `never` default).

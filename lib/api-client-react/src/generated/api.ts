@@ -80,6 +80,8 @@ import type {
   GrnDetail,
   GrnInput,
   HealthStatus,
+  IncomingInspectionDetail,
+  IncomingInspectionInput,
   ListBmsMasters200,
   ListBmsMastersParams,
   ListBusbarMasters200,
@@ -106,9 +108,12 @@ import type {
   ListDealersParams,
   ListDispatchOrders200,
   ListDispatchOrdersParams,
+  ListEligibleGrns200,
   ListGrnTransactions200,
   ListGrns200,
   ListGrnsParams,
+  ListInspections200,
+  ListInspectionsParams,
   ListMaterialCategories200,
   ListMaterialCategoriesParams,
   ListMaterialMasters200,
@@ -128,6 +133,7 @@ import type {
   ListProductsParams,
   ListReworkTickets200,
   ListReworkTicketsParams,
+  ListStockBalances200,
   ListSuppliers200,
   ListSuppliersParams,
   ListTestEquipmentMasters200,
@@ -11833,6 +11839,361 @@ export function useListGrnTransactions<TData = Awaited<ReturnType<typeof listGrn
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListGrnTransactionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListInspectionsUrl = (params?: ListInspectionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/inventory/inspections?${stringifiedParams}` : `/api/inventory/inspections`
+}
+
+export const listInspections = async (params?: ListInspectionsParams, options?: RequestInit): Promise<ListInspections200> => {
+
+  return customFetch<ListInspections200>(getListInspectionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInspectionsQueryKey = (params?: ListInspectionsParams,) => {
+    return [
+    `/api/inventory/inspections`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListInspectionsQueryOptions = <TData = Awaited<ReturnType<typeof listInspections>>, TError = ErrorType<unknown>>(params?: ListInspectionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInspections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInspectionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInspections>>> = ({ signal }) => listInspections(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInspections>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInspectionsQueryResult = NonNullable<Awaited<ReturnType<typeof listInspections>>>
+export type ListInspectionsQueryError = ErrorType<unknown>
+
+
+
+export function useListInspections<TData = Awaited<ReturnType<typeof listInspections>>, TError = ErrorType<unknown>>(
+ params?: ListInspectionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInspections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInspectionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateInspectionUrl = () => {
+
+
+
+
+  return `/api/inventory/inspections`
+}
+
+export const createInspection = async (incomingInspectionInput: IncomingInspectionInput, options?: RequestInit): Promise<IncomingInspectionDetail> => {
+
+  return customFetch<IncomingInspectionDetail>(getCreateInspectionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(incomingInspectionInput)
+  }
+);}
+
+
+
+
+export const getCreateInspectionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInspection>>, TError,{data: BodyType<IncomingInspectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInspection>>, TError,{data: BodyType<IncomingInspectionInput>}, TContext> => {
+
+const mutationKey = ['createInspection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInspection>>, {data: BodyType<IncomingInspectionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createInspection(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateInspectionMutationResult = NonNullable<Awaited<ReturnType<typeof createInspection>>>
+    export type CreateInspectionMutationBody = BodyType<IncomingInspectionInput>
+    export type CreateInspectionMutationError = ErrorType<unknown>
+
+    export const useCreateInspection = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInspection>>, TError,{data: BodyType<IncomingInspectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createInspection>>,
+        TError,
+        {data: BodyType<IncomingInspectionInput>},
+        TContext
+      > => {
+      return useMutation(getCreateInspectionMutationOptions(options));
+    }
+
+export const getListEligibleGrnsUrl = () => {
+
+
+
+
+  return `/api/inventory/inspections/eligible`
+}
+
+export const listEligibleGrns = async ( options?: RequestInit): Promise<ListEligibleGrns200> => {
+
+  return customFetch<ListEligibleGrns200>(getListEligibleGrnsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEligibleGrnsQueryKey = () => {
+    return [
+    `/api/inventory/inspections/eligible`
+    ] as const;
+    }
+
+
+export const getListEligibleGrnsQueryOptions = <TData = Awaited<ReturnType<typeof listEligibleGrns>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEligibleGrns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEligibleGrnsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEligibleGrns>>> = ({ signal }) => listEligibleGrns({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEligibleGrns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEligibleGrnsQueryResult = NonNullable<Awaited<ReturnType<typeof listEligibleGrns>>>
+export type ListEligibleGrnsQueryError = ErrorType<unknown>
+
+
+
+export function useListEligibleGrns<TData = Awaited<ReturnType<typeof listEligibleGrns>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEligibleGrns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEligibleGrnsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetInspectionUrl = (id: string,) => {
+
+
+
+
+  return `/api/inventory/inspections/${id}`
+}
+
+export const getInspection = async (id: string, options?: RequestInit): Promise<IncomingInspectionDetail> => {
+
+  return customFetch<IncomingInspectionDetail>(getGetInspectionUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInspectionQueryKey = (id: string,) => {
+    return [
+    `/api/inventory/inspections/${id}`
+    ] as const;
+    }
+
+
+export const getGetInspectionQueryOptions = <TData = Awaited<ReturnType<typeof getInspection>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInspection>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInspectionQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInspection>>> = ({ signal }) => getInspection(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInspection>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInspectionQueryResult = NonNullable<Awaited<ReturnType<typeof getInspection>>>
+export type GetInspectionQueryError = ErrorType<unknown>
+
+
+
+export function useGetInspection<TData = Awaited<ReturnType<typeof getInspection>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInspection>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInspectionQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListStockBalancesUrl = () => {
+
+
+
+
+  return `/api/inventory/stock`
+}
+
+export const listStockBalances = async ( options?: RequestInit): Promise<ListStockBalances200> => {
+
+  return customFetch<ListStockBalances200>(getListStockBalancesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListStockBalancesQueryKey = () => {
+    return [
+    `/api/inventory/stock`
+    ] as const;
+    }
+
+
+export const getListStockBalancesQueryOptions = <TData = Awaited<ReturnType<typeof listStockBalances>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStockBalances>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStockBalancesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStockBalances>>> = ({ signal }) => listStockBalances({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStockBalances>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListStockBalancesQueryResult = NonNullable<Awaited<ReturnType<typeof listStockBalances>>>
+export type ListStockBalancesQueryError = ErrorType<unknown>
+
+
+
+export function useListStockBalances<TData = Awaited<ReturnType<typeof listStockBalances>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStockBalances>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListStockBalancesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

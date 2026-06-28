@@ -381,6 +381,54 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     expected: roles(P, P, F, F),
   },
 
+  // ─── Inventory Platform — Incoming Inspection (read all; write supervisor+director) ─
+  {
+    id: "inventory.inspections.list",
+    method: "GET",
+    path: "/api/inventory/inspections",
+    group: "Inventory",
+    description: "List incoming inspections (read)",
+    guard: "requireWriteRole(supervisor,director) — GET passes for all authed",
+    expected: all(P),
+  },
+  {
+    id: "inventory.inspections.eligible",
+    method: "GET",
+    path: "/api/inventory/inspections/eligible",
+    group: "Inventory",
+    description: "List posted GRNs eligible for inspection (read)",
+    guard: "requireWriteRole(supervisor,director) — GET passes for all authed",
+    expected: all(P),
+  },
+  {
+    id: "inventory.inspections.get",
+    method: "GET",
+    path: `/api/inventory/inspections/${DUMMY_ID}`,
+    group: "Inventory",
+    description: "Get an inspection with lines (read)",
+    guard: "requireWriteRole(supervisor,director) — GET passes for all authed",
+    expected: all(P),
+  },
+  {
+    id: "inventory.inspections.create",
+    method: "POST",
+    path: "/api/inventory/inspections",
+    group: "Inventory",
+    description: "Create + finalise an incoming inspection (write)",
+    guard: "requireWriteRole(supervisor,director)",
+    body: {},
+    expected: roles(P, P, F, F),
+  },
+  {
+    id: "inventory.stock.list",
+    method: "GET",
+    path: "/api/inventory/stock",
+    group: "Inventory",
+    description: "On-hand stock by material + stock_state (read)",
+    guard: "requireWriteRole(supervisor,director) — GET passes for all authed",
+    expected: all(P),
+  },
+
   // ─── Unified Product Platform — serialized Products ───────────────────────────
   {
     id: "products.list",

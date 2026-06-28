@@ -5999,16 +5999,139 @@ export const ListGrnTransactionsParams = zod.object({
 export const ListGrnTransactionsResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.string().uuid(),
-  "transaction_type": zod.enum(['GRN_RECEIPT']),
+  "transaction_type": zod.enum(['GRN_RECEIPT', 'INSPECTION_RELEASE', 'INSPECTION_ACCEPT', 'INSPECTION_REJECT']),
   "material_id": zod.string().uuid(),
   "quantity": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
-  "stock_state": zod.enum(['inspection_pending', 'available']),
+  "stock_state": zod.enum(['inspection_pending', 'available', 'rejected']),
   "source_document_type": zod.string(),
   "source_document_id": zod.string().uuid(),
   "source_line_id": zod.string().uuid(),
   "created_by": zod.string().uuid().nullish(),
   "created_at": zod.coerce.date()
+}))
+})
+
+
+export const listInspectionsQueryPageDefault = 1;
+export const listInspectionsQueryPageSizeDefault = 25;
+
+export const ListInspectionsQueryParams = zod.object({
+  "page": zod.coerce.number().default(listInspectionsQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listInspectionsQueryPageSizeDefault)
+})
+
+export const ListInspectionsResponse = zod.object({
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+}).and(zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "inspection_number": zod.string(),
+  "grn_id": zod.string().uuid(),
+  "grn_number": zod.string().nullish(),
+  "remarks": zod.string().nullish(),
+  "inspected_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const createInspectionBodyLinesItemAcceptedQtyMin = 0;
+
+export const createInspectionBodyLinesItemRejectedQtyMin = 0;
+
+
+
+
+export const CreateInspectionBody = zod.object({
+  "grn_id": zod.string().uuid(),
+  "remarks": zod.string().nullish(),
+  "lines": zod.array(zod.object({
+  "grn_line_id": zod.string().uuid(),
+  "accepted_qty": zod.number().min(createInspectionBodyLinesItemAcceptedQtyMin),
+  "rejected_qty": zod.number().min(createInspectionBodyLinesItemRejectedQtyMin),
+  "rejection_reason": zod.string().nullish()
+})).min(1)
+})
+
+export const CreateInspectionResponse = zod.object({
+  "id": zod.string().uuid(),
+  "inspection_number": zod.string(),
+  "grn_id": zod.string().uuid(),
+  "grn_number": zod.string().nullish(),
+  "remarks": zod.string().nullish(),
+  "inspected_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "inspection_id": zod.string().uuid(),
+  "grn_line_id": zod.string().uuid(),
+  "grn_id": zod.string().uuid(),
+  "material_id": zod.string().uuid(),
+  "quantity_received": zod.number(),
+  "accepted_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "result": zod.enum(['passed', 'rejected', 'partial']),
+  "rejection_reason": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const ListEligibleGrnsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "grn_id": zod.string().uuid(),
+  "grn_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "received_date": zod.string(),
+  "pending_line_count": zod.number()
+}))
+})
+
+
+export const GetInspectionParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetInspectionResponse = zod.object({
+  "id": zod.string().uuid(),
+  "inspection_number": zod.string(),
+  "grn_id": zod.string().uuid(),
+  "grn_number": zod.string().nullish(),
+  "remarks": zod.string().nullish(),
+  "inspected_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "inspection_id": zod.string().uuid(),
+  "grn_line_id": zod.string().uuid(),
+  "grn_id": zod.string().uuid(),
+  "material_id": zod.string().uuid(),
+  "quantity_received": zod.number(),
+  "accepted_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "result": zod.enum(['passed', 'rejected', 'partial']),
+  "rejection_reason": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const ListStockBalancesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string(),
+  "material_name": zod.string(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "stock_state": zod.enum(['inspection_pending', 'available', 'rejected']),
+  "quantity": zod.number()
 }))
 })
 

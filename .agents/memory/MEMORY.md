@@ -30,3 +30,4 @@
 - [Cert validation-workflow false reds](cert-workflow-false-reds.md) — authz/audit "failed" = auth-limiter saturation, not a regression; authoritative run = restart api-server, no competing traffic.
 - [Masters factory PG errors](masters-factory-pg-errors.md) — shared master router maps 23505→409 (field-aware) + 23503 FK→400 for every master; declare constraints in schema, no per-route handlers.
 - [Master-pick dropdowns filter active](master-pick-dropdowns-active-filter.md) — empty ocs-one master dropdown = no ACTIVE rows, not a bug; activate masters before e2e; PATCH doesn't change status (toggle route only).
+- [Inventory signed-ledger state model](inventory-signed-ledger.md) — stock is a SUM projection of append-only signed txns (never overwritten); move = neg+pos rows; FOR UPDATE + DB UNIQUE guards; receipts immutable, downstream only reflects a status badge.

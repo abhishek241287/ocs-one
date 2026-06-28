@@ -26,6 +26,8 @@ export async function seedDatabase(): Promise<void> {
     CREATE SEQUENCE IF NOT EXISTS ecf_correction_seq START 1 INCREMENT 1;
     -- Inventory: race-safe GRN number generation (GRN-YYYYMMDD-NNNN).
     CREATE SEQUENCE IF NOT EXISTS grn_seq START 1 INCREMENT 1;
+    -- Inventory: race-safe Incoming Inspection number (INSP-YYYYMMDD-NNNN).
+    CREATE SEQUENCE IF NOT EXISTS incoming_inspection_seq START 1 INCREMENT 1;
   `);
 
   // Forward-only resync of each id sequence to the max value already persisted in
@@ -65,6 +67,12 @@ export async function seedDatabase(): Promise<void> {
         FROM grn_headers WHERE grn_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
       IF m > 0 THEN
         PERFORM setval('grn_seq', GREATEST((SELECT last_value FROM grn_seq), m), true);
+      END IF;
+
+      SELECT COALESCE(MAX(split_part(inspection_number, '-', 3)::bigint), 0) INTO m
+        FROM incoming_inspections WHERE inspection_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
+      IF m > 0 THEN
+        PERFORM setval('incoming_inspection_seq', GREATEST((SELECT last_value FROM incoming_inspection_seq), m), true);
       END IF;
     END $$;
   `);

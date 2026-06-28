@@ -30,6 +30,7 @@ import {
   BrainCircuit,
   Network,
   Activity,
+  ClipboardCheck,
   SlidersHorizontal,
   Layers,
   GitBranch,
@@ -84,6 +85,8 @@ const navSections: NavSection[] = [
     title: "Inventory",
     items: [
       { label: "Goods Receipt Notes", href: "/inventory/grns", icon: Archive },
+      { label: "Incoming Inspection", href: "/inventory/inspections", icon: ClipboardCheck },
+      { label: "Stock", href: "/inventory/stock", icon: Package },
       { label: "Workflow Assignment", href: "/inventory/workflow-assignments", icon: Network },
     ],
   },

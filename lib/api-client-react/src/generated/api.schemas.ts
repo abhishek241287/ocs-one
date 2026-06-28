@@ -2070,6 +2070,9 @@ export type InventoryTransactionTransactionType = typeof InventoryTransactionTra
 
 export const InventoryTransactionTransactionType = {
   GRN_RECEIPT: 'GRN_RECEIPT',
+  INSPECTION_RELEASE: 'INSPECTION_RELEASE',
+  INSPECTION_ACCEPT: 'INSPECTION_ACCEPT',
+  INSPECTION_REJECT: 'INSPECTION_REJECT',
 } as const;
 
 export type InventoryTransactionStockState = typeof InventoryTransactionStockState[keyof typeof InventoryTransactionStockState];
@@ -2078,6 +2081,7 @@ export type InventoryTransactionStockState = typeof InventoryTransactionStockSta
 export const InventoryTransactionStockState = {
   inspection_pending: 'inspection_pending',
   available: 'available',
+  rejected: 'rejected',
 } as const;
 
 export interface InventoryTransaction {
@@ -2093,6 +2097,91 @@ export interface InventoryTransaction {
   /** @nullable */
   created_by?: string | null;
   created_at: string;
+}
+
+export type IncomingInspectionResult = typeof IncomingInspectionResult[keyof typeof IncomingInspectionResult];
+
+
+export const IncomingInspectionResult = {
+  passed: 'passed',
+  rejected: 'rejected',
+  partial: 'partial',
+} as const;
+
+export interface IncomingInspection {
+  id: string;
+  inspection_number: string;
+  grn_id: string;
+  /** @nullable */
+  grn_number?: string | null;
+  /** @nullable */
+  remarks?: string | null;
+  /** @nullable */
+  inspected_by?: string | null;
+  created_at: string;
+}
+
+export interface IncomingInspectionLine {
+  id: string;
+  inspection_id: string;
+  grn_line_id: string;
+  grn_id: string;
+  material_id: string;
+  quantity_received: number;
+  accepted_qty: number;
+  rejected_qty: number;
+  result: IncomingInspectionResult;
+  /** @nullable */
+  rejection_reason?: string | null;
+  created_at: string;
+}
+
+export type IncomingInspectionDetail = IncomingInspection & {
+  lines: IncomingInspectionLine[];
+};
+
+export interface IncomingInspectionLineInput {
+  grn_line_id: string;
+  /** @minimum 0 */
+  accepted_qty: number;
+  /** @minimum 0 */
+  rejected_qty: number;
+  /** @nullable */
+  rejection_reason?: string | null;
+}
+
+export interface IncomingInspectionInput {
+  grn_id: string;
+  /** @nullable */
+  remarks?: string | null;
+  /** @minItems 1 */
+  lines: IncomingInspectionLineInput[];
+}
+
+export interface EligibleGrn {
+  grn_id: string;
+  grn_number: string;
+  supplier_id: string;
+  received_date: string;
+  pending_line_count: number;
+}
+
+export type StockBalanceStockState = typeof StockBalanceStockState[keyof typeof StockBalanceStockState];
+
+
+export const StockBalanceStockState = {
+  inspection_pending: 'inspection_pending',
+  available: 'available',
+  rejected: 'rejected',
+} as const;
+
+export interface StockBalance {
+  material_id: string;
+  material_code: string;
+  material_name: string;
+  uom: InventoryUom;
+  stock_state: StockBalanceStockState;
+  quantity: number;
 }
 
 export type SearchParamParameter = string;
@@ -2560,5 +2649,22 @@ export type ListGrns200 = MasterListResponse & {
 
 export type ListGrnTransactions200 = {
   items: InventoryTransaction[];
+};
+
+export type ListInspectionsParams = {
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+};
+
+export type ListInspections200 = MasterListResponse & {
+  items?: IncomingInspection[];
+};
+
+export type ListEligibleGrns200 = {
+  items: EligibleGrn[];
+};
+
+export type ListStockBalances200 = {
+  items: StockBalance[];
 };
 
