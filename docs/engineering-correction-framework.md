@@ -145,13 +145,38 @@ a previous→new diff). Cell Grading's grading page is the reference consumer (t
 > needs new framework capability, that is an ECF v1.1 enhancement request — not a v1.0
 > change.
 
-## ECF v1.1 enhancement backlog (do NOT implement yet)
+## ECF Compatibility Rule (CTO directive — binding)
 
-Recorded per CTO directive — frozen out of v1.0, considered only after all certification
-waves complete. The framework is kept **extensible** so these land without changing the
-frozen correction API.
+ECF is a platform service. **Once a module begins using ECF, its integration contract
+must remain backward compatible.** Future ECF versions (v1.1, v1.2, …) may *add*
+capabilities, but they must not require changes to existing certified modules:
 
-- **Correction attachments.** Each correction should eventually support attachment
-  metadata — e.g. machine PDF, grading Excel, oscilloscope image, QC photo, signed NCR,
-  calibration certificate. Design goal: add attachment metadata **without changing**
-  `recordOriginal` / `correct` / `getHistory` / `validateCorrection`. **Do not build now.**
+- Existing APIs must continue to work.
+- Existing correction records must remain readable.
+- Existing Correction IDs must never change.
+- Existing Engineering Versions must remain valid.
+- New capabilities must be **additive, never breaking**.
+
+If a future enhancement genuinely requires a breaking change, it must be released as
+**ECF v2.0** — only after an explicit migration plan and a compatibility review. No
+breaking change ships under a v1.x label.
+
+## ECF Enhancement Backlog (do NOT implement during certification waves)
+
+Maintained per CTO directive. Items are **not** built during certification waves; they
+are considered only after all cert waves complete — unless a certification defect
+requires a platform fix. Every item is designed to be additive under the Compatibility
+Rule (the `metadata` JSONB column is the natural extension point, so the frozen
+correction API stays unchanged).
+
+| ID | Description | Business Value | Impacted Modules | Complexity | Target Version |
+|----|-------------|----------------|------------------|------------|----------------|
+| **ECF-001** | Correction Attachments (PDF, Excel, images — e.g. machine PDF, grading Excel, oscilloscope image, QC photo, signed NCR, calibration certificate) | Evidentiary traceability; auditors/customers can inspect source artifacts behind a correction | All correction-enabled modules (Cell Grading first) | Medium | v1.1 |
+| **ECF-002** | Digital Approval Signatures | Non-repudiable sign-off on corrections; stronger audit & compliance posture | All correction-enabled modules | Medium | v1.1 |
+| **ECF-003** | Multi-level Engineering Approval Workflow | Routes high-impact corrections through tiered approvals before they take effect | All correction-enabled modules | High | v1.2 |
+| **ECF-004** | Electronic NCR / CAPA Integration | Links corrections to non-conformance / corrective-action records for closed-loop quality | QC, Testing, Cell Grading, Warranty | High | v1.2 |
+| **ECF-005** | External ERP / MES Synchronization | Propagates correction history to external ERP/MES for plant-wide consistency | All correction-enabled modules | High | v2.0 (likely breaking — migration plan required) |
+
+> **No further ECF development is authorized during CW-02.** Continue Cell Grading
+> certification on the frozen ECF v1.0 platform. New ECF work is considered only after all
+> certification waves complete, unless a certification defect requires a platform fix.

@@ -53,6 +53,17 @@ module is touched, by direction.
   improvements (e.g. correction attachments) are recorded as ECF v1.1 enhancement requests
   for after all certification waves. Continue Cell Grading certification on the frozen
   framework.
+- **ECF Compatibility Rule + Enhancement Backlog (CTO directive).** Once a module uses
+  ECF its integration contract stays backward compatible: existing APIs keep working,
+  existing correction records stay readable, Correction IDs never change, Engineering
+  Versions stay valid, new capabilities are additive. A breaking change ships only as
+  **ECF v2.0** after an explicit migration plan + compatibility review. A structured
+  enhancement backlog is now maintained (ID / description / business value / impacted
+  modules / complexity / target version): **ECF-001** Correction Attachments,
+  **ECF-002** Digital Approval Signatures, **ECF-003** Multi-level Engineering Approval
+  Workflow, **ECF-004** Electronic NCR / CAPA Integration, **ECF-005** External ERP / MES
+  Synchronization. None built during certification waves unless a cert defect requires a
+  platform fix. See `docs/engineering-correction-framework.md`.
 
 
 > **Certification Wave 02 — Cell Grading.** MAT-01 (Page & Navigation) and MAT-02 (CRUD &
