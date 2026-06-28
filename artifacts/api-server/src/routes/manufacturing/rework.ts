@@ -72,6 +72,13 @@ router.patch("/:id", async (req, res) => {
   if (body.correctiveAction !== undefined) updateData.correctiveAction = body.correctiveAction;
   if (body.retestRequired !== undefined) updateData.retestRequired = body.retestRequired;
 
+  // All-optional body: an empty SET clause throws in Drizzle (→ 500). Reject
+  // an empty update with 400 per SS-01 input validation.
+  if (Object.keys(updateData).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
+
   const [updated] = await db
     .update(mfgReworkTicketsTable)
     .set(updateData)

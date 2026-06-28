@@ -53,7 +53,7 @@ export default function StageStepper({ stages, activeStage, onSelectStage }: Pro
     const stage = stageMap[def.key];
     return {
       id:     def.key,
-      label:  def.label.replace("\n", " "),
+      label:  def.label.replace(/\n/g, " "),
       status: mapStatus(stage?.status),
       icon:   STAGE_ICONS[def.key],
     };

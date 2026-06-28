@@ -7,6 +7,8 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { recordRequest } from "./lib/metrics";
+import { CSP_DIRECTIVES, RATE_LIMITS } from "./lib/security-config";
+import { recordSecurityEvent, reqMeta } from "./lib/security-events";
 
 const app: Express = express();
 
@@ -14,16 +16,12 @@ const app: Express = express();
 app.set("trust proxy", 1);
 
 // ─── Security headers ─────────────────────────────────────────────────────────
+// CSP directives come from the shared security-config so the /developer/security
+// dashboard introspects exactly what is enforced here.
 app.use(
   helmet({
     contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"], // Vite dev needs inline scripts
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'"],
-      },
+      directives: CSP_DIRECTIVES,
     },
   })
 );
@@ -42,29 +40,51 @@ app.use(
 );
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
+// Limits come from the shared security-config. Every breach is recorded to the
+// security_events audit log (powers the dashboard "rate-limit events" panel).
+function rateLimitHandler(name: string, message: string) {
+  return (req: Request, res: Response) => {
+    void recordSecurityEvent({
+      eventType: "ratelimit.exceeded",
+      severity: "warning",
+      actorEmail: req.user?.email ?? null,
+      actorRole: req.user?.role ?? null,
+      actorId: req.user?.userId ?? null,
+      ...reqMeta(req),
+      statusCode: 429,
+      detail: `Rate limit "${name}" exceeded`,
+    });
+    res.status(429).json({ error: message });
+  };
+}
+
+const GLOBAL_MSG = "Too many requests. Please slow down.";
+const AUTH_MSG = "Too many login attempts. Try again later.";
+const REGISTER_MSG = "Too many account creation attempts. Try again later.";
+
 const globalLimiter = rateLimit({
-  windowMs: 60_000,
-  max: 300,
+  windowMs: RATE_LIMITS.global.windowMs,
+  max: RATE_LIMITS.global.max,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many requests. Please slow down." },
+  handler: rateLimitHandler("global", GLOBAL_MSG),
 });
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60_000, // 15 minutes
-  max: 20,
+  windowMs: RATE_LIMITS.auth.windowMs,
+  max: RATE_LIMITS.auth.max,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many login attempts. Try again later." },
+  handler: rateLimitHandler("auth", AUTH_MSG),
 });
 
 // DEF-M06-002: throttle the director-only user-creation endpoint.
 const registerLimiter = rateLimit({
-  windowMs: 15 * 60_000, // 15 minutes
-  max: 20,
+  windowMs: RATE_LIMITS.register.windowMs,
+  max: RATE_LIMITS.register.max,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many account creation attempts. Try again later." },
+  handler: rateLimitHandler("register", REGISTER_MSG),
 });
 
 app.use("/api", globalLimiter);

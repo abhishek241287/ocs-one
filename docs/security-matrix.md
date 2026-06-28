@@ -18,6 +18,17 @@ all six questions below. No endpoint may be merged until all six are answered.
 5. **Input validation?** — Are all inputs validated (Zod / explicit checks)?
 6. **Output sanitised?** — Is the response free of sensitive fields (no password hashes, secrets, internal-only data)?
 
+## Security Standard SS-02 (permanent automated test)
+
+Authorization is enforced by a **permanent regression test**, not by manual review alone.
+`pnpm --filter @workspace/api-server run test:authz` (validation command `authz`) drives
+every endpoint in this matrix against all five principals
+(director / supervisor / operator / viewer / anonymous) and asserts the exact expected
+outcome (`pass` → not-403 / `forbidden` → 403 / `unauthorized` → 401). The matrix lives
+in code at `lib/authz-matrix.ts` and is the single source of truth shared by both this
+suite and the `/api/developer/security` dashboard — they cannot drift. **Any unexpected
+authorization result fails certification.** Current: ✅ 225/225 assertions pass.
+
 ### RBAC model (CTO-approved — DEF-M06-001)
 
 - **Director** — full access to every module.
@@ -46,8 +57,8 @@ unless a minimum role is stated.
 | Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |
 |---|---|---|---|---|---|---|
 | `/api/healthz` | GET | ❌ | — | global | no | ✅ |
-| `/api/auth/login` | POST | ❌ | — | auth (20/15m) | no | ✅ |
-| `/api/auth/logout` | POST | ❌ | — | global | no | ✅ |
+| `/api/auth/login` | POST | ❌ | — | auth (20/15m) | **yes** (`auth.login.success`/`failed`) | ✅ |
+| `/api/auth/logout` | POST | ❌ | — | global | **yes** (`auth.logout`) | ✅ |
 | `/api/auth/me` | GET | ✅ | any | global | no | ✅ |
 | `/api/auth/register` | POST | ✅ | **director** | register (20/15m) | **yes** (`user.created`) | ✅ (DEF-M06-002) |
 
@@ -95,7 +106,7 @@ unless a minimum role is stated.
 | `/matches` | GET | ✅ | viewer (read) | global | no | ✅ |
 | `/matches*` (match/reserve/release) | POST | ✅ | **operator, supervisor, director** | global | no | ✅ |
 | `/config` | GET | ✅ | viewer (read) | global | no | ✅ |
-| `/config` | PUT/PATCH | ✅ | **supervisor, director** | global | no | ✅ |
+| `/config` | PUT/PATCH | ✅ | **supervisor, director** | global | no | ✅ (empty-body → 400, DEF-M06-EMPTY-BODY) |
 | `/inventory`, reports | GET | ✅ | viewer (read) | global | no | ✅ |
 
 ### Logistics (`/api/logistics`)
@@ -115,6 +126,7 @@ unless a minimum role is stated.
 | `/api/dashboard/*` | GET | ✅ | viewer (read) | global | no | ✅ |
 | `/api/reports/*` | GET | ✅ | **director, supervisor** | global | no | ✅ |
 | `/api/developer/*` (incl. performance snapshots) | GET/POST | ✅ | **director** | global | no | ✅ |
+| `/api/developer/security` (security dashboard) | GET | ✅ | **director** | global | no | ✅ (SS-02 verified) |
 
 > **Reports interpretation:** reporting is a management capability (CTO matrix lists
 > Reports under supervisor; operators excluded). It is intentionally restricted to
@@ -124,9 +136,13 @@ unless a minimum role is stated.
 
 ## Open follow-ups (filed, not yet remediated)
 
-- **DEF-M06-003 (LOW)** — no persistent auth/audit-event log. User creation is currently
-  written to the structured application log (`event: "user.created"`); a queryable DB
-  audit table is the planned follow-up. Until then, the **Audit Logged** column reflects
-  application-log coverage only.
-- **DEF-M06-004 (LOW)** — production CSP allows `unsafe-inline`.
-- **DEF-M06-005 (LOW)** — stateless JWT has no server-side revocation list.
+- ✅ **DEF-M06-003 (LOW) — RESOLVED 2026-06-28.** Persistent `security_events` table now
+  records auth (`auth.login.success`/`failed`, `auth.logout`), `user.created`,
+  `authz.denied` (403s), and `ratelimit.exceeded` events with actor + IP + metadata.
+- ✅ **DEF-M06-EMPTY-BODY (LOW) — FIXED 2026-06-28.** `PUT /api/cells/config` with an
+  empty body returned 500 (all-optional schema passed, empty SQL SET clause threw); now
+  returns 400 per SS-01.
+- **DEF-M06-004 (LOW)** — production CSP allows `unsafe-inline` (dev-gated; accepted
+  residual risk pending nonce/hash for prod build).
+- **DEF-M06-005 (LOW)** — stateless JWT has no server-side revocation list (8 h window
+  accepted residual risk).

@@ -47,6 +47,8 @@ Operations control system for OCS Oorja Green Pvt. Ltd. — end-to-end manufactu
 - **Postgres sequences for ID generation** — `mfg_order_seq` and `mfg_battery_seq` created on startup via `seed.ts`; helpers use `SELECT nextval(...)` inside transactions to avoid race conditions from `SELECT MAX(id)+1`.
 - **RBAC role enum**: `director | supervisor | operator | viewer` stored in `users.roleEnum`; `requireRole(...roles)` enforces per-route role checks. `requireWriteRole(...roles)` (mounted at sub-router level) lets reads (GET/HEAD) pass for any authed user while gating writes (POST/PUT/PATCH/DELETE) to listed roles — makes viewer read-only everywhere. Director is included in every write list.
 - **Security Standard SS-01** (permanent): every new endpoint must declare auth required? / minimum role / audit required? / rate limited? / input validation? / output sanitised? — before merge. `docs/security-matrix.md` is the authoritative per-endpoint reference.
+- **Security Standard SS-02** (permanent): authorization is enforced by an automated regression test, not manual review. `lib/authz-matrix.ts` (every protected endpoint × 5 principals: director/supervisor/operator/viewer/anonymous) is the single source of truth shared by the SS-02 suite (`cert/authz-suite.ts`) AND the security dashboard, so they cannot drift. Run `pnpm --filter @workspace/api-server run test:authz` (validation command `authz`); any unexpected authz result fails certification. The suite retries on 429 with backoff so rate-limiting never misclassifies an outcome.
+- **Persistent security audit** — `security_events` table records auth (`auth.login.success`/`failed`, `auth.logout`), `user.created`, `authz.denied` (403s), and `ratelimit.exceeded` events via fire-and-forget `recordSecurityEvent()` (`lib/security-events.ts`). `lib/security-config.ts` is the single source for CSP / rate-limit / cookie / JWT config (`describeJwtConfig`/`describeCspStatus`).
 - **No public registration** — `/auth/register` is director-only (`requireAuth` + `requireRole("director")`), rate-limited, audit-logged (`event: user.created`), and issues no session cookie for the created user. Factory software: users never self-register.
 - **Orval split mode** — codegen generates one file per tag rather than one giant file; barrel re-exports from `lib/api-client-react/src/index.ts` and `lib/api-zod/src/index.ts`.
 - **Trust proxy = 1** — Replit's reverse proxy sets `X-Forwarded-For`; without this express-rate-limit throws `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR`. Must always be set before rate limiter middleware.
@@ -59,6 +61,7 @@ Operations control system for OCS Oorja Green Pvt. Ltd. — end-to-end manufactu
 - **Manufacturing orders** — full stage lifecycle (cell allocation → assembly → compression → BMS install → BMS programming → charging → testing → QC → packing)
 - **Stage cards** — per-stage UI for operators: start/pause/resume/complete/approve/reject with data capture
 - **Director dashboard** — real-time KPI metrics across all stages, pipeline health monitor, alert feed
+- **Security dashboard** (`/developer/security`, director-only) — 12 sections: users-by-role, live authorization matrix, failed logins, rate-limit events, account creations, permission failures, audit feed, event histogram, SAST/privacy scan summary, dependency audit, CSP status, JWT/session + certification status
 - **Logistics** — dispatch orders, dealer management, shipment events
 - **Masters** — products, BMS, cells, chargers, test equipment, connectors, cables, busbars, cabinets
 
@@ -75,6 +78,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 - **Postgres sequences** (`mfg_order_seq`, `mfg_battery_seq`) are created by `seed.ts` at startup using `CREATE SEQUENCE IF NOT EXISTS`.
 - **Vite pre-transform errors** after codegen are stale HMR cache — restart the ocs-one workflow to clear.
 - **`CirclePlay`** (not `PlayCircle`) is the correct lucide-react icon name in v0.511+.
+- **All-optional Zod update bodies need an empty-body guard** — `UpdateCellGradeConfigBody` has all-optional fields, so `{}` passes `.parse()` but then `db.update().set({})` throws on an empty SQL SET clause → 500. Reject empty bodies with 400 (`Object.keys(body).length === 0`) per SS-01. Applies to any all-optional PATCH/PUT schema.
 
 ## Pointers
 

@@ -42,6 +42,23 @@ router.get("/", async (_req, res) => {
 router.put("/", async (req, res) => {
   const body = UpdateCellGradeConfigBody.parse(req.body);
 
+  // All fields are optional, so an empty/no-op body passes schema validation
+  // but would produce an empty SQL SET clause (Drizzle throws → 500). Reject
+  // it as a 400 client error per SS-01 (input validation).
+  if (Object.keys(body).length === 0) {
+    res.status(400).json({
+      error: "Validation failed",
+      issues: [
+        {
+          code: "custom",
+          message: "At least one configuration field must be provided.",
+          path: [],
+        },
+      ],
+    });
+    return;
+  }
+
   await ensureConfig(); // ensure row exists (supervisor+ guarded)
 
   const [updated] = await db

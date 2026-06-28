@@ -179,6 +179,13 @@ router.patch("/:id", requireWriteRole("supervisor", "director"), async (req, res
   if (body.plannedEndDate !== undefined) updates.plannedEndDate = body.plannedEndDate;
   if (body.notes !== undefined) updates.notes = body.notes;
 
+  // All-optional body: an empty SET clause throws in Drizzle (→ 500). Reject
+  // an empty update with 400 per SS-01 input validation.
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
+
   const [updated] = await db
     .update(mfgProductionOrdersTable)
     .set(updates)

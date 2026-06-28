@@ -1,6 +1,22 @@
 import { type Request, type Response, type NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import type { UserRole } from "@workspace/db";
+import { recordSecurityEvent, reqMeta } from "../lib/security-events";
+import { JWT_EXPIRES_IN } from "../lib/security-config";
+
+/** Persist an authorization (403) denial to the audit log. */
+function recordDenial(req: Request, required: UserRole[]): void {
+  void recordSecurityEvent({
+    eventType: "authz.denied",
+    severity: "warning",
+    actorId: req.user?.userId ?? null,
+    actorEmail: req.user?.email ?? null,
+    actorRole: req.user?.role ?? null,
+    ...reqMeta(req),
+    statusCode: 403,
+    detail: `Denied; required role: ${required.join(" or ")}`,
+  });
+}
 
 export interface AuthTokenPayload {
   userId: string;
@@ -44,6 +60,23 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   }
 }
 
+/**
+ * Best-effort decode of the auth cookie that NEVER rejects the request. Returns
+ * the token payload if a valid session is present, else null. Used by endpoints
+ * like logout that must always succeed (clear the cookie) but should still
+ * attribute the action to the user when a valid session exists — so audit
+ * logging is deterministic instead of silently dropping every logout event.
+ */
+export function decodeAuthCookie(req: Request): AuthTokenPayload | null {
+  const token = req.cookies?.ocs_token as string | undefined;
+  if (!token) return null;
+  try {
+    return jwt.verify(token, getSecret()) as AuthTokenPayload;
+  } catch {
+    return null;
+  }
+}
+
 export function requireRole(...roles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
@@ -51,6 +84,7 @@ export function requireRole(...roles: UserRole[]) {
       return;
     }
     if (!roles.includes(req.user.role)) {
+      recordDenial(req, roles);
       res.status(403).json({ error: `Access denied. Required role: ${roles.join(" or ")}` });
       return;
     }
@@ -77,6 +111,7 @@ export function requireWriteRole(...roles: UserRole[]) {
       return;
     }
     if (!roles.includes(req.user.role)) {
+      recordDenial(req, roles);
       res.status(403).json({ error: `Access denied. Required role: ${roles.join(" or ")}` });
       return;
     }
@@ -85,5 +120,5 @@ export function requireWriteRole(...roles: UserRole[]) {
 }
 
 export function signToken(payload: Omit<AuthTokenPayload, "iat" | "exp">): string {
-  return jwt.sign(payload, getSecret(), { expiresIn: "8h" });
+  return jwt.sign(payload, getSecret(), { expiresIn: JWT_EXPIRES_IN });
 }

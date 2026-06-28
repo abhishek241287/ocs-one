@@ -32,3 +32,4 @@ export * from "./cell-grading";
 export * from "./logistics";
 export * from "./users";
 export * from "./performance-snapshots";
+export * from "./security-events";

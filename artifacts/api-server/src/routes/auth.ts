@@ -2,21 +2,14 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { requireAuth, requireRole, signToken } from "../middleware/auth";
+import { requireAuth, requireRole, signToken, decodeAuthCookie } from "../middleware/auth";
+import { COOKIE_NAME, COOKIE_OPTIONS } from "../lib/security-config";
+import { recordSecurityEvent, reqMeta } from "../lib/security-events";
 
 const ASSIGNABLE_ROLES = ["director", "supervisor", "operator", "viewer"] as const;
 type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
 
 const router: IRouter = Router();
-
-const COOKIE_NAME = "ocs_token";
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
-  maxAge: 8 * 60 * 60 * 1000, // 8 hours
-  path: "/",
-};
 
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
@@ -39,6 +32,18 @@ router.post("/login", async (req, res) => {
     : await bcrypt.compare(password, "$2b$12$invalidhashtopreventtimingattack");
 
   if (!user || !user.isActive || !valid) {
+    void recordSecurityEvent({
+      eventType: "auth.login.failed",
+      severity: "warning",
+      targetEmail: email.toLowerCase(),
+      ...reqMeta(req),
+      statusCode: 401,
+      detail: !user
+        ? "No such account"
+        : !user.isActive
+          ? "Account disabled"
+          : "Bad password",
+    });
     res.status(401).json({ error: "Invalid email or password" });
     return;
   }
@@ -48,6 +53,16 @@ router.post("/login", async (req, res) => {
     email: user.email,
     name: user.name,
     role: user.role,
+  });
+
+  void recordSecurityEvent({
+    eventType: "auth.login.success",
+    severity: "info",
+    actorId: user.id,
+    actorEmail: user.email,
+    actorRole: user.role,
+    ...reqMeta(req),
+    statusCode: 200,
   });
 
   res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
@@ -128,6 +143,17 @@ router.post("/register", requireAuth, requireRole("director"), async (req, res) 
     },
     "Director created a new user account"
   );
+  void recordSecurityEvent({
+    eventType: "user.created",
+    severity: "info",
+    actorId: req.user?.userId ?? null,
+    actorEmail: req.user?.email ?? null,
+    actorRole: req.user?.role ?? null,
+    targetEmail: user.email,
+    ...reqMeta(req),
+    statusCode: 201,
+    detail: `Created account with role: ${user.role}`,
+  });
 
   // No cookie is set — the director stays logged in as themselves.
   res.status(201).json({
@@ -135,8 +161,23 @@ router.post("/register", requireAuth, requireRole("director"), async (req, res) 
   });
 });
 
-// POST /api/auth/logout
-router.post("/logout", (_req, res) => {
+// POST /api/auth/logout — public route (no requireAuth) so it always succeeds
+// in clearing the cookie. We still decode the cookie best-effort to attribute
+// the logout in the audit log; without this req.user is never populated here and
+// auth.logout events would silently never be recorded.
+router.post("/logout", (req, res) => {
+  const actor = req.user ?? decodeAuthCookie(req);
+  if (actor) {
+    void recordSecurityEvent({
+      eventType: "auth.logout",
+      severity: "info",
+      actorId: actor.userId,
+      actorEmail: actor.email,
+      actorRole: actor.role,
+      ...reqMeta(req),
+      statusCode: 200,
+    });
+  }
   res.clearCookie(COOKIE_NAME, { path: "/" });
   res.json({ success: true });
 });

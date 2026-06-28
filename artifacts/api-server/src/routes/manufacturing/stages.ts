@@ -320,6 +320,13 @@ router.patch("/:stage", async (req, res) => {
   if (body.notes !== undefined) updates.notes = body.notes;
   if (body.stageData !== undefined) updates.stageData = body.stageData as Record<string, unknown>;
 
+  // All-optional body: an empty SET clause throws in Drizzle (→ 500). Reject
+  // an empty update with 400 per SS-01 input validation.
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
+
   const [updated] = await db
     .update(mfgOrderStagesTable)
     .set(updates)

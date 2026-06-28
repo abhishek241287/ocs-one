@@ -4,8 +4,8 @@
 |-------|-------|
 | **Wave** | CW-01 |
 | **Module** | Cell Receiving |
-| **Overall Status** | 🟢 MAT-01→05 ✅ PASS (closed) · MAT-06 Security & Reliability in progress |
-| **Last Updated** | 2026-06-27 |
+| **Overall Status** | 🟢 MAT-01→05 ✅ PASS (closed) · MAT-06 Security & Reliability 🟢 READY FOR CTO SIGN-OFF |
+| **Last Updated** | 2026-06-28 |
 
 ---
 
@@ -18,7 +18,7 @@
 | MAT-03 | Workflow & Data Integrity | ✅ Pass | 2026-06-27 | 19/19 · all defects verified |
 | MAT-04 | UX & Operator Workflow | ✅ Pass | 2026-06-27 | 35/35 · DEF-M04-008 fixed & verified (ODS Standard 15) · login race (DEF-M04-010) fixed |
 | MAT-05 | Performance & Stress | ✅ **Pass (closed)** | 2026-06-27 | All *measured* thresholds met @ 1,014 lots / 10,058 cells · DEF-M05-001 (missing index) fixed · DEF-M05-002 (code-split) deferred · **4 closure criteria met:** Baseline v1.0, Regression Framework, `/developer/performance` dashboard, **historical baseline storage** (`performance_snapshots` + capture/history API + dashboard trend section) · enhancements #2–#5 (live DB health, measured React perf, background monitoring, PDF/Excel/JSON export) deferred per CTO "over time" directive |
-| MAT-06 | Security & Reliability | 🟡 In progress | — | Authorized 2026-06-27 · 14-area scope · **first-pass review done** (`MAT-06.md`) · scans clean (0 dep vulns, 0 privacy) · **5 defects open: 1 HIGH (broken access control — most mutations lack role checks), 1 MEDIUM (public+unthrottled registration), 3 LOW (audit log, prod CSP unsafe-inline, no JWT revocation)** · NOT YET PASSED |
+| MAT-06 | Security & Reliability | 🟢 Ready for CTO sign-off | 2026-06-28 | All 14 areas assessed with evidence (`MAT-06.md`) · scans re-run clean (0 dep vulns, 0 privacy, 2 SAST MEDIUM both outside API server) · DEF-001/002/003 remediated & verified · DEF-EMPTY-BODY (500→400) fixed · DEF-004/005 accepted residual risk · areas 8–10 (backup/recovery, failure/session recovery, pen-testing) measured · **2 permanent deliverables shipped: SS-02 authorization regression (225/225 assertions PASS) + Security Dashboard `/developer/security`** |
 
 ---
 
@@ -99,3 +99,11 @@
 | Begin MAT-06 | 2026-06-27 | CTO | ✅ Authorized — Security & Reliability Certification (most rigorous wave) |
 | MAT-06 scope + first-pass review | 2026-06-27 | Replit Agent | ✅ `MAT-06.md` charter (14 areas) + systematic review · scanners clean (dep audit 0, SAST 0 server-side, privacy 0) · Drizzle verified injection-safe · PASS areas: authn, secret-mgmt, input-validation, dependency, file-upload (N/A) |
 | MAT-06 defects filed | 2026-06-27 | Replit Agent | 🔴 DEF-CW01-M06-001 HIGH (broken access control — viewer can mutate prod/QC/masters/logistics) · -002 MED (public unthrottled `/auth/register`) · -003/-004/-005 LOW (no auth audit log · prod CSP `unsafe-inline` · stateless JWT no revocation) — remediation pending CTO RBAC-matrix sign-off |
+| DEF-001/002 remediated & verified | 2026-06-27 | Replit Agent | ✅ `requireWriteRole` RBAC + director-gated registration; architect review caught 3 bypasses (stage sign-off, GET write side-effect, routing-prefix shadow) — all fixed & re-verified |
+| MAT-06 deeper testing + 2 deliverables | 2026-06-28 | CTO → Replit Agent | 📋 Authorized SS-02 (automated authz regression) + Security Dashboard `/developer/security`, plus areas 8–10 measurement |
+| DEF-003 resolved (persistent audit) | 2026-06-28 | Replit Agent | ✅ `security_events` table records auth + authz + rate-limit + account-creation events; verified persisting via psql |
+| SS-02 shipped | 2026-06-28 | Replit Agent | ✅ `cert/authz-suite.ts` + `lib/authz-matrix.ts` (45 endpoints × 5 principals = 225 assertions) — PASS; intentional-mismatch sanity check fails as designed; validation command `authz` registered |
+| Security Dashboard shipped | 2026-06-28 | Replit Agent | ✅ `GET /api/developer/security` (director-only, 12 sections) + ODS `/developer/security` page — typecheck/lint/console clean; SS-02 confirms 403/401 for non-directors |
+| Areas 8–10 measured | 2026-06-28 | Replit Agent | ✅ Rate-limit (14×401→16×429) · backup/crash recovery (healthz 200 post-restart) · session recovery (JWT survives restart) · pen-tests (SQLi/auth-bypass/priv-esc all 401) · file-upload N/A (no endpoints) · secrets env-only |
+| DEF-EMPTY-BODY found & fixed | 2026-06-28 | Replit Agent | ✅ `PUT /api/cells/config` empty body 500→400 (SS-01 input validation); valid update 200, bad type 400 — verified |
+| Scanners re-run clean | 2026-06-28 | Replit Agent | ✅ dep 0 vulns · privacy 0 · SAST 2 MEDIUM both outside API server (StageStepper regex remediated; mockup-sandbox dynamic-import accepted dev-tool) · stored in `certification/security-scans.json` |

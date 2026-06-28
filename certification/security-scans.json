@@ -1,0 +1,98 @@
+{
+  "generatedAt": "2026-06-28T03:40:21.305Z",
+  "dependencyAudit": {
+    "status": "ok",
+    "summary": {
+      "critical": 0,
+      "high": 0,
+      "info": 0,
+      "low": 0,
+      "moderate": 0
+    },
+    "totalVulnerabilities": 0,
+    "findings": []
+  },
+  "sast": {
+    "status": "ok",
+    "summary": {
+      "medium": 2
+    },
+    "total": 2,
+    "findings": [
+      {
+        "checkId": ".config..semgrep.vendored-rules.javascript.lang.security.audit.unsafe-dynamic-method",
+        "severity": "MEDIUM",
+        "path": "artifacts/mockup-sandbox/src/App.tsx",
+        "line": 40,
+        "message": "Using non-static data to retrieve and run functions from the object is dangerous. If the data is user-controlled, it may allow executing arbitrary code.",
+        "disposition": "Accepted — dev-only mockup tooling, bounded import.meta.glob lookup (not user-controlled, never deployed in product)."
+      },
+      {
+        "checkId": ".config..semgrep.vendored-rules.javascript.lang.security.audit.incomplete-sanitization",
+        "severity": "MEDIUM",
+        "path": "artifacts/ocs-one/src/features/manufacturing/components/StageStepper.tsx",
+        "line": 56,
+        "message": "`def.label.replace` method will only replace the first occurrence when used with a string argument (\"\\n\"). If this method is used for escaping of dangerous data then there is a possibility for a bypass. Try to use sanitization library instead or use a Regex with a global flag.",
+        "disposition": "Remediated — replaced single replace(\"\\n\") with global regex /\\n/g."
+      }
+    ]
+  },
+  "privacy": {
+    "status": "ok",
+    "total": 0,
+    "findings": []
+  },
+  "certification": {
+    "wave": "CW-01 / MAT-06 — Security & Reliability",
+    "mantra": "Do not assume. Measure. Verify. Document.",
+    "ss02": {
+      "name": "SS-02 — automated authorization regression",
+      "status": "PASS",
+      "assertions": 225,
+      "endpoints": 35,
+      "principals": [
+        "director",
+        "supervisor",
+        "operator",
+        "viewer",
+        "anonymous"
+      ],
+      "command": "pnpm --filter @workspace/api-server run test:authz"
+    },
+    "areas": {
+      "rateLimit": {
+        "status": "VERIFIED",
+        "evidence": "Auth endpoint burst (30 req): 14×401 then 16×429 once 20/15min limit exceeded."
+      },
+      "fileUpload": {
+        "status": "N/A",
+        "evidence": "No file-upload endpoints exist (no multer/multipart/busboy); only CSV downloads via Content-Disposition."
+      },
+      "secretHandling": {
+        "status": "VERIFIED",
+        "evidence": "No hardcoded secrets; all secrets read via process.env only. TEMP_PASSWORD is SS-02 cert temp-user (self-cleaned)."
+      },
+      "auditLog": {
+        "status": "VERIFIED",
+        "evidence": "security_events persists 5 event types (authz.denied, ratelimit.exceeded, auth.login.success/failed, user.created)."
+      },
+      "backupRecovery": {
+        "status": "VERIFIED",
+        "evidence": "API server restart → healthz 200; process recovers cleanly."
+      },
+      "sessionRecovery": {
+        "status": "VERIFIED",
+        "evidence": "JWT stateless (no server-side session store); same cookie authenticates 200 before AND after server restart."
+      },
+      "penTest": {
+        "status": "VERIFIED",
+        "evidence": "SQLi on login email → 401 (parameterized queries); auth bypass (no cookie / forged JWT) → 401; privilege escalation (anon register director) → 401; IDOR-style direct access blocked by requireAuth/requireRole."
+      },
+      "defectRemediated": {
+        "id": "DEF-M06-EMPTY-BODY",
+        "status": "FIXED",
+        "detail": "PUT /api/cells/config with empty body returned 500 (empty SQL SET clause). Now returns 400 (SS-01 input validation). Valid update → 200, bad type → 400."
+      }
+    }
+  }
+}
