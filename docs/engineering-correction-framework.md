@@ -30,22 +30,27 @@ CW-02**:
 frozen framework. Any improvement from this point is an **ECF v1.1 enhancement request**
 (see backlog below), to be considered only after all certification waves complete.
 
-### ECF adoption scorecard
+### ECF scorecard (adoption + health)
 
-Platforms are measured by **adoption, not new features** (full scorecard for all frozen
-platforms: `docs/platform-scorecard.md`).
+Platforms are measured by **adoption** *and* **platform health** (full operational
+dashboard for all frozen platforms: `docs/platform-scorecard.md`).
 
 | Field | Value |
 |-------|-------|
-| Current Version | v1.0 |
+| Version | v1.0 |
 | Freeze Status | FROZEN |
 | Modules Using It | 1 — Cell Grading (reference consumer) |
 | Last Platform Change | v1.0 extraction + freeze (CW-02, 2026-06-28) |
+| Open Critical Defects | 0 |
+| Open High Defects | 0 |
+| Breaking Changes Since Freeze | 0 |
+| Certification Status | ✅ Standing gates green (SS-02/SS-03/SS-04); ledger in SS-03 immutability suite |
 | Next Planned Version | v1.1 (post-certification roadmap) |
 | Enhancement Backlog Count | 5 (ECF-001…ECF-005) |
 
-The headline metric is **Modules Using It** — the goal is to grow ECF adoption across
-correction-allowing modules (as future work, not during cert waves) while v1.0 stays put.
+Grow **Modules Using It** across correction-allowing modules (future work, not during cert
+waves) while v1.0 stays put and the health metrics (open Critical/High defects, breaking
+changes) stay at 0.
 
 The ECF is OCS One's **single, audited correction process**. Any module that holds
 a *certified engineering record* (a graded cell, a charge profile, a QC result, a

@@ -64,13 +64,16 @@ module is touched, by direction.
   Workflow, **ECF-004** Electronic NCR / CAPA Integration, **ECF-005** External ERP / MES
   Synchronization. None built during certification waves unless a cert defect requires a
   platform fix. See `docs/engineering-correction-framework.md`.
-- **Platform Adoption Scorecard (CTO directive).** Platforms are now measured by **adoption,
-  not new features**. New `docs/platform-scorecard.md` tracks each frozen platform (ODS, ECF,
-  Security Standards, Certification Framework) by six fields — Current Version, Freeze Status,
-  Modules Using It, Last Platform Change, Next Planned Version, Enhancement Backlog Count. The
-  headline metric is *Modules Using It*: grow adoption across manufacturing modules while the
-  platform version stays put. Engineering success = manufacturing capability delivered on the
-  frozen baseline, not platform changes.
+- **Platform Scorecard — operational dashboard (CTO directive).** Platforms are measured by
+  **adoption AND platform health**. `docs/platform-scorecard.md` is now an operational
+  dashboard (the first place to look before modifying any platform), tracking each frozen
+  platform (ODS, ECF, Security Standards, Certification Framework) by ten fields — Version,
+  Freeze Status, Modules Using It, Last Platform Change, Open Critical Defects, Open High
+  Defects, Breaking Changes Since Freeze, Certification Status, Next Planned Version,
+  Enhancement Backlog Count. Adoption metric = *Modules Using It* (grow while version stays
+  put); health metrics = *Open Critical/High Defects = 0* and *Breaking Changes Since
+  Freeze = 0*. A healthy platform supports more manufacturing capability with fewer changes
+  over time.
 
 
 > **Certification Wave 02 — Cell Grading.** MAT-01 (Page & Navigation) and MAT-02 (CRUD &
