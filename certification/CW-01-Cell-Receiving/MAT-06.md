@@ -5,7 +5,7 @@
 **Date opened:** 2026-06-27
 **Authorization:** CTO, 2026-06-27
 **Prerequisite:** MAT-05 ✅ PASS (closed, all 4 closure criteria met)
-**Status:** 🟢 READY FOR CTO SIGN-OFF (2026-06-28) — all 14 areas assessed with evidence; DEF-001/002/003 remediated & verified; areas 8–10 (backup/recovery, failure/session recovery, penetration testing) measured; two permanent deliverables (SS-02 authorization regression, Security Dashboard) shipped; scanners re-run clean
+**Status:** 🟢 READY FOR CTO SIGN-OFF (2026-06-28) — all 14 areas assessed with evidence; DEF-001/002/003 remediated & verified; areas 8–10 (backup/recovery, failure/session recovery, penetration testing) measured; three permanent deliverables (SS-02 authorization regression, Security Dashboard, SS-03 audit-trail verification) shipped; scanners re-run clean
 
 > **Honesty statement.** This wave is graded on what is *demonstrably true in the
 > running system*, not on intent. Where a control is partial, missing, or
@@ -337,6 +337,38 @@ window as an accepted risk.
 - **Frontend:** ODS page rendering all 12 sections; behind the auth guard; typecheck +
   lint clean; browser console clean.
 
+### SS-03 — automated audit-trail verification (permanent audit test)
+- **What:** `artifacts/api-server/src/cert/audit-suite.ts` is the audit-side complement
+  to SS-02. Where SS-02 asks *"can the principal do this?"*, SS-03 asks *"was it recorded
+  correctly?"* For every critical operation it performs the **real action** against the
+  live server, then reads the audit store and asserts the correct event was persisted with
+  all required fields (event type, actor, timestamp, entity id, details JSON). Any mismatch
+  exits non-zero and **fails certification**.
+- **Source of truth:** `artifacts/api-server/src/lib/audit-matrix.ts` — 11 audited
+  operations across **both** append-only stores (`security_events` and the cell-receiving
+  domain timeline `cell_lot_events`), with per-store field mapping. Shared by the suite (and
+  available to the dashboard) so they cannot drift.
+- **Coverage:** security — `auth.login.success`, `auth.login.failed`, `auth.logout`,
+  `user.created`, `authz.denied`, `ratelimit.exceeded`; domain — `lot_received`,
+  `lot_updated`, `cell_graded`, `grading_started`, `lot_fully_graded`.
+- **Immutability proof (two independent methods):** (1) *static* — scans every application
+  route/lib for any `.update()`/`.delete()` of an audit table and fails if found (the
+  suite's own teardown is excluded); (2) *runtime* — captures a real `security_events` and
+  `cell_lot_events` record mid-run and asserts each is byte-identical at the end.
+- **Run:** `pnpm --filter @workspace/api-server run test:audit` (also registered as
+  validation command `audit`). All mutating work happens on a uniquely-named throwaway cert
+  lot + temp user that are torn down on exit — pre-existing manufacturing and audit data are
+  never touched.
+- **Rate-limit handling:** `ratelimit.exceeded` is verified in *shape-mode* by default
+  (reads the most recent persisted record and checks its field integrity) so the suite stays
+  repeatable; set `CERT_AUDIT_RATELIMIT=1` to additionally burst the auth limiter and verify
+  a freshly-emitted 429 record (the in-memory auth limiter is cleared by an api-server
+  restart afterward).
+- **Result (2026-06-28):** ✅ **PASS — all 11 audited operations recorded correctly; audit
+  history proven immutable (static + runtime).** Both the real 429 trigger
+  (`CERT_AUDIT_RATELIMIT=1`) and the intentional-mismatch sanity check (`CERT_FORCE_FAIL`)
+  behave as designed.
+
 ---
 
 ## Closure criteria (MAT-06 → PASS)
@@ -356,6 +388,6 @@ window as an accepted risk.
 **Current decision: ✅ ALL CLOSURE CRITERIA MET — READY FOR CTO SIGN-OFF.** All three
 gating/audit defects (001/002/003) remediated and verified; one additional input-validation
 defect found during pen-testing (empty-body 500) fixed; DEF-004/005 carried as accepted
-residual risk with documented remediation paths; two permanent deliverables (SS-02,
-Security Dashboard) shipped and passing. Do **not** delete `session_plan.md` until the
+residual risk with documented remediation paths; three permanent deliverables (SS-02,
+Security Dashboard, SS-03) shipped and passing. Do **not** delete `session_plan.md` until the
 CTO formally closes the wave.

@@ -29,6 +29,21 @@ in code at `lib/authz-matrix.ts` and is the single source of truth shared by bot
 suite and the `/api/developer/security` dashboard — they cannot drift. **Any unexpected
 authorization result fails certification.** Current: ✅ 225/225 assertions pass.
 
+## Security Standard SS-03 (permanent automated test)
+
+The audit trail is verified by a **permanent regression test**, the complement to SS-02:
+SS-02 proves *who may act*; SS-03 proves *the act was recorded*.
+`pnpm --filter @workspace/api-server run test:audit` (validation command `audit`) performs
+every critical operation against the live server, then reads the audit store and asserts the
+correct event was persisted with all required fields (event type, actor, timestamp, entity
+id, details). It also proves the audit history is **immutable** — statically (no application
+route `.update()`/`.delete()`s an audit table) and at runtime (a captured record is
+byte-identical after the run). The matrix lives in code at
+`artifacts/api-server/src/lib/audit-matrix.ts` — 11 audited operations across both
+append-only stores (`security_events` + `cell_lot_events`). **Any audit mismatch or
+immutability violation fails certification.** Current: ✅ 11/11 operations recorded
+correctly; history immutable.
+
 ### RBAC model (CTO-approved — DEF-M06-001)
 
 - **Director** — full access to every module.

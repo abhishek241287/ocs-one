@@ -8,7 +8,8 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:authz": "tsx src/cert/authz-suite.ts"
+    "test:authz": "tsx src/cert/authz-suite.ts",
+    "test:audit": "tsx src/cert/audit-suite.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",
