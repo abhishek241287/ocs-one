@@ -7,6 +7,52 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased] — CW-02 Cell Grading (in progress)
 
+### ✅ MAT-04 — Integration Certification — EXECUTED, 0 defects (2026-06-28, gate-close pending CTO)
+
+Full-batch integration certification of the Cell Grading module's contracts with the rest of
+the line. **17/17 integration cases PASS · 10/10 scorecard · 0 defects.** No production code or
+configuration was changed — verification only.
+
+- **Scope:** upstream (Receiving lot/cell creation → Grading consumes `received` cells; lot
+  roll-up `received`→`grading`→`graded`, last-cell-gated; lot isolation) and downstream
+  (approved → Matching reserve with atomicity + non-approved exclusion + insufficiency 422 →
+  Manufacturing allocation `reserved`→`allocated` + genealogy auto-write + order link →
+  bidirectional back-pressure on committed cells), plus an end-to-end single-cell trace.
+- **Method:** one live batch against `localhost:80` with prefix-tagged (`MAT04-CERT-`) throwaway
+  fixtures spanning receiving→grading→matching→allocation; every case DB-verified via SQL.
+  Matching algorithm paths tested read-only (global approved pool) while contract mutations ran
+  over purpose-built matches on owned cells (no data contamination). Full **set-based,
+  prefix-scoped** teardown verified to **0 residual** (`cell_lots` / `cell_matches` /
+  `mfg_production_orders` / `engineering_corrections`).
+- **Verified findings (positive):** ECF engages at the grading boundary (first grade writes an
+  `engineering_corrections` original row); back-pressure is bidirectional and reason-correct
+  ("committed to production"); allocation is atomic (no partial reservation on conflict).
+- **Gate:** MAT-04 **executed, 0 open Critical/High** — requesting CTO gate-close sign-off
+  (nothing to triage). Next: MAT-05.
+
+### ✅ MAT-03 — Business-Rule Certification — EXECUTED & gate CLOSED (2026-06-28)
+
+Full-batch business-rule certification of the Cell Grading module. **30/30 boundary cases
+PASS · 8/8 rule dimensions verified · 0 defects.** No production code or configuration was
+changed — verification only.
+
+- **Scope:** grade computation (capacity bands + IR-multiplier, inclusive boundaries,
+  first-match-wins), status transitions + override semantics (grade never overridden, `"null"`
+  ignored), gradeable-status guards, controlled-correction recompute + status guards +
+  append-only history, lot roll-up (partial vs full) + timeline events, and config behaviour
+  (singleton, read-only GET, empty-body→400, live-config-drives-grade).
+- **Method:** one live batch against `localhost:80` with prefix-tagged throwaway fixtures,
+  DB-verified via SQL, config snapshot→flip→restore byte-exact inside `try/finally`. All cert
+  fixtures torn down (0 residual). SS-04 re-verified post-run — **no config drift** (31 pass ·
+  3 dev-warn · 0 fail).
+- **OBS-CW02-001** (IR multiplier non-binding under `nominalIrMohm=25` → capacity-only grading)
+  verified by BR-30. **CTO ruling 2026-06-28:** Engineering Calibration Observation, **not a
+  certification defect** — grading engine behaves exactly as specified. Recorded in the new
+  **Manufacturing Engineering Backlog** (`docs/manufacturing-engineering-backlog.md`, MEB-001);
+  grading algorithm + configuration to be reviewed during Manufacturing Engineering
+  Optimization after CW-08. No grading engine/config change during CW-02.
+- **Gate:** MAT-03 **CLOSED** (0 open Critical/High). Next: MAT-04 Integration Certification.
+
 ### 📥 Grading Import Framework — architecture review + Phase 1 extension points (CTO-approved)
 
 Prepares Cell Grading for future bulk / machine grading imports **without a second grading

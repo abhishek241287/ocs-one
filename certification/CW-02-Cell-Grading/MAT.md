@@ -420,7 +420,7 @@ behaviour all match the documented rules for every boundary case.
 
 **None.** No code defect found in any business rule.
 
-### OBS-CW02-001 — IR-multiplier calibration (CTO ruling required before gate closes)
+### OBS-CW02-001 — IR-multiplier calibration (RESOLVED — CTO ruling 2026-06-28)
 
 This is **not a code defect** — `calcGrade` applies the IR multiplier exactly as documented
 (BR-07..09 prove it). It is a **configuration/calibration** finding: the live config row has
@@ -430,13 +430,130 @@ This is **not a code defect** — `calcGrade` applies the IR multiplier exactly 
 demote an A** — physically impossible for any cell that is not already scrap. **Net effect:
 under the current config, grade is decided by capacity alone; the IR dimension is inert.**
 
-Two defensible interpretations — **CTO ruling needed**:
-- **(a) Calibrate** `nominalIrMohm` to the cell's true nominal IR (≈ 0.3 mΩ) so the IR
-  multiplier becomes meaningful and IR genuinely co-determines grade. *Touches the config
-  singleton (data, not code) → re-verify SS-04; no schema/route change.*
-- **(b) Accept capacity-only grading as the intended policy** for now; document `nominalIrMohm`
-  as a deliberately non-binding placeholder and revisit when real grading-machine IR data is
-  imported. *No change; record as an accepted observation.*
+> **CTO RULING (2026-06-28):** OBS-CW02-001 is classified as an **Engineering Calibration
+> Observation, NOT a certification defect** — the grading engine behaves exactly as specified
+> (30/30 PASS, no software defect); the observation concerns manufacturing calibration, not
+> implementation. **Do not modify the grading engine or configuration during CW-02.** Recorded
+> in the **Manufacturing Engineering Backlog** (`docs/manufacturing-engineering-backlog.md`,
+> MEB-001); the grading algorithm and grading configuration will be reviewed during
+> **Manufacturing Engineering Optimization (after CW-08)**. **MAT-03 gate is CLOSED.**
+
+---
+
+## MAT-04 — Integration Certification · EXECUTED 2026-06-28
+
+**Goal.** Certify the integration contract Cell Grading exposes to the rest of the line:
+**upstream** (Receiving → Grading) and **downstream** (Grading → Matching → Manufacturing
+allocation), verified end-to-end against the live API with DB-level assertions. **No grading
+engine or configuration change** (CTO directive); verification only.
+
+### Integration map (verified by source read)
+
+| Boundary | Route(s) | Status transition | Side effects |
+|----------|----------|-------------------|--------------|
+| Receiving → cells | `POST /cells/lots` | `cell_lots`→`received`; N×`cells`→`received` | events `lot_received`, `cell_records_generated`; `cellId` = `CELL-YYYYMMDD-NNNNNN`; `cells.lotId` set |
+| Grading consumes | `POST /cells/:id/grade` | cell `received\|grading`→`approved\|rejected\|quarantine`; lot `received`→`grading` (first) →`graded` (last) | `cell_lot_events` grade + lot roll-up event |
+| Grading → Matching (select) | `POST /cells/matches` | none (draft) | selects **only** `status='approved'` cells; `422` if `< quantity×cellsPerBattery` approved |
+| Matching reserve | `POST /cells/matches/:id/accept` | cell `approved`→`reserved` (+`matchId`); match `draft`→`reserved` | `409` if match not draft, or any cell no longer approved (atomic) |
+| Mfg allocation | `POST /manufacturing/orders/:id/stages/cell_allocation/complete` (stageData.matchId) | cell `reserved`→`allocated` (+`allocationOrderId`); match `reserved`→`allocated`; order `cellMatchId` set | one `mfg_battery_genealogy` row per cell (`componentType='cell'`, `serialNumber`=cellId) |
+| Back-pressure | grade / correct routes | — | reserved/allocated cells: grade→`400` (not received/grading); correct→`400` ("committed to production") |
+
+> **Method note (no-contamination design).** The matching **algorithm** selects from *all*
+> globally-`approved` cells (not scoped to a lot), and the live DB already holds 10 pre-existing
+> approved cells. To avoid mutating data that isn't ours, the algorithm paths (eligibility, 422
+> insufficiency) are tested **read-only** (no `accept`), while the integration **contract**
+> mutations (reserve, allocate, genealogy, back-pressure) run against a **purpose-built match
+> over our own prefix-tagged cells** (match + items constructed for our cells), so the certified
+> route logic is exercised on fixtures we fully own and tear down. All fixtures prefix-tagged
+> `MAT04-CERT-`; teardown is idempotent and verified to 0 residual.
+
+### Test-Case Catalogue (MAT-IT)
+
+| ID | Boundary | Scenario | Expected |
+|----|----------|----------|----------|
+| IT-01 | Upstream | Create lot, qty=6 | 201; lot `received`; 6 cells `received`; `cellId` prefix `CELL-`; all `lotId`=lot |
+| IT-02 | Upstream | Events on creation | `lot_received` + `cell_records_generated` present on lot timeline |
+| IT-03 | Upstream | Grade 1st cell | cell→graded status; lot `received`→`grading` (partial roll-up) |
+| IT-04 | Upstream | Grade remaining cells | lot `grading`→`graded` only after **last** cell graded |
+| IT-05 | Upstream | Lot isolation | grading lot A never changes lot B status |
+| IT-06 | Matching | Request impossibly large qty | `422` "Not enough approved cells" (no mutation) |
+| IT-07 | Matching | Create draft match (read-only) | 201 draft; **every** selected cell `status='approved'` |
+| IT-08 | Matching | Non-approved excluded | rejected/quarantine/received/reserved cells never in available pool |
+| IT-09 | Reserve | Accept draft match (our cells) | cells `approved`→`reserved` (+`matchId`); match `draft`→`reserved` |
+| IT-10 | Reserve | Accept w/ one cell flipped non-approved | `409`; **no** partial reservation (atomic) |
+| IT-11 | Reserve | Accept already-reserved match | `409` "already reserved" |
+| IT-12 | Back-pressure | Re-grade / correct a **reserved** cell | grade→`400`; correct→`400` "committed to production" |
+| IT-13 | Allocation | Complete `cell_allocation` w/ matchId | cells `reserved`→`allocated` (+`allocationOrderId`); match→`allocated`; order `cellMatchId` set |
+| IT-14 | Allocation | Genealogy auto-write | 1 `mfg_battery_genealogy` row/cell; `componentType='cell'`, `serialNumber`=cellId, grade in name |
+| IT-15 | Back-pressure | Re-grade / correct an **allocated** cell | grade→`400`; correct→`400` "committed to production" |
+| IT-16 | Allocation | `GET …/allocated-cells` | returns `matchId` + items for the order |
+| IT-17 | End-to-end | Trace one cell full chain | `received`→`grading`→`approved`→`reserved`→`allocated`, monotonic; event+genealogy trail intact |
+
+### Actuals — executed 2026-06-28 (live API + DB assertions)
+
+Harness: director cookie; throwaway fixtures prefix-tagged `MAT04-CERT-` (lot A qty 6, lot B
+qty 2, two purpose-built matches over own cells, one production order); every case asserted via
+direct SQL on the live schema; full set-based teardown verified to **0 residual** (`cell_lots` /
+`cell_matches` / `mfg_production_orders` / `engineering_corrections` all 0).
+
+| ID | Result | Actual |
+|----|--------|--------|
+| IT-01 | **PASS** | 201; lot `received`; 6 cells `received`; all `CELL-` prefixed, `lotId` set |
+| IT-02 | **PASS** | `lot_received` + `cell_records_generated` both on lot timeline |
+| IT-03 | **PASS** | grade 200; lot `received`→`grading` after 1st cell |
+| IT-04 | **PASS** | lot still `grading` after 5/6; →`graded` only after 6th (last) |
+| IT-05 | **PASS** | lot B stayed `received` throughout lot A grading (isolation holds) |
+| IT-06 | **PASS** | 422 "Not enough approved cells. Need 1600000…" (no mutation) |
+| IT-07 | **PASS** | 201 draft; every selected cell `status='approved'` |
+| IT-08 | **PASS** | rejected + quarantine cells: `approvedAmong=0` (excluded from pool) |
+| IT-09 | **PASS** | accept 200; both cells `approved`→`reserved` (+`matchId`); match→`reserved` |
+| IT-10 | **PASS** | one cell flipped non-approved → 409; sibling cell stays `approved` (atomic, no partial reserve) |
+| IT-11 | **PASS** | re-accept reserved match → 409 |
+| IT-12 | **PASS** | reserved cell: grade→400; correct→400 "committed to production" |
+| IT-13 | **PASS** | complete 200; cells `reserved`→`allocated` (+`allocationOrderId`); match→`allocated`; order `cellMatchId` set |
+| IT-14 | **PASS** | exactly 1 `mfg_battery_genealogy` row/cell; `componentType='cell'`, `serialNumber`=cellId |
+| IT-15 | **PASS** | allocated cell: grade→400; correct→400 "committed to production" |
+| IT-16 | **PASS** | `GET …/allocated-cells` 200; `matchId` correct; 2 items |
+| IT-17 | **PASS** | c0 chain `received`→`grading`→`approved`→`reserved`→`allocated`; grade events + genealogy intact |
+
+**Score: 17 / 17 PASS · 0 defects.**
+
+### Scorecard (10-point)
+
+| # | Dimension | Result |
+|---|-----------|--------|
+| 1 | Upstream lot/cell creation contract (IDs, status, FKs) | ✅ |
+| 2 | Lot status roll-up (`received`→`grading`→`graded`, last-cell gated) | ✅ |
+| 3 | Lot isolation (one lot's grading never mutates another) | ✅ |
+| 4 | Matching consumes ONLY `approved` cells (non-approved excluded) | ✅ |
+| 5 | Insufficiency back-stop (422, no mutation) | ✅ |
+| 6 | Reserve transition + atomicity (no partial reservation on conflict) | ✅ |
+| 7 | Manufacturing allocation transition (`reserved`→`allocated`, order link) | ✅ |
+| 8 | Genealogy auto-write (one row/cell, serial = cellId) | ✅ |
+| 9 | Back-pressure: committed cells reject grade/correct (400) | ✅ |
+| 10 | End-to-end monotonic traceability + audit/genealogy trail | ✅ |
+
+**10 / 10.**
+
+### Verified integration findings (positive — no action)
+
+- **ECF engages at the grading boundary.** The first grade of each cell writes an
+  `engineering_corrections` *original* row (`sequence=1`, `performedBy`=grader) — confirming
+  Cell Grading's ECF migration is live across the integration path, not just the unit. (Method
+  note: teardown must therefore also clear `engineering_corrections` by `performedBy`; folded
+  into the harness.)
+- **Back-pressure is bidirectional and reason-correct.** Once a cell is `reserved` or
+  `allocated`, both grade and correct fail closed with the **same** "committed to production"
+  guard — the grading↔manufacturing contract cannot be violated from the grading side.
+- **Allocation atomicity holds.** A match whose membership changed under it (a cell no longer
+  approved) is rejected wholesale (409) with zero partial side effects.
+
+### Defects
+
+**None.** All 17 integration cases PASS; no Critical / High / Medium / Low defects filed in
+MAT-04. Per the cert-wave triage rule, no module-specific vs platform classification is required
+(no defects to classify). No grading engine or configuration change was made (CTO directive
+honored — verification only).
 
 ---
 
@@ -453,7 +570,7 @@ Two defensible interpretations — **CTO ruling needed**:
 
 | Observation | For |
 |-------------|-----|
-| OBS-CW02-001 — `nominalIrMohm`=25 makes IR non-binding (capacity-only grading) — **VERIFIED in MAT-03 (BR-30)**; awaiting CTO calibration ruling (calibrate ≈0.3 mΩ vs. accept capacity-only) | MAT-03 → CTO |
+| OBS-CW02-001 — `nominalIrMohm`=25 makes IR non-binding (capacity-only grading) — **VERIFIED in MAT-03 (BR-30)**; **CTO ruling 2026-06-28: Engineering Calibration Observation, not a cert defect → MEB-001, review after CW-08** | **Closed** (→ MEB-001) |
 | OBS-CW02-002 — cells list status filter seq-scans (low volume; verify index under representative load) | MAT-05 |
 
 ---
@@ -469,7 +586,10 @@ Two defensible interpretations — **CTO ruling needed**:
 - [x] **MAT-02 gate CLOSED** — 0 open Critical/High.
 - [x] **MAT-03 executed (full batch)** — 30/30 BR cases PASS; 8/8 rule dimensions verified; **0 defects**. All throwaway cert fixtures torn down (0 residual); config restored byte-exact.
 - [x] **OBS-CW02-001 confirmed** (BR-30) — IR non-binding under `nominalIrMohm=25`; grade is capacity-only. Not a code defect.
-- [ ] **CTO ruling on OBS-CW02-001** — (a) calibrate `nominalIrMohm`≈0.3 mΩ (data change → re-verify SS-04) **or** (b) accept capacity-only grading as intended → then close MAT-03 gate.
-- [ ] MAT-04 → MAT-06.
+- [x] **CTO ruling on OBS-CW02-001 (2026-06-28)** — classified as an **Engineering Calibration Observation, NOT a cert defect**. No grading engine/config change during CW-02. Recorded in Manufacturing Engineering Backlog (MEB-001); grading algorithm + config review deferred to Manufacturing Engineering Optimization after CW-08.
+- [x] **MAT-03 gate CLOSED (2026-06-28)** — 30/30 PASS, 0 defects, 0 open Critical/High.
+- [x] **MAT-04 executed (full batch, 2026-06-28)** — 17/17 IT cases PASS; 10/10 scorecard; **0 defects**. Upstream (Receiving→Grading) + downstream (Grading→Matching→Manufacturing allocation) + end-to-end traceability all verified live with DB assertions. ECF confirmed engaging at the grading boundary; back-pressure bidirectional; allocation atomic. All throwaway cert fixtures torn down (set-based, prefix-scoped) → **0 residual** (lots/matches/orders/corrections).
+- [ ] **CTO sign-off on MAT-04** — 17/17 PASS, **0 defects** → nothing to triage; requesting gate-close approval. No grading engine/config change made (verification only).
+- [ ] **MAT-04 gate CLOSE** (pending CTO sign-off) → then MAT-05, MAT-06.
 
 **Plan signed:** Replit Agent (QA) · 2026-06-28
