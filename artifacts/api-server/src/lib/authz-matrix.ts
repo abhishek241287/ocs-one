@@ -440,6 +440,15 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     expected: all(P),
   },
   {
+    id: "products.inventory-summary",
+    method: "GET",
+    path: "/api/products/inventory-summary",
+    group: "Products",
+    description: "Product Inventory aggregate summary (read)",
+    guard: "requireAuth (read open to all authed)",
+    expected: all(P),
+  },
+  {
     id: "products.get",
     method: "GET",
     path: `/api/products/${DUMMY_ID}`,

@@ -203,6 +203,7 @@ unless a minimum role is stated.
 | Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |
 |---|---|---|---|---|---|---|
 | `/api/products` | GET | ✅ | viewer (read) | global | no | ✅ (CW-03) |
+| `/api/products/inventory-summary` | GET | ✅ | viewer (read) | global | no | ✅ (Product Inventory — read-only aggregate projection, no writes) |
 | `/api/products/:id` | GET | ✅ | viewer (read) | global | no | ✅ (CW-03) |
 | `/api/products/:id/genealogy` | GET | ✅ | viewer (read) | global | no | ✅ (CW-03 — lineage copied from order at QC pass) |
 | `/api/products/:id/events` | GET | ✅ | viewer (read) | global | no | ✅ (CW-03 — read-only view of the append-only `product_events` timeline) |

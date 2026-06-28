@@ -2349,6 +2349,26 @@ paths:
           in: query
           required: false
           schema: { type: string, format: uuid }
+        - name: model_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: dealer_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: current_location
+          in: query
+          required: false
+          schema: { type: string }
+        - name: manufactured_from
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: manufactured_to
+          in: query
+          required: false
+          schema: { type: string, format: date }
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
       responses:
@@ -2357,6 +2377,18 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ProductListResponse" }
+
+  /products/inventory-summary:
+    get:
+      operationId: getProductInventorySummary
+      tags: [products]
+      summary: Read-only Product Inventory summary (aggregate projection over the Product Platform)
+      responses:
+        "200":
+          description: Aggregate inventory counts projected from product status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductInventorySummary" }
 
   /products/{id}:
     get:
@@ -4691,6 +4723,33 @@ components:
           type: array
           items: { $ref: "#/components/schemas/Product" }
         meta: { $ref: "#/components/schemas/MasterListMeta" }
+
+    ProductInventoryCategoryCount:
+      type: object
+      required: [category_name, count]
+      properties:
+        category_id: { type: ["string", "null"], format: uuid }
+        category_name: { type: string }
+        count: { type: integer }
+
+    ProductInventorySummary:
+      type: object
+      required:
+        [total, available, ready_for_packing, packed, dispatched, dealer_stock, quarantined, by_status, by_category]
+      properties:
+        total: { type: integer }
+        available: { type: integer }
+        ready_for_packing: { type: integer }
+        packed: { type: integer }
+        dispatched: { type: integer }
+        dealer_stock: { type: integer }
+        quarantined: { type: integer }
+        by_status:
+          type: object
+          additionalProperties: { type: integer }
+        by_category:
+          type: array
+          items: { $ref: "#/components/schemas/ProductInventoryCategoryCount" }
 
     ProductGenealogyRecord:
       type: object

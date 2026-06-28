@@ -14,6 +14,11 @@ export type ListProductsParams = {
 search?: SearchParamParameter;
 product_status?: ProductStatus;
 category_id?: string;
+model_id?: string;
+dealer_id?: string;
+current_location?: string;
+manufactured_from?: Date;
+manufactured_to?: Date;
 page?: PageParamParameter;
 pageSize?: PageSizeParamParameter;
 };

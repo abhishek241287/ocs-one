@@ -32,6 +32,8 @@ import InspectionDetailPage from "@/features/inventory/pages/InspectionDetailPag
 import StockPage from "@/features/inventory/pages/StockPage";
 import ProductsListPage from "@/features/products/pages/ProductsListPage";
 import ProductDetailPage from "@/features/products/pages/ProductDetailPage";
+import ProductInventoryDashboardPage from "@/features/product-inventory/pages/ProductInventoryDashboardPage";
+import ProductInventoryListPage from "@/features/product-inventory/pages/ProductInventoryListPage";
 import CellMasterPage from "@/features/masters/pages/CellMasterPage";
 import BmsMasterPage from "@/features/masters/pages/BmsMasterPage";
 import CabinetMasterPage from "@/features/masters/pages/CabinetMasterPage";
@@ -85,6 +87,8 @@ function Router() {
       <Route path="/developer/configuration" component={ConfigurationPage} />
 
       {/* Products */}
+      <Route path="/product-inventory" component={ProductInventoryDashboardPage} />
+      <Route path="/product-inventory/list" component={ProductInventoryListPage} />
       <Route path="/products" component={ProductsListPage} />
       <Route path="/products/:id" component={ProductDetailPage} />
 

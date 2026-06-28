@@ -4542,6 +4542,11 @@ export const ListProductsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "product_status": zod.enum(['manufacturing', 'qc_passed', 'ready_for_packing', 'packed', 'dispatched', 'delivered_to_dealer']).optional(),
   "category_id": zod.coerce.string().uuid().optional(),
+  "model_id": zod.coerce.string().uuid().optional(),
+  "dealer_id": zod.coerce.string().uuid().optional(),
+  "current_location": zod.coerce.string().optional(),
+  "manufactured_from": zod.date().optional(),
+  "manufactured_to": zod.date().optional(),
   "page": zod.coerce.number().default(listProductsQueryPageDefault),
   "pageSize": zod.coerce.number().default(listProductsQueryPageSizeDefault)
 })
@@ -4573,6 +4578,26 @@ export const ListProductsResponse = zod.object({
   "pageSize": zod.number(),
   "totalPages": zod.number()
 })
+})
+
+
+/**
+ * @summary Read-only Product Inventory summary (aggregate projection over the Product Platform)
+ */
+export const GetProductInventorySummaryResponse = zod.object({
+  "total": zod.number(),
+  "available": zod.number(),
+  "ready_for_packing": zod.number(),
+  "packed": zod.number(),
+  "dispatched": zod.number(),
+  "dealer_stock": zod.number(),
+  "quarantined": zod.number(),
+  "by_status": zod.record(zod.string(), zod.number()),
+  "by_category": zod.array(zod.object({
+  "category_id": zod.string().uuid().nullish(),
+  "category_name": zod.string(),
+  "count": zod.number()
+}))
 })
 
 

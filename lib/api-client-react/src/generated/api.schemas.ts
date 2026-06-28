@@ -1818,6 +1818,27 @@ export interface ProductListResponse {
   meta: MasterListMeta;
 }
 
+export interface ProductInventoryCategoryCount {
+  /** @nullable */
+  category_id?: string | null;
+  category_name: string;
+  count: number;
+}
+
+export type ProductInventorySummaryByStatus = {[key: string]: number};
+
+export interface ProductInventorySummary {
+  total: number;
+  available: number;
+  ready_for_packing: number;
+  packed: number;
+  dispatched: number;
+  dealer_stock: number;
+  quarantined: number;
+  by_status: ProductInventorySummaryByStatus;
+  by_category: ProductInventoryCategoryCount[];
+}
+
 export interface ProductGenealogyRecord {
   id: string;
   product_id: string;
@@ -2554,6 +2575,11 @@ export type ListProductsParams = {
 search?: SearchParamParameter;
 product_status?: ProductStatus;
 category_id?: string;
+model_id?: string;
+dealer_id?: string;
+current_location?: string;
+manufactured_from?: string;
+manufactured_to?: string;
 page?: PageParamParameter;
 pageSize?: PageSizeParamParameter;
 };

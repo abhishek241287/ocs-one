@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, and, or, ilike, count, desc } from "drizzle-orm";
+import { eq, and, or, ilike, count, desc, gte, lte } from "drizzle-orm";
 import {
   db,
   productsTable,
@@ -50,12 +50,30 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
   if (query.category_id) {
     conditions.push(eq(productsTable.categoryId, query.category_id));
   }
+  if (query.model_id) {
+    conditions.push(eq(productsTable.modelId, query.model_id));
+  }
+  if (query.dealer_id) {
+    conditions.push(eq(productsTable.dealerId, query.dealer_id));
+  }
+  if (query.current_location) {
+    conditions.push(ilike(productsTable.currentLocation, `%${query.current_location}%`));
+  }
+  if (query.manufactured_from) {
+    conditions.push(gte(productsTable.manufacturingCompletedAt, new Date(query.manufactured_from)));
+  }
+  if (query.manufactured_to) {
+    const to = new Date(query.manufactured_to);
+    to.setHours(23, 59, 59, 999);
+    conditions.push(lte(productsTable.manufacturingCompletedAt, to));
+  }
   if (query.search) {
     conditions.push(
       or(
         ilike(productsTable.officialProductSerial, `%${query.search}%`),
         ilike(masterProductsTable.code, `%${query.search}%`),
         ilike(masterProductsTable.name, `%${query.search}%`),
+        ilike(logisticsDealersTable.dealerName, `%${query.search}%`),
       ),
     );
   }
@@ -65,6 +83,7 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     .select({ count: count() })
     .from(productsTable)
     .leftJoin(masterProductsTable, eq(productsTable.modelId, masterProductsTable.id))
+    .leftJoin(logisticsDealersTable, eq(productsTable.dealerId, logisticsDealersTable.id))
     .where(where);
 
   const items = await db
@@ -101,6 +120,63 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
   res.json({
     items: items.map(numify),
     meta: { total, page, pageSize, totalPages: Math.ceil(total / pageSize) },
+  });
+});
+
+// GET /products/inventory-summary — read-only reporting projection over the frozen
+// Product Platform. Pure aggregate counts (no new tables, no ledger, no mutation).
+// Status→card mapping uses ONLY the existing product_status lifecycle:
+//   available = qc_passed (units that have passed QC and are not yet packed)
+//   dealer_stock = delivered_to_dealer
+//   quarantined = 0 — no quarantine state exists in the lifecycle (Products are minted
+//                 only at QC PASS), surfaced for completeness.
+// Registered BEFORE "/:id" so the literal path wins over the id param.
+router.get("/inventory-summary", async (_req: Request, res: Response): Promise<void> => {
+  const statusRows = await db
+    .select({ status: productsTable.productStatus, count: count() })
+    .from(productsTable)
+    .groupBy(productsTable.productStatus);
+
+  const byStatus: Record<string, number> = {};
+  let total = 0;
+  for (const r of statusRows) {
+    const n = Number(r.count ?? 0);
+    byStatus[r.status as string] = n;
+    total += n;
+  }
+
+  const categoryRows = await db
+    .select({
+      category_id: productsTable.categoryId,
+      category_name: productCategoriesTable.name,
+      count: count(),
+    })
+    .from(productsTable)
+    .leftJoin(productCategoriesTable, eq(productsTable.categoryId, productCategoriesTable.id))
+    .groupBy(productsTable.categoryId, productCategoriesTable.name)
+    .orderBy(desc(count()));
+
+  res.json({
+    total,
+    available: byStatus["qc_passed"] ?? 0,
+    ready_for_packing: byStatus["ready_for_packing"] ?? 0,
+    packed: byStatus["packed"] ?? 0,
+    dispatched: byStatus["dispatched"] ?? 0,
+    dealer_stock: byStatus["delivered_to_dealer"] ?? 0,
+    quarantined: 0,
+    by_status: {
+      manufacturing: byStatus["manufacturing"] ?? 0,
+      qc_passed: byStatus["qc_passed"] ?? 0,
+      ready_for_packing: byStatus["ready_for_packing"] ?? 0,
+      packed: byStatus["packed"] ?? 0,
+      dispatched: byStatus["dispatched"] ?? 0,
+      delivered_to_dealer: byStatus["delivered_to_dealer"] ?? 0,
+    },
+    by_category: categoryRows.map((c) => ({
+      category_id: c.category_id,
+      category_name: c.category_name ?? "Uncategorized",
+      count: Number(c.count ?? 0),
+    })),
   });
 });
 

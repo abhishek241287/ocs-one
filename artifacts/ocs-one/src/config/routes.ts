@@ -20,6 +20,8 @@ export const ROUTES = {
 
   // Products
   products: "/products",
+  productInventory: "/product-inventory",
+  productInventoryList: "/product-inventory/list",
 
   // Traceability
   qrTraceability: "/qr",

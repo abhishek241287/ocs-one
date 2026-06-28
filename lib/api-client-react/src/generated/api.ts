@@ -159,6 +159,7 @@ import type {
   Product,
   ProductEventsResponse,
   ProductGenealogyResponse,
+  ProductInventorySummary,
   ProductListResponse,
   ProductMaster,
   ProductMasterInput,
@@ -8932,6 +8933,83 @@ export function useListProducts<TData = Awaited<ReturnType<typeof listProducts>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListProductsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetProductInventorySummaryUrl = () => {
+
+
+
+
+  return `/api/products/inventory-summary`
+}
+
+/**
+ * @summary Read-only Product Inventory summary (aggregate projection over the Product Platform)
+ */
+export const getProductInventorySummary = async ( options?: RequestInit): Promise<ProductInventorySummary> => {
+
+  return customFetch<ProductInventorySummary>(getGetProductInventorySummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProductInventorySummaryQueryKey = () => {
+    return [
+    `/api/products/inventory-summary`
+    ] as const;
+    }
+
+
+export const getGetProductInventorySummaryQueryOptions = <TData = Awaited<ReturnType<typeof getProductInventorySummary>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductInventorySummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProductInventorySummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProductInventorySummary>>> = ({ signal }) => getProductInventorySummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProductInventorySummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProductInventorySummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getProductInventorySummary>>>
+export type GetProductInventorySummaryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read-only Product Inventory summary (aggregate projection over the Product Platform)
+ */
+
+export function useGetProductInventorySummary<TData = Awaited<ReturnType<typeof getProductInventorySummary>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductInventorySummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProductInventorySummaryQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

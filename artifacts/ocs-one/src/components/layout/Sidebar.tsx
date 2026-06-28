@@ -35,6 +35,7 @@ import {
   Layers,
   GitBranch,
   Tags,
+  Boxes,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -53,6 +54,7 @@ const navSections: NavSection[] = [
   {
     title: "Products",
     items: [
+      { label: "Product Inventory", href: "/product-inventory", icon: Boxes },
       { label: "Products", href: "/products", icon: Package },
     ],
   },
