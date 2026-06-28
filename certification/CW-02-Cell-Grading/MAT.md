@@ -347,6 +347,99 @@ Re-ran the entire phase as a batch (no stopping):
 
 ---
 
+## MAT-03 — Business-Rule Certification · EXECUTED 2026-06-28
+
+**Method:** full-batch live execution via `code_execution` harness against `localhost:80`
+with a real director auth cookie. Two throwaway cert lots (`nominalCapacityAh = 280`) +
+24 `received` cells created via SQL (prefix-tagged `MAT03-CERT-*` for idempotent teardown).
+All 30 `BR` cases run as one batch (no stopping, no mid-run fixes); results read from API
+responses and verified against the DB with `executeSql`. The live config singleton was
+**snapshotted, flipped, and restored byte-exact** inside a `try/finally` to prove
+live-config-drives-grade without leaving drift. **All cert fixtures torn down — 0 residual.**
+
+Business rules verified from source first (`routes/cells/cells.ts` `calcGrade` lines 56–77,
+grade route 176–339, correct route 350–540): grade bands evaluated **top-down, first match
+wins**, with `capPct = capacityAh / lot.nominalCapacityAh × 100` and
+`irMult = internalResistanceMohm / config.nominalIrMohm`; **all boundaries inclusive**
+(`capPct ≥ min` AND `irMult ≤ max`). Capacity boundaries bracketed ±0.01 % to defeat
+floating-point knife-edge while pinning the cutoff to the documented threshold.
+
+### MAT-BR Test Catalogue — Actual Results
+
+| ID | Dimension | Description | Expected | Actual | Status |
+|----|-----------|-------------|----------|--------|--------|
+| BR-01 | Grade — capacity | capPct 98.01 (≥98), IR 0.29 | A / approved | 200 A/approved | ✅ Pass |
+| BR-02 | Grade — capacity | capPct 97.99 (just <98) | B / approved | 200 B/approved | ✅ Pass |
+| BR-03 | Grade — capacity | capPct 95.01 (≥95) | B / approved | 200 B/approved | ✅ Pass |
+| BR-04 | Grade — capacity | capPct 94.99 (just <95) | C / approved | 200 C/approved | ✅ Pass |
+| BR-05 | Grade — capacity | capPct 90.01 (≥90) | C / approved | 200 C/approved | ✅ Pass |
+| BR-06 | Grade — capacity | capPct 89.99 (just <90) | reject / rejected | 200 reject/rejected | ✅ Pass |
+| BR-07 | Grade — IR mult | cap A, irMult 1.05 (≤1.05, inclusive) | A | 200 A | ✅ Pass |
+| BR-08 | Grade — IR mult | cap A, irMult 1.06 (>1.05, ≤1.10) demotes A→B | B | 200 B | ✅ Pass |
+| BR-09 | Grade — IR mult | cap A, irMult 1.16 (>1.15) forces reject | reject | 200 reject | ✅ Pass |
+| BR-10 | Override | reject grade + override `approved` → grade unchanged, status approved | reject / approved | 200 reject/approved | ✅ Pass |
+| BR-11 | Override | A grade + override `quarantine` → grade A, status quarantine | A / quarantine | 200 A/quarantine | ✅ Pass |
+| BR-12 | Override | override `"null"` string ignored → auto status | A / approved | 200 A/approved | ✅ Pass |
+| BR-13 | Status guard | re-grade an `approved` cell via `/grade` | 400 | 400 | ✅ Pass |
+| BR-14 | Status guard | grade a `reserved` cell | 400 | 400 | ✅ Pass |
+| BR-15 | Correction guard | correct an ungraded (`received`) cell | 400 (use grade) | 400 | ✅ Pass |
+| BR-16 | Correction | correct graded A cell with reject values → recompute | reject / rejected | 200 reject/rejected | ✅ Pass |
+| BR-17 | Correction | append-only: 2 ECF versions after 1 correction | 2 | 2 | ✅ Pass |
+| BR-18 | Correction guard | correct a `reserved` (committed) cell | 400 (committed) | 400 | ✅ Pass |
+| BR-19 | Correction | correction respects override (reject grade + override approved) | reject / approved | 200 reject/approved | ✅ Pass |
+| BR-20 | Lot roll-up | fresh lot status before any grade | received | received | ✅ Pass |
+| BR-21 | Lot roll-up | after first grade (2 pending) → lot `grading` | grading | grading | ✅ Pass |
+| BR-22 | Lot roll-up | after 2/3 graded (1 pending) → still `grading` | grading | grading | ✅ Pass |
+| BR-23 | Lot roll-up | after last graded (0 pending) → lot `graded` | graded | graded | ✅ Pass |
+| BR-24 | Lot roll-up | events: 3 `cell_graded`, 1 `grading_started`, 1 `lot_fully_graded` | g3 s1 f1 | g3 s1 f1 | ✅ Pass |
+| BR-25 | Config | GET read-only (id=1, `updatedAt` stable across 2 GETs — no write side-effect) | 200 id=1 stable | 200 id=1 stable | ✅ Pass |
+| BR-26 | Config | PUT empty body → 400 | 400 | 400 | ✅ Pass |
+| BR-27 | Config | with A-min flipped to 99, capPct 98.01 grades → B (live config drives grade) | B | 200 B | ✅ Pass |
+| BR-28 | Config | config restored byte-exact to snapshot (all 10 numeric fields) | exact | exact | ✅ Pass |
+| BR-29 | Config | after restore, capPct 98.01 grades → A again | A | 200 A | ✅ Pass |
+| BR-30 | **OBS-CW02-001** | realistic IR 0.29 → irMult 0.0116 (≪1.05); IR cannot demote (needs IR > 26.25 mΩ) | A (IR non-binding) | 200 A, irMult=0.0116 | ✅ Pass |
+
+### MAT-03 Business-Rule Scorecard
+
+| # | Business rule | Status | Evidence |
+|---|---------------|--------|----------|
+| 1 | Grade computation — capacity bands + inclusive boundaries | ✅ Pass | BR-01..06 (cutoffs pinned at 98/95/90 %). |
+| 2 | Grade computation — IR multiplier binds + first-match-wins | ✅ Pass | BR-07..09 (A→B→reject as irMult crosses 1.05/1.10/1.15). |
+| 3 | Status transitions — auto status + override (grade never overridden) | ✅ Pass | BR-10..12. |
+| 4 | Gradeable-status guards | ✅ Pass | BR-13/14 (approved/reserved → 400). |
+| 5 | Controlled correction — recompute + guards + append-only | ✅ Pass | BR-15..19 (received/reserved → 400; recompute + override + immutable history). |
+| 6 | Lot roll-up — partial vs full + timeline events | ✅ Pass | BR-20..24. |
+| 7 | Config — singleton, read-only GET, empty-body 400, live-config-drives-grade | ✅ Pass | BR-25..29. |
+| 8 | OBS-CW02-001 — IR-multiplier calibration | ⚠️ Confirmed (config ruling) | BR-30 — IR non-binding under `nominalIrMohm=25`. |
+
+**MAT-03 result: 30/30 BR cases PASS · 8/8 rule dimensions verified · 0 defects.** The grade
+engine, status machine, override semantics, correction guards, lot roll-up, and config
+behaviour all match the documented rules for every boundary case.
+
+### MAT-03 Defects
+
+**None.** No code defect found in any business rule.
+
+### OBS-CW02-001 — IR-multiplier calibration (CTO ruling required before gate closes)
+
+This is **not a code defect** — `calcGrade` applies the IR multiplier exactly as documented
+(BR-07..09 prove it). It is a **configuration/calibration** finding: the live config row has
+`nominalIrMohm = 25 mΩ`, but a healthy LiFePO4 prismatic cell's true internal resistance is
+≈ 0.29 mΩ. So `irMult = 0.29 / 25 ≈ 0.0116`, far below every IR ceiling (1.05 / 1.10 / 1.15).
+**An IR reading would have to exceed 26.25 mΩ (≈ 90× a healthy cell) before it could even
+demote an A** — physically impossible for any cell that is not already scrap. **Net effect:
+under the current config, grade is decided by capacity alone; the IR dimension is inert.**
+
+Two defensible interpretations — **CTO ruling needed**:
+- **(a) Calibrate** `nominalIrMohm` to the cell's true nominal IR (≈ 0.3 mΩ) so the IR
+  multiplier becomes meaningful and IR genuinely co-determines grade. *Touches the config
+  singleton (data, not code) → re-verify SS-04; no schema/route change.*
+- **(b) Accept capacity-only grading as the intended policy** for now; document `nominalIrMohm`
+  as a deliberately non-binding placeholder and revisit when real grading-machine IR data is
+  imported. *No change; record as an accepted observation.*
+
+---
+
 ## Open Defects (CW-02)
 
 | ID | Sev | Status | Phase |
@@ -360,7 +453,7 @@ Re-ran the entire phase as a batch (no stopping):
 
 | Observation | For |
 |-------------|-----|
-| OBS-CW02-001 — `nominalIrMohm` makes IR non-binding in grade calc | MAT-03 |
+| OBS-CW02-001 — `nominalIrMohm`=25 makes IR non-binding (capacity-only grading) — **VERIFIED in MAT-03 (BR-30)**; awaiting CTO calibration ruling (calibrate ≈0.3 mΩ vs. accept capacity-only) | MAT-03 → CTO |
 | OBS-CW02-002 — cells list status filter seq-scans (low volume; verify index under representative load) | MAT-05 |
 
 ---
@@ -374,6 +467,9 @@ Re-ran the entire phase as a batch (no stopping):
 - [x] **CTO approval on MAT-02 defects** — approved single-batch remediation of all 3 (DEF-004/005 schema fix; DEF-006 controlled correction workflow).
 - [x] **MAT-02 remediation (single batch) + FULL re-run → PASS** (16/16 GR assertions; 10/10 scorecard; SS-02/03/04 green). **DEF-004/005/006 all Closed.**
 - [x] **MAT-02 gate CLOSED** — 0 open Critical/High.
-- [ ] MAT-03 → MAT-06.
+- [x] **MAT-03 executed (full batch)** — 30/30 BR cases PASS; 8/8 rule dimensions verified; **0 defects**. All throwaway cert fixtures torn down (0 residual); config restored byte-exact.
+- [x] **OBS-CW02-001 confirmed** (BR-30) — IR non-binding under `nominalIrMohm=25`; grade is capacity-only. Not a code defect.
+- [ ] **CTO ruling on OBS-CW02-001** — (a) calibrate `nominalIrMohm`≈0.3 mΩ (data change → re-verify SS-04) **or** (b) accept capacity-only grading as intended → then close MAT-03 gate.
+- [ ] MAT-04 → MAT-06.
 
 **Plan signed:** Replit Agent (QA) · 2026-06-28

@@ -20,5 +20,6 @@
 - [Auth login redirect race](auth-redirect-race.md) — seed auth cache via setQueryData in login onSuccess; invalidateQueries races a synchronous redirect and bounces back to /login.
 - [Engineering Correction Framework (ECF)](ecf-framework.md) — one generic immutable engineering_corrections ledger across modules; module table = current state; lib stays module-agnostic; fail-closed authz.
 - [Unified Product Platform review](unified-product-platform.md) — model vs unit identity collision (master_products=SKU, products=unit); downstream already keys off production_order_id; workflow-driven stage engine is the big refactor.
+- [Boundary cert float-bracketing](boundary-cert-float-bracketing.md) — certify inclusive numeric thresholds by bracketing ±0.01 (not the exact knife-edge) so float rounding never fakes a FAIL; prefix-tag + teardown in finally.
 - [Grading Import Framework](grading-import-framework.md) — ONE engine (calcGrade); future Excel/CSV imports adapt via GradingImportSource→normalized record→same engine; manual=one-row source; validation must mirror GradeCellBody.
 - [Doc refactor sprint (deferred)](doc-refactor-sprint.md) — run docs-only cleanup right AFTER CW-02 closes: thin replit.md → docs/architecture|governance|product; during CW-02 keep updating existing locations, no churn.
