@@ -1,0 +1,86 @@
+The revised CW-03 implementation plan is approved in principle.
+
+Before implementation begins, please update the plan with the following implementation principles so there is no ambiguity during development.
+
+### 1. Product Model remains unchanged
+
+`master_products` is permanently the Product Model (SKU) master.
+
+It shall never become the serialized Product table.
+
+### 2. Manufacturing Order remains the Work Order
+
+`mfg_production_orders` remains the manufacturing/work-order record.
+
+It shall not become the Product record.
+
+### 3. Product is created only once
+
+A serialized Product shall be created exactly once.
+
+Creation trigger:
+
+**QC PASS**
+
+Never before.
+
+### 4. Product relationship
+
+The Product shall contain the reference to its Manufacturing Order.
+
+Example:
+
+`products.source_production_order_id`
+
+Do not introduce another serialized Product reference inside `mfg_production_orders`.
+
+### 5. Manufacturing continues unchanged
+
+Receiving
+
+↓
+
+Matching
+
+↓
+
+Assembly
+
+↓
+
+Testing
+
+↓
+
+QC
+
+↓
+
+Product Creation
+
+The manufacturing workflow itself shall not change during CW-03.
+
+Only the final output changes from "finished manufacturing order" to "finished Product."
+
+### 6. Downstream rule
+
+Packing, Dispatch, Dealer, Inventory, Reports and Director Dashboard shall ultimately consume the Product identity.
+
+However, during CW-03 implementation an additive migration is acceptable.
+
+Dual references may temporarily exist internally while implementation is in progress.
+
+The final public architecture after CW-03 certification shall expose Product as the primary downstream identity.
+
+### 7. Phase 0 Deliverable
+
+Before writing implementation code, produce a detailed implementation impact report including:
+
+* Database migration sequence
+* API changes
+* Frontend pages affected
+* Estimated implementation effort
+* Risk assessment
+* Rollback strategy
+
+After approval of that report, implementation may begin.

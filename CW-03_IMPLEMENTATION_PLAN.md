@@ -24,20 +24,24 @@
 
 ```
 CW-03
-  Phase 0  Implement Product Platform        (frozen architecture v1.0 — build exactly as approved)
+  Phase 0.1  Implementation Impact Report     (PLANNING ONLY — migration/API/UI/test/effort/risk/rollback)  ← CTO approval gate
+     ↓                                          ░░ NO database migrations or production code before this is approved ░░
+  Phase 0    Implement Product Platform        (frozen architecture v1.0 — build exactly as approved)
      ↓
-  Phase 1  Manufacturing Orders              (refactor to CONSUME the Product Platform; workflow unchanged)
+  Phase 1    Manufacturing Orders              (refactor to CONSUME the Product Platform; workflow unchanged)
      ↓
-  Phase 2  QC Integration                    (Product created ONLY at QC PASS — the single creation gate)
+  Phase 2    QC Integration                    (Product created ONLY at QC PASS — the single creation gate)
      ↓
-  Phase 3  Manufacturing Certification       (MAT-01 → MAT-06 against the Product-based module)
+  Phase 3    Manufacturing Certification       (MAT-01 → MAT-06 against the Product-based module)
      ↓
-  Phase 4  Freeze CW-03                       (official baseline for Packing/Dispatch/Dealer/Inventory/Reports/Director)
+  Phase 4    Freeze CW-03                       (official baseline for Packing/Dispatch/Dealer/Inventory/Reports/Director)
 ```
 
-Each phase is **strictly additive** (no certified table renamed/removed) and is gated. Implementation of
-each phase begins only after this plan is approved; certification (Phase 3) runs the standard Batch-MAT
-cycle with a CTO triage/approval gate per MAT phase.
+Each phase is **strictly additive** (no certified table renamed/removed) and is gated. **Phase 0.1 is a
+pure-planning gate (CTO directive, 2026-06-28): the detailed Implementation Impact Report
+(`CW-03_PHASE-0.1_IMPACT_REPORT.md`) must be reviewed and approved before *any* database migration or
+production code is written.** Implementation of each subsequent phase begins only after that approval;
+certification (Phase 3) runs the standard Batch-MAT cycle with a CTO triage/approval gate per MAT phase.
 
 ---
 
@@ -54,6 +58,42 @@ cycle with a CTO triage/approval gate per MAT phase.
 
 If any framework genuinely needs a change to support this, that is a **defect-driven** event (Critical /
 High / security) handled under the freeze exception — not a routine part of the build.
+
+---
+
+## 2.1 Implementation Principles (CTO-locked, 2026-06-28)
+
+These seven principles are **binding** for the entire wave and resolve every identity ambiguity. They are
+not goals to interpret — they are constraints to obey.
+
+1. **Product Model is permanent.** `master_products` is **always** the Product **Model (SKU)** master. It
+   **never** becomes the serialized Product table.
+2. **Manufacturing Order is the Work Order.** `mfg_production_orders` **always** remains the
+   manufacturing/work-order record. It **never** becomes the Product record.
+3. **Product is created exactly once,** and its **only** creation trigger is **QC PASS**. Never before.
+4. **Product owns the link.** The Product carries the reference to its work order
+   (`products.source_production_order_id`). **Do not** add any serialized-Product reference back inside
+   `mfg_production_orders` (its existing `product_id` is the Model FK and stays that way).
+5. **Manufacturing workflow is unchanged** — Receiving → Matching → Assembly → Testing → QC →
+   *Product Creation*. The stages themselves do not change in CW-03; **only the final output changes**
+   from "finished manufacturing order" to "finished **Product**."
+6. **Downstream → Product identity, additively.** Packing/Dispatch/Dealer/Inventory/Reports/Director will
+   ultimately consume the **Product** identity. During CW-03 an **additive** migration is acceptable and
+   **dual references may temporarily co-exist internally**; the final public architecture after CW-03
+   certification exposes **Product as the primary downstream identity**.
+
+   > **Reconciliation (needs CTO confirmation — decision D4).** Principle 6 and "downstream repoint is out
+   > of CW-03" are reconciled by separating two layers: **(a) the Product identity layer** — the
+   > serialized Product is created, canonical, and **exposed as the primary identity at the API boundary**
+   > by the CW-03 freeze; and **(b) per-module internal authoritative-key repoint** — each downstream
+   > module (Packing/Dispatch/Dealer/Inventory/Reports/Director) switches its *internal* authoritative FK
+   > from `production_order_id` to `product_id` **in its own subsequent certification wave** (UPP Phase 4).
+   > Thus at CW-03 freeze Product is the canonical/primary **exposed** identity while internal dual-refs
+   > persist until each downstream module is re-certified. **D4 confirms this interpretation** (vs. pulling
+   > the full internal repoint into CW-03, which would enlarge scope and touch certified modules
+   > non-additively).
+7. **Phase 0.1 gate.** Before any implementation code, produce and get approval on the Implementation
+   Impact Report (§ below / `CW-03_PHASE-0.1_IMPACT_REPORT.md`).
 
 ---
 
@@ -290,10 +330,18 @@ to 0 residual; backfill reconciled; UAT signed; CTO certification decision recor
          inverter/normalization wave (PP-005). CTO: **include** or **defer**.
    - [ ] **D3 — SS-03 audit path (lock before execution):** **Option A** (extend SS-03 under the
          High/security freeze exception — requires CTO authorisation) **or Option B** (documented MAT-06
-         evidence + backlog the matrix extension). Assign a named owner + target date.
-2. On approval → Phase 0 build → Phase 1 → Phase 2 → pre-wave checklist → Phase 3 (Batch-MAT, per-phase
-   CTO gate) → Phase 4 freeze.
-3. UPP Phases 3–5 (workflow engine, INBUILT/HYBRID, downstream repoint, legacy removal) remain **future**
+         evidence + backlog the matrix extension). **Selected option, named owner, and target date must be
+         recorded before Phase 0 implementation starts.**
+   - [ ] **D4 — Principle 6 interpretation:** confirm that CW-03 delivers Product as the **canonical/primary
+         *exposed* identity** at freeze, while **per-module internal FK repoint** to `product_id` happens in
+         each downstream module's own later wave (UPP Phase 4) — dual-refs persist meanwhile. (Alternative:
+         pull the full internal repoint into CW-03 → larger scope, non-additive changes to certified modules.)
+2. **On plan approval → Phase 0.1: produce `CW-03_PHASE-0.1_IMPACT_REPORT.md`** (migration sequence, API
+   contract changes, UI impact map, test impact map, effort estimate, risk assessment, rollback strategy).
+   **This is planning only — still no migrations, no production code.**
+3. **On Phase 0.1 approval → implementation begins:** Phase 0 build → Phase 1 → Phase 2 → pre-wave
+   checklist → Phase 3 (Batch-MAT, per-phase CTO gate) → Phase 4 freeze.
+4. UPP Phases 3–5 (workflow engine, INBUILT/HYBRID, downstream repoint, legacy removal) remain **future**
    manufacturing-capability waves.
 
 > CW-03 **implements the frozen Unified Product Platform architecture** and **consumes ECF / ODS /
