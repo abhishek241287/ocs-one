@@ -68,7 +68,10 @@ Operations control system for OCS Oorja Green Pvt. Ltd. — end-to-end manufactu
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- **Cert-wave triage — module-specific vs. platform improvement (ask FIRST, every wave).** At the start of every certification wave, before fixing any defect, classify it: _"Is this defect module-specific, or is it a platform improvement?"_
+  - **Module-specific** → fix only that module.
+  - **Platform improvement** → fix it once in the shared framework (ODS, hooks, middleware, API/security layer) so **every** module benefits, not just the one under cert.
+  - Precedent (fixed once, now benefit every module): ODS keyboard navigation, RBAC, performance dashboard, authentication, error handling. Default to the platform-level fix whenever a defect is systemic.
 
 ## Gotchas
 
