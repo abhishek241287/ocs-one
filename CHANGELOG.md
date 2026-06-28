@@ -7,6 +7,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased] — CW-02 Cell Grading
 
+### 📋 Certification Process Review — Post CW-02 (2026-06-28)
+
+Documentation/process-improvement activity (no production code, no platform changes) across the two
+completed waves (CW-01, CW-02) to standardize the cert process for CW-03 → CW-08.
+
+- **New:** `certification/CERTIFICATION_PROCESS_REVIEW.md` — 8-section report (Executive Summary,
+  Lessons Learned, Standard Certification Templates, Standard Certification Harness, Standard
+  Documentation Templates, Certification Metrics, Recommended Improvements, Action Items).
+- **New:** `docs/certification-framework-backlog.md` — **CF-001…CF-005** (harness consolidation,
+  scaffold generator, metrics rollup, pre-wave readiness check, parameterized perf harness) —
+  **recorded, not implemented** per the freeze.
+- **Process adopted (doc-only):** frozen 6-phase MAT taxonomy (resolves MAT-03/04 title drift between
+  waves); CW-02 documents declared canonical templates; programme index kept current at every gate;
+  pre-wave checklist; SS-03 authoritative-mode default for flood/stress waves.
+- **Scorecard:** Certification Framework Enhancement Backlog Count 0 → 5.
+- **Index refreshed:** `certification/README.md` — CW-01 + CW-02 marked 🔵 Certified, summary table and
+  progress (2/8, 25%) corrected, canonical-template + frozen-taxonomy notes added.
+- No ODS / ECF / Security Standards / Product Platform / certified-module changes. **CW-03 begins only
+  after this review is approved.**
+
 ### 🔵 CW-02 — Cell Grading — CERTIFIED (2026-06-28)
 
 Certification Wave 02 is **CERTIFIED** (MAT-01 → MAT-06 all PASS). The **Cell Grading** module and the
@@ -79,8 +99,8 @@ Full-batch performance & stress certification of the Cell Grading module against
   additive)** — grading routes are absent from `PERFORMANCE_BASELINE_V1`; recommend additive
   registration so `/developer/performance` defends them — frozen baseline **not** modified
   unilaterally; CTO decision.
-- **Gate:** MAT-05 **awaiting CTO sign-off** (decision PASS WITH NOTES). On approval → close gate,
-  then MAT-06.
+- **Gate:** MAT-05 **APPROVED & CLOSED by CTO (2026-06-28)** — decision PASS WITH NOTES; performance
+  observations backlogged (MEB-001/002). Proceeded to MAT-06.
 
 ### ✅ MAT-04 — Integration Certification — CERTIFIED & gate CLOSED (2026-06-28)
 

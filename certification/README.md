@@ -60,6 +60,28 @@ Every live certification harness that creates fixtures MUST tear them down so th
 > Rationale: certification must never pollute the live dataset. A wave is not closeable until
 > its teardown is proven to 0 residual.
 
+### Standard process practices (adopted post CW-02 — Certification Process Review)
+
+From the [Certification Process Review](./CERTIFICATION_PROCESS_REVIEW.md), these process standards
+apply to every wave CW-03 → CW-08 (process/documentation only — no platform change):
+
+1. **Frozen 6-phase MAT taxonomy** — MAT-01 Page & Navigation · MAT-02 Functional · MAT-03
+   Business-Rule & Data Integrity · MAT-04 Integration & UX · MAT-05 Performance & Stress · MAT-06
+   Security & Reliability. (Resolves the MAT-03/04 title drift between CW-01 and CW-02.)
+2. **Canonical templates** — the **CW-02** evidence documents are the canonical templates; copy and
+   fill them for each new wave rather than re-authoring structure.
+3. **Keep this index current** — update each wave's status block, the Summary Table, and the progress
+   line at every gate (this drift was the main documentation gap found in the review).
+4. **Pre-wave checklist** — before a wave starts: folder stamped, authz/audit matrices extended with
+   the new module, fixtures prefix-tagged, and every table a tested operation writes enumerated for
+   teardown.
+5. **SS-03 authoritative mode** (`CERT_AUDIT_RATELIMIT=1`) is the real audit gate in any wave that
+   floods/stress-tests before the audit run (default-mode red can be stale limiter residue — SEC-001).
+
+> Certification-process code improvements are recorded in
+> [`docs/certification-framework-backlog.md`](../docs/certification-framework-backlog.md)
+> (CF-001…CF-005) and built post-certification, per the Platform Freeze Policy.
+
 ---
 
 ## Certification Waves
@@ -69,11 +91,11 @@ Every live certification harness that creates fixtures MUST tear them down so th
 | Field | Value |
 |-------|-------|
 | **Objective** | Certify the inbound cell lot creation and intake workflow as production-ready |
-| **Status** | 🟡 In Progress |
-| **Start Date** | — |
-| **Completion Date** | — |
-| **Lead Engineer** | — |
-| **Certification Status** | ⬜ Not certified |
+| **Status** | 🔵 Certified |
+| **Start Date** | 2026-06-27 |
+| **Completion Date** | 2026-06-28 |
+| **Lead Engineer** | Replit Agent (QA / Engineering) |
+| **Certification Status** | ✅ Certified (`CW-01_CERTIFICATION_REPORT.md`, `CW-01_FREEZE_NOTICE.md`) |
 | **Folder** | [`CW-01-Cell-Receiving/`](./CW-01-Cell-Receiving/) |
 
 ---
@@ -83,11 +105,11 @@ Every live certification harness that creates fixtures MUST tear them down so th
 | Field | Value |
 |-------|-------|
 | **Objective** | Certify per-cell grading (capacity, IR, voltage), grade configuration, and allocation pool integrity |
-| **Status** | ⬜ Not started |
-| **Start Date** | — |
-| **Completion Date** | — |
-| **Lead Engineer** | — |
-| **Certification Status** | ⬜ Not certified |
+| **Status** | 🔵 Certified |
+| **Start Date** | 2026-06-28 |
+| **Completion Date** | 2026-06-28 |
+| **Lead Engineer** | Replit Agent (QA / Engineering) |
+| **Certification Status** | ✅ Certified (`CW-02_CERTIFICATION_REPORT.md`, `CW-02_FREEZE_NOTICE.md`, CTO Approval `CW-02-APR-001`) |
 | **Folder** | [`CW-02-Cell-Grading/`](./CW-02-Cell-Grading/) |
 
 ---
@@ -180,8 +202,8 @@ Every live certification harness that creates fixtures MUST tear them down so th
 
 | Wave | Module | Status | Certified |
 |------|--------|--------|-----------|
-| CW-01 | Cell Receiving | 🟡 In Progress | ⬜ |
-| CW-02 | Cell Grading | ⬜ Not started | ⬜ |
+| CW-01 | Cell Receiving | 🔵 Certified | ✅ |
+| CW-02 | Cell Grading | 🔵 Certified | ✅ |
 | CW-03 | Manufacturing Orders | ⬜ Not started | ⬜ |
 | CW-04 | Charging | ⬜ Not started | ⬜ |
 | CW-05 | Quality Control | ⬜ Not started | ⬜ |
@@ -189,7 +211,7 @@ Every live certification harness that creates fixtures MUST tear them down so th
 | CW-07 | Reports & Analytics | ⬜ Not started | ⬜ |
 | CW-08 | Warranty & Service | ⬜ Not started | ⬜ |
 
-**Waves certified: 0 / 8 — Overall certification progress: 0%**
+**Waves certified: 2 / 8 — Overall certification progress: 25%**
 
 ---
 
@@ -198,4 +220,4 @@ Every live certification harness that creates fixtures MUST tear them down so th
 When a wave moves to **In Progress**: set Status to `🟡 In Progress` and fill in Start Date and Lead Engineer.
 When a wave is **Certified**: set Status to `🔵 Certified`, fill in Completion Date, update Certification Status, and update the Summary Table row.
 
-*Last updated: 2026-06-27*
+*Last updated: 2026-06-28 (CW-01 + CW-02 certified; Certification Process Review adopted)*

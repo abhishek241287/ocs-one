@@ -81,7 +81,7 @@ _Last reviewed: 2026-06-28 (CW-02 — Cell Grading CERTIFIED)._
 | **Breaking Changes Since Freeze** | 0 |
 | **Certification Status** | ✅ CW-01 + CW-02 both closed at full pass; CW-03 authorized on CW-02 freeze-package approval |
 | **Next Planned Version** | None during CW-02→CW-08 |
-| **Enhancement Backlog Count** | 0 (none recorded) |
+| **Enhancement Backlog Count** | 5 (CF-001…CF-005 — `docs/certification-framework-backlog.md`) |
 
 ---
 
