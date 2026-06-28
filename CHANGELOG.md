@@ -43,6 +43,16 @@ module is touched, by direction.
   audit-immutability suite (static: no app route updates/deletes it; runtime: a captured
   row is byte-identical after a full run). SS-02 / SS-03 / SS-04 all PASS; full typecheck
   and lint (0 warnings) green.
+- **ECF v1.0 FROZEN (CTO directive).** ECF is accepted as a core platform service. Frozen
+  interfaces — `recordOriginal` / `correct` / `getHistory` / `validateCorrection`. Platform
+  rules now binding: the generic ledger is the single correction history (no module may
+  build its own); every correction-allowing module **must** integrate with ECF (future
+  work — not during CW-02); Engineering Version (`sequence`, 1=original / 2+=correction)
+  is a platform concept that never resets or renumbers; Correction ID `CORR-YYYYMMDD-NNNNNN`
+  is the official engineering reference number. **No further ECF expansion during CW-02** —
+  improvements (e.g. correction attachments) are recorded as ECF v1.1 enhancement requests
+  for after all certification waves. Continue Cell Grading certification on the frozen
+  framework.
 
 
 > **Certification Wave 02 — Cell Grading.** MAT-01 (Page & Navigation) and MAT-02 (CRUD &

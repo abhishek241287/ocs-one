@@ -1,0 +1,89 @@
+Excellent work.
+
+This is exactly the kind of platform investment I wanted.
+
+The Engineering Correction Framework (ECF) is now a core platform service rather than a Cell Grading feature, which is the correct architecture.
+
+I accept the implementation and the certification evidence.
+
+Before we migrate any additional modules, I want to freeze the framework itself.
+
+ECF Version 1.0 Freeze
+
+The following interfaces are now considered stable:
+
+recordOriginal()
+correct()
+getHistory()
+validateCorrection()
+
+The generic engineering_corrections ledger becomes the single immutable correction history for every manufacturing module.
+
+No module should implement its own correction history going forward.
+
+New Architectural Rule
+
+Every manufacturing module that allows correction must integrate with ECF.
+
+Examples include:
+
+Cell Grading
+Charging
+Testing
+Quality Control
+Battery Assembly
+Packing
+Dispatch
+Warranty
+Future manufacturing modules
+
+Module tables remain the source of truth for current values.
+
+ECF remains the immutable engineering history.
+
+Versioning Rule
+
+Engineering Version is now a platform concept.
+
+Version 1 = Original measurement
+
+Version 2+ = Engineering corrections
+
+This version must always travel with the correction history.
+
+It must never be reset or renumbered.
+
+Correction ID Rule
+
+The human-readable Correction ID (CORR-YYYYMMDD-NNNNNN) is now the official engineering reference number.
+
+Operators, supervisors, auditors, service engineers, and customers should all reference this ID when discussing a correction.
+
+Future Enhancement (Do Not Implement Yet)
+
+Eventually every correction should support attachments.
+
+Examples:
+
+machine PDF
+grading Excel
+oscilloscope image
+QC photo
+signed NCR
+calibration certificate
+
+The ECF should eventually support attachment metadata without changing the correction API.
+
+Do not build this now.
+
+Simply keep the framework extensible.
+
+Next Direction
+
+The ECF platform is now frozen.
+
+Do not expand it further during CW-02.
+
+Continue with Cell Grading certification using the frozen framework.
+
+Any improvements to ECF from this point onward should be recorded as enhancement requests for ECF v1.1 after all certification waves are complete

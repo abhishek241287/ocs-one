@@ -1,7 +1,34 @@
 # Engineering Correction Framework (ECF)
 
-> **Status:** Platform framework — CTO-approved (pre-MAT-03). Reference consumer:
-> **Cell Grading**. No other module is migrated yet (by direction).
+> **Status:** Platform framework — **FROZEN at v1.0** (CTO-approved, pre-MAT-03).
+> Reference consumer: **Cell Grading**. No other module is migrated yet (by direction).
+
+## v1.0 Freeze (CTO directive — binding)
+
+ECF v1.0 is **frozen**. The framework is a core platform service, not a Cell-Grading
+feature. The following are now stable platform contracts and **must not change during
+CW-02**:
+
+- **Frozen interfaces** (stable — do not alter signatures or semantics):
+  `recordOriginal()`, `correct()`, `getHistory()`, `validateCorrection()`.
+- **Single immutable history.** The generic `engineering_corrections` ledger is the
+  one correction history for every manufacturing module. **No module may implement its
+  own correction history.**
+- **Mandatory-integration rule.** Every manufacturing module that allows correction
+  *must* integrate with ECF — Cell Grading, Charging, Testing, Quality Control,
+  Battery Assembly, Packing, Dispatch, Warranty, and all future modules. Module tables
+  remain the source of truth for current values; ECF remains the immutable engineering
+  history. (Integration of additional modules is **future work — not during CW-02**.)
+- **Engineering Version is a platform concept.** `sequence` = Engineering Version:
+  `1` = original measurement, `2+` = engineering corrections. It **must always travel
+  with the correction history and must never be reset or renumbered.**
+- **Correction ID is the official engineering reference number.** `CORR-YYYYMMDD-NNNNNN`
+  is the human-readable reference that operators, supervisors, auditors, service
+  engineers, and customers all use when discussing a correction.
+
+**No further ECF expansion during CW-02.** Continue Cell Grading certification on the
+frozen framework. Any improvement from this point is an **ECF v1.1 enhancement request**
+(see backlog below), to be considered only after all certification waves complete.
 
 The ECF is OCS One's **single, audited correction process**. Any module that holds
 a *certified engineering record* (a graded cell, a charge profile, a QC result, a
@@ -113,3 +140,18 @@ a previous→new diff). Cell Grading's grading page is the reference consumer (t
 4. Render with `OdsCorrectionHistory`.
 5. Add the route to SS-02 (authz) and SS-01 (security matrix). The ledger is already
    covered by SS-03 — no per-module audit-immutability work needed.
+
+> Adding a module reuses the **frozen** v1.0 interfaces unchanged. If a module genuinely
+> needs new framework capability, that is an ECF v1.1 enhancement request — not a v1.0
+> change.
+
+## ECF v1.1 enhancement backlog (do NOT implement yet)
+
+Recorded per CTO directive — frozen out of v1.0, considered only after all certification
+waves complete. The framework is kept **extensible** so these land without changing the
+frozen correction API.
+
+- **Correction attachments.** Each correction should eventually support attachment
+  metadata — e.g. machine PDF, grading Excel, oscilloscope image, QC photo, signed NCR,
+  calibration certificate. Design goal: add attachment metadata **without changing**
+  `recordOriginal` / `correct` / `getHistory` / `validateCorrection`. **Do not build now.**
