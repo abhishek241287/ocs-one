@@ -1,0 +1,155 @@
+The Phase 0 database foundation is approved.
+
+Before continuing with the backfill and API implementation, I want a short architecture verification.
+
+Please prepare a **Phase 0 Foundation Review** containing the following:
+
+### 1. Database Verification
+
+Show the final ERD for the new Product Platform including:
+
+* product_categories
+* product_workflows
+* products
+* product_genealogy
+* product_events
+
+and their relationships with:
+
+* master_products
+* mfg_production_orders
+* logistics_dispatch_items
+
+---
+
+### 2. Product Creation Flow
+
+Show the complete lifecycle:
+
+Receiving
+
+↓
+
+Matching
+
+↓
+
+Assembly
+
+↓
+
+Testing
+
+↓
+
+QC PASS
+
+↓
+
+Product Creation
+
+↓
+
+Packing
+
+↓
+
+Dispatch
+
+↓
+
+Dealer
+
+Clearly identify where each table is written.
+
+---
+
+### 3. Serial Number Flow
+
+For each product category explain exactly how the official product serial is generated.
+
+Battery Pack
+
+Inbuilt Lithium Inverter
+
+Hybrid Inverter
+
+Show example serials.
+
+---
+
+### 4. Product Identity Verification
+
+Demonstrate that:
+
+* master_products remains the Product Model.
+* mfg_production_orders remains the Manufacturing Order.
+* products becomes the serialized finished Product.
+* Product is created only once after QC PASS.
+
+---
+
+### 5. Genealogy Verification
+
+Show genealogy examples for:
+
+Battery Pack
+
+Inbuilt Lithium Inverter
+
+Hybrid Inverter
+
+Confirm that Hybrid Inverter has no battery genealogy.
+
+---
+
+### 6. Migration Verification
+
+Explain how existing Manufacturing Orders continue working during migration.
+
+Identify every dual-key relationship.
+
+Explain when each temporary relationship will eventually be removed.
+
+---
+
+### 7. API Impact
+
+List every existing endpoint that will change.
+
+List every new endpoint that will be added.
+
+Identify which API contracts remain 100% backward compatible.
+
+---
+
+### 8. Frontend Impact
+
+List every page that will change.
+
+List every new page.
+
+Confirm no existing certified workflow changes for operators.
+
+---
+
+### 9. Certification Impact
+
+Explain how CW-03 certification changes after introducing the Product Platform.
+
+Identify which MAT phases are affected.
+
+Explain whether any existing CW-01 or CW-02 certification needs to be rerun.
+
+---
+
+### 10. Final Readiness Assessment
+
+Provide a checklist confirming whether the Product Platform foundation is ready for:
+
+* Backfill
+* API implementation
+* UI implementation
+* Manufacturing integration
+
+No implementation work beyond the approved database foundation should begin until this review has been completed and approved.

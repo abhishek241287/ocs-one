@@ -36,3 +36,9 @@ id = "pXxZEXq0q3-LIOFva4VU8"
 uri = "file://CW-01_CERTIFICATION_REPORT.md"
 type = "text"
 title = "CW-01 Certification Report — Cell Receiving"
+
+[[outputs]]
+id = "jOJrjF0VYjbTZvM27csPO"
+uri = "file://CW-03_PHASE-0_FOUNDATION_REVIEW.md"
+type = "text"
+title = "CW-03 Phase 0 — Product Platform Foundation Review"
