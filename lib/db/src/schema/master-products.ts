@@ -5,11 +5,15 @@ import { createMasterCommonColumns } from "./master-common";
 import { masterBmsTable } from "./master-bms";
 import { masterCabinetsTable } from "./master-cabinets";
 import { masterCellsTable } from "./master-cells";
+import { productCategoriesTable } from "./product-masters";
 
 export const masterProductsTable = pgTable("master_products", {
   ...createMasterCommonColumns("master_products"),
   chemistry: text("chemistry").notNull(),
+  // Free-text legacy category stays authoritative through CW-03; the additive
+  // categoryId FK is backfilled and the free-text column is retired only post-cert.
   category: text("category").notNull(),
+  categoryId: uuid("category_id").references(() => productCategoriesTable.id),
   nominalVoltageV: decimal("nominal_voltage_v").notNull(),
   capacityAh: decimal("capacity_ah").notNull(),
   energyKwh: decimal("energy_kwh").notNull(),

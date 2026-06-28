@@ -1,5 +1,12 @@
 import bcrypt from "bcryptjs";
-import { db, pool, usersTable, cellGradeConfigTable } from "@workspace/db";
+import {
+  db,
+  pool,
+  usersTable,
+  cellGradeConfigTable,
+  productCategoriesTable,
+  productWorkflowsTable,
+} from "@workspace/db";
 import { logger } from "./logger";
 
 // The seed default admin password. Exported so SS-04 (config-integrity) can
@@ -22,6 +29,45 @@ export async function seedDatabase(): Promise<void> {
     .insert(cellGradeConfigTable)
     .values({ id: 1 })
     .onConflictDoNothing({ target: cellGradeConfigTable.id });
+
+  // ── Unified Product Platform masters (idempotent) ──────────────────────────
+  // Category master: all three categories are seeded as data; only Battery Pack
+  // is exercised in CW-03 (Inbuilt Lithium / Hybrid are reserved for later waves).
+  await db
+    .insert(productCategoriesTable)
+    .values([
+      { code: "BATTERY_PACK", name: "Battery Pack", status: "active" },
+      { code: "INBUILT_LITHIUM_INVERTER", name: "Inbuilt Lithium Inverter", status: "inactive" },
+      { code: "HYBRID_INVERTER", name: "Hybrid Inverter", status: "inactive" },
+    ])
+    .onConflictDoNothing({ target: productCategoriesTable.code });
+
+  // Workflow master: BATTERY is active and carries the canonical 9-stage sequence
+  // (DATA, not wired to any engine in CW-03 — the workflow-driven stage engine is
+  // UPP Phase 3). INBUILT_LITHIUM / HYBRID are reserved data only (inactive).
+  await db
+    .insert(productWorkflowsTable)
+    .values([
+      {
+        code: "BATTERY",
+        name: "Battery Pack Manufacturing",
+        status: "active",
+        stageSequence: [
+          "cell_allocation",
+          "assembly",
+          "compression",
+          "bms_allocation",
+          "bms_programming",
+          "charging",
+          "testing",
+          "quality_control",
+          "packing",
+        ],
+      },
+      { code: "INBUILT_LITHIUM", name: "Inbuilt Lithium Inverter Manufacturing", status: "inactive", stageSequence: [] },
+      { code: "HYBRID", name: "Hybrid Inverter Manufacturing", status: "inactive", stageSequence: [] },
+    ])
+    .onConflictDoNothing({ target: productWorkflowsTable.code });
 
   // Seed default director account if no users exist
   const [existing] = await db

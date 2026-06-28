@@ -74,6 +74,21 @@ a category→workflow mapping (risk R10).
   genealogy includes it. Hybrid = NO battery genealogy.
 - No `master_inverters` table exists yet (INVERTER is only an `ecf_entity_type` enum value).
 
+## Implementation lessons (Phase 0 schema, learned in build)
+
+- **`products.model_id` MUST be `NOT NULL`.** Identity contract = manufacturer is DERIVED via
+  model (`model_id → manufacturer_id`), so a model-less Product cannot satisfy it. Consequence:
+  backfill AND the QC-pass emit must **skip-and-report** any order with no model, never create an
+  invalid Product. `category_id`, `workflow_code`, `official_product_serial` are also NOT NULL;
+  only `source_production_order_id` is nullable (UNIQUE) — it is the SOLE order↔unit link
+  (`mfg_production_orders.product_id` stays the Model/SKU FK, never repurposed).
+- **`products`↔`logistics` is a deliberate circular import** (`products`→`logistics_dealers`;
+  `logistics_dispatch_items`→`products`). Safe via Drizzle lazy `() =>` reference callbacks + ESM
+  live bindings; api-server boots clean. Don't try to "fix" it by merging files.
+- **No product-delete route, ever.** `product_genealogy`/`product_events` cascade-delete from
+  `products`; `dispatch_items.product_id` is `set null`. Cascades exist only for referentially-safe
+  rollback/teardown — a real delete route would wipe append-only event history.
+
 ## Consistency with platform freeze
 
 This is **new capability on top of frozen platforms** (ODS/ECF/Security/Cert/Audit reused by

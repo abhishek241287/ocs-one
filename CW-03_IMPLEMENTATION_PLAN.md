@@ -97,6 +97,34 @@ not goals to interpret — they are constraints to obey.
 
 ---
 
+## 2.2 Business Identity vs Migration Strategy (CTO clarification, 2026-06-28 — CONFIRMS D4)
+
+This is the single rule that prevents confusion between **business architecture** (what an entity *is*)
+and **migration strategy** (how we get there in code). They are not the same and must never be conflated.
+
+| | **Business Architecture** (durable, canonical) | **Migration Strategy** (temporary, implementation detail) |
+|---|---|---|
+| **Finished-item identity** | **The `Product`** is the official **business identity** of every finished item, effective from the end of CW-03 certification. | — |
+| **`production_order_id`** | **NOT a business identity.** | An internal reference that **may temporarily remain** where technically necessary during the additive migration. |
+| **`mfg_production_orders`** | The **manufacturing / work-order record only** — never the finished-item identity. | — |
+| **Downstream** (Packing · Dispatch · Dealer · Inventory · Reports · Director) | **Designed around the `Product` identity.** | May read `production_order_id` internally during transition; this is plumbing, not architecture. |
+
+**Rules that follow:**
+- From the close of CW-03, **the `Product` is the canonical identity**; every downstream module is
+  *architecturally* designed around it.
+- `production_order_id` (and any other internal cross-reference that lingers) is an **implementation
+  detail**, not a business concept. Its temporary presence does **not** make the Manufacturing Order a
+  business identity, and does not weaken the Product-as-identity rule.
+- The **per-module internal FK repoint** to `product_id` is sequenced **per downstream module in its own
+  later certification wave** (UPP Phase 4) — but the *business* decision (Product = identity) is **fixed
+  now**, not deferred. Migration timing ≠ architecture.
+
+> **Plain English:** after CW-03, when the business asks "what is this finished item?", the answer is its
+> **Product** (serial). "Which work order built it?" is answered by the Manufacturing Order. The fact that
+> some tables still join on `production_order_id` for a while is a migration convenience, nothing more.
+
+---
+
 ## 3. Phase 0 — Product Platform Foundation
 
 Build the frozen Product Platform v1.0 **exactly as approved**. Deliver only the approved concepts:
@@ -321,21 +349,20 @@ to 0 residual; backfill reconciled; UAT signed; CTO certification decision recor
 1. **CTO reviews & approves this revised plan AND records the three decisions below.** **No
    implementation — no schema, no code, no platform change — begins before this approval.**
 
-   **Explicit CTO decision gate (must be resolved at approval, not left implicit):**
-   - [ ] **D1 — `product_id` linkage contract (recommended, confirm):** `mfg_production_orders.product_id`
-         stays the **Model/SKU FK**; the serialized order↔unit link is **only** `products.source_production_order_id`
-         (one-directional product → order). Approve this single canonical contract.
-   - [ ] **D2 — `master_manufacturers` in Phase 0?** Frozen v1.1 includes a manufacturer master, but it is
-         not in the CTO Phase 0 list and is not needed for BATTERY (all OCS). **Recommend: DEFER** to the
-         inverter/normalization wave (PP-005). CTO: **include** or **defer**.
-   - [ ] **D3 — SS-03 audit path (lock before execution):** **Option A** (extend SS-03 under the
-         High/security freeze exception — requires CTO authorisation) **or Option B** (documented MAT-06
-         evidence + backlog the matrix extension). **Selected option, named owner, and target date must be
-         recorded before Phase 0 implementation starts.**
-   - [ ] **D4 — Principle 6 interpretation:** confirm that CW-03 delivers Product as the **canonical/primary
-         *exposed* identity** at freeze, while **per-module internal FK repoint** to `product_id` happens in
-         each downstream module's own later wave (UPP Phase 4) — dual-refs persist meanwhile. (Alternative:
-         pull the full internal repoint into CW-03 → larger scope, non-additive changes to certified modules.)
+   **Explicit CTO decision gate — RESOLVED 2026-06-28 (Phase 0.1 approved; implementation may begin):**
+   - [x] **D1 — `product_id` linkage contract:** **CONFIRMED.** `mfg_production_orders.product_id` stays
+         the **Model/SKU FK**; the serialized order↔unit link is **only** `products.source_production_order_id`
+         (one-directional product → order). (Plan §2.1 Principle 4.)
+   - [x] **D2 — `master_manufacturers` in Phase 0:** **DEFERRED** to the inverter/normalization wave
+         (PP-005) — not needed for BATTERY (all OCS); additive to add later. Proceeding on the approved
+         recommendation.
+   - [x] **D3 — SS-03 audit path:** **Option B** (documented MAT-06 audit evidence + backlog the matrix
+         extension). **Owner:** implementing engineer (main agent). **Target:** CW-03 MAT-06. QC-PASS
+         Product-creation audit is verified in MAT-06 regardless. (Re-classify to Option A only if MAT-06
+         finds a High/security gap.)
+   - [x] **D4 — Business identity vs migration strategy:** **CONFIRMED by CTO** — see §2.2. Product is the
+         canonical business identity from CW-03 close; `production_order_id` is a temporary implementation
+         detail; per-module internal repoint is sequenced in later downstream waves (UPP Phase 4).
 2. **On plan approval → Phase 0.1: produce `CW-03_PHASE-0.1_IMPACT_REPORT.md`** (migration sequence, API
    contract changes, UI impact map, test impact map, effort estimate, risk assessment, rollback strategy).
    **This is planning only — still no migrations, no production code.**

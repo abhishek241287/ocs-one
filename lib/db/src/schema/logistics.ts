@@ -10,6 +10,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { mfgProductionOrdersTable } from "./manufacturing";
+import { productsTable } from "./products";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -93,10 +94,17 @@ export const logisticsDispatchItemsTable = pgTable(
       .notNull()
       .unique()
       .references(() => mfgProductionOrdersTable.id),
+    // Additive dual-key (UPP CW-03): the unique production_order_id stays the
+    // AUTHORITATIVE key through CW-03; product_id is the future business handle,
+    // backfilled and repointed in each downstream module's own later wave.
+    productId: uuid("product_id").references(() => productsTable.id, {
+      onDelete: "set null",
+    }),
     addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index("idx_dispatch_items_order_id").on(table.dispatchOrderId),
+    index("idx_dispatch_items_product_id").on(table.productId),
   ]
 );
 
