@@ -270,5 +270,23 @@ Wave 02 — Cell Grading** is authorized.
 
 ---
 
+## CTO Approval Record
+
+| Field | Value |
+|-------|-------|
+| **Approval Number** | `CW-01-APR-001` |
+| **Approval Date** | 2026-06-28 |
+| **Version Frozen** | OCS One Foundation v1.0 (CW-01) |
+| **Git Tag** | `CW-01-CERTIFIED` |
+| **Approved By** | CTO, OCS Oorja Green Pvt. Ltd. |
+| **Next Authorized Wave** | CW-02 — Cell Grading |
+
+> **CTO statement:** CW-01 is APPROVED. The Cell Receiving module and the platform foundation
+> are certified and frozen as OCS One Foundation v1.0. No further platform changes are permitted
+> unless required by a certification defect. Certification Wave 02 — Cell Grading is formally
+> authorized.
+
+---
+
 *This document is the permanent audit record for CW-01. Per project policy, certified
 evidence is immutable — corrections are appended as new entries, never rewritten.*

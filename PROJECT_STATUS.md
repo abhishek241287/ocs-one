@@ -10,6 +10,7 @@
 | **Repository** | `ocs-oorja/ocs-one` |
 | **Current Branch** | `main` |
 | **Release Tag** | `v1.0-foundation` |
+| **Baseline Status** | 🔵 **CW-01 FROZEN (2026-06-28)** — OCS One Foundation v1.0 official baseline · approval `CW-01-APR-001` · tag `CW-01-CERTIFIED` · see `CW-01_FREEZE_NOTICE.md` |
 | **Last Updated** | 2026-06-28 |
 
 ---
@@ -131,7 +132,7 @@ Each wave earns a **🔵 Certified** stamp in the Module Status table and increm
 | Cables | Masters | ✅ Built | Cable type catalogue |
 | Busbars | Masters | ✅ Built | Busbar specification registry |
 | Cabinets | Masters | ✅ Built | Enclosure catalogue |
-| Cell Receiving | Cell Lifecycle | 🔵 Certified | **CW-01 certified 2026-06-28** (MAT-01→06) |
+| Cell Receiving | Cell Lifecycle | 🔵 Certified (Frozen) | **CW-01 certified & frozen 2026-06-28** (MAT-01→06) |
 | Cell Grading | Cell Lifecycle | ✅ Built | Per-cell capacity / IR / voltage |
 | Cell Inventory | Cell Lifecycle | ✅ Built | Grade snapshot, allocation view |
 | Cell Matching | Cell Lifecycle | ✅ Built | Slot-filling algorithm |
@@ -271,7 +272,7 @@ Full registry: `artifacts/ocs-one/docs/ods-component-registry.md`
 
 | Wave | Scope | Status | Target |
 |------|-------|--------|--------|
-| **CW-01** | Cell Receiving | 🔵 **CERTIFIED (2026-06-28)** | MAT-01→06 all PASS · 37 defects (0 Crit/High/Med open) · 4 permanent deliverables: SS-02 authz (225/225) · Security Dashboard · SS-03 audit (11/11 + immutable) · SS-04 config (31/3/0) + `/developer/configuration` · full report in `CW-01_CERTIFICATION_REPORT.md` |
+| **CW-01** | Cell Receiving | 🔵 **CERTIFIED & FROZEN (2026-06-28)** | Approval `CW-01-APR-001` · tag `CW-01-CERTIFIED` · MAT-01→06 all PASS · 37 defects (0 Crit/High/Med open) · 4 permanent deliverables: SS-02 authz (225/225) · Security Dashboard · SS-03 audit (11/11 + immutable) · SS-04 config (31/3/0) + `/developer/configuration` · `CW-01_CERTIFICATION_REPORT.md` + `CW-01_FREEZE_NOTICE.md` |
 | **CW-02** | Cell Grading | ⬜ Not started | TBD |
 | **CW-03** | Manufacturing Orders | ⬜ Not started | TBD |
 | **CW-04** | Charging | ⬜ Not started | TBD |
@@ -430,4 +431,4 @@ After every Certification Wave:
 
 ---
 
-*Last updated: 2026-06-28 · Version 1.0-foundation · CW-01 CERTIFIED*
+*Last updated: 2026-06-28 · Version 1.0-foundation · CW-01 CERTIFIED & FROZEN (approval `CW-01-APR-001`, tag `CW-01-CERTIFIED`)*
