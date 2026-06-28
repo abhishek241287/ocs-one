@@ -118,6 +118,14 @@ BATTERY/INBUILT_LITHIUM → `QC_PASS`, HYBRID → `INCOMING_INSPECTION_PASS`.
 - **Follow-up (deferred to CW-03 MAT certification, not built now):** a focused regression test for
   trigger dispatch (QC_PASS creates / INCOMING_INSPECTION_PASS skips). Architect rated high-impact but
   it's certification-phase scope.
+- **FROZEN trigger model (CTO-approved 2026-06-28).** The ONLY approved triggers for Product Platform
+  v1.0 are `QC_PASS` and `INCOMING_INSPECTION_PASS`. Do NOT add triggers during CW-03; new triggers
+  require a formal architecture review AFTER CW-08, and a future workflow defines its OWN trigger
+  rather than modifying Product Platform code. **Permanent separation rule:** Workflow decides WHEN a
+  Product is created (stages + creation trigger + timing); Product Platform decides WHAT is created
+  (identity, official serial, lifecycle, genealogy, events) and never decides when. Platform stays
+  generic — no workflow-specific business logic. This is a permanent architectural rule, not a
+  CW-03-only constraint.
 
 ## Consistency with platform freeze
 
