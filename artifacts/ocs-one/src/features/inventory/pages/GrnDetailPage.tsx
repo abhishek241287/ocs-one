@@ -7,6 +7,8 @@ import {
   useDeleteGrn,
   useListSuppliers,
   useListMaterialMasters,
+  useListInspections,
+  useGetInspection,
   getGetGrnQueryKey,
   getListGrnTransactionsQueryKey,
   getListGrnsQueryKey,
@@ -61,6 +63,26 @@ export default function GrnDetailPage() {
     for (const m of (materials?.items ?? []) as any[]) map.set(m.id, m);
     return map;
   }, [materials]);
+
+  // Read-only inspection projection for this GRN. A GRN has at most one inspection
+  // (unique grn_id). We never mutate the GRN — we only join the separate inspection
+  // document's per-line accepted/rejected back onto the GRN view by grn_line_id.
+  // pageSize large enough to return every inspection in one page: a GRN has at most
+  // one inspection (unique grn_id), so a default page-1 list could otherwise miss this
+  // GRN's inspection and silently show "—". Bounded by the number of posted+inspected GRNs.
+  const { data: inspectionsData } = useListInspections({ pageSize: 1000 });
+  const inspectionForGrn = useMemo(
+    () => (inspectionsData?.items ?? []).find((i: any) => i.grn_id === grnId),
+    [inspectionsData, grnId]
+  );
+  const { data: inspectionDetail } = useGetInspection(inspectionForGrn?.id ?? "", {
+    query: { enabled: !!inspectionForGrn?.id },
+  } as any);
+  const inspectionByLineId = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const l of (inspectionDetail?.lines ?? []) as any[]) map.set(l.grn_line_id, l);
+    return map;
+  }, [inspectionDetail]);
 
   const handlePost = async () => {
     try {
@@ -155,8 +177,10 @@ export default function GrnDetailPage() {
                 <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
                   <th className="px-4 py-3 font-semibold">#</th>
                   <th className="px-4 py-3 font-semibold">Material</th>
-                  <th className="px-4 py-3 font-semibold text-right">Quantity</th>
+                  <th className="px-4 py-3 font-semibold text-right">Received</th>
                   <th className="px-4 py-3 font-semibold">UOM</th>
+                  <th className="px-4 py-3 font-semibold text-right">Accepted</th>
+                  <th className="px-4 py-3 font-semibold text-right">Rejected</th>
                   <th className="px-4 py-3 font-semibold">Inspection Status</th>
                 </tr>
               </thead>
@@ -164,6 +188,7 @@ export default function GrnDetailPage() {
                 {grn.lines.map((line) => {
                   const mat = materialById.get(line.material_id);
                   const insp = line.inspection_status;
+                  const inspLine = inspectionByLineId.get(line.id);
                   return (
                     <tr key={line.id} className="border-b last:border-0">
                       <td className="px-4 py-3 text-muted-foreground">{line.line_number}</td>
@@ -172,6 +197,12 @@ export default function GrnDetailPage() {
                       </td>
                       <td className="px-4 py-3 text-right font-mono">{line.quantity_received}</td>
                       <td className="px-4 py-3">{line.uom}</td>
+                      <td className="px-4 py-3 text-right font-mono text-green-700">
+                        {inspLine ? inspLine.accepted_qty : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-red-600">
+                        {inspLine ? inspLine.rejected_qty : "—"}
+                      </td>
                       <td className="px-4 py-3">
                         {insp ? (
                           <span
