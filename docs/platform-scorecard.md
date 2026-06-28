@@ -95,3 +95,20 @@ _Last reviewed: 2026-06-28 (CW-02, Cell Grading in progress)._
   while adoption rises = a healthy platform (more capability, fewer changes).
 - **Backlog growth is healthy** — ideas are parked for the post-certification roadmap, not
   built during waves.
+
+---
+
+## Future Direction — live Developer → Platform Dashboard (POST-CERTIFICATION; do NOT build now)
+
+After **all** certification waves complete, replace this Markdown scorecard with a live
+**Developer → Platform Dashboard** inside OCS One. **During CW-02→CW-08 this Markdown file
+remains the authoritative record** — the dashboard is deferred and must not be built during
+cert waves (engineering effort stays on manufacturing capability). It should read from
+**structured metadata** rather than manually maintained Markdown wherever practical.
+
+Planned layout, grouped by section:
+
+- **Platform Summary** — Platform · Current Version · Freeze Status · Adoption · Health · Next Version
+- **Adoption** — Modules Using It · Adoption Trend · Remaining Modules
+- **Health** — Open Critical Defects · Open High Defects · Breaking Changes Since Freeze · Certification Status
+- **Engineering** — Last Platform Change · Enhancement Backlog Count · Latest Certification Wave Using It
