@@ -1,0 +1,363 @@
+# Architecture Decision Request – Unified Product Platform
+
+Before continuing CW-02, I want to freeze one important architecture decision because it will affect Manufacturing, Packing, Dispatch, Dealer, Inventory, Reports, Director Dashboard, and all future manufacturing modules.
+
+This is an architecture activity only.
+
+**Do not implement code.**
+
+Review the current architecture first.
+
+---
+
+# Core Principle
+
+Everything leaving the OCS factory becomes a **Product**.
+
+Manufacturing workflows are different.
+
+Product management is unified.
+
+---
+
+# Product Categories (Version 1.0)
+
+There are only three product categories.
+
+| Product Category         | Serial Number Rule                                                                      |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| Battery Pack             | OCS generates the serial number                                                         |
+| Inbuilt Lithium Inverter | OCS generates the serial number if the imported unit has no manufacturer serial number  |
+| Hybrid Inverter          | Techfine manufacturer serial number is reused as the official OCS product serial number |
+
+No additional product categories are to be introduced in Version 1.0.
+
+Future categories (ESS, EV Chargers, BMS, etc.) will be added later through the Product Framework.
+
+---
+
+# Important Business Rules
+
+Hybrid Inverter and Inbuilt Lithium Inverter are completely different products.
+
+## Inbuilt Lithium Inverter
+
+Contains:
+
+* Imported inverter PCB
+* OCS Battery Pack (4S1P or 8S1P)
+* BMS
+
+The battery is permanently part of the product.
+
+Manufacturing genealogy includes the battery.
+
+OCS owns the product serial number.
+
+---
+
+## Hybrid Inverter
+
+Techfine Hybrid Inverter.
+
+Uses the Techfine manufacturer serial number as the official OCS product serial number.
+
+No Battery Pack relationship exists during manufacturing.
+
+Do not attach Battery genealogy.
+
+External batteries belong to future Installation and Service modules.
+
+They are **not** part of Manufacturing Version 1.0.
+
+---
+
+# Manufacturing Scope
+
+Manufacturing Version 1.0 ends at Dealer.
+
+Factory
+
+↓
+
+Warehouse
+
+↓
+
+Packing
+
+↓
+
+Dispatch
+
+↓
+
+Dealer
+
+Customer Installation
+
+Site History
+
+Warranty Installation
+
+Field Service
+
+AMC
+
+Remote Monitoring
+
+are future phases.
+
+Do not design them now.
+
+---
+
+# Product Master
+
+After QC every finished item becomes a Product.
+
+The Product becomes the master identity used by every downstream module.
+
+Suggested fields:
+
+* Product ID
+* Product Category
+* Product Model
+* Brand
+* Manufacturer
+* Manufacturer Serial Number
+* OCS Product Serial Number
+* Manufacturing Workflow
+* QC Status
+* Product Status
+* Current Location
+* Dealer
+
+---
+
+# Product Status Lifecycle
+
+Every Product shall follow a common lifecycle.
+
+Manufacturing
+
+↓
+
+QC Passed
+
+↓
+
+Ready for Packing
+
+↓
+
+Packed
+
+↓
+
+Dispatched
+
+↓
+
+Delivered to Dealer
+
+Future lifecycle states:
+
+* Installed
+* In Service
+* Returned
+* Scrapped
+
+Do not implement future states now.
+
+---
+
+# Manufacturing Workflows
+
+## BATTERY
+
+Cell Receiving
+
+↓
+
+Cell Grading
+
+↓
+
+Cell Matching
+
+↓
+
+Assembly
+
+↓
+
+Testing
+
+↓
+
+QC
+
+↓
+
+Product
+
+---
+
+## INBUILT_LITHIUM
+
+PCB Receiving
+
+↓
+
+Battery Installation
+
+↓
+
+Assembly
+
+↓
+
+Testing
+
+↓
+
+QC
+
+↓
+
+Product
+
+---
+
+## HYBRID
+
+Incoming Inspection
+
+↓
+
+Functional Testing
+
+↓
+
+QC
+
+↓
+
+Product
+
+---
+
+# Product Genealogy Rule
+
+Every Product shall maintain complete manufacturing genealogy.
+
+## Battery Pack
+
+Genealogy includes:
+
+* Cell Lots
+* Cell Grades
+* Matching Group
+* Assembly
+* Testing
+* QC
+
+---
+
+## Inbuilt Lithium Inverter
+
+Genealogy includes:
+
+* Imported PCB
+* OCS Battery Pack
+* BMS
+* Testing
+* QC
+
+---
+
+## Hybrid Inverter
+
+Genealogy includes:
+
+* Techfine Serial Number
+* Incoming Inspection
+* Functional Testing
+* QC
+
+No Battery genealogy exists.
+
+---
+
+# Workflow Master
+
+Manufacturing Workflow shall be configurable.
+
+Current workflow codes:
+
+* BATTERY
+* INBUILT_LITHIUM
+* HYBRID
+
+Future workflow codes (do not implement):
+
+* ESS
+* EV_AC_CHARGER
+* EV_DC_CHARGER
+* BMS
+
+---
+
+# Downstream Rule
+
+After Product creation every downstream module shall work with **Product**, not Battery Pack or Inverter.
+
+This includes:
+
+* Packing
+* Dispatch
+* Dealer
+* Inventory
+* Reports
+* Director Dashboard
+
+Future modules shall also use Product.
+
+---
+
+# Architecture Constraints
+
+Do not break existing certified modules.
+
+Maintain backward compatibility wherever practical.
+
+Reuse existing ODS, ECF, Security Standards, Certification Framework, and Audit Framework.
+
+No implementation during this review.
+
+---
+
+# Deliverables
+
+Do not implement code.
+
+Instead produce:
+
+1. Architecture Impact Report
+2. Current vs Proposed Architecture Diagram
+3. Database Impact Analysis
+4. API Impact Analysis
+5. Manufacturing Workflow Impact
+6. Product Master Design Recommendation
+7. Migration Strategy with minimal refactoring
+8. Risk Assessment
+9. Recommendation
+
+At the end of the report clearly state one of the following:
+
+* APPROVED FOR IMPLEMENTATION
+* APPROVED WITH CHANGES
+* NOT RECOMMENDED
+
+No implementation shall begin until the architecture review is approved.

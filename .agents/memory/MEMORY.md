@@ -19,3 +19,4 @@
 - [Performance regression framework](perf-regression-framework.md) — gate regressions behind a min sample count (cold-start noise), never fake N/A figures, baseline≠stress dataset, never silently move a baseline.
 - [Auth login redirect race](auth-redirect-race.md) — seed auth cache via setQueryData in login onSuccess; invalidateQueries races a synchronous redirect and bounces back to /login.
 - [Engineering Correction Framework (ECF)](ecf-framework.md) — one generic immutable engineering_corrections ledger across modules; module table = current state; lib stays module-agnostic; fail-closed authz.
+- [Unified Product Platform review](unified-product-platform.md) — model vs unit identity collision (master_products=SKU, products=unit); downstream already keys off production_order_id; workflow-driven stage engine is the big refactor.
