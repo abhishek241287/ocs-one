@@ -7,7 +7,37 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased] — CW-02 Cell Grading (in progress)
 
-### 🟦 MAT-05 — Performance & Stress Certification — EXECUTED, decision PASS WITH NOTES (2026-06-28, CTO sign-off pending)
+### 🟦 MAT-06 — Security & Reliability Certification — EXECUTED, awaiting CTO sign-off (2026-06-28)
+
+Full-batch security & reliability certification of the Cell Grading module across the 14 standard
+security areas. Cell Grading's security is governed by the **frozen platform standards** (SS-01..04,
+ECF immutability); MAT-06 re-runs those suites live, confirms grading endpoints/events are inside each
+source-of-truth matrix, and adds grading-specific probes. **Scorecard 10/10 · 0 Critical/High/Medium ·
+1 Low platform finding.** No production code or configuration was changed — measurement only.
+
+- **Frozen platform suites (live):** SS-04 config **31 pass / 3 warn / 0 fail** (warns documented
+  dev-only); SS-02 authz **235/235** (grading rows correct: grade operator+, correct supervisor+,
+  config-update supervisor+, viewer read-only/anon 401); SS-03 audit **authoritative mode
+  (`CERT_AUDIT_RATELIMIT=1`) 12/12** incl. `cell_grade_corrected` + immutability proven static + runtime.
+- **Grading-specific probes 11/11 PASS:** config empty-body→400; negative-bound grade (capacity/
+  voltage/IR)→400 (DEF-CW02-004 regression); blank `gradedBy`→400; **mass-assignment — injected
+  `grade:"A"`/`status`/`id`/`lotId` ignored, server computed `reject`**; mandatory `correctionReason`
+  blank+missing→400; valid grade + valid correction; ECF genealogy seq1 `original` + seq2 `correction`
+  preserved (immutable original).
+- **Scanners:** dependency audit **0 critical/high/moderate/low**; HoundDog privacy **0**; SAST **1
+  MEDIUM** in `mockup-sandbox` dev canvas tool (off the API/grading surface — same as CW-01).
+- **Teardown:** all `CERTM06-*` throwaway fixtures removed set-based → **0 residual** (baseline restored
+  exactly: 58 cells / 14 lots / 1 ECF / 23 events).
+- **Finding (presented to CTO before any fix — batch methodology): OBS-CW02-M06-001 (Low, platform).**
+  SS-03 *default shape-mode* `ratelimit.exceeded` check selects the single most-recent row and asserts
+  path includes `/auth/login`; prior global-limiter flood residue (MAT-05) leaves global rows newest →
+  **false FAIL** (the cause of the red `audit` workflow). Audit logging is correct & fully wired;
+  authoritative mode passes 12/12. Recommend a small SS-03 selector fix or backlog under the freeze
+  policy — **CTO decision; NO fix applied.**
+- **Gate:** MAT-06 **awaiting CTO sign-off** (decision PASS WITH NOTE). Full record:
+  `certification/CW-02-Cell-Grading/MAT-06.md`.
+
+### ✅ MAT-05 — Performance & Stress Certification — APPROVED & gate CLOSED (2026-06-28)
 
 Full-batch performance & stress certification of the Cell Grading module against a representative
 1,058-cell dataset. **All measured API + stress thresholds met by 28–60× · scorecard 10/10 ·

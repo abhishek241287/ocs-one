@@ -98,6 +98,19 @@ When a monitored metric breaches the 10% rule:
 > figure is not a regression — it is a category error, and the recorded metadata
 > exists to prevent exactly that mistake.
 
+### Deferred roadmap — Performance Baseline v2.0 (post-CW-08)
+
+**CTO ruling 2026-06-28 (CW-02 / MAT-05).** A proposal to additively register the Cell Grading
+routes in `PERFORMANCE_BASELINE_V1` (so `/developer/performance` defends them against regression)
+was **approved in principle but deferred** to preserve the frozen-platform policy.
+
+- **No modification of the frozen Performance Framework during CW-02** (or any active cert wave).
+- **After CW-08**, as part of the post-certification platform enhancement program, **all
+  manufacturing modules** (Cell Grading routes included) will be incorporated into a single
+  reviewed re-measure cut as **Performance Baseline v2.0**.
+- Until then, per-wave performance is certified by direct MAT-05 measurement against the
+  documented thresholds (as done for CW-02), not by the live baseline watcher.
+
 ---
 
 ## Where this lives in the product

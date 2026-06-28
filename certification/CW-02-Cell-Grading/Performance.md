@@ -83,4 +83,6 @@
 
 **0 Critical / High / Medium defects.** All measured API + stress thresholds met by 28–60×.
 
-**Defects filed:** none (1 Low observation deferred) **Signed:** Replit Agent (QA) **Date:** 2026-06-28
+**CTO sign-off (2026-06-28):** **APPROVED — gate CLOSED.** Both notes accepted as deferred: OBS-CW02-003 → **MEB-002** (deferred Low DB-optimization candidate, not implemented during CW-02); baseline extension → **Performance Baseline v2.0** post-CW-08 roadmap (frozen framework unchanged). Next: MAT-06.
+
+**Defects filed:** none (1 Low observation deferred → MEB-002) **Signed:** Replit Agent (QA) **Date:** 2026-06-28
