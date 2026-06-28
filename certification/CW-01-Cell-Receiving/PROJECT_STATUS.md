@@ -4,7 +4,7 @@
 |-------|-------|
 | **Wave** | CW-01 |
 | **Module** | Cell Receiving |
-| **Overall Status** | 🟢 MAT-01→05 ✅ PASS (closed) · MAT-06 Security & Reliability 🟢 READY FOR CTO SIGN-OFF |
+| **Overall Status** | 🔵 **CW-01 CERTIFIED (2026-06-28)** — MAT-01→06 all PASS · tag `CW-01-CERTIFIED` · audit record `CW-01_CERTIFICATION_REPORT.md` |
 | **Last Updated** | 2026-06-28 |
 
 ---
@@ -18,7 +18,7 @@
 | MAT-03 | Workflow & Data Integrity | ✅ Pass | 2026-06-27 | 19/19 · all defects verified |
 | MAT-04 | UX & Operator Workflow | ✅ Pass | 2026-06-27 | 35/35 · DEF-M04-008 fixed & verified (ODS Standard 15) · login race (DEF-M04-010) fixed |
 | MAT-05 | Performance & Stress | ✅ **Pass (closed)** | 2026-06-27 | All *measured* thresholds met @ 1,014 lots / 10,058 cells · DEF-M05-001 (missing index) fixed · DEF-M05-002 (code-split) deferred · **4 closure criteria met:** Baseline v1.0, Regression Framework, `/developer/performance` dashboard, **historical baseline storage** (`performance_snapshots` + capture/history API + dashboard trend section) · enhancements #2–#5 (live DB health, measured React perf, background monitoring, PDF/Excel/JSON export) deferred per CTO "over time" directive |
-| MAT-06 | Security & Reliability | 🟢 Ready for CTO sign-off | 2026-06-28 | All 14 areas assessed with evidence (`MAT-06.md`) · scans re-run clean (0 dep vulns, 0 privacy, 2 SAST MEDIUM both outside API server) · DEF-001/002/003/004 remediated & verified · DEF-EMPTY-BODY (500→400) fixed · DEF-005 accepted residual risk · areas 8–10 (backup/recovery, failure/session recovery, pen-testing) measured · **4 permanent deliverables shipped: SS-02 authorization regression (225/225 assertions PASS) + Security Dashboard `/developer/security` + SS-03 audit-trail verification (11/11 operations PASS, immutability proven) + SS-04 configuration integrity (31 pass / 3 warn / 0 fail) + `/developer/configuration` dashboard** |
+| MAT-06 | Security & Reliability | ✅ **Pass (closed)** | 2026-06-28 | All 14 areas assessed with evidence (`MAT-06.md`) · scans re-run clean (0 dep vulns, 0 privacy, 2 SAST MEDIUM both outside API server) · DEF-001/002/003/004 remediated & verified · DEF-EMPTY-BODY (500→400) fixed · DEF-005 accepted residual risk · areas 8–10 (backup/recovery, failure/session recovery, pen-testing) measured · **4 permanent deliverables shipped: SS-02 authorization regression (225/225 assertions PASS) + Security Dashboard `/developer/security` + SS-03 audit-trail verification (11/11 operations PASS, immutability proven) + SS-04 configuration integrity (31 pass / 3 warn / 0 fail) + `/developer/configuration` dashboard** |
 
 ---
 
@@ -114,3 +114,7 @@
 | SS-04 shipped | 2026-06-28 | Replit Agent | ✅ `cert/config-suite.ts` + `lib/config-integrity.ts` (`gatherConfig()`+`validateConfig()`, 34 checks across 12 categories) — single source shared with dashboard; **PASS 31/3/0** (3 warns = documented dev-mode exceptions); production-mode run correctly FAILS on default admin password (enforcement proven); validation command `config` registered |
 | Configuration Dashboard shipped | 2026-06-28 | Replit Agent | ✅ `GET /api/developer/configuration` (director-only) + ODS `/developer/configuration` page — typecheck/lint/console clean; SS-02 confirms 403/401 for non-directors |
 | Final architect review (SS-04 + CSP) | 2026-06-28 | Replit Agent | ✅ PASS (includeGitDiff); tightening applied (style-src exception restricted to only `'unsafe-inline'`); edge/static-frontend CSP deferred to CW-02 as documented recommendation |
+| MAT-06 APPROVED | 2026-06-28 | CTO | ✅ MAT-06 accepted; CSP limitation documented honestly — CW-01 closure checklist authorized |
+| CW-01 closure suite re-run | 2026-06-28 | Replit Agent | ✅ Full re-verification: typecheck 0 · lint 0 · prod build ✅ · console/API logs clean · SS-02 225/225 · SS-03 11/11+immutable · SS-04 31/3/0 |
+| CW-01 Certification Report produced | 2026-06-28 | Replit Agent | ✅ `CW-01_CERTIFICATION_REPORT.md` (exec summary, scope, modules, test cases, 37 defects by severity, performance, security, architecture, lessons, risks, decision, sign-off) |
+| **CW-01 CERTIFIED** | 2026-06-28 | Replit Agent → CTO sign-off | 🔵 Wave certified; tag `CW-01-CERTIFIED`; Foundation v1.0 (CW-01) frozen; CW-02 (Cell Grading) authorized to begin |

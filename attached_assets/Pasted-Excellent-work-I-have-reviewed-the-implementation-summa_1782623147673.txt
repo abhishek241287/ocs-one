@@ -1,0 +1,99 @@
+Excellent work.
+
+I have reviewed the implementation summary.
+
+The work appears complete, and I appreciate that you documented the CSP limitation honestly instead of claiming full browser CSP enforcement.
+
+That is exactly the engineering discipline we want for OCS One.
+
+## CTO Decision
+
+**MAT-06 is APPROVED.**
+
+However, before CW-01 is permanently frozen, complete one final activity.
+
+### CW-01 Closure Checklist
+
+Execute the following in order:
+
+1. Re-run the complete certification suite:
+
+   * MAT-01
+   * MAT-02
+   * MAT-03
+   * MAT-04
+   * MAT-05
+   * MAT-06
+
+2. Verify:
+
+   * TypeScript = 0 errors
+   * ESLint = 0 warnings
+   * Production build succeeds
+   * Browser console clean
+   * API logs clean
+   * Security suites:
+
+     * SS-02 PASS
+     * SS-03 PASS
+     * SS-04 PASS
+
+3. Produce a single document:
+
+**CW-01_CERTIFICATION_REPORT.md**
+
+Include:
+
+* Executive Summary
+* Scope
+* Modules Certified
+* Total Test Cases
+* Total Defects
+* Critical
+* High
+* Medium
+* Low
+* Deferred
+* Performance Results
+* Security Results
+* Architecture Decisions
+* Lessons Learned
+* Risks Accepted
+* Certification Decision
+* Sign-off section
+
+This becomes the permanent audit record for CW-01.
+
+4. Update:
+
+* PROJECT_STATUS.md
+* Certification History
+* Wave Metrics
+* CHANGELOG.md
+
+5. Tag the project:
+
+`CW-01-CERTIFIED`
+
+6. Remove any temporary certification artefacts such as session_plan.md if still present.
+
+---
+
+### After CW-01 Freeze
+
+The platform foundation is now considered frozen.
+
+From CW-02 onward:
+
+* No more ODS redesign
+* No more platform architecture changes
+* No new certification framework work
+* No governance changes
+
+CW-02 should focus almost entirely on business logic for **Cell Grading**.
+
+Platform improvements are allowed only if a certification defect requires them.
+
+That keeps the certification discipline intact.
+
+Once the CW-01 Certification Report is complete, I will formally declare **OCS One Foundation v1.0 (CW-01)** frozen and authorize Certification Wave 02.

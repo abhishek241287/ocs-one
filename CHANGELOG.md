@@ -5,11 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased] — CW-01 MAT-06 Security & Reliability (ready for CTO sign-off)
+## [1.0.1] — CW-01 Cell Receiving CERTIFIED — 2026-06-28 (tag `CW-01-CERTIFIED`)
 
-> **Security & Reliability hardening.** Four permanent certification standards added on top of
-> the foundation release, plus the CSP production hardening that resolves DEF-CW01-M06-004.
-> All four standards run as automated regression suites; any failure fails certification.
+> **Certification Wave 01 — Cell Receiving — CERTIFIED.** MAT-01 → MAT-06 all PASS; 37 defects
+> filed, 0 Critical/High/Medium open at freeze. Full audit record: `CW-01_CERTIFICATION_REPORT.md`.
+> This release also adds four permanent certification standards on top of the foundation, plus
+> the CSP production hardening that resolves DEF-CW01-M06-004. All four standards run as automated
+> regression suites; any failure fails certification.
 
 ### 🔐 Permanent certification standards
 

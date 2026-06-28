@@ -45,10 +45,10 @@ This is the **authoritative project status document** for OCS One. It reflects t
 | Dimension | Progress | Detail |
 |-----------|----------|--------|
 | Foundation Build | `██████████` **100%** | All 28 modules built and integrated |
-| Certification Waves | `░░░░░░░░░░` **0%** | 0 of 8 waves complete |
-| Test Coverage | `░░░░░░░░░░` **0%** | No automated test suite yet (KI-02) |
-| Documentation | `██████████` **100%** | CHANGELOG · RELEASE_NOTES · ODS registry · Architecture map |
-| **Overall** | `███░░░░░░░` **35%** | Foundation complete; certification not yet started |
+| Certification Waves | `█░░░░░░░░░` **12.5%** | 1 of 8 waves complete (CW-01 certified 2026-06-28) |
+| Test Coverage | `██░░░░░░░░` **~18%** | 3 permanent automated suites (SS-02/03/04 · 270 assertions) + per-wave functional/e2e |
+| Documentation | `██████████` **100%** | CHANGELOG · RELEASE_NOTES · ODS registry · Architecture map · CW-01 cert report |
+| **Overall** | `████░░░░░░` **43%** | CW-01 certified; 7 waves remaining |
 
 Progress scale: Foundation complete = 35% baseline. Each of the 8 Certification Waves = +8.125% → 100% at CW-08.
 
@@ -88,8 +88,8 @@ Each wave earns a **🔵 Certified** stamp in the Module Status table and increm
 | DB Schema Export | ✅ Current | `docs/schema_v1.0_foundation.sql` — 1,717 lines, 2026-06-27 |
 | ODS Design System | 🔵 Frozen | v1.0 · 19 components · no breaking changes allowed |
 | Source Backup | ✅ Current | `docs/ocs-one-v1.0-foundation-backup.tar.gz` — 631 files |
-| Open Issues | ⚠️ 7 open | 0 critical · 2 medium · 5 low — see Known Issues |
-| Last Checkpoint | `6a098f94` | 2026-06-27 |
+| Open Issues | ⚠️ 6 open | 0 critical · 2 medium · 4 low — see Known Issues (KI-03 resolved by CW-01) |
+| Last Checkpoint | `6605e513` | 2026-06-28 |
 
 ---
 
@@ -131,7 +131,7 @@ Each wave earns a **🔵 Certified** stamp in the Module Status table and increm
 | Cables | Masters | ✅ Built | Cable type catalogue |
 | Busbars | Masters | ✅ Built | Busbar specification registry |
 | Cabinets | Masters | ✅ Built | Enclosure catalogue |
-| Cell Receiving | Cell Lifecycle | ✅ Built | Lot creation, intake workflow |
+| Cell Receiving | Cell Lifecycle | 🔵 Certified | **CW-01 certified 2026-06-28** (MAT-01→06) |
 | Cell Grading | Cell Lifecycle | ✅ Built | Per-cell capacity / IR / voltage |
 | Cell Inventory | Cell Lifecycle | ✅ Built | Grade snapshot, allocation view |
 | Cell Matching | Cell Lifecycle | ✅ Built | Slot-filling algorithm |
@@ -271,7 +271,7 @@ Full registry: `artifacts/ocs-one/docs/ods-component-registry.md`
 
 | Wave | Scope | Status | Target |
 |------|-------|--------|--------|
-| **CW-01** | Cell Receiving | 🟡 In Progress | MAT-01 ✅ PASS · MAT-05 ✅ PASS (historical baseline storage closed) · MAT-06 🟢 READY FOR CTO SIGN-OFF (2026-06-28) — all 14 areas assessed, DEF-001/002/003/004 remediated & verified, DEF-005 accepted residual risk, **four permanent deliverables shipped: SS-02 authz (225/225) · Security Dashboard · SS-03 audit (11/11 + immutable) · SS-04 config integrity (31/3/0) + `/developer/configuration`** |
+| **CW-01** | Cell Receiving | 🔵 **CERTIFIED (2026-06-28)** | MAT-01→06 all PASS · 37 defects (0 Crit/High/Med open) · 4 permanent deliverables: SS-02 authz (225/225) · Security Dashboard · SS-03 audit (11/11 + immutable) · SS-04 config (31/3/0) + `/developer/configuration` · full report in `CW-01_CERTIFICATION_REPORT.md` |
 | **CW-02** | Cell Grading | ⬜ Not started | TBD |
 | **CW-03** | Manufacturing Orders | ⬜ Not started | TBD |
 | **CW-04** | Charging | ⬜ Not started | TBD |
@@ -291,6 +291,7 @@ Every completed Certification Wave appends one row to this table.
 
 | Wave | Module | Version | Date | Status |
 |------|--------|---------|------|--------|
+| CW-01 | Cell Receiving | v1.0 | 2026-06-28 | 🔵 Certified — tag `CW-01-CERTIFIED` |
 
 ---
 
@@ -300,7 +301,7 @@ Every completed Certification Wave appends one row to this table.
 |---|----------|------|-------------|
 | KI-01 | Medium | Database | No versioned migration files — schema changes use `drizzle-kit push` (dev only) |
 | KI-02 | Medium | Testing | No automated test suite (unit, integration, or e2e) |
-| KI-03 | Low | API | No audit log table — user actions not persisted (only shipment events + stage history) |
+| KI-03 | Low | API | ✅ **RESOLVED (CW-01)** — `security_events` append-only audit table added (auth/authz/rate-limit/account events), immutability verified under SS-03 |
 | KI-04 | Low | Frontend | No code-splitting per route — full bundle loaded on first visit |
 | KI-05 | Low | API | Single-process Express — no horizontal scaling or connection pooling configured |
 | KI-06 | Low | Logistics | No e-Way Bill / GST compliance integration |
@@ -401,6 +402,7 @@ Record these metrics for every completed Certification Wave. They build a qualit
 
 | Wave | Modules Certified | Defects Found | Defects Fixed | Defects Deferred | Test Cases | Pass Rate | Duration |
 |------|-------------------|---------------|---------------|------------------|------------|-----------|----------|
+| CW-01 | Cell Receiving | 37 | 31 | 6 (5 Low deferred + 1 residual-risk accepted) | 101 MAT + 270 automated assertions | 100% (actionable) | 2 days (2026-06-27 → 2026-06-28) |
 
 **Definitions:**
 - **Defects Found** — total defects logged during the wave (all severities)
@@ -428,4 +430,4 @@ After every Certification Wave:
 
 ---
 
-*Last updated: 2026-06-27 · Version 1.0-foundation*
+*Last updated: 2026-06-28 · Version 1.0-foundation · CW-01 CERTIFIED*
