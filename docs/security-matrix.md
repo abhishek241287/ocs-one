@@ -44,6 +44,25 @@ append-only stores (`security_events` + `cell_lot_events`). **Any audit mismatch
 immutability violation fails certification.** Current: ✅ 11/11 operations recorded
 correctly; history immutable.
 
+## Security Standard SS-04 (permanent automated test)
+
+Production configuration integrity is verified by a **permanent regression test**.
+`pnpm --filter @workspace/api-server run test:config` (validation command `config`) gathers
+every production-affecting configuration value (security **and** manufacturing) and validates
+each against an explicit rule — required value present, within range, no unsafe default, no
+duplicates, no internal conflicts. **A FAIL means configuration drift, treated as a production
+defect** (exits non-zero); a **WARN** is permitted only for a documented development-mode
+exception. The snapshot + validators live in code at
+`artifacts/api-server/src/lib/config-integrity.ts` (`gatherConfig()` + `validateConfig()`) —
+the single source of truth shared by both this suite and the director-only
+`GET /api/developer/configuration` dashboard, so they cannot drift. Coverage spans JWT/session,
+cookie, CORS, CSP, trust-proxy, rate limits, environment variables, manufacturing stage
+sequence, feature flags, battery-grading thresholds, charging thresholds, and version
+consistency. Notably the CSP rule fails on any production `script-src 'unsafe-inline'`, and the
+admin-credential rule is value-aware (fails even if `ADMIN_PASSWORD` is set to the known seed
+default). **Any configuration drift fails certification.** Current: ✅ 31 pass · 3 warn · 0 fail
+(34 checks); all warnings are documented dev-mode exceptions.
+
 ### RBAC model (CTO-approved — DEF-M06-001)
 
 - **Director** — full access to every module.
@@ -142,6 +161,7 @@ unless a minimum role is stated.
 | `/api/reports/*` | GET | ✅ | **director, supervisor** | global | no | ✅ |
 | `/api/developer/*` (incl. performance snapshots) | GET/POST | ✅ | **director** | global | no | ✅ |
 | `/api/developer/security` (security dashboard) | GET | ✅ | **director** | global | no | ✅ (SS-02 verified) |
+| `/api/developer/configuration` (config-integrity dashboard) | GET | ✅ | **director** | global | no | ✅ (SS-02 verified; SS-04 source) |
 
 > **Reports interpretation:** reporting is a management capability (CTO matrix lists
 > Reports under supervisor; operators excluded). It is intentionally restricted to
@@ -157,7 +177,8 @@ unless a minimum role is stated.
 - ✅ **DEF-M06-EMPTY-BODY (LOW) — FIXED 2026-06-28.** `PUT /api/cells/config` with an
   empty body returned 500 (all-optional schema passed, empty SQL SET clause threw); now
   returns 400 per SS-01.
-- **DEF-M06-004 (LOW)** — production CSP allows `unsafe-inline` (dev-gated; accepted
-  residual risk pending nonce/hash for prod build).
+- ✅ **DEF-M06-004 (LOW) — RESOLVED 2026-06-28.** Production `script-src` no longer allows
+  `'unsafe-inline'` (env-gated in `lib/security-config.ts`); enforced by SS-04. `style-src`
+  keeps `'unsafe-inline'` as a documented temporary exception pending a nonce/hash migration.
 - **DEF-M06-005 (LOW)** — stateless JWT has no server-side revocation list (8 h window
   accepted residual risk).

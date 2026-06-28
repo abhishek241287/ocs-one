@@ -10,7 +10,7 @@
 | **Repository** | `ocs-oorja/ocs-one` |
 | **Current Branch** | `main` |
 | **Release Tag** | `v1.0-foundation` |
-| **Last Updated** | 2026-06-27 |
+| **Last Updated** | 2026-06-28 |
 
 ---
 
@@ -81,7 +81,7 @@ Each wave earns a **🔵 Certified** stamp in the Module Status table and increm
 | TypeScript | ✅ Clean | 0 errors across all workspace packages |
 | ESLint | ✅ Clean | 0 warnings, flat config, strict rules |
 | Build | ✅ Clean | esbuild (API) + Vite (frontend) both passing |
-| Automated Tests | ⚠️ None | No test suite — first deliverable of CW-01 |
+| Automated Tests | ✅ 3 cert suites | Permanent regression suites: SS-02 `authz` (225/225) · SS-03 `audit` (11/11 + immutable) · SS-04 `config` (31 pass / 3 warn / 0 fail) |
 | Security | ✅ Enforced | JWT httpOnly · Helmet · rate limiting · Zod validation |
 | API Contract | ✅ Enforced | OpenAPI spec → Orval codegen (hooks + Zod schemas) |
 | Auth Coverage | ✅ Complete | All 76 protected endpoints behind `requireAuth` |
@@ -271,7 +271,7 @@ Full registry: `artifacts/ocs-one/docs/ods-component-registry.md`
 
 | Wave | Scope | Status | Target |
 |------|-------|--------|--------|
-| **CW-01** | Cell Receiving | 🟡 In Progress | MAT-01 ✅ PASS · MAT-05 ✅ PASS (historical baseline storage closed) · MAT-06 🟡 in progress — DEF-001 (HIGH RBAC) & DEF-002 (MED registration) REMEDIATED & VERIFIED 2026-06-27, areas 8–10 + 3 LOW open · MAT-02 ❌ FAIL (3 High defects open) |
+| **CW-01** | Cell Receiving | 🟡 In Progress | MAT-01 ✅ PASS · MAT-05 ✅ PASS (historical baseline storage closed) · MAT-06 🟢 READY FOR CTO SIGN-OFF (2026-06-28) — all 14 areas assessed, DEF-001/002/003/004 remediated & verified, DEF-005 accepted residual risk, **four permanent deliverables shipped: SS-02 authz (225/225) · Security Dashboard · SS-03 audit (11/11 + immutable) · SS-04 config integrity (31/3/0) + `/developer/configuration`** |
 | **CW-02** | Cell Grading | ⬜ Not started | TBD |
 | **CW-03** | Manufacturing Orders | ⬜ Not started | TBD |
 | **CW-04** | Charging | ⬜ Not started | TBD |

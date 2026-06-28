@@ -7,6 +7,8 @@
 - [Lucide icon naming v0.511+](lucide-icon-names.md) — PlayCircle does not exist; correct name is CirclePlay in lucide-react ≥0.5.
 - [JWT httpOnly cookie auth](jwt-cookie-auth.md) — cookie `ocs_token`, signed with SESSION_SECRET; trust proxy required; public routes: /api/healthz and /api/auth/* only. Also: requireAuth ≠ authorization — every write route needs its own requireRole (viewer passes requireAuth).
 - [ODS 2.0 component registry](ods-component-registry.md) — all ODS components and tokens; do not add new UI patterns outside ODS.
+- [Cert single-source pattern (SS-04)](config-integrity-cert-pattern.md) — every cert standard = one lib source driving BOTH suite + dashboard; FAIL=drift (exit 1), WARN=documented dev-only exception.
+- [CSP static-frontend caveat](csp-static-frontend-caveat.md) — API helmet CSP governs API JSON only, NOT the static SPA HTML; script-src env-gated, style-src 'unsafe-inline' documented exception.
 - [Drizzle wraps PG errors](drizzle-pg-error-wrapping.md) — PG error code 23505 lives on `err.cause.code`, not `err.code`; check both in Express error handlers.
 - [SS-03 audit verification](audit-trail-verification.md) — two append-only stores (security_events + cell_lot_events) with different columns mapped to logical fields; immutability proven static + runtime.
 - [Date presence check gotcha](date-presence-check.md) — a JS Date is typeof "object" with 0 enumerable keys; special-case `instanceof Date` before the object branch in presence/empty helpers.

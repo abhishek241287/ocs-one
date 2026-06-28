@@ -1,5 +1,4 @@
 import {
-  SlidersHorizontal,
   Server,
   KeyRound,
   Cookie,

@@ -4,9 +4,20 @@
 // dashboard introspects. The dashboard reads from here rather than re-describing
 // configuration, so what is displayed is provably what is enforced.
 
+const CSP_IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+// CSP applied to API-server responses by helmet (defense-in-depth; the static
+// frontend is served separately).
+//   script-src: 'unsafe-inline' is required ONLY by the Vite dev HMR client, so
+//   it is dropped in production. SS-04 FAILS if it ever appears in production
+//   (configuration drift = production defect).
+//   style-src: 'unsafe-inline' is a DOCUMENTED TEMPORARY EXCEPTION — the current
+//   UI stack (Radix UI / shadcn / Recharts) injects inline `style=` attributes at
+//   runtime, which style-src governs, so removing it breaks rendering. Tracked
+//   for future nonce/hash migration; SS-04 treats it as an accepted exception.
 export const CSP_DIRECTIVES: Record<string, string[]> = {
   defaultSrc: ["'self'"],
-  scriptSrc: ["'self'", "'unsafe-inline'"], // Vite dev needs inline scripts
+  scriptSrc: CSP_IS_PRODUCTION ? ["'self'"] : ["'self'", "'unsafe-inline'"],
   styleSrc: ["'self'", "'unsafe-inline'"],
   imgSrc: ["'self'", "data:", "https:"],
   connectSrc: ["'self'"],

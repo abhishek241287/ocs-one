@@ -30,7 +30,6 @@ import {
 import { DEFAULT_ADMIN_PASSWORD } from "./seed";
 import { AUTHZ_MATRIX, PRINCIPALS } from "./authz-matrix";
 import {
-  BALANCING_THRESHOLDS,
   EXPECTED_STAGE_SEQUENCE,
   describeManufacturingConfig,
 } from "./manufacturing-config";
@@ -432,17 +431,64 @@ export function validateConfig(snap: ConfigSnapshot): ConfigValidation {
     snap.csp.enabled ? "enabled" : "disabled",
     snap.csp.enabled ? "Content-Security-Policy is enforced." : "CSP is not enforced.",
   );
+  // script-src must NOT permit inline scripts in production (drift = defect).
+  // In dev it carries 'unsafe-inline' for the Vite HMR client — a documented
+  // development-mode exception, so it WARNs rather than fails.
+  const scriptDir = snap.csp.directives.find((d) => d.directive === "scriptSrc");
+  const scriptUnsafe = scriptDir?.values.some((v) => v.includes("unsafe")) ?? false;
   add(
-    "csp.no_unsafe",
+    "csp.script_no_unsafe_inline",
     "Content-Security-Policy",
-    "No weakened directives",
+    "script-src free of 'unsafe-inline'",
     "unsafe-default",
-    snap.csp.weakened.length === 0 ? "pass" : "warn",
+    !scriptUnsafe ? "pass" : isProd ? "fail" : "warn",
+    isProd ? "no 'unsafe-*'" : "no 'unsafe-*' in production",
+    scriptUnsafe ? "'unsafe-inline' present" : "clean",
+    !scriptUnsafe
+      ? "script-src does not permit inline scripts."
+      : isProd
+        ? "script-src permits 'unsafe-inline' in production — inline script execution is allowed."
+        : "script-src permits 'unsafe-inline' (dev-mode exception — required by the Vite HMR client).",
+  );
+  // style-src 'unsafe-inline' is an explicitly accepted, documented temporary
+  // exception (Radix/shadcn/Recharts inject inline styles). ONLY 'unsafe-inline'
+  // is permitted — any broader weakened value (e.g. 'unsafe-eval') is undocumented
+  // exception drift and FAILS. When only the documented value is present it is
+  // PASS (not WARN) so production carries no undocumented warnings.
+  const styleDir = snap.csp.directives.find((d) => d.directive === "styleSrc");
+  const styleUnsafeValues = (styleDir?.values ?? []).filter((v) => v.includes("unsafe"));
+  const styleOnlyDocumented = styleUnsafeValues.every((v) => v === "'unsafe-inline'");
+  const styleUndocumented = styleUnsafeValues.filter((v) => v !== "'unsafe-inline'");
+  add(
+    "csp.style_documented_exception",
+    "Content-Security-Policy",
+    "style-src weakened only by the documented 'unsafe-inline'",
+    "unsafe-default",
+    styleOnlyDocumented ? "pass" : "fail",
+    "only 'unsafe-inline'",
+    styleUnsafeValues.length ? styleUnsafeValues.join(", ") : "clean",
+    !styleOnlyDocumented
+      ? `style-src carries an undocumented weakened value: ${styleUndocumented.join(", ")}.`
+      : styleUnsafeValues.length
+        ? "style-src permits 'unsafe-inline' — documented temporary exception (UI stack injects inline styles); tracked for nonce/hash migration."
+        : "style-src does not permit inline styles.",
+  );
+  // Any OTHER directive carrying an 'unsafe' value is unexpected → fail.
+  const otherUnsafe = snap.csp.directives
+    .filter((d) => d.directive !== "scriptSrc" && d.directive !== "styleSrc")
+    .filter((d) => d.values.some((v) => v.includes("unsafe")))
+    .map((d) => d.directive);
+  add(
+    "csp.no_other_unsafe",
+    "Content-Security-Policy",
+    "No unexpected weakened directives",
+    "unsafe-default",
+    otherUnsafe.length === 0 ? "pass" : "fail",
     "no 'unsafe-*'",
-    snap.csp.weakened.join(", ") || "none",
-    snap.csp.weakened.length === 0
-      ? "No directives carry 'unsafe' values."
-      : `Weakened directive(s): ${snap.csp.weakened.join(", ")} (required for Vite dev inline).`,
+    otherUnsafe.length === 0 ? "clean" : otherUnsafe.join(", "),
+    otherUnsafe.length === 0
+      ? "No directives beyond the documented style-src exception carry 'unsafe' values."
+      : `Unexpected weakened directive(s): ${otherUnsafe.join(", ")}.`,
   );
 
   // ── RBAC matrix integrity ───────────────────────────────────────────────────
