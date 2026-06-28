@@ -12,6 +12,9 @@ export const ROUTES = {
   cellGrading: "/cell-grading",
   qualityControl: "/qc",
 
+  // Products
+  products: "/products",
+
   // Traceability
   qrTraceability: "/qr",
   dispatch: "/dispatch",

@@ -4532,3 +4532,503 @@ export const GetDirectorDashboardResponse = zod.object({
 })
 
 
+/**
+ * @summary List serialized products (units)
+ */
+export const listProductsQueryPageDefault = 1;
+export const listProductsQueryPageSizeDefault = 25;
+
+export const ListProductsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "product_status": zod.enum(['manufacturing', 'qc_passed', 'ready_for_packing', 'packed', 'dispatched', 'delivered_to_dealer']).optional(),
+  "category_id": zod.coerce.string().uuid().optional(),
+  "page": zod.coerce.number().default(listProductsQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listProductsQueryPageSizeDefault)
+})
+
+export const ListProductsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "category_id": zod.string().uuid(),
+  "model_id": zod.string().uuid(),
+  "workflow_code": zod.string(),
+  "source_production_order_id": zod.string().uuid().nullish(),
+  "official_product_serial": zod.string(),
+  "serial_source": zod.enum(['OCS', 'MANUFACTURER']),
+  "qc_status": zod.string().nullish(),
+  "product_status": zod.enum(['manufacturing', 'qc_passed', 'ready_for_packing', 'packed', 'dispatched', 'delivered_to_dealer']),
+  "current_location": zod.string().nullish(),
+  "dealer_id": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "category_name": zod.string().nullish(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "dealer_name": zod.string().nullish()
+})),
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+})
+
+
+/**
+ * @summary Get a single product
+ */
+export const GetProductParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetProductResponse = zod.object({
+  "id": zod.string().uuid(),
+  "category_id": zod.string().uuid(),
+  "model_id": zod.string().uuid(),
+  "workflow_code": zod.string(),
+  "source_production_order_id": zod.string().uuid().nullish(),
+  "official_product_serial": zod.string(),
+  "serial_source": zod.enum(['OCS', 'MANUFACTURER']),
+  "qc_status": zod.string().nullish(),
+  "product_status": zod.enum(['manufacturing', 'qc_passed', 'ready_for_packing', 'packed', 'dispatched', 'delivered_to_dealer']),
+  "current_location": zod.string().nullish(),
+  "dealer_id": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "category_name": zod.string().nullish(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "dealer_name": zod.string().nullish()
+})
+
+
+/**
+ * @summary Get a product's component lineage
+ */
+export const GetProductGenealogyParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetProductGenealogyResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "product_id": zod.string().uuid(),
+  "component_type": zod.string(),
+  "component_id": zod.string().uuid().nullish(),
+  "component_name": zod.string(),
+  "quantity": zod.number(),
+  "serial_number": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Transition a product's lifecycle status (guarded)
+ */
+export const UpdateProductStatusParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateProductStatusBody = zod.object({
+  "status": zod.enum(['manufacturing', 'qc_passed', 'ready_for_packing', 'packed', 'dispatched', 'delivered_to_dealer']),
+  "reason": zod.string().optional()
+})
+
+export const UpdateProductStatusResponse = zod.object({
+  "id": zod.string().uuid(),
+  "category_id": zod.string().uuid(),
+  "model_id": zod.string().uuid(),
+  "workflow_code": zod.string(),
+  "source_production_order_id": zod.string().uuid().nullish(),
+  "official_product_serial": zod.string(),
+  "serial_source": zod.enum(['OCS', 'MANUFACTURER']),
+  "qc_status": zod.string().nullish(),
+  "product_status": zod.enum(['manufacturing', 'qc_passed', 'ready_for_packing', 'packed', 'dispatched', 'delivered_to_dealer']),
+  "current_location": zod.string().nullish(),
+  "dealer_id": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "category_name": zod.string().nullish(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "dealer_name": zod.string().nullish()
+})
+
+
+export const listProductCategoriesQueryPageDefault = 1;
+export const listProductCategoriesQueryPageSizeDefault = 25;
+
+export const ListProductCategoriesQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.enum(['active', 'inactive']).optional(),
+  "page": zod.coerce.number().default(listProductCategoriesQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listProductCategoriesQueryPageSizeDefault)
+})
+
+export const ListProductCategoriesResponse = zod.object({
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+}).and(zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}))
+}))
+
+
+export const CreateProductCategoryBody = zod.object({
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional()
+})
+
+export const CreateProductCategoryResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const GetProductCategoryParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetProductCategoryResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const UpdateProductCategoryParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateProductCategoryBody = zod.object({
+  "code": zod.string().optional(),
+  "name": zod.string().optional(),
+  "description": zod.string().nullish(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional()
+})
+
+export const UpdateProductCategoryResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const ToggleProductCategoryStatusParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ToggleProductCategoryStatusBody = zod.object({
+  "status": zod.enum(['active', 'inactive'])
+})
+
+export const ToggleProductCategoryStatusResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const listProductWorkflowsQueryPageDefault = 1;
+export const listProductWorkflowsQueryPageSizeDefault = 25;
+
+export const ListProductWorkflowsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.enum(['active', 'inactive']).optional(),
+  "page": zod.coerce.number().default(listProductWorkflowsQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listProductWorkflowsQueryPageSizeDefault)
+})
+
+export const ListProductWorkflowsResponse = zod.object({
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+}).and(zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "stage_sequence": zod.array(zod.string()).optional()
+})))
+}))
+
+
+export const CreateProductWorkflowBody = zod.object({
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional()
+}).and(zod.object({
+  "stage_sequence": zod.array(zod.string()).optional()
+}))
+
+export const CreateProductWorkflowResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "stage_sequence": zod.array(zod.string()).optional()
+}))
+
+
+export const GetProductWorkflowParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetProductWorkflowResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "stage_sequence": zod.array(zod.string()).optional()
+}))
+
+
+export const UpdateProductWorkflowParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateProductWorkflowBody = zod.object({
+  "code": zod.string().optional(),
+  "name": zod.string().optional(),
+  "description": zod.string().nullish(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional()
+}).and(zod.object({
+  "stage_sequence": zod.array(zod.string()).optional()
+}))
+
+export const UpdateProductWorkflowResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "stage_sequence": zod.array(zod.string()).optional()
+}))
+
+
+export const ToggleProductWorkflowStatusParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ToggleProductWorkflowStatusBody = zod.object({
+  "status": zod.enum(['active', 'inactive'])
+})
+
+export const ToggleProductWorkflowStatusResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "stage_sequence": zod.array(zod.string()).optional()
+}))
+
+

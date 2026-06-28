@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedDatabase } from "./lib/seed";
+import { backfillProducts } from "./lib/product-backfill";
 
 const rawPort = process.env["PORT"];
 
@@ -14,9 +15,13 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-// Seed DB (create sequences, admin user) then start listening
+// Seed DB (create sequences, admin user), backfill Products for already-passed
+// orders (idempotent), then start listening.
 seedDatabase()
-  .catch((err) => logger.error({ err }, "Seed failed — server will still start"))
+  .then(() => backfillProducts())
+  .catch((err) =>
+    logger.error({ err }, "Seed/backfill failed — server will still start"),
+  )
   .finally(() => {
     app.listen(port, (err) => {
       if (err) {

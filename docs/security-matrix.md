@@ -104,6 +104,10 @@ unless a minimum role is stated.
 | `/api/masters/*` | POST | ✅ | **supervisor, director** | global | no | ✅ (DEF-M06-001) |
 | `/api/masters/*/:id` | PATCH | ✅ | **supervisor, director** | global | no | ✅ |
 | `/api/masters/*/:id/status` | PATCH | ✅ | **supervisor, director** | global | no | ✅ |
+| `/api/masters/product-categories*` | GET | ✅ | viewer (read) | global | no | ✅ (CW-03) |
+| `/api/masters/product-categories*` | POST/PATCH | ✅ | **director** | global | no | ✅ (CW-03 — category master is a director-only governance concept) |
+| `/api/masters/product-workflows*` | GET | ✅ | viewer (read) | global | no | ✅ (CW-03) |
+| `/api/masters/product-workflows*` | POST/PATCH | ✅ | **director** | global | no | ✅ (CW-03 — workflow master is a director-only governance concept) |
 
 ### Manufacturing (`/api/manufacturing`)
 
@@ -154,6 +158,23 @@ unless a minimum role is stated.
 | `/dealers*` | GET | ✅ | viewer (read) | global | no | ✅ |
 | `/dealers*` | POST/PATCH/DELETE | ✅ | **supervisor, director** | global | no | ✅ |
 | `/packing-dashboard` | GET | ✅ | viewer (read) | global | no | ✅ |
+
+### Products (`/api/products`) — CW-03 Unified Product Platform
+
+| Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |
+|---|---|---|---|---|---|---|
+| `/api/products` | GET | ✅ | viewer (read) | global | no | ✅ (CW-03) |
+| `/api/products/:id` | GET | ✅ | viewer (read) | global | no | ✅ (CW-03) |
+| `/api/products/:id/genealogy` | GET | ✅ | viewer (read) | global | no | ✅ (CW-03 — lineage copied from order at QC pass) |
+| `/api/products/:id/status` | POST | ✅ | **supervisor, director** | global | **yes** (`product.*` on `product_events`) | ✅ (CW-03 — forward-only lifecycle, FOR UPDATE re-check) |
+
+> **Note (Products):** Products are never created via a public endpoint — a serialized
+> Product is minted only inside the QC-approval transaction at QC PASS (`createProductFromOrder`,
+> idempotent on `source_production_order_id`) and by the idempotent startup backfill. There is no
+> `POST /api/products`. Status transitions are forward-only along the approved lifecycle
+> (`manufacturing → qc_passed → ready_for_packing → packed → dispatched → delivered_to_dealer`),
+> validated inside the transaction under a row lock (TOCTOU-safe). Per DP-3, product creation
+> writes no ECF baseline; `product_events` is the product timeline.
 
 ### Dashboard / Reports / Developer
 

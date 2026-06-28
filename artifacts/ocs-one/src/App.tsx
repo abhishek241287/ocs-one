@@ -16,6 +16,10 @@ import LogisticsAnalyticsPage from "@/features/reports/pages/LogisticsAnalyticsP
 import ExportCenterPage from "@/features/reports/pages/ExportCenterPage";
 import DirectorDashboardPage from "@/pages/DirectorDashboardPage";
 import ProductMasterPage from "@/features/masters/pages/ProductMasterPage";
+import ProductCategoryPage from "@/features/masters/pages/ProductCategoryPage";
+import ProductWorkflowPage from "@/features/masters/pages/ProductWorkflowPage";
+import ProductsListPage from "@/features/products/pages/ProductsListPage";
+import ProductDetailPage from "@/features/products/pages/ProductDetailPage";
 import CellMasterPage from "@/features/masters/pages/CellMasterPage";
 import BmsMasterPage from "@/features/masters/pages/BmsMasterPage";
 import CabinetMasterPage from "@/features/masters/pages/CabinetMasterPage";
@@ -68,8 +72,14 @@ function Router() {
       <Route path="/developer/security" component={SecurityPage} />
       <Route path="/developer/configuration" component={ConfigurationPage} />
 
+      {/* Products */}
+      <Route path="/products" component={ProductsListPage} />
+      <Route path="/products/:id" component={ProductDetailPage} />
+
       {/* Masters */}
       <Route path="/masters/products" component={ProductMasterPage} />
+      <Route path="/masters/product-categories" component={ProductCategoryPage} />
+      <Route path="/masters/product-workflows" component={ProductWorkflowPage} />
       <Route path="/masters/cells" component={CellMasterPage} />
       <Route path="/masters/bms" component={BmsMasterPage} />
       <Route path="/masters/cabinets" component={CabinetMasterPage} />

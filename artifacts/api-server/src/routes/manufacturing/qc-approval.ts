@@ -12,6 +12,7 @@ import { eq, and, count, like } from "drizzle-orm";
 import {
   CreateQcApprovalBody,
 } from "@workspace/api-zod";
+import { createProductFromOrder } from "../../lib/product-creation";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -57,6 +58,10 @@ router.post("/", async (req, res) => {
     .where(eq(mfgProductionOrdersTable.id, id))
     .limit(1);
   if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+
+  let productCreation:
+    | Awaited<ReturnType<typeof createProductFromOrder>>
+    | null = null;
 
   const result = await db.transaction(async (tx) => {
     const [approval] = await tx
@@ -117,6 +122,11 @@ router.post("/", async (req, res) => {
         .update(mfgProductionOrdersTable)
         .set({ status: "completed", currentStage: null })
         .where(eq(mfgProductionOrdersTable.id, id));
+
+      // Unified Product Platform — "No Product before QC PASS": the QC-pass gate
+      // is the single creation point for a serialized Product. Runs in this same
+      // transaction (atomic with the order completion) and is idempotent.
+      productCreation = await createProductFromOrder(tx, id, body.inspectorName);
     }
 
     await tx.insert(mfgBatteryTimelineTable).values({
@@ -134,7 +144,7 @@ router.post("/", async (req, res) => {
     return { ...approval, reworkTicketId };
   });
 
-  res.status(201).json(result);
+  res.status(201).json({ ...result, product: productCreation });
 });
 
 export default router;

@@ -18,6 +18,8 @@ tags:
     description: Manufacturing Execution System operations
   - name: dashboard
     description: Director dashboard operations
+  - name: products
+    description: Serialized Product (unit) operations — Unified Product Platform
 paths:
   /healthz:
     get:
@@ -2328,6 +2330,259 @@ paths:
         "401":
           description: Not authenticated
 
+  # ─── Unified Product Platform — serialized Products ──────────────────────────
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List serialized products (units)
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - name: product_status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ProductStatus"
+        - name: category_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductListResponse" }
+
+  /products/{id}:
+    get:
+      operationId: getProduct
+      tags: [products]
+      summary: Get a single product
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single product
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Product" }
+        "404":
+          description: Product not found
+
+  /products/{id}/genealogy:
+    get:
+      operationId: getProductGenealogy
+      tags: [products]
+      summary: Get a product's component lineage
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Product genealogy records
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductGenealogyResponse" }
+        "404":
+          description: Product not found
+
+  /products/{id}/status:
+    post:
+      operationId: updateProductStatus
+      tags: [products]
+      summary: Transition a product's lifecycle status (guarded)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductStatusUpdate" }
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Product" }
+        "400":
+          description: Invalid status transition
+        "404":
+          description: Product not found
+
+  # ─── Product Category master (A) ─────────────────────────────────────────────
+  /masters/product-categories:
+    get:
+      operationId: listProductCategories
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of product categories
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ProductCategory"
+    post:
+      operationId: createProductCategory
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductCategoryInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductCategory" }
+
+  /masters/product-categories/{id}:
+    get:
+      operationId: getProductCategory
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single product category
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductCategory" }
+    patch:
+      operationId: updateProductCategory
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductCategoryUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductCategory" }
+
+  /masters/product-categories/{id}/status:
+    patch:
+      operationId: toggleProductCategoryStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MasterStatusToggle" }
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductCategory" }
+
+  # ─── Product Workflow master (C) ─────────────────────────────────────────────
+  /masters/product-workflows:
+    get:
+      operationId: listProductWorkflows
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of product workflows
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ProductWorkflow"
+    post:
+      operationId: createProductWorkflow
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductWorkflowInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductWorkflow" }
+
+  /masters/product-workflows/{id}:
+    get:
+      operationId: getProductWorkflow
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single product workflow
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductWorkflow" }
+    patch:
+      operationId: updateProductWorkflow
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductWorkflowUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductWorkflow" }
+
+  /masters/product-workflows/{id}/status:
+    patch:
+      operationId: toggleProductWorkflowStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MasterStatusToggle" }
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductWorkflow" }
+
 components:
   parameters:
     IdParam:
@@ -3807,3 +4062,120 @@ components:
           type: object
           description: Order counts by status
           additionalProperties: true
+
+    # ─── Unified Product Platform schemas ────────────────────────────────────
+    ProductSerialSource:
+      type: string
+      enum: [OCS, MANUFACTURER]
+
+    ProductStatus:
+      type: string
+      enum: [manufacturing, qc_passed, ready_for_packing, packed, dispatched, delivered_to_dealer]
+
+    Product:
+      type: object
+      required:
+        - id
+        - category_id
+        - model_id
+        - workflow_code
+        - official_product_serial
+        - serial_source
+        - product_status
+        - created_at
+        - updated_at
+      properties:
+        id: { type: string, format: uuid }
+        category_id: { type: string, format: uuid }
+        model_id: { type: string, format: uuid }
+        workflow_code: { type: string }
+        source_production_order_id: { type: ["string", "null"], format: uuid }
+        official_product_serial: { type: string }
+        serial_source: { $ref: "#/components/schemas/ProductSerialSource" }
+        qc_status: { type: ["string", "null"] }
+        product_status: { $ref: "#/components/schemas/ProductStatus" }
+        current_location: { type: ["string", "null"] }
+        dealer_id: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        # Enriched (read-only) display fields joined for the UI.
+        category_name: { type: ["string", "null"] }
+        model_code: { type: ["string", "null"] }
+        model_name: { type: ["string", "null"] }
+        dealer_name: { type: ["string", "null"] }
+
+    ProductListResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+        meta: { $ref: "#/components/schemas/MasterListMeta" }
+
+    ProductGenealogyRecord:
+      type: object
+      required: [id, product_id, component_type, component_name, quantity, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        product_id: { type: string, format: uuid }
+        component_type: { type: string }
+        component_id: { type: ["string", "null"], format: uuid }
+        component_name: { type: string }
+        quantity: { type: integer }
+        serial_number: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        created_at: { type: string, format: date-time }
+
+    ProductGenealogyResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ProductGenealogyRecord" }
+
+    ProductStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: "#/components/schemas/ProductStatus" }
+        reason: { type: string }
+
+    # Product Category master (A)
+    ProductCategory:
+      $ref: "#/components/schemas/MasterCommon"
+
+    ProductCategoryInput:
+      $ref: "#/components/schemas/MasterCommonInput"
+
+    ProductCategoryUpdate:
+      $ref: "#/components/schemas/MasterCommonUpdate"
+
+    # Product Workflow master (C)
+    ProductWorkflow:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          properties:
+            stage_sequence:
+              type: array
+              items: { type: string }
+
+    ProductWorkflowInput:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          properties:
+            stage_sequence:
+              type: array
+              items: { type: string }
+
+    ProductWorkflowUpdate:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            stage_sequence:
+              type: array
+              items: { type: string }

@@ -1764,6 +1764,101 @@ export interface DirectorDashboard {
   orderStats: DirectorDashboardOrderStats;
 }
 
+export type ProductSerialSource = typeof ProductSerialSource[keyof typeof ProductSerialSource];
+
+
+export const ProductSerialSource = {
+  OCS: 'OCS',
+  MANUFACTURER: 'MANUFACTURER',
+} as const;
+
+export type ProductStatus = typeof ProductStatus[keyof typeof ProductStatus];
+
+
+export const ProductStatus = {
+  manufacturing: 'manufacturing',
+  qc_passed: 'qc_passed',
+  ready_for_packing: 'ready_for_packing',
+  packed: 'packed',
+  dispatched: 'dispatched',
+  delivered_to_dealer: 'delivered_to_dealer',
+} as const;
+
+export interface Product {
+  id: string;
+  category_id: string;
+  model_id: string;
+  workflow_code: string;
+  /** @nullable */
+  source_production_order_id?: string | null;
+  official_product_serial: string;
+  serial_source: ProductSerialSource;
+  /** @nullable */
+  qc_status?: string | null;
+  product_status: ProductStatus;
+  /** @nullable */
+  current_location?: string | null;
+  /** @nullable */
+  dealer_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  /** @nullable */
+  category_name?: string | null;
+  /** @nullable */
+  model_code?: string | null;
+  /** @nullable */
+  model_name?: string | null;
+  /** @nullable */
+  dealer_name?: string | null;
+}
+
+export interface ProductListResponse {
+  items: Product[];
+  meta: MasterListMeta;
+}
+
+export interface ProductGenealogyRecord {
+  id: string;
+  product_id: string;
+  component_type: string;
+  /** @nullable */
+  component_id?: string | null;
+  component_name: string;
+  quantity: number;
+  /** @nullable */
+  serial_number?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface ProductGenealogyResponse {
+  items: ProductGenealogyRecord[];
+}
+
+export interface ProductStatusUpdate {
+  status: ProductStatus;
+  reason?: string;
+}
+
+export type ProductCategory = MasterCommon;
+
+export type ProductCategoryInput = MasterCommonInput;
+
+export type ProductCategoryUpdate = MasterCommonUpdate;
+
+export type ProductWorkflow = MasterCommon & {
+  stage_sequence?: string[];
+};
+
+export type ProductWorkflowInput = MasterCommonInput & {
+  stage_sequence?: string[];
+};
+
+export type ProductWorkflowUpdate = MasterCommonUpdate & {
+  stage_sequence?: string[];
+};
+
 export type SearchParamParameter = string;
 
 export type StatusParamParameter = typeof StatusParamParameter[keyof typeof StatusParamParameter];
@@ -2128,5 +2223,35 @@ export type AuthLogout200 = {
 
 export type AuthMe200 = {
   user: AuthUser;
+};
+
+export type ListProductsParams = {
+search?: SearchParamParameter;
+product_status?: ProductStatus;
+category_id?: string;
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+};
+
+export type ListProductCategoriesParams = {
+search?: SearchParamParameter;
+status?: StatusParamParameter;
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+};
+
+export type ListProductCategories200 = MasterListResponse & {
+  items?: MasterCommon[];
+};
+
+export type ListProductWorkflowsParams = {
+search?: SearchParamParameter;
+status?: StatusParamParameter;
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+};
+
+export type ListProductWorkflows200 = MasterListResponse & {
+  items?: ProductWorkflow[];
 };
 

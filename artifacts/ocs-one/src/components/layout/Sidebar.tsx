@@ -31,6 +31,8 @@ import {
   Network,
   Activity,
   SlidersHorizontal,
+  Layers,
+  GitBranch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -47,9 +49,17 @@ const navSections: NavSection[] = [
     items: [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
   },
   {
+    title: "Products",
+    items: [
+      { label: "Products", href: "/products", icon: Package },
+    ],
+  },
+  {
     title: "Engineering Masters",
     items: [
       { label: "Product Master", href: "/masters/products", icon: BookOpen },
+      { label: "Product Categories", href: "/masters/product-categories", icon: Layers },
+      { label: "Product Workflows", href: "/masters/product-workflows", icon: GitBranch },
       { label: "Cell Master", href: "/masters/cells", icon: Battery },
       { label: "BMS Master", href: "/masters/bms", icon: Cpu },
       { label: "Cabinet Master", href: "/masters/cabinets", icon: Box },

@@ -88,6 +88,14 @@ a category→workflow mapping (risk R10).
 - **No product-delete route, ever.** `product_genealogy`/`product_events` cascade-delete from
   `products`; `dispatch_items.product_id` is `set null`. Cascades exist only for referentially-safe
   rollback/teardown — a real delete route would wipe append-only event history.
+- **"No Product before QC PASS" is enforced INSIDE `createProductFromOrder`, not just by callers.**
+  The helper itself skips (`order_not_qc_passed`) unless the order is `completed`. The order status
+  enum has NO separate qc state — `completed` IS the post-QC signal: qc-approval sets it on approval
+  *before* calling the helper (same tx), and the sequential stage flow can only complete an order
+  after the QC stage is approved. Don't look for a "qc_passed" order status; it doesn't exist.
+- **Generic over category stays in `classifyOrderProduct` only.** Future Inbuilt-Lithium/Hybrid add
+  cases there (category/workflow/serial_source derivation); `createProductFromOrder` itself never
+  changes. Keep that separation — it's the whole point of the generic creation engine.
 
 ## Consistency with platform freeze
 
