@@ -1,0 +1,142 @@
+# CTO Decision — Revised CW-03 Implementation Plan
+
+After reviewing the implementation plan, I am approving CW-03 with one important change in sequencing.
+
+The Unified Product Platform architecture has already been reviewed, approved, and frozen.
+
+Therefore, it shall **not** be postponed until after Manufacturing certification.
+
+**The Product Platform implementation becomes Phase 0 of CW-03.**
+
+Manufacturing is the first workflow that creates a finished product. Therefore, the Product Platform must exist before Manufacturing certification begins.
+
+This is **implementation of an approved architecture**, not architecture redesign.
+
+---
+
+# Revised CW-03 Roadmap
+
+```
+CW-03
+
+Phase 0
+✓ Implement Product Platform
+(Architecture already frozen)
+
+↓
+
+Phase 1
+Manufacturing Orders
+
+↓
+
+Phase 2
+QC Integration
+(Product created only after QC PASS)
+
+↓
+
+Phase 3
+Manufacturing Certification
+(MAT-01 → MAT-06)
+
+↓
+
+Phase 4
+Freeze CW-03
+```
+
+---
+
+# Phase 0 – Product Platform Foundation
+
+Before Manufacturing Orders implementation/certification begins, implement the frozen Product Platform v1.0 exactly as approved.
+
+Implement only the approved architecture:
+
+* Product Categories
+* Product Workflows
+* Product table
+* Unified Product Serial model
+* Product creation after QC PASS
+* Product genealogy integration
+
+Do **not** introduce additional concepts.
+
+Do **not** redesign the architecture.
+
+Do **not** extend the scope.
+
+Simply implement the frozen Product Platform.
+
+---
+
+# Phase 1 – Manufacturing Orders
+
+Refactor the existing Manufacturing Orders module to consume the Product Platform.
+
+The manufacturing workflow itself remains unchanged.
+
+The only architectural change is that QC PASS creates a Product record using the frozen Product Platform.
+
+Manufacturing Orders shall no longer introduce its own finished-product identity.
+
+---
+
+# Phase 2 – QC Integration
+
+Integrate the QC PASS gate with Product creation.
+
+A Product shall exist only after QC PASS.
+
+No Product shall exist before QC approval.
+
+---
+
+# Phase 3 – Manufacturing Certification
+
+Execute the complete Manufacturing certification cycle:
+
+* MAT-01
+* MAT-02
+* MAT-03
+* MAT-04
+* MAT-05
+* MAT-06
+
+against the Product-based Manufacturing module.
+
+---
+
+# Phase 4 – Freeze CW-03
+
+Freeze the Manufacturing module after successful certification.
+
+This becomes the official baseline for:
+
+* Packing
+* Dispatch
+* Dealer
+* Inventory
+* Reports
+* Director Dashboard
+
+---
+
+# Important Clarification
+
+This work is **not** considered a platform redesign.
+
+The Product Platform architecture has already been reviewed, approved, and frozen.
+
+CW-03 only implements the approved architecture.
+
+This avoids future refactoring of Manufacturing Orders and ensures that Packing, Dispatch, Dealer, Inventory, Reports, and future modules all consume a single Product identity from day one.
+
+---
+
+# First Deliverable
+
+Revise the CW-03 implementation plan to reflect this sequencing.
+
+Do not begin implementation until the revised plan has been reviewed and approved.

@@ -1,237 +1,317 @@
-# CW-03 Implementation Plan — Manufacturing Orders Certification
+# CW-03 Implementation Plan — Manufacturing Orders (Product-Platform-based)
 
 | Field | Value |
 |-------|-------|
 | **Wave** | CW-03 — Manufacturing Orders |
-| **Type** | Certification wave (the module is already **built**; CW-03 **certifies** it) |
+| **Type** | **Implementation + Certification** wave (Product Platform built first, then Manufacturing refactored to consume it, then certified) |
+| **Revision** | **v2 — supersedes v1.** Revised per **CTO Decision — Revised CW-03 Implementation Plan (2026-06-28)** |
 | **Prepared** | 2026-06-28 |
-| **Status** | **Draft for CTO review — NO implementation/certification execution begins until this plan is approved** |
-| **Consumes (unmodified)** | Unified Product Platform architecture v1.0 · ECF v1.0 · Security Standards SS-01…04 · ODS · Certification Framework v1.0 |
+| **Status** | **Draft for CTO review — NO implementation begins until this revised plan is approved** |
+| **Implements (frozen architecture)** | Unified Product Platform v1.0 (incl. Refinement v1.0 four-concept + v1.1 unified serial / QC-gate freeze) |
+| **Consumes (frozen platforms, unmodified)** | ECF v1.0 · Security Standards SS-01…04 · ODS · Certification Framework v1.0 |
 | **Mantra** | Do not assume. Measure. Verify. Document. |
 
-> **Pre-implementation reviews completed** (CTO directive items 1–3): the frozen **Unified Product
-> Platform** architecture (`docs/architecture/unified-product-platform-review.md`), the frozen **ECF**
-> (`docs/engineering-correction-framework.md`), and the **Product Platform** four-concept foundation
-> were reviewed. This plan (item 4) consumes them **without modification**. **No production code and no
-> certified-module change is proposed.** The *only* possible framework-level action is the **SS-03
-> audit-matrix decision** (§5 / §7) — pre-classified as a potential **High / security-defect** path
-> permitted by the freeze exception, with a documented no-framework-change fallback. See the
-> **Assumption Ledger (§11)** for what is true today vs. planned later.
+> **What changed from v1.** v1 recommended certifying the *existing* battery-only module as-is and
+> deferring the Product Platform. **The CTO overruled the sequencing:** because Manufacturing is the
+> first workflow that creates a finished product, the **Product Platform must exist before Manufacturing
+> certification**. The frozen Product Platform implementation therefore becomes **Phase 0 of CW-03**.
+> This is **implementation of an already-approved, frozen architecture — not a redesign and not a scope
+> extension.**
 
 ---
 
-## 1. Executive Summary
+## 1. CTO-Directed Roadmap
 
-The **Manufacturing Orders** module is already fully built: a rigid **9-stage** battery production
-lifecycle (`cell_allocation → assembly → compression → bms_allocation → bms_programming → charging →
-testing → quality_control → packing`) with cell allocation, charger management, battery genealogy, QC
-approval, rework, and a complete ODS frontend (Orders list, Battery Workspace, Charging/Testing
-dashboards, Digital Passport). CW-03 therefore **certifies the existing module on the frozen baseline**
-using the now-standard certification process — it does **not** build new capability and does **not**
-implement the Unified Product Platform.
+```
+CW-03
+  Phase 0  Implement Product Platform        (frozen architecture v1.0 — build exactly as approved)
+     ↓
+  Phase 1  Manufacturing Orders              (refactor to CONSUME the Product Platform; workflow unchanged)
+     ↓
+  Phase 2  QC Integration                    (Product created ONLY at QC PASS — the single creation gate)
+     ↓
+  Phase 3  Manufacturing Certification       (MAT-01 → MAT-06 against the Product-based module)
+     ↓
+  Phase 4  Freeze CW-03                       (official baseline for Packing/Dispatch/Dealer/Inventory/Reports/Director)
+```
 
-This is the first wave to run **after** the Certification Framework froze at v1.0, so CW-03 is also the
-first wave to **consume the standard process rather than evolve it**: standard MAT taxonomy, canonical
-templates, standard harness, standard scorecards, standard freeze package. Engineering effort goes to
-*certifying manufacturing capability*, not to process tooling (any tooling idea → CF backlog).
-
-**Recommended CW-03 scope:** certify the **current battery-only Manufacturing Orders module as-is**
-(see §2). The Unified Product Platform implementation (products identity, QC-pass emit, workflow-driven
-stage engine, INBUILT_LITHIUM/HYBRID) is **separate future manufacturing-capability work** with its own
-phased plan and re-certification — explicitly **out of CW-03 scope**, because its Phase 3 *modifies* the
-certified manufacturing module, which would contradict "consume the frozen platforms without modifying."
+Each phase is **strictly additive** (no certified table renamed/removed) and is gated. Implementation of
+each phase begins only after this plan is approved; certification (Phase 3) runs the standard Batch-MAT
+cycle with a CTO triage/approval gate per MAT phase.
 
 ---
 
-## 2. Scope
+## 2. The one distinction that governs this wave
 
-### In scope — certify the existing built surface
+**Implementing a frozen *architecture* is allowed and is the whole point of CW-03. Modifying a frozen
+*platform framework* is not.**
 
-- **9-stage lifecycle** state machine: start / pause / resume / complete / approve / reject, with the
-  "previous stage approved" sequential guard.
-- **Cell allocation** (links `cell_match_id`, marks cells `allocated`, auto-populates genealogy).
-- **Charger management** (`mfg_charger_units` reserve/release; `available`/`busy`; formation reports).
-- **Battery genealogy** (`mfg_battery_genealogy` — cells / BMS / cabinet / charger lineage).
-- **QC approval** gate (`mfg_qc_approvals`; no `packing` without an `approved` decision).
-- **Rework** (`mfg_rework_tickets` — failure, corrective action, re-test).
-- **ID generation** (`PO-YYYYMMDD-NNNNNN`, `BAT-YYYYMMDD-NNNNNN` via Postgres sequences).
-- **Frontend**: Orders list, Order detail / Battery Workspace (StageStepper, Genealogy, Timeline,
-  Digital Passport), Charging & Testing dashboards.
-- **Module audit trail**: `mfg_battery_timeline` (per-transition operator-action log).
+| Allowed in CW-03 (build) | NOT allowed in CW-03 |
+|--------------------------|----------------------|
+| Create the new Product Platform tables/enums/routes/UI **exactly per the frozen UPP v1.0 design** | Changing the UPP architecture (new concepts, renamed tables, altered four-concept model) |
+| **Additive** changes to certified modules per the frozen plan (nullable `product_id` on dispatch; QC-pass emit hook) | Any **breaking** change to certified Manufacturing/Logistics (drop columns, change the `production_order_id` key) |
+| **Adopting** ODS / ECF / Security Standards / Cert Framework for the new surface (matrix rows, ODS components) | **Changing** ODS / ECF / Security / Cert framework code (those stay frozen v1.0) |
 
-### Out of scope (reserved future work — record only)
-
-- Unified Product Platform implementation (Phases 1–5): `products`/`product_categories`/
-  `product_workflows`/`product_genealogy`/`master_inverters`, QC-pass Product emit, workflow-driven
-  stage engine, INBUILT_LITHIUM/HYBRID, downstream repoint. → its **own** capability waves + re-cert.
-- Any ECF expansion, any Security-Standard change, any ODS change, any Cert-Framework change.
-
-> **Scope decision for CTO at the approval gate:** confirm CW-03 = "certify the existing battery module
-> as-is" (recommended). If instead CW-03 should *also* deliver Product-Platform Phase 1/2, that is a
-> materially larger wave (new tables, QC-pass emit, re-cert) and this plan must be re-scoped first.
+If any framework genuinely needs a change to support this, that is a **defect-driven** event (Critical /
+High / security) handled under the freeze exception — not a routine part of the build.
 
 ---
 
-## 3. Frozen-platform consumption (no modification)
+## 3. Phase 0 — Product Platform Foundation
 
-| Platform | How CW-03 consumes it | Modification? |
-|----------|-----------------------|---------------|
-| **Security Standards SS-01..04** | Manufacturing endpoints already populate the **SS-02** authz matrix; CW-03 *verifies/extends coverage* of every endpoint (adoption, not change). SS-03/SS-04 run as standing gates. | None |
-| **ECF v1.0** | **Factual today: Cell Grading is the *only* ECF consumer; the manufacturing routes have *no* ECF integration.** Manufacturing currently records changes on its own `mfg_battery_timeline`. **Manufacturing ECF adoption is OUT OF SCOPE for CW-03** (it is reserved future work per the ECF mandatory-integration rule), *unless* a CW-03 cert defect mandates a platform fix. CW-03 certifies the module's current correction/audit behaviour as-is; the ECF ledger's own immutability stays covered by the existing SS-03 suite independently. | None |
-| **Unified Product Platform arch v1.0** | CW-03 certifies the module **as the BATTERY workflow's current definition** (the architecture explicitly keeps the certified detailed stages as BATTERY). The cert is Product-Platform-aware so it does not certify anything the frozen plan will rip up. | None |
-| **ODS** | All manufacturing UI is already ODS; MAT-04 verifies ODS compliance (keyboard/focus/notify). | None |
-| **Certification Framework v1.0** | Standard 6-phase MAT taxonomy, canonical CW-02 templates, standard harness, scorecards, freeze package. | None |
+Build the frozen Product Platform v1.0 **exactly as approved**. Deliver only the approved concepts:
+**Product Categories · Product Workflows · Product table · Unified Product Serial · Product creation at
+QC PASS · Product genealogy.** No additional concepts, no architecture change, no scope extension.
 
----
+### 3.1 Database (additive only — verified against current schema)
 
-## 4. Certification Approach (standard process — reuse, don't reinvent)
+New tables / enums:
+- `product_categories` (Category Master) — seed **Battery Pack · Inbuilt Lithium Inverter · Hybrid Inverter** (data; only Battery Pack is *exercised* in CW-03).
+- `product_workflows` (Workflow Master) — `code`, `name`, `stage_sequence` (jsonb), `status`. Seed **BATTERY** (active). `INBUILT_LITHIUM`/`HYBRID` rows are **reserved data, not wired to any engine** (the workflow-driven engine is UPP Phase 3 — out of CW-03; see §3.5).
+- `products` (serialized **unit** identity) — `id`, `category_id` → `product_categories`, `model_id` → `master_products`, `workflow_code` → `product_workflows`, **`source_production_order_id` → `mfg_production_orders` (nullable)**, `official_product_serial` (UNIQUE, NOT NULL), `serial_source` enum (`OCS|MANUFACTURER`), `qc_status`, `product_status`, `current_location`, `dealer_id` → `logistics_dealers`, timestamps. **No manufacturer/brand column** (derived per frozen design).
+- `product_genealogy` (category-aware lineage keyed by `product_id`) — generalization of `mfg_battery_genealogy`.
+- `product_events` (append-only Product audit timeline).
+- `product_category` / `product_status` enums per the frozen field list (lifecycle ends at `delivered_to_dealer`; future states reserved, not added).
 
-Per the CTO Standing Rule, CW-03 **reuses** the standard taxonomy, templates, harness, scorecards, and
-freeze package adopted in the Certification Process Review.
+Additive nullable columns on certified tables (none renamed/removed):
+- `master_products.category_id` → `product_categories` (the existing free-text `category` stays; backfilled, retired only post-cert).
+- `logistics_dispatch_items.product_id` → `products` (**dual-key**: existing UNIQUE `production_order_id` stays authoritative through CW-03).
 
-### 4.1 MAT phases (frozen 6-phase taxonomy)
+> **⚠ Naming-collision caveat (verified).** `mfg_production_orders` **already has** a `product_id` column
+> that points to `master_products` (the **Model/SKU**). The order→serialized-unit link must therefore
+> **NOT** add another `product_id` to the order — it lives as **`products.source_production_order_id`**
+> (order ← product), exactly per the frozen D1 diagram. This is the §6.1 model-vs-unit resolution made
+> concrete; document the semantic in the schema so no one confuses the two.
 
-| Phase | Manufacturing-Orders focus |
-|-------|----------------------------|
-| MAT-01 Page & Navigation | Orders list, Battery Workspace, Charging/Testing dashboards, Digital Passport — routes, load, error boundaries |
-| MAT-02 Functional | Order CRUD, stage start/pause/resume/complete/approve/reject, charger reserve/release, rework, QC; 10-point scorecard; RBAC surface |
-| MAT-03 Business-Rule & Data Integrity | Stage sequence guard (no skip; previous must be `approved`), QC-gate before packing, cell-allocation atomicity, charger double-assignment prevention, genealogy correctness, sequence/ID race-safety, **state-transition TOCTOU under `FOR UPDATE`** |
-| MAT-04 Integration & UX | Upstream (Cell Grading/Matching pool, allocation) + downstream (Logistics dispatch keyed on `production_order_id`, Reports, Director KPIs) agreement; ODS UX/keyboard; Digital Passport/QR |
-| MAT-05 Performance & Stress | P95 budgets on list/detail/stage transitions/dashboards at scale; concurrency on stage approve + charger reservation; query plans; rate-limit shedding |
-| MAT-06 Security & Reliability | 14 security areas for manufacturing; SS-02 (authz on every mfg endpoint × 5 principals) / SS-03 (audit) / SS-04 (config) standing gates; module probes (stage authz, mass-assignment on stage_data, input bounds, immutable genealogy/timeline) |
+### 3.2 Unified serial (frozen v1.1)
 
-### 4.2 Batch-MAT cycle (per phase, mandatory)
+One authoritative `official_product_serial` (UNIQUE) + `serial_source` provenance. **BATTERY → OCS**
+(reuse the existing `mfg_battery_seq` pattern; `serial_source=OCS`). `MANUFACTURER` source is reserved
+for future inverter workflows (validate present+unique) — **not exercised in CW-03**. Downstream uses
+only `official_product_serial`, never `serial_source`. Component serials live in `product_genealogy`.
 
-Run the **whole phase** → collect **all** findings → classify **severity × (module vs platform)** →
-present the consolidated set to the CTO → **approval before any fix** → fix all Crit/High/Med together
-→ re-run the **full** phase → close the gate. No per-defect loops.
+### 3.3 API + codegen + UI
 
-### 4.3 Fixtures & teardown (standard)
+- New `/api/products` (list/get, `GET /products/{id}/genealogy`, guarded `POST /products/{id}/status`),
+  authored in the **OpenAPI spec first**, then `pnpm --filter @workspace/api-spec run codegen`
+  regenerates hooks + Zod (no manual client edits).
+- New `/api/masters/product-categories` and `/api/masters/product-workflows` (read + director-managed).
+- ODS Product views (list, detail, genealogy) — reuse ODS components; **no new UI pattern outside ODS**.
+- **Idempotent backfill**: create a `products` row for every existing **completed/dispatched** battery
+  order so downstream has a Product to point at (reconciliation count + audit trail).
 
-Prefix-tag every fixture `CW03-CERT-…`; tear down **set-based by prefix** (not captured IDs); break FKs
-before deleting parents; surface every teardown error; assert **0 residual** across **every** table a
-tested operation writes — for manufacturing that is the full set: `mfg_production_orders`,
-`mfg_order_stages`, `mfg_battery_genealogy`, `mfg_battery_timeline`, `mfg_charger_units` (state reset),
-`mfg_formation_reports`, `mfg_test_results`, `mfg_qc_approvals`, `mfg_rework_tickets`, plus any
-`cells`/`cell_matches` it touches and any `engineering_corrections` rows it appends.
+### 3.4 Security adoption (no framework change)
 
-### 4.4 Evidence & freeze package (canonical templates)
+Every new endpoint files an **SS-01** row (`docs/security-matrix.md`), joins the **SS-02** authz matrix
+(`lib/authz-matrix.ts`) × 5 principals, registers any audited op in the **SS-03** audit matrix, and is
+covered by **SS-04** config checks. This is *adoption* of the frozen Security Standards. The new
+`product_events` append-only store interacts with the **SS-03 audit decision** in §6.4.
 
-Fill the existing scaffolds in `certification/CW-03-Manufacturing-Orders/` (`MAT.md`, `Defects.md`,
-`Performance.md`, `Integration.md`, `UAT.md`, `Certification.md`) + `PROJECT_STATUS.md`; then the freeze
-package: `CW-03_CERTIFICATION_REPORT.md`, `CW-03_FREEZE_NOTICE.md`, CTO Approval Record `CW-03-APR-001`.
+### 3.5 Phase 0 scope guards (explicit OUT)
 
----
+- **No workflow-driven stage engine** (UPP Phase 3) — the manufacturing stage engine stays the hardcoded
+  9-stage BATTERY chain. `products.workflow_code` simply references the seeded BATTERY row.
+- **No INBUILT_LITHIUM / HYBRID** manufacturing; **no `master_inverters`** behavior.
+- **No downstream repoint** (UPP Phase 4) and **no legacy removal** (UPP Phase 5).
+- **No ECF expansion**; product *correction* routes are not built in CW-03 (see §7 ECF row).
 
-## 5. Pre-wave readiness checklist (do before MAT-01)
-
-- [ ] **Folder stamped** — CW-03 evidence scaffolds already exist; fill headers (dates, lead, version).
-- [ ] **SS-02 coverage verified/extended** — confirm **every** manufacturing endpoint across all 14
-      route files (`orders`, `stages`, `charger-units`, `genealogy`, `qc-approval`, `rework`,
-      `test-results`, `formation-report`, `timeline`, `dashboard`, `testing-dashboard`,
-      `allocated-cells`) is in `lib/authz-matrix.ts` × 5 principals. (Orders/stages already present;
-      audit the remainder.) *Adoption of SS-02, not a framework change.*
-- [ ] **SS-03 audit decision (CTO branch required — top pre-wave finding, resolve before MAT-06)** —
-      manufacturing currently audits via `mfg_battery_timeline`, and it has **no entries in
-      `audit-matrix.ts`**. First decide per SS-01 which critical manufacturing operations (e.g. stage
-      approve/reject, QC approve, rework open) are "audit required." Then pick:
-    - **Option A — extend SS-03 to cover manufacturing** (add those operations to `audit-matrix.ts` and
-      teach `audit-suite.ts` that `mfg_battery_timeline` is a third append-only store). This *changes
-      the SS-03 harness*, so it is permitted **only** under the freeze's **High / security-defect**
-      exception — i.e. if leaving manufacturing's critical operations outside automated audit
-      verification is judged a High/security gap (C3-R1). **Requires explicit CTO authorisation.**
-    - **Option B — scope-limited audit evidence (no framework change)** — for CW-03, certify
-      manufacturing audit by **direct evidence in MAT-06** (assert each critical op writes the correct
-      immutable `mfg_battery_timeline` record), document that `mfg_battery_timeline` is not yet in the
-      SS-03 automated matrix, and **backlog** the matrix extension (CF / SEC) for a future wave.
-    - **Recommendation:** if MAT-06 finds manufacturing's audit coverage adequate via Option B, prefer
-      B (keeps the freeze intact); escalate to A only if the gap is classified High/security.
-- [ ] **SS-01 rows** — confirm `docs/security-matrix.md` has a row per manufacturing endpoint.
-- [ ] **Fixtures prefixed + teardown enumerated** (§4.3) and proven to 0 residual on a dry run.
-- [ ] **Workflows green** — typecheck 0, lint 0, and the three standing suites (`authz`/`audit`/`config`)
-      captured as the pre-wave baseline (note: default-mode `audit` red can be stale limiter residue —
-      use authoritative mode `CERT_AUDIT_RATELIMIT=1`).
+> **Scope clarifications for CTO at the approval gate** (small, flagged rather than silently chosen):
+> (a) `master_manufacturers` (frozen v1.1 manufacturer master) is **not** in the CTO Phase 0 list and is
+> not needed for BATTERY (all OCS) — **recommend deferring** it to the future inverter/normalization wave
+> (PP-005). (b) Confirm `INBUILT_LITHIUM`/`HYBRID` are seeded as **reserved data only** (not active).
 
 ---
 
-## 6. Dependencies & Integration
+## 4. Phase 1 — Manufacturing Orders consume the Product Platform
+
+- The manufacturing **workflow is unchanged** — same 9 stages, same guards, same operator UX.
+- The **only** architectural change: Manufacturing **no longer owns a finished-product identity**.
+  Where the system previously treated the `mfg_production_orders` row (`battery_number`) as the finished
+  unit, the finished identity is now the **Product** created at QC PASS (Phase 2).
+- `logistics_dispatch_items` begins carrying the additive nullable `product_id` (dual-key); the existing
+  `production_order_id` UNIQUE key remains authoritative for CW-03 (downstream repoint is future).
+- BATTERY manufacturing behaviour stays **byte-identical** except for the new QC-pass emit hook.
+
+---
+
+## 5. Phase 2 — QC Integration (the single creation gate)
+
+- A `products` row is created at **exactly one point: the `quality_control` stage `approved` (QC PASS)**.
+- **Permanent rule enforced: No Product before QC PASS.** Work-in-progress stays in
+  `mfg_production_orders`/`mfg_order_stages`; downstream sees only post-QC Products.
+- The QC-pass hook runs **inside the existing approval transaction** so the Product row, the
+  **order↔unit link (`products.source_production_order_id` only)**, the `product_events` baseline, and
+  the module audit event all commit atomically. **`mfg_production_orders.product_id` is NOT touched — it
+  remains the Model/SKU FK (§3.1 naming-collision contract). The serialized link is one-directional:
+  product → order.**
+- **Idempotent**: re-approval / retry must not create duplicate Products (unique on
+  `source_production_order_id` for OCS-emitted battery products).
+
+---
+
+## 6. Phase 3 — Manufacturing Certification (MAT-01 → MAT-06)
+
+Certify the **Product-based** Manufacturing module using the frozen 6-phase taxonomy and the Batch-MAT
+cycle (run the whole phase → collect all findings → classify severity × module/platform → CTO approval
+→ fix Crit/High/Med together → re-run full phase → close gate). No per-defect loops.
+
+### 6.1 Phase focus
+
+| Phase | Focus (now includes the Product surface) |
+|-------|------------------------------------------|
+| MAT-01 Page & Navigation | Orders list, Battery Workspace, Charging/Testing dashboards, Digital Passport, **+ Product list/detail/genealogy** |
+| MAT-02 Functional | Order/stage lifecycle, charger, rework, QC; **+ Product CRUD-read, status transitions, masters**; 10-point scorecard; RBAC |
+| MAT-03 Business-Rule & Data Integrity | Stage-sequence guard, **QC-gate → exactly one Product (idempotent)**, serial uniqueness, dual-key dispatch integrity, genealogy correctness, sequence/ID race-safety, **state-transition TOCTOU under `FOR UPDATE`**, **backfill correctness** |
+| MAT-04 Integration & UX | Upstream (Cell Grading/Matching) + downstream (Logistics dual-key, Reports, Director) agreement on the Product handle; ODS UX/keyboard |
+| MAT-05 Performance & Stress | P95 budgets incl. Product list/detail/genealogy and the QC-pass emit; concurrency on stage approve + Product creation + charger reservation |
+| MAT-06 Security & Reliability | SS-02 (every mfg **and** product endpoint × 5 principals) / SS-03 / SS-04 standing gates; module probes (mass-assignment on `stage_data`/product fields, immutable genealogy/timeline/`product_events`) |
+
+### 6.2 Fixtures & teardown (standard)
+
+Prefix every fixture `CW03-CERT-…`; set-based teardown by prefix; break FKs before parents; assert **0
+residual** across **every** written table — now including the new `products`, `product_genealogy`,
+`product_events` (and seeded `product_categories`/`product_workflows` left intact as config) alongside
+the full `mfg_*` set, touched `cells`/`cell_matches`, `logistics_dispatch_items.product_id`, and any
+`engineering_corrections` rows.
+
+### 6.3 Evidence
+
+Fill `certification/CW-03-Manufacturing-Orders/` (`MAT.md`, `Defects.md`, `Performance.md`,
+`Integration.md`, `UAT.md`, `Certification.md`) + `PROJECT_STATUS.md`, using the canonical CW-02 templates.
+
+### 6.4 SS-03 audit decision (CTO branch — resolve before MAT-06)
+
+Manufacturing audits via `mfg_battery_timeline`; the new Product surface audits via `product_events`.
+**Neither is in `audit-matrix.ts` today.** Decide per SS-01 which critical operations are "audit
+required" (stage approve/reject, **QC PASS → Product creation**, rework open, product status change),
+then choose:
+- **Option A — extend SS-03** (`audit-matrix.ts` + teach `audit-suite.ts` about `mfg_battery_timeline`
+  and `product_events` as additional append-only stores). This changes the SS-03 harness, permitted
+  **only** under the **High / security-defect** freeze exception. **Requires explicit CTO authorisation.**
+- **Option B — scope-limited audit evidence (no framework change)** — certify audit by **direct MAT-06
+  evidence** (assert each critical op writes the correct immutable record), document the matrix gap, and
+  **backlog** the SS-03 extension (CF / SEC).
+- **Recommendation:** Option B unless the gap is classified High/security. Note: because **Product
+  creation at QC PASS** is a brand-new critical operation, MAT-06 must verify it is audited regardless of
+  Option chosen.
+
+---
+
+## 7. Phase 4 — Freeze CW-03
+
+Freeze the Product-based Manufacturing module as the **official baseline** that Packing, Dispatch,
+Dealer, Inventory, Reports, and the Director Dashboard will consume (in their own future waves) via a
+single Product identity. Deliver the standard freeze package: `CW-03_CERTIFICATION_REPORT.md`,
+`CW-03_FREEZE_NOTICE.md`, CTO Approval Record `CW-03-APR-001`; update `certification/README.md`
+(CW-03 → 🔵 Certified, 3/8 = 37.5%), `docs/platform-scorecard.md` (**Product Platform earns its first
+scorecard row** — adoption: 1 module = Manufacturing; PP-006), `CHANGELOG.md`.
+
+---
+
+## 8. Frozen-platform consumption (no framework modification)
+
+| Platform | How CW-03 uses it | Framework modified? |
+|----------|-------------------|---------------------|
+| **Unified Product Platform v1.0** | **IMPLEMENTED** exactly as frozen (Phases 0–2 = UPP Phases 1–2; UPP Phases 3–5 remain future). Architecture itself unchanged. | No (architecture is built, not redesigned) |
+| **ECF v1.0** | **Factual today: Cell Grading is the only ECF consumer; manufacturing has no ECF integration.** CW-03 builds Product *creation*, not *correction* — no product-correction route, so ECF integration is **not triggered** in CW-03 (reserved future per the mandatory-integration rule). Whether Product creation writes an ECF `recordOriginal` baseline is a Phase 0 design point per the frozen products↔ECF design; flagged, not assumed. | None |
+| **Security Standards SS-01..04** | New product + masters endpoints adopt SS-01..04 (matrix rows × 5 principals). SS-03 per §6.4. | None |
+| **ODS** | All new Product UI uses ODS; MAT-04 verifies compliance. | None |
+| **Certification Framework v1.0** | Standard taxonomy, canonical templates, harness, scorecards, freeze package. | None |
+
+---
+
+## 9. Dependencies & Integration
 
 | Direction | Module | Integration point |
 |-----------|--------|-------------------|
-| Upstream | Cell Grading / Matching (CW-02 certified) | `cell_match_id`, approved-cell pool, allocation marks cells `allocated` |
-| Downstream | Logistics / Dispatch (certified) | `logistics_dispatch_items.production_order_id` (UNIQUE) — QC-pass gate before dispatch |
-| Downstream | Reports & Director Dashboard | aggregate production orders / stage KPIs |
-| Platform | ECF | corrections to certified measurements (test results / stage data) |
-
-CW-03 must assert these contracts **read-mostly** (MAT-04), mutating only prefix-tagged cert fixtures.
+| Upstream | Cell Grading / Matching (CW-02 certified) | `cell_match_id`, approved-cell pool, allocation |
+| Internal | QC gate | QC PASS → Product creation (single gate) |
+| Downstream | Logistics / Dispatch (certified) | dual-key `production_order_id` (authoritative) + nullable `product_id` |
+| Downstream | Reports & Director Dashboard | aggregate production orders / stages; Product-aware reads land in future waves |
+| Platform | ECF | reserved for future Product corrections |
 
 ---
 
-## 7. Risks
+## 10. Risks
 
 | # | Risk | Sev | Mitigation |
 |---|------|-----|------------|
-| C3-R1 | **SS-03 gap** — manufacturing audit lives in `mfg_battery_timeline`, absent from the audit-matrix; critical ops may be unverified by SS-03 | **High** | Resolve the §5 audit decision pre-MAT-06; add timeline as an SS-03 store or justify exclusion per SS-01 (adoption, not framework change) |
-| C3-R2 | **Stateful multi-stage TOCTOU** — concurrent stage approve / charger reservation races | **High** | MAT-03 concurrency probes; assert re-check inside tx under `SELECT … FOR UPDATE` |
-| C3-R3 | **Large fixture graph** — orders × stages × genealogy × timeline × charger/test/QC/rework | Med | Enumerate every written table (§4.3); set-based prefix teardown; residual=0 assertion |
-| C3-R4 | **Cross-module fan-out** widens integration surface | Med | Explicit upstream/downstream MAT-04 assertions; read-mostly contract tests |
-| C3-R5 | **Scope creep into Product Platform** during cert | Med | Hard boundary (§2): UPP implementation is out of CW-03; ideas → PP backlog |
-| C3-R6 | **Charger double-assignment** under concurrency | Med | MAT-03 probe: two orders contend for one charger → exactly one wins |
-| C3-R7 | Default-mode SS-03 false-negative from prior flood | Low | Authoritative mode is the gate (SEC-001) |
+| C3-R1 | **Model-vs-unit `product_id` collision** on `mfg_production_orders` (existing → model) | **High** | Link lives on `products.source_production_order_id`; never add a 2nd `product_id` to the order; document semantic (§3.1) |
+| C3-R2 | **QC-pass emit not atomic / not idempotent** → orphan or duplicate Products | **High** | Emit inside the approval tx; unique on `source_production_order_id`; MAT-03 idempotency + concurrency probes |
+| C3-R3 | **Regression on certified Manufacturing/Logistics** from additive changes | **High** | Additive-only; BATTERY byte-identical except emit hook; dual-key dispatch; full SS-02/03/04 + MAT re-run |
+| C3-R4 | **SS-03 coverage gap** (mfg + new `product_events` absent from audit-matrix) | **High** | §6.4 decision before MAT-06; QC-pass-creation audit verified regardless |
+| C3-R5 | **Backfill correctness** for existing battery orders | Med | Idempotent script + reconciliation count + audit trail; MAT-03 assertion |
+| C3-R6 | **Serial uniqueness** across OCS-generated space | Med | UNIQUE `official_product_serial`; reuse `mfg_battery_seq` pattern; MAT-03 probe |
+| C3-R7 | **Scope creep into UPP Phase 3+** (workflow engine, INBUILT/HYBRID, downstream repoint) | Med | Hard guards §3.5; ideas → PP backlog |
+| C3-R8 | **Stateful multi-stage TOCTOU** (stage approve / charger reservation) | Med | MAT-03 concurrency; re-check inside tx under `FOR UPDATE` |
+| C3-R9 | Default-mode SS-03 false-negative from prior flood | Low | Authoritative mode (`CERT_AUDIT_RATELIMIT=1`) is the gate (SEC-001) |
 
-Any framework improvement discovered → appropriate backlog (CF / SEC / ECF / PP / MEB), **not** built.
+Any framework improvement discovered → appropriate backlog (CF / SEC / ECF / PP / MEB), not built.
 
 ---
 
-## 8. Metrics (standard per-wave set)
+## 11. Metrics (standard per-wave set)
 
 Defects by severity · defects by class (module vs platform) · open Crit/High/Med at cert (must be 0) ·
-carried-forward · certification duration · regression suite results (SS-02 / SS-03 / SS-04) · automated
-assertions · platform adoption (modules using each platform) · documentation completeness · **residual
-fixture count (must be 0)** · automation %. Recorded in `PROJECT_STATUS.md` and the certification report.
+carried-forward · certification duration · regression suite results (SS-02/03/04) · automated assertions
+· **platform adoption (Product Platform: 0 → 1 module)** · documentation completeness · **residual
+fixture count (must be 0)** · backfill reconciliation (created = expected) · automation %.
 
 ---
 
-## 9. Deliverables & Exit Criteria
+## 12. Deliverables & Exit Criteria
 
-**Deliverables:** filled CW-03 evidence set + `PROJECT_STATUS.md`; `CW-03_CERTIFICATION_REPORT.md`;
-`CW-03_FREEZE_NOTICE.md`; CTO Approval Record `CW-03-APR-001`; updated `certification/README.md`
-(CW-03 → 🔵 Certified, 3/8, 37.5%), `docs/platform-scorecard.md`, `CHANGELOG.md`.
+**Build deliverables (Phases 0–2):** new schema (pushed) + codegen output; `/api/products` + masters
+routes; QC-pass emit hook; ODS Product UI; seeds (categories + BATTERY workflow); idempotent backfill;
+SS-01/02 matrix rows for new endpoints.
 
-**Exit criteria (standard 11):** MAT-01→06 all PASS · 0 open Crit/High/Med · typecheck 0 · lint 0 ·
-SS-02/SS-03/SS-04 green (authoritative) · integration verified · performance within budget · fixtures
-torn down to 0 residual · UAT signed (factory formality) · CTO certification decision recorded.
+**Certification deliverables (Phases 3–4):** filled CW-03 evidence set + `PROJECT_STATUS.md`;
+`CW-03_CERTIFICATION_REPORT.md`; `CW-03_FREEZE_NOTICE.md`; `CW-03-APR-001`; updated README index,
+scorecard (Product Platform row), changelog.
 
----
-
-## 10. Sequencing & Approval Gate
-
-1. **CTO reviews & approves this plan** (and confirms the §2 scope decision). **No certification
-   execution — and no code/platform change — begins before this approval.**
-2. On approval → run the pre-wave checklist (§5), then execute MAT-01 → MAT-06 as batch phases with a
-   CTO triage/approval gate per phase.
-3. Close CW-03 with the standard freeze package; update the scorecard, README index, and changelog.
-4. Product Platform implementation remains separate, post-CW-03 manufacturing-capability work.
-
-> This plan consumes the frozen ODS / ECF / Security Standards / Product Platform / Certification
-> Framework **without modifying any of them** (the sole possible exception being the **SS-03
-> audit-matrix decision** in §5/§7, taken under the freeze's High/security-defect exception *only if*
-> the CTO authorises Option A), and proposes **no production code change**. Awaiting CTO approval to
-> begin CW-03.
+**Exit criteria (standard 11):** Product Platform built per frozen design; Manufacturing consumes it;
+Product created only at QC PASS; MAT-01→06 all PASS; 0 open Crit/High/Med; typecheck 0; lint 0;
+SS-02/03/04 green (authoritative); integration verified; performance within budget; fixtures torn down
+to 0 residual; backfill reconciled; UAT signed; CTO certification decision recorded.
 
 ---
 
-## 11. Assumption Ledger (true today vs. planned later)
+## 13. Sequencing & Approval Gate
 
-Maintained to prevent scope drift during execution. CW-03 certifies the **"true today"** column; the
-**"planned later"** column is explicitly out of scope and must not leak into the wave.
+1. **CTO reviews & approves this revised plan AND records the three decisions below.** **No
+   implementation — no schema, no code, no platform change — begins before this approval.**
 
-| # | Topic | True today (CW-03 certifies this) | Planned later (NOT in CW-03) |
-|---|-------|-----------------------------------|------------------------------|
-| A1 | Workflow | Single **hardcoded** 9-stage BATTERY chain + sequential guard in `stages.ts` | Workflow-driven engine (UPP Phase 3); INBUILT_LITHIUM / HYBRID |
-| A2 | Product identity | A finished unit **is** a `mfg_production_orders` row (`battery_number`); downstream keys off `production_order_id` | Serialized `products` identity emitted at QC-pass (UPP Phases 1–2); downstream repoint (Phase 4) |
-| A3 | ECF | **No** manufacturing ECF integration; Cell Grading is the only consumer; manufacturing logs to `mfg_battery_timeline` | Manufacturing ECF adoption (mandatory-integration rule) — future work, not CW-03 |
-| A4 | SS-02 | Manufacturing endpoints already in `authz-matrix.ts`; CW-03 *verifies/extends* full coverage (adoption) | — |
-| A5 | SS-03 | Manufacturing has **no** `audit-matrix.ts` entries; audit lives in `mfg_battery_timeline` | **Decision required** (§5): Option A extend SS-03 (freeze exception) vs Option B scope-limited audit evidence |
-| A6 | Inverters / categories | No `master_inverters`, no `product_categories`, no `product_workflows` | All added in UPP implementation — not CW-03 |
-| A7 | Serial | `PO-…` / `BAT-…` via Postgres sequences | `official_product_serial` + `serial_source` on `products` — not CW-03 |
+   **Explicit CTO decision gate (must be resolved at approval, not left implicit):**
+   - [ ] **D1 — `product_id` linkage contract (recommended, confirm):** `mfg_production_orders.product_id`
+         stays the **Model/SKU FK**; the serialized order↔unit link is **only** `products.source_production_order_id`
+         (one-directional product → order). Approve this single canonical contract.
+   - [ ] **D2 — `master_manufacturers` in Phase 0?** Frozen v1.1 includes a manufacturer master, but it is
+         not in the CTO Phase 0 list and is not needed for BATTERY (all OCS). **Recommend: DEFER** to the
+         inverter/normalization wave (PP-005). CTO: **include** or **defer**.
+   - [ ] **D3 — SS-03 audit path (lock before execution):** **Option A** (extend SS-03 under the
+         High/security freeze exception — requires CTO authorisation) **or Option B** (documented MAT-06
+         evidence + backlog the matrix extension). Assign a named owner + target date.
+2. On approval → Phase 0 build → Phase 1 → Phase 2 → pre-wave checklist → Phase 3 (Batch-MAT, per-phase
+   CTO gate) → Phase 4 freeze.
+3. UPP Phases 3–5 (workflow engine, INBUILT/HYBRID, downstream repoint, legacy removal) remain **future**
+   manufacturing-capability waves.
+
+> CW-03 **implements the frozen Unified Product Platform architecture** and **consumes ECF / ODS /
+> Security Standards / Certification Framework without modifying them**. All changes to certified modules
+> are **additive** per the frozen phased plan. No production code or schema change begins until this
+> revised plan is approved.
+
+---
+
+## 14. Assumption Ledger (true today → after CW-03)
+
+| # | Topic | Today (before CW-03) | After CW-03 (built/certified) | Still future (NOT CW-03) |
+|---|-------|----------------------|-------------------------------|--------------------------|
+| A1 | Product identity | Finished unit = `mfg_production_orders` row (`battery_number`) | **Serialized `products` identity emitted at QC PASS (BATTERY)** | Inverter products |
+| A2 | Categories/Workflows | None | `product_categories` + `product_workflows` built; BATTERY active | INBUILT/HYBRID active, ESS/EV/BMS |
+| A3 | Stage engine | Hardcoded 9-stage BATTERY chain | **Unchanged** (still hardcoded) | Workflow-driven engine (UPP P3) |
+| A4 | Serial | `PO-…`/`BAT-…` sequences | `official_product_serial` + `serial_source` (OCS for BATTERY) | MANUFACTURER serials (inverters) |
+| A5 | Downstream key | `production_order_id` (UNIQUE) | dual-key: + nullable `products.product_id` on dispatch | Repoint downstream to `product_id` (UPP P4); legacy removal (P5) |
+| A6 | ECF | Cell Grading only | Unchanged (product *correction* not built) | Manufacturing/Product ECF adoption |
+| A7 | SS-03 audit | mfg via `mfg_battery_timeline`; no matrix entries | + `product_events`; §6.4 decision (A or B) | Full SS-03 matrix coverage if Option B |
+| A8 | Manufacturer | Free-text on masters | Unchanged (recommend defer master) | `master_manufacturers` normalization (PP-005) |
