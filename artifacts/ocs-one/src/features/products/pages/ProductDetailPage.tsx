@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  ArrowLeft, Loader2, Package, GitBranch, Info, ArrowRight,
+  ArrowLeft, Loader2, Package, GitBranch, Info, ArrowRight, Activity,
 } from "lucide-react";
 import {
   useGetProduct,
@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useOdsNotify } from "@/hooks/use-ods-notify";
 import { OdsDialog } from "@/components/ods";
 import ProductGenealogyView from "../components/ProductGenealogyView";
+import ProductEventsView from "../components/ProductEventsView";
 
 const STATUS_COLORS: Record<string, string> = {
   manufacturing: "bg-gray-100 text-gray-700",
@@ -170,6 +171,10 @@ export default function ProductDetailPage() {
               <GitBranch className="h-3.5 w-3.5" />
               Genealogy
             </TabsTrigger>
+            <TabsTrigger value="events" className="flex items-center gap-1.5">
+              <Activity className="h-3.5 w-3.5" />
+              Timeline
+            </TabsTrigger>
             <TabsTrigger value="details" className="flex items-center gap-1.5">
               <Info className="h-3.5 w-3.5" />
               Details
@@ -178,6 +183,14 @@ export default function ProductDetailPage() {
 
           <TabsContent value="genealogy" className="mt-4">
             <ProductGenealogyView productId={productId} />
+          </TabsContent>
+
+          <TabsContent value="events" className="mt-4">
+            <Card>
+              <CardContent className="p-5">
+                <ProductEventsView productId={productId} />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="details" className="mt-4">

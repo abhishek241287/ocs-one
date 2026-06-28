@@ -92,6 +92,7 @@ Operations control system for OCS Oorja Green Pvt. Ltd. — end-to-end manufactu
 - **Postgres sequences** (`mfg_order_seq`, `mfg_battery_seq`, `ecf_correction_seq`) are created by `seed.ts` at startup (`CREATE SEQUENCE IF NOT EXISTS`) and then **forward-only resynced** to their table max. If an id-minting path 409s on a fresh entity, compare the sequence's `last_value` to `MAX(split_part(col,'-',3)::bigint)` — a desync from a rollback/restore is the usual cause.
 - **Vite pre-transform errors** after codegen are stale HMR cache — restart the ocs-one workflow to clear.
 - **`CirclePlay`** (not `PlayCircle`) is the correct lucide-react icon name in v0.511+.
+- **Drizzle bare `.select()` emits camelCase keys** — `db.select().from(t)` keys rows by JS prop names (`productId`, `eventType`), and `numify()` doesn't rename. The products API contract (OpenAPI + UI) is snake_case, so every products read route must use an explicit `.select({ product_id: t.productId, ... })` projection (as list/detail do). A bare select silently ships camelCase → UI reads `undefined` → blanks/`Invalid Date`, and typecheck/lint/authz won't catch it. Fixed on `/products/:id/events` and `/products/:id/genealogy`.
 - **All-optional Zod update bodies need an empty-body guard** — `UpdateCellGradeConfigBody` has all-optional fields, so `{}` passes `.parse()` but then `db.update().set({})` throws on an empty SQL SET clause → 500. Reject empty bodies with 400 (`Object.keys(body).length === 0`) per SS-01. Applies to any all-optional PATCH/PUT schema.
 
 ## Pointers

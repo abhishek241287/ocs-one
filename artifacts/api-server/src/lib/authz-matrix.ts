@@ -247,6 +247,15 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     expected: all(P),
   },
   {
+    id: "products.events",
+    method: "GET",
+    path: `/api/products/${DUMMY_ID}/events`,
+    group: "Products",
+    description: "Get a product's event timeline (read)",
+    guard: "requireAuth (read open to all authed)",
+    expected: all(P),
+  },
+  {
     id: "products.status",
     method: "POST",
     path: `/api/products/${DUMMY_ID}/status`,

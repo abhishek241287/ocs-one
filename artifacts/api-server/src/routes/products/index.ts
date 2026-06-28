@@ -163,12 +163,52 @@ router.get("/:id/genealogy", async (req: Request, res: Response): Promise<void> 
   }
 
   const items = await db
-    .select()
+    .select({
+      id: productGenealogyTable.id,
+      product_id: productGenealogyTable.productId,
+      component_type: productGenealogyTable.componentType,
+      component_id: productGenealogyTable.componentId,
+      component_name: productGenealogyTable.componentName,
+      quantity: productGenealogyTable.quantity,
+      serial_number: productGenealogyTable.serialNumber,
+      notes: productGenealogyTable.notes,
+      created_at: productGenealogyTable.createdAt,
+    })
     .from(productGenealogyTable)
     .where(eq(productGenealogyTable.productId, id))
     .orderBy(productGenealogyTable.createdAt);
 
   res.json({ items: items.map((g) => numify(g as Record<string, unknown>)) });
+});
+
+// GET /products/:id/events — the Product's append-only lifecycle timeline (newest first).
+router.get("/:id/events", async (req: Request, res: Response): Promise<void> => {
+  const id = req.params.id as string;
+  const [product] = await db
+    .select({ id: productsTable.id })
+    .from(productsTable)
+    .where(eq(productsTable.id, id))
+    .limit(1);
+  if (!product) {
+    res.status(404).json({ error: "Product not found" });
+    return;
+  }
+
+  const items = await db
+    .select({
+      id: productEventsTable.id,
+      product_id: productEventsTable.productId,
+      event_type: productEventsTable.eventType,
+      actor: productEventsTable.actor,
+      description: productEventsTable.description,
+      metadata: productEventsTable.metadata,
+      created_at: productEventsTable.createdAt,
+    })
+    .from(productEventsTable)
+    .where(eq(productEventsTable.productId, id))
+    .orderBy(desc(productEventsTable.createdAt));
+
+  res.json({ items: items.map((e) => numify(e as Record<string, unknown>)) });
 });
 
 // POST /products/:id/status — guarded forward-only lifecycle transition.

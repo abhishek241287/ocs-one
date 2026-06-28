@@ -4628,6 +4628,26 @@ export const GetProductGenealogyResponse = zod.object({
 
 
 /**
+ * @summary Get a product's lifecycle event timeline
+ */
+export const GetProductEventsParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetProductEventsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "product_id": zod.string().uuid(),
+  "event_type": zod.string(),
+  "actor": zod.string(),
+  "description": zod.string(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "created_at": zod.coerce.date()
+}))
+})
+
+
+/**
  * @summary Transition a product's lifecycle status (guarded)
  */
 export const UpdateProductStatusParams = zod.object({

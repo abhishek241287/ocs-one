@@ -1837,6 +1837,22 @@ export interface ProductGenealogyResponse {
   items: ProductGenealogyRecord[];
 }
 
+export type ProductEventMetadata = { [key: string]: unknown };
+
+export interface ProductEvent {
+  id: string;
+  product_id: string;
+  event_type: string;
+  actor: string;
+  description: string;
+  metadata?: ProductEventMetadata;
+  created_at: string;
+}
+
+export interface ProductEventsResponse {
+  items: ProductEvent[];
+}
+
 export interface ProductStatusUpdate {
   status: ProductStatus;
   reason?: string;

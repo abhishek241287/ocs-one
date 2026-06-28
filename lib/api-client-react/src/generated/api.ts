@@ -129,6 +129,7 @@ import type {
   PackingDashboard,
   PatchCellLotBody,
   Product,
+  ProductEventsResponse,
   ProductGenealogyResponse,
   ProductListResponse,
   ProductMaster,
@@ -9057,6 +9058,83 @@ export function useGetProductGenealogy<TData = Awaited<ReturnType<typeof getProd
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetProductGenealogyQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetProductEventsUrl = (id: string,) => {
+
+
+
+
+  return `/api/products/${id}/events`
+}
+
+/**
+ * @summary Get a product's lifecycle event timeline
+ */
+export const getProductEvents = async (id: string, options?: RequestInit): Promise<ProductEventsResponse> => {
+
+  return customFetch<ProductEventsResponse>(getGetProductEventsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProductEventsQueryKey = (id: string,) => {
+    return [
+    `/api/products/${id}/events`
+    ] as const;
+    }
+
+
+export const getGetProductEventsQueryOptions = <TData = Awaited<ReturnType<typeof getProductEvents>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProductEventsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProductEvents>>> = ({ signal }) => getProductEvents(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProductEvents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProductEventsQueryResult = NonNullable<Awaited<ReturnType<typeof getProductEvents>>>
+export type GetProductEventsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a product's lifecycle event timeline
+ */
+
+export function useGetProductEvents<TData = Awaited<ReturnType<typeof getProductEvents>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProductEventsQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

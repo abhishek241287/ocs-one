@@ -2388,6 +2388,22 @@ paths:
         "404":
           description: Product not found
 
+  /products/{id}/events:
+    get:
+      operationId: getProductEvents
+      tags: [products]
+      summary: Get a product's lifecycle event timeline
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Product event timeline (newest first)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductEventsResponse" }
+        "404":
+          description: Product not found
+
   /products/{id}/status:
     post:
       operationId: updateProductStatus
@@ -4137,6 +4153,26 @@ components:
         items:
           type: array
           items: { $ref: "#/components/schemas/ProductGenealogyRecord" }
+
+    ProductEvent:
+      type: object
+      required: [id, product_id, event_type, actor, description, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        product_id: { type: string, format: uuid }
+        event_type: { type: string }
+        actor: { type: string }
+        description: { type: string }
+        metadata: { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+
+    ProductEventsResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ProductEvent" }
 
     ProductStatusUpdate:
       type: object
