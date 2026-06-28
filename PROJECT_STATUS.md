@@ -46,10 +46,10 @@ This is the **authoritative project status document** for OCS One. It reflects t
 | Dimension | Progress | Detail |
 |-----------|----------|--------|
 | Foundation Build | `██████████` **100%** | All 28 modules built and integrated |
-| Certification Waves | `█░░░░░░░░░` **12.5%** | 1 of 8 waves complete (CW-01 certified 2026-06-28) |
-| Test Coverage | `██░░░░░░░░` **~18%** | 3 permanent automated suites (SS-02/03/04 · 270 assertions) + per-wave functional/e2e |
-| Documentation | `██████████` **100%** | CHANGELOG · RELEASE_NOTES · ODS registry · Architecture map · CW-01 cert report |
-| **Overall** | `████░░░░░░` **43%** | CW-01 certified; 7 waves remaining |
+| Certification Waves | `███░░░░░░░` **37.5%** | 3 of 8 waves complete (CW-01 · CW-02 · CW-03 — certified 2026-06-28) |
+| Test Coverage | `██░░░░░░░░` **~18%** | 3 permanent automated suites (SS-02/03/04 · 280 assertions) + per-wave functional/e2e |
+| Documentation | `██████████` **100%** | CHANGELOG · RELEASE_NOTES · ODS registry · Architecture map · CW-01/02/03 cert records |
+| **Overall** | `██████░░░░` **59%** | CW-01–03 certified; 5 waves remaining |
 
 Progress scale: Foundation complete = 35% baseline. Each of the 8 Certification Waves = +8.125% → 100% at CW-08.
 
@@ -133,12 +133,12 @@ Each wave earns a **🔵 Certified** stamp in the Module Status table and increm
 | Busbars | Masters | ✅ Built | Busbar specification registry |
 | Cabinets | Masters | ✅ Built | Enclosure catalogue |
 | Cell Receiving | Cell Lifecycle | 🔵 Certified (Frozen) | **CW-01 certified & frozen 2026-06-28** (MAT-01→06) |
-| Cell Grading | Cell Lifecycle | ✅ Built | Per-cell capacity / IR / voltage |
+| Cell Grading | Cell Lifecycle | 🔵 Certified (Frozen) | **CW-02 certified & frozen 2026-06-28** (MAT-01→06) · ECF v1.0 reference consumer |
 | Cell Inventory | Cell Lifecycle | ✅ Built | Grade snapshot, allocation view |
 | Cell Matching | Cell Lifecycle | ✅ Built | Slot-filling algorithm |
 | Grade Configuration | Cell Lifecycle | ✅ Built | A/B/C threshold management |
-| Production Orders | Manufacturing | ✅ Built | Full 9-stage lifecycle |
-| Manufacturing Stages | Manufacturing | ✅ Built | State machine with sign-off |
+| Production Orders | Manufacturing | 🔵 Certified (Frozen) | **CW-03 certified & frozen 2026-06-28** (MAT-01→06) · Product minted at QC-pass |
+| Manufacturing Stages | Manufacturing | 🔵 Certified (Frozen) | **CW-03 certified & frozen 2026-06-28** · state machine with sign-off |
 | Charging Units | Manufacturing | ✅ Built | Charger assignment + dashboard |
 | Testing & QC | Manufacturing | ✅ Built | Pass/fail capture, approvals |
 | Rework Queue | Manufacturing | ✅ Built | Rejection handling |
@@ -273,8 +273,8 @@ Full registry: `artifacts/ocs-one/docs/ods-component-registry.md`
 | Wave | Scope | Status | Target |
 |------|-------|--------|--------|
 | **CW-01** | Cell Receiving | 🔵 **CERTIFIED & FROZEN (2026-06-28)** | Approval `CW-01-APR-001` · tag `CW-01-CERTIFIED` · MAT-01→06 all PASS · 37 defects (0 Crit/High/Med open) · 4 permanent deliverables: SS-02 authz (225/225) · Security Dashboard · SS-03 audit (11/11 + immutable) · SS-04 config (31/3/0) + `/developer/configuration` · `CW-01_CERTIFICATION_REPORT.md` + `CW-01_FREEZE_NOTICE.md` |
-| **CW-02** | Cell Grading | ⬜ Not started | TBD |
-| **CW-03** | Manufacturing Orders | ⬜ Not started | TBD |
+| **CW-02** | Cell Grading | 🔵 **CERTIFIED & FROZEN (2026-06-28)** | Approval `CW-02-APR-001` · tag `CW-02-CERTIFIED` · MAT-01→06 · ECF v1.0 frozen · see `CW-02_FREEZE_NOTICE.md` |
+| **CW-03** | Manufacturing Orders | 🔵 **CERTIFIED & FROZEN (2026-06-28)** | Approval `CW-03-APR-001` · tag `CW-03-CERTIFIED` · MAT 47 cases (41 full / 6 partial / 0 fail) · 0 Crit/High/Med · 1 Low backlogged · Unified Product Platform v1.0 first impl · see `CW-03_FREEZE_NOTICE.md` |
 | **CW-04** | Charging | ⬜ Not started | TBD |
 | **CW-05** | Quality Control | ⬜ Not started | TBD |
 | **CW-06** | Dispatch & Logistics | ⬜ Not started | TBD |
@@ -293,6 +293,8 @@ Every completed Certification Wave appends one row to this table.
 | Wave | Module | Version | Date | Status |
 |------|--------|---------|------|--------|
 | CW-01 | Cell Receiving | v1.0 | 2026-06-28 | 🔵 Certified — tag `CW-01-CERTIFIED` |
+| CW-02 | Cell Grading | v1.0 | 2026-06-28 | 🔵 Certified — tag `CW-02-CERTIFIED` (ECF v1.0 frozen) |
+| CW-03 | Manufacturing Orders | v1.0 | 2026-06-28 | 🔵 Certified — tag `CW-03-CERTIFIED` (Unified Product Platform v1.0 first impl) |
 
 ---
 
@@ -404,6 +406,7 @@ Record these metrics for every completed Certification Wave. They build a qualit
 | Wave | Modules Certified | Defects Found | Defects Fixed | Defects Deferred | Test Cases | Pass Rate | Duration |
 |------|-------------------|---------------|---------------|------------------|------------|-----------|----------|
 | CW-01 | Cell Receiving | 37 | 31 | 6 (5 Low deferred + 1 residual-risk accepted) | 101 MAT + 270 automated assertions | 100% (actionable) | 2 days (2026-06-27 → 2026-06-28) |
+| CW-03 | Manufacturing Orders | 1 | 0 | 1 (1 Low → post-cert backlog) | 47 MAT + 280 automated assertions | 100% (actionable) | 1 day (2026-06-28) |
 
 **Definitions:**
 - **Defects Found** — total defects logged during the wave (all severities)
@@ -431,4 +434,4 @@ After every Certification Wave:
 
 ---
 
-*Last updated: 2026-06-28 · Version 1.0-foundation · CW-01 CERTIFIED & FROZEN (approval `CW-01-APR-001`, tag `CW-01-CERTIFIED`)*
+*Last updated: 2026-06-28 · Version 1.0-foundation · CW-01 / CW-02 / CW-03 CERTIFIED & FROZEN (approvals `CW-01/02/03-APR-001`). Next capability: Inventory Platform — see `INVENTORY_PLATFORM_IMPLEMENTATION_PLAN.md`.*

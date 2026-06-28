@@ -10,7 +10,7 @@ Each frozen platform maintains the ten fields below. Update on: a module adoptin
 platform, a permitted (Critical/High/security) platform change, a defect opening/closing,
 or a certification-wave gate.
 
-_Last reviewed: 2026-06-28 (CW-02 — Cell Grading CERTIFIED)._
+_Last reviewed: 2026-06-28 (CW-03 — Manufacturing Orders CERTIFIED; Unified Product Platform v1.0 first adoption)._
 
 ## Health legend
 
@@ -38,6 +38,21 @@ _Last reviewed: 2026-06-28 (CW-02 — Cell Grading CERTIFIED)._
 | **Next Planned Version** | v1.1 (post-certification roadmap) |
 | **Enhancement Backlog Count** | 5 (ECF-001…ECF-005) |
 
+## Unified Product Platform
+
+| Field | Value |
+|-------|-------|
+| **Version** | v1.0 |
+| **Freeze Status** | FROZEN (architecture + first implementation) |
+| **Modules Using It** | 1 — Manufacturing Orders (Product minted at QC-pass) |
+| **Last Platform Change** | v1.0 first implementation + freeze (CW-03, 2026-06-28) |
+| **Open Critical Defects** | 0 |
+| **Open High Defects** | 0 |
+| **Breaking Changes Since Freeze** | 0 |
+| **Certification Status** | ✅ Certified under CW-03 (first consumer: Manufacturing); standing gates green (SS-02/SS-03/SS-04) |
+| **Next Planned Version** | v1.x downstream adoption (Inventory/Dispatch/Dealer/Reports) — additive only |
+| **Enhancement Backlog Count** | 6 (PP-001…PP-006) |
+
 ## Operational Design System (ODS)
 
 | Field | Value |
@@ -59,7 +74,7 @@ _Last reviewed: 2026-06-28 (CW-02 — Cell Grading CERTIFIED)._
 |-------|-------|
 | **Version** | v1.0 (permanent) |
 | **Freeze Status** | FROZEN |
-| **Modules Using It** | Platform-wide — every protected endpoint / module (Cell Receiving + Cell Grading certified) |
+| **Modules Using It** | Platform-wide — every protected endpoint / module (Cell Receiving + Cell Grading + Manufacturing Orders certified) |
 | **Last Platform Change** | v1.0 (CW-01, 2026-06-28) — unchanged through CW-02 |
 | **Open Critical Defects** | 0 |
 | **Open High Defects** | 0 |
@@ -74,12 +89,12 @@ _Last reviewed: 2026-06-28 (CW-02 — Cell Grading CERTIFIED)._
 |-------|-------|
 | **Version** | v1.0 |
 | **Freeze Status** | FROZEN |
-| **Modules Using It** | Per wave — CW-01 Cell Receiving (certified); CW-02 Cell Grading (certified) |
+| **Modules Using It** | Per wave — CW-01 Cell Receiving · CW-02 Cell Grading · CW-03 Manufacturing Orders (all certified) |
 | **Last Platform Change** | v1.0 (CW-01, 2026-06-28) |
 | **Open Critical Defects** | 0 |
 | **Open High Defects** | 0 |
 | **Breaking Changes Since Freeze** | 0 |
-| **Certification Status** | ✅ CW-01 + CW-02 both closed at full pass; CW-03 authorized on CW-02 freeze-package approval |
+| **Certification Status** | ✅ CW-01 + CW-02 + CW-03 all closed at full pass; Inventory Platform authorized as the next capability |
 | **Next Planned Version** | None during CW-02→CW-08 |
 | **Enhancement Backlog Count** | 5 (CF-001…CF-005 — `docs/certification-framework-backlog.md`) |
 

@@ -15,7 +15,7 @@
 
 | ID | Severity | Module vs Platform | Area | One-line | Decision |
 |----|----------|--------------------|------|----------|----------|
-| DEF-CW03-001 | Low | Platform (shared master UI, **not** a frozen framework) | MAT-04 UX | React "key prop spread into JSX" console warning on master Add/Edit drawer | _pending CTO_ |
+| DEF-CW03-001 | Low | Platform (shared master UI, **not** a frozen framework) | MAT-04 UX | React "key prop spread into JSX" console warning on master Add/Edit drawer | **Backlog (Low) — CTO 2026-06-28: no fix during manufacturing milestone; revisit only if it becomes a functional defect** |
 
 ---
 
@@ -29,7 +29,7 @@
 | **Root cause** | The drawer builds a `common` props object that includes `key` and spreads it into the field components (`<TextField {...common} />`), instead of passing `key` directly as a JSX attribute. |
 | **Impact** | None at runtime — fields render and submit correctly; warning is console-only in dev. |
 | **Proposed fix** | Pass `key` directly to each field element rather than via the spread object (one shared change in `MasterEditDrawer`). |
-| **Status** | OPEN — awaiting CTO triage approval before remediation. |
+| **Status** | BACKLOG (Low) — CTO ruling 2026-06-28: recorded in the post-certification enhancement backlog (`CW-03_FREEZE_NOTICE.md` → Carried Forward); **no fix during the manufacturing milestone**; revisit only if it later develops into a functional defect. Original preserved; no remediation performed. |
 
 ---
 

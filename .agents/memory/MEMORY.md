@@ -27,3 +27,4 @@
 - [Grading Import Framework](grading-import-framework.md) — ONE engine (calcGrade); future Excel/CSV imports adapt via GradingImportSource→normalized record→same engine; manual=one-row source; validation must mirror GradeCellBody.
 - [Doc refactor sprint (deferred)](doc-refactor-sprint.md) — run docs-only cleanup right AFTER CW-02 closes: thin replit.md → docs/architecture|governance|product; during CW-02 keep updating existing locations, no churn.
 - [Drizzle select key casing](drizzle-select-key-casing.md) — bare `.select()`+numify emits camelCase; snake_case API contracts need explicit `.select({snake: table.camel})` — gates/typecheck won't catch the drift.
+- [Cert validation-workflow false reds](cert-workflow-false-reds.md) — authz/audit "failed" = auth-limiter saturation, not a regression; authoritative run = restart api-server, no competing traffic.
