@@ -1149,6 +1149,86 @@ export const CellGradeInputOverrideStatus = {
 } as const;
 
 export interface CellGradeInput {
+  /** @exclusiveMinimum 0 */
+  voltageV: number;
+  /** @exclusiveMinimum 0 */
+  capacityAh: number;
+  /** @minimum 0 */
+  internalResistanceMohm: number;
+  /** @nullable */
+  temperatureC?: number | null;
+  /** @nullable */
+  gradingMachineId?: string | null;
+  /** @minLength 1 */
+  gradedBy: string;
+  /** @nullable */
+  gradingNotes?: string | null;
+  /** @nullable */
+  overrideStatus?: CellGradeInputOverrideStatus;
+}
+
+/**
+ * @nullable
+ */
+export type CellCorrectionInputOverrideStatus = typeof CellCorrectionInputOverrideStatus[keyof typeof CellCorrectionInputOverrideStatus] | null;
+
+
+export const CellCorrectionInputOverrideStatus = {
+  approved: 'approved',
+  rejected: 'rejected',
+  quarantine: 'quarantine',
+  null: 'null',
+} as const;
+
+export interface CellCorrectionInput {
+  /** @exclusiveMinimum 0 */
+  voltageV: number;
+  /** @exclusiveMinimum 0 */
+  capacityAh: number;
+  /** @minimum 0 */
+  internalResistanceMohm: number;
+  /** @nullable */
+  temperatureC?: number | null;
+  /** @nullable */
+  gradingMachineId?: string | null;
+  /** @minLength 1 */
+  correctedBy: string;
+  /** @minLength 1 */
+  correctionReason: string;
+  /** @nullable */
+  gradingNotes?: string | null;
+  /** @nullable */
+  overrideStatus?: CellCorrectionInputOverrideStatus;
+}
+
+export type CellMeasurementMeasurementType = typeof CellMeasurementMeasurementType[keyof typeof CellMeasurementMeasurementType];
+
+
+export const CellMeasurementMeasurementType = {
+  original: 'original',
+  correction: 'correction',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CellMeasurementGrade = typeof CellMeasurementGrade[keyof typeof CellMeasurementGrade] | null;
+
+
+export const CellMeasurementGrade = {
+  A: 'A',
+  B: 'B',
+  C: 'C',
+  reject: 'reject',
+  null: 'null',
+} as const;
+
+export interface CellMeasurement {
+  id: string;
+  cellId: string;
+  lotId?: string;
+  sequence: number;
+  measurementType: CellMeasurementMeasurementType;
   voltageV: number;
   capacityAh: number;
   internalResistanceMohm: number;
@@ -1156,11 +1236,17 @@ export interface CellGradeInput {
   temperatureC?: number | null;
   /** @nullable */
   gradingMachineId?: string | null;
+  /** @nullable */
+  grade: CellMeasurementGrade;
+  status: string;
+  /** @nullable */
+  overrideStatus?: string | null;
   gradedBy: string;
   /** @nullable */
-  gradingNotes?: string | null;
+  correctionReason?: string | null;
   /** @nullable */
-  overrideStatus?: CellGradeInputOverrideStatus;
+  gradingNotes?: string | null;
+  createdAt: string;
 }
 
 export interface CellInventorySummary {

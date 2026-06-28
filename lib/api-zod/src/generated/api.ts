@@ -3928,13 +3928,22 @@ export const GradeCellParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const gradeCellBodyVoltageVExclusiveMin = 0;
+
+export const gradeCellBodyCapacityAhExclusiveMin = 0;
+
+export const gradeCellBodyInternalResistanceMohmMin = 0;
+
+
+
+
 export const GradeCellBody = zod.object({
-  "voltageV": zod.number(),
-  "capacityAh": zod.number(),
-  "internalResistanceMohm": zod.number(),
+  "voltageV": zod.number().gt(gradeCellBodyVoltageVExclusiveMin),
+  "capacityAh": zod.number().gt(gradeCellBodyCapacityAhExclusiveMin),
+  "internalResistanceMohm": zod.number().min(gradeCellBodyInternalResistanceMohmMin),
   "temperatureC": zod.number().nullish(),
   "gradingMachineId": zod.string().nullish(),
-  "gradedBy": zod.string(),
+  "gradedBy": zod.string().min(1),
   "gradingNotes": zod.string().nullish(),
   "overrideStatus": zod.enum(['approved', 'rejected', 'quarantine', 'null']).nullish()
 })
@@ -3958,6 +3967,87 @@ export const GradeCellResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
+
+
+/**
+ * DEF-CW02-006 controlled correction workflow. Supervisor/Director only. Re-measures an already-graded cell with a mandatory correction reason. The original measurement is preserved immutably; the correction is appended as a new measurement record and becomes the active grade. Emits an audit event (cell_grade_corrected) on the lot timeline.
+ * @summary Correct a graded cell's measurements (controlled re-grade)
+ */
+export const CorrectCellParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const correctCellBodyVoltageVExclusiveMin = 0;
+
+export const correctCellBodyCapacityAhExclusiveMin = 0;
+
+export const correctCellBodyInternalResistanceMohmMin = 0;
+
+
+
+
+
+export const CorrectCellBody = zod.object({
+  "voltageV": zod.number().gt(correctCellBodyVoltageVExclusiveMin),
+  "capacityAh": zod.number().gt(correctCellBodyCapacityAhExclusiveMin),
+  "internalResistanceMohm": zod.number().min(correctCellBodyInternalResistanceMohmMin),
+  "temperatureC": zod.number().nullish(),
+  "gradingMachineId": zod.string().nullish(),
+  "correctedBy": zod.string().min(1),
+  "correctionReason": zod.string().min(1),
+  "gradingNotes": zod.string().nullish(),
+  "overrideStatus": zod.enum(['approved', 'rejected', 'quarantine', 'null']).nullish()
+})
+
+export const CorrectCellResponse = zod.object({
+  "id": zod.string().uuid(),
+  "cellId": zod.string(),
+  "lotId": zod.string().uuid(),
+  "status": zod.enum(['received', 'grading', 'approved', 'rejected', 'quarantine', 'reserved', 'allocated']),
+  "grade": zod.enum(['A', 'B', 'C', 'reject', 'null']).nullish(),
+  "voltageV": zod.number().nullish(),
+  "capacityAh": zod.number().nullish(),
+  "internalResistanceMohm": zod.number().nullish(),
+  "temperatureC": zod.number().nullish(),
+  "gradingMachineId": zod.string().nullish(),
+  "gradedBy": zod.string().nullish(),
+  "gradedAt": zod.coerce.date().nullish(),
+  "gradingNotes": zod.string().nullish(),
+  "matchId": zod.string().uuid().nullish(),
+  "allocationOrderId": zod.string().uuid().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * Returns every measurement record for the cell ordered by sequence — the original grading plus any corrections — so the grading genealogy is always reconstructable. The highest-sequence record is the active measurement.
+ * @summary Full measurement history for a cell (genealogy)
+ */
+export const ListCellMeasurementsParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ListCellMeasurementsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "cellId": zod.string().uuid(),
+  "lotId": zod.string().uuid().optional(),
+  "sequence": zod.number(),
+  "measurementType": zod.enum(['original', 'correction']),
+  "voltageV": zod.number(),
+  "capacityAh": zod.number(),
+  "internalResistanceMohm": zod.number(),
+  "temperatureC": zod.number().nullish(),
+  "gradingMachineId": zod.string().nullish(),
+  "grade": zod.enum(['A', 'B', 'C', 'reject', 'null']).nullable(),
+  "status": zod.string(),
+  "overrideStatus": zod.string().nullish(),
+  "gradedBy": zod.string(),
+  "correctionReason": zod.string().nullish(),
+  "gradingNotes": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCellMeasurementsResponse = zod.array(ListCellMeasurementsResponseItem)
 
 
 /**

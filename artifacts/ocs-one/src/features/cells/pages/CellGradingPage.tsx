@@ -29,7 +29,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useOdsNotify } from "@/hooks/use-ods-notify";
-import { useListCells, useGradeCell } from "@workspace/api-client-react";
+import { useListCells, useGradeCell, useCorrectCell } from "@workspace/api-client-react";
+import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -61,6 +62,22 @@ const DEFAULT_GRADE_FORM = {
 
 type GradeForm = typeof DEFAULT_GRADE_FORM;
 
+const DEFAULT_CORRECT_FORM = {
+  voltageV: "",
+  capacityAh: "",
+  internalResistanceMohm: "",
+  temperatureC: "",
+  gradingMachineId: "",
+  correctedBy: "",
+  correctionReason: "",
+  gradingNotes: "",
+  overrideStatus: "none",
+};
+
+type CorrectForm = typeof DEFAULT_CORRECT_FORM;
+
+const GRADED_STATUSES = new Set(["approved", "rejected", "quarantine"]);
+
 export default function CellGradingPage() {
   const notify = useOdsNotify();
   const queryClient = useQueryClient();
@@ -70,6 +87,11 @@ export default function CellGradingPage() {
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   const [selectedCellLabel, setSelectedCellLabel] = useState<string>("");
   const [form, setForm] = useState<GradeForm>(DEFAULT_GRADE_FORM);
+  const [correctCellId, setCorrectCellId] = useState<string | null>(null);
+  const [correctCellLabel, setCorrectCellLabel] = useState<string>("");
+  const [correctForm, setCorrectForm] = useState<CorrectForm>(DEFAULT_CORRECT_FORM);
+  const { user } = useAuth();
+  const canCorrect = user?.role === "supervisor" || user?.role === "director";
   const formRef = useRef<HTMLFormElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
@@ -99,6 +121,57 @@ export default function CellGradingPage() {
         notify.error("Grading failed", { description: e?.message }),
     },
   });
+
+  const correctCell = useCorrectCell({
+    mutation: {
+      onSuccess: (result) => {
+        queryClient.invalidateQueries({ queryKey: ["/api/cells"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/cells/inventory"] });
+        setCorrectCellId(null);
+        setCorrectForm(DEFAULT_CORRECT_FORM);
+        const grade = (result as any).grade ?? "unknown";
+        const status = (result as any).status;
+        notify.success(`Cell corrected — Grade ${grade}`, { description: `Status set to ${status}` });
+      },
+      onError: (e: any) =>
+        notify.error("Correction failed", { description: e?.message }),
+    },
+  });
+
+  const handleCorrect = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!correctCellId) return;
+    if (
+      !correctForm.voltageV ||
+      !correctForm.capacityAh ||
+      !correctForm.internalResistanceMohm ||
+      !correctForm.correctedBy.trim() ||
+      !correctForm.correctionReason.trim()
+    ) {
+      notify.error("Required fields missing", { description: "Measurements, your name, and a correction reason are mandatory." });
+      return;
+    }
+    correctCell.mutate({
+      id: correctCellId,
+      data: {
+        voltageV: parseFloat(correctForm.voltageV),
+        capacityAh: parseFloat(correctForm.capacityAh),
+        internalResistanceMohm: parseFloat(correctForm.internalResistanceMohm),
+        temperatureC: correctForm.temperatureC ? parseFloat(correctForm.temperatureC) : null,
+        gradingMachineId: correctForm.gradingMachineId || null,
+        correctedBy: correctForm.correctedBy.trim(),
+        correctionReason: correctForm.correctionReason.trim(),
+        gradingNotes: correctForm.gradingNotes || null,
+        overrideStatus:
+          correctForm.overrideStatus !== "none"
+            ? (correctForm.overrideStatus as "approved" | "rejected" | "quarantine")
+            : null,
+      },
+    });
+  };
+
+  const setCorrect = (k: keyof CorrectForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setCorrectForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleGrade = (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,19 +290,40 @@ export default function CellGradingPage() {
                       <TableCell className="text-right">{cell.internalResistanceMohm?.toFixed(3) ?? "—"}</TableCell>
                       <TableCell className="text-sm">{cell.gradedBy ?? "—"}</TableCell>
                       <TableCell>
-                        {canGrade && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedCellId(cell.id);
-                              setSelectedCellLabel(cell.cellId);
-                              setForm(DEFAULT_GRADE_FORM);
-                            }}
-                          >
-                            Grade
-                          </Button>
-                        )}
+                        <div className="flex gap-2">
+                          {canGrade && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedCellId(cell.id);
+                                setSelectedCellLabel(cell.cellId);
+                                setForm(DEFAULT_GRADE_FORM);
+                              }}
+                            >
+                              Grade
+                            </Button>
+                          )}
+                          {canCorrect && GRADED_STATUSES.has(cell.status) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setCorrectCellId(cell.id);
+                                setCorrectCellLabel(cell.cellId);
+                                setCorrectForm({
+                                  ...DEFAULT_CORRECT_FORM,
+                                  voltageV: cell.voltageV != null ? String(cell.voltageV) : "",
+                                  capacityAh: cell.capacityAh != null ? String(cell.capacityAh) : "",
+                                  internalResistanceMohm:
+                                    cell.internalResistanceMohm != null ? String(cell.internalResistanceMohm) : "",
+                                });
+                              }}
+                            >
+                              Correct
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -310,6 +404,79 @@ export default function CellGradingPage() {
               <Button type="submit" disabled={gradeCell.isPending}>
                 {gradeCell.isPending && <Loader2 size={14} className="mr-1 animate-spin" />}
                 Record Grade
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!correctCellId} onOpenChange={(o) => !o && setCorrectCellId(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Correct Grade — <span className="font-mono text-primary">{correctCellLabel}</span></DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCorrect} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Voltage (V) *</Label>
+                <Input type="number" step="0.001" value={correctForm.voltageV} onChange={setCorrect("voltageV")} placeholder="3.300" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Capacity (Ah) *</Label>
+                <Input type="number" step="0.01" value={correctForm.capacityAh} onChange={setCorrect("capacityAh")} placeholder="280.00" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Internal Resistance (mΩ) *</Label>
+                <Input type="number" step="0.001" value={correctForm.internalResistanceMohm} onChange={setCorrect("internalResistanceMohm")} placeholder="0.280" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Temperature (°C)</Label>
+                <Input type="number" step="0.1" value={correctForm.temperatureC} onChange={setCorrect("temperatureC")} placeholder="25.0" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Grading Machine ID</Label>
+                <Input value={correctForm.gradingMachineId} onChange={setCorrect("gradingMachineId")} placeholder="MACH-01" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Corrected By *</Label>
+                <Input value={correctForm.correctedBy} onChange={setCorrect("correctedBy")} placeholder="Your name" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Correction Reason *</Label>
+              <Input value={correctForm.correctionReason} onChange={setCorrect("correctionReason")} placeholder="Why is this grade being corrected?" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Notes</Label>
+              <Input value={correctForm.gradingNotes} onChange={setCorrect("gradingNotes")} placeholder="Any observations..." />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Override Status (optional)</Label>
+              <Select
+                value={correctForm.overrideStatus}
+                onValueChange={(v) => setCorrectForm((f) => ({ ...f, overrideStatus: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Auto-calculate from grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Auto (from grade)</SelectItem>
+                  <SelectItem value="approved">Force Approve</SelectItem>
+                  <SelectItem value="rejected">Force Reject</SelectItem>
+                  <SelectItem value="quarantine">Quarantine</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground bg-muted rounded p-2">
+              The original measurement is preserved immutably. This correction is appended to the
+              cell's grade history as the new active grade, and is recorded on the audit timeline
+              with your name and reason.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setCorrectCellId(null)}>Cancel</Button>
+              <Button type="submit" disabled={correctCell.isPending}>
+                {correctCell.isPending && <Loader2 size={14} className="mr-1 animate-spin" />}
+                Record Correction
               </Button>
             </div>
           </form>

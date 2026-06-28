@@ -5,9 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { CellGradeInputOverrideStatus } from './cellGradeInputOverrideStatus';
+import type { CellCorrectionInputOverrideStatus } from './cellCorrectionInputOverrideStatus';
 
-export interface CellGradeInput {
+export interface CellCorrectionInput {
   /** @exclusiveMinimum 0 */
   voltageV: number;
   /** @exclusiveMinimum 0 */
@@ -19,9 +19,11 @@ export interface CellGradeInput {
   /** @nullable */
   gradingMachineId?: string | null;
   /** @minLength 1 */
-  gradedBy: string;
+  correctedBy: string;
+  /** @minLength 1 */
+  correctionReason: string;
   /** @nullable */
   gradingNotes?: string | null;
   /** @nullable */
-  overrideStatus?: CellGradeInputOverrideStatus;
+  overrideStatus?: CellCorrectionInputOverrideStatus;
 }

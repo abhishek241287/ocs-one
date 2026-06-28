@@ -10,6 +10,7 @@
 - [Cert single-source pattern (SS-04)](config-integrity-cert-pattern.md) — every cert standard = one lib source driving BOTH suite + dashboard; FAIL=drift (exit 1), WARN=documented dev-only exception.
 - [CSP static-frontend caveat](csp-static-frontend-caveat.md) — API helmet CSP governs API JSON only, NOT the static SPA HTML; script-src env-gated, style-src 'unsafe-inline' documented exception.
 - [Drizzle wraps PG errors](drizzle-pg-error-wrapping.md) — PG error code 23505 lives on `err.cause.code`, not `err.code`; check both in Express error handlers.
+- [State-transition TOCTOU](state-transition-toctou.md) — status guards in correction/mutation routes must re-check inside the tx under `SELECT … FOR UPDATE`; pre-tx read alone is a TOCTOU race.
 - [Git tags blocked for main agent](git-tag-blocked-main-agent.md) — `git tag`/commit/reset fail in main agent; record tag in docs + propose a background Project Task for the literal ref.
 - [SS-03 audit verification](audit-trail-verification.md) — two append-only stores (security_events + cell_lot_events) with different columns mapped to logical fields; immutability proven static + runtime.
 - [Date presence check gotcha](date-presence-check.md) — a JS Date is typeof "object" with 0 enumerable keys; special-case `instanceof Date` before the object branch in presence/empty helpers.

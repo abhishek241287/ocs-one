@@ -35,6 +35,7 @@ import {
   cellLotsTable,
   cellsTable,
   cellLotEventsTable,
+  cellGradeMeasurementsTable,
   securityEventsTable,
   usersTable,
 } from "@workspace/db";
@@ -202,6 +203,17 @@ const SEMANTIC: Record<string, (r: Record<string, unknown>) => string[]> = {
       st.to === "graded" ? "" : "changes.status.to≠graded",
     ].filter(Boolean);
   },
+  cell_grade_corrected: (r) => {
+    const c = asObj(r.changes);
+    const grade = asObj(c.grade);
+    return [
+      r.performedBy === DIRECTOR_EMAIL ? "" : "actor≠director",
+      r.lotId === certLotId ? "" : "entity≠certLot",
+      typeof r.reason === "string" && r.reason.length > 0 ? "" : "correction reason missing",
+      typeof c.cellId === "string" ? "" : "changes.cellId missing",
+      "from" in grade && "to" in grade ? "" : "changes.grade before/after missing",
+    ].filter(Boolean);
+  },
 };
 
 async function findSecurityEvent(
@@ -320,6 +332,22 @@ async function runTriggers(directorJar: CookieJar): Promise<{ viewerLoginRowId: 
     await g.text().catch(() => undefined);
   }
 
+  // cell_grade_corrected — director corrects the first (now approved) cell with a
+  // mandatory reason. Exercises the DEF-CW02-006 controlled correction workflow.
+  const corr = await fetchResilient(`${BASE_URL}/api/cells/${cells[0].id}/correct`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: directorJar ?? "" },
+    body: JSON.stringify({
+      voltageV: 3.2,
+      capacityAh: 270,
+      internalResistanceMohm: 1.1,
+      correctedBy: DIRECTOR_EMAIL,
+      correctionReason: "SS-03 audit verification — corrected measurement",
+    }),
+  });
+  if (corr.status !== 200) throw new Error(`Correcting cell ${cells[0].cellId} failed: HTTP ${corr.status}`);
+  await corr.text().catch(() => undefined);
+
   // ratelimit.exceeded — opt-in burst against the auth limiter (20 / 15min).
   if (EXERCISE_RATELIMIT) {
     for (let i = 0; i < 25; i++) {
@@ -404,6 +432,8 @@ async function deepEqualPersisted(
 // ─── Cleanup — remove the throwaway fixture (cells → events → lot → user) ─────
 async function cleanup(): Promise<void> {
   if (certLotId) {
+    // cell_grade_measurements references cells (no cascade) — delete it first.
+    await db.delete(cellGradeMeasurementsTable).where(eq(cellGradeMeasurementsTable.lotId, certLotId)).catch(() => undefined);
     await db.delete(cellsTable).where(eq(cellsTable.lotId, certLotId)).catch(() => undefined);
     await db.delete(cellLotEventsTable).where(eq(cellLotEventsTable.lotId, certLotId)).catch(() => undefined);
     await db.delete(cellLotsTable).where(eq(cellLotsTable.id, certLotId)).catch(() => undefined);

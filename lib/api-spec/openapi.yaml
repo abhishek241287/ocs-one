@@ -1891,6 +1891,62 @@ paths:
         "400":
           description: Cell not in gradeable state
 
+  /cells/{id}/correct:
+    post:
+      operationId: correctCell
+      tags: [cells]
+      summary: Correct a graded cell's measurements (controlled re-grade)
+      description: >
+        DEF-CW02-006 controlled correction workflow. Supervisor/Director only.
+        Re-measures an already-graded cell with a mandatory correction reason.
+        The original measurement is preserved immutably; the correction is appended
+        as a new measurement record and becomes the active grade. Emits an audit
+        event (cell_grade_corrected) on the lot timeline.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CellCorrectionInput"
+      responses:
+        "200":
+          description: Corrected cell (active snapshot)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cell"
+        "400":
+          description: Cell not in a correctable state, or invalid input
+        "403":
+          description: Insufficient role (supervisor/director only)
+        "404":
+          description: Cell not found
+
+  /cells/{id}/measurements:
+    get:
+      operationId: listCellMeasurements
+      tags: [cells]
+      summary: Full measurement history for a cell (genealogy)
+      description: >
+        Returns every measurement record for the cell ordered by sequence — the
+        original grading plus any corrections — so the grading genealogy is always
+        reconstructable. The highest-sequence record is the active measurement.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Measurement history (oldest first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CellMeasurement"
+        "404":
+          description: Cell not found
+
   # ── Cell Grading — Reports ────────────────────────────────────────────────
   /cells/reports/receiving:
     get:
@@ -3293,16 +3349,65 @@ components:
       type: object
       required: [voltageV, capacityAh, internalResistanceMohm, gradedBy]
       properties:
+        # DEF-CW02-004: strict engineering validation — physically-impossible
+        # measurements are rejected at the schema (API + frontend + generated clients
+        # share one source of truth). capacity & voltage are strictly positive;
+        # internal resistance is non-negative.
+        voltageV: { type: number, exclusiveMinimum: 0 }
+        capacityAh: { type: number, exclusiveMinimum: 0 }
+        internalResistanceMohm: { type: number, minimum: 0 }
+        temperatureC: { type: ["number", "null"] }
+        gradingMachineId: { type: ["string", "null"] }
+        # DEF-CW02-005: operator attribution is mandatory and non-blank (server
+        # also trims whitespace before validating — audit records never carry an
+        # anonymous operator).
+        gradedBy: { type: string, minLength: 1 }
+        gradingNotes: { type: ["string", "null"] }
+        overrideStatus:
+          type: ["string", "null"]
+          enum: [approved, rejected, quarantine, "null"]
+
+    # DEF-CW02-006: controlled correction workflow. Only Supervisor/Director may
+    # reopen a graded cell; a correction reason is mandatory; the original
+    # measurement is preserved immutably and the correction is appended as a new
+    # measurement record (full history reconstructable).
+    CellCorrectionInput:
+      type: object
+      required: [voltageV, capacityAh, internalResistanceMohm, correctedBy, correctionReason]
+      properties:
+        voltageV: { type: number, exclusiveMinimum: 0 }
+        capacityAh: { type: number, exclusiveMinimum: 0 }
+        internalResistanceMohm: { type: number, minimum: 0 }
+        temperatureC: { type: ["number", "null"] }
+        gradingMachineId: { type: ["string", "null"] }
+        correctedBy: { type: string, minLength: 1 }
+        correctionReason: { type: string, minLength: 1 }
+        gradingNotes: { type: ["string", "null"] }
+        overrideStatus:
+          type: ["string", "null"]
+          enum: [approved, rejected, quarantine, "null"]
+
+    CellMeasurement:
+      type: object
+      required: [id, cellId, sequence, measurementType, voltageV, capacityAh, internalResistanceMohm, grade, status, gradedBy, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        cellId: { type: string, format: uuid }
+        lotId: { type: string, format: uuid }
+        sequence: { type: integer }
+        measurementType: { type: string, enum: [original, correction] }
         voltageV: { type: number }
         capacityAh: { type: number }
         internalResistanceMohm: { type: number }
         temperatureC: { type: ["number", "null"] }
         gradingMachineId: { type: ["string", "null"] }
+        grade: { type: ["string", "null"], enum: [A, B, C, reject, "null"] }
+        status: { type: string }
+        overrideStatus: { type: ["string", "null"] }
         gradedBy: { type: string }
+        correctionReason: { type: ["string", "null"] }
         gradingNotes: { type: ["string", "null"] }
-        overrideStatus:
-          type: ["string", "null"]
-          enum: [approved, rejected, quarantine, "null"]
+        createdAt: { type: string, format: date-time }
 
     CellInventorySummary:
       type: object

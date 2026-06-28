@@ -136,7 +136,9 @@ unless a minimum role is stated.
 | `/lots` | GET | ✅ | viewer (read) | global | no | ✅ |
 | `/lots`, `/lots/:id` | POST/PATCH | ✅ | **operator, supervisor, director** | global | no | ✅ |
 | `/cells` (grading) | GET | ✅ | viewer (read) | global | no | ✅ |
-| `/cells` (grade) | POST | ✅ | **operator, supervisor, director** | global | no | ✅ |
+| `/cells` (grade) | POST | ✅ | **operator, supervisor, director** | global | no | ✅ (numeric bounds: capacityAh>0, voltageV>0, IR≥0, gradedBy non-blank → 400, DEF-CW02-004/005) |
+| `/cells/:id/correct` (controlled re-grade) | POST | ✅ | **supervisor, director** | global | ✅ (`cell_grade_corrected`) | ✅ (mandatory reason; original immutable; appended correction = active; DEF-CW02-006) |
+| `/cells/:id/measurements` (grade history/genealogy) | GET | ✅ | viewer (read) | global | no | ✅ |
 | `/matches` | GET | ✅ | viewer (read) | global | no | ✅ |
 | `/matches*` (match/reserve/release) | POST | ✅ | **operator, supervisor, director** | global | no | ✅ |
 | `/config` | GET | ✅ | viewer (read) | global | no | ✅ |

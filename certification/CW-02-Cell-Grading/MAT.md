@@ -301,6 +301,38 @@ cases run as one batch, DB state verified with `executeSql`, then **all cert dat
 
 > **MAT-02 status: executed in full; awaiting CTO approval on the 3 defects (1 High + 2 Medium) before remediation.** Per the batch-MAT cycle, all approved Critical/High/Medium fixes will be made together, then the full MAT-02 batch re-run before the gate is closed.
 
+### MAT-02 Remediation (CTO-approved single batch — 2026-06-28)
+
+CTO approved a single-batch remediation of all 3 defects. Fixes applied together, then the FULL MAT-02 batch re-run (no per-defect loops).
+
+| ID | Fix shipped |
+|----|-------------|
+| DEF-CW02-004 (High) | `CellGradeInput` (and new `CellCorrectionInput`) now constrain `capacityAh`/`voltageV` with `exclusiveMinimum: 0` and `internalResistanceMohm` with `minimum: 0`. Zod regenerated; server rejects out-of-range with **400** before any DB write. |
+| DEF-CW02-005 (Medium) | `gradedBy` (and correction `correctedBy`) carry `minLength: 1`; server **trims** then rejects blank with **400**. |
+| DEF-CW02-006 (Medium) | New **controlled correction workflow**: `POST /cells/{id}/correct` (supervisor/director only, mandatory `correctionReason`) recomputes the grade, **appends** a correction to the new append-only `cell_grade_measurements` store (original immutable; latest sequence = active), updates the cell snapshot, and emits a `cell_grade_corrected` audit event. `GET /cells/{id}/measurements` exposes the full genealogy. SS-02/SS-03 matrices extended; SS-01 matrix doc updated. ODS-only supervisor+ Correct modal added to the grading page. **Concurrency hardening (architect review):** the production-committed guard is re-validated INSIDE the transaction under a `SELECT … FOR UPDATE` row lock (not just the pre-check), closing a TOCTOU window where a cell could flip to `reserved`/`allocated` between check and write; the row lock also serialises concurrent corrections so the append sequence cannot collide. |
+
+### MAT-02 Re-run (FULL batch — 2026-06-28, post-remediation)
+
+Re-ran the entire phase as a batch (no stopping):
+
+| GR case | Result |
+|---|---|
+| capacityAh `<0` / `=0` → 400 | ✅ |
+| voltageV `=0` / `<0` → 400 | ✅ |
+| internalResistanceMohm `<0` → 400; `=0` → 200 (≥0 allowed) | ✅ |
+| gradedBy `""` / whitespace → 400 (trim) | ✅ |
+| valid grade → 200 + recompute | ✅ |
+| operator correction → **403** | ✅ |
+| correction missing/blank reason → **400** | ✅ |
+| correction with reason → **200** + recompute (A→reject on 280→250 Ah) | ✅ |
+| measurement history grows 1→2 | ✅ |
+| original measurement immutable (byte-identical) | ✅ |
+| correction = active grade + reason persisted; full genealogy reconstructable | ✅ |
+
+**MAT-02 re-run result: 16/16 GR assertions PASS. 10-pt scorecard now 10/10 (item 2 Edit/correction and item 6 Validation both ✅).** Cert suites green: **SS-02** 235/235 authz assertions (47 endpoints × 5 principals); **SS-03** 12/12 audited operations + immutability (static + runtime); **SS-04** 31 pass · 3 dev-warn · 0 fail. `typecheck` + `lint` (0 warnings) green. All throwaway fixtures torn down.
+
+> **Platform observation (recorded, NOT scope expansion):** (1) per CTO future-rec, the correction pattern (append-only versioned measurement + mandatory-reason audit event + immutable original) is a strong candidate for a **reusable platform framework** so other editable certified records (e.g. test results, stage data) get controlled-correction for free. (2) Per DEF-004, a repository-wide SS-01 sweep of other numeric engineering-value schemas for the unconstrained-`number` pattern is recommended. (3) **Audit actor attribution (architect-flagged, systemic → platform, frozen):** `gradedBy`/`correctedBy` (and the `cell_lot_events.performedBy` derived from them) are operator-entered DATA fields sourced from the request body — the long-standing pattern across the *entire* grade route, not introduced by this fix. They are therefore self-reported labels, not the authenticated session identity, so a privileged actor could record a different name. SS-02 still enforces *who may act*; this concerns *the label stored for who acted*. Binding the authoritative audit actor to `req.user` across all cell/lot events is a repo-wide platform change (out of this cert-defect scope) — flagged for CTO ruling in a future wave. These are all tracked for a future wave; out of scope here.
+
 ---
 
 ## Open Defects (CW-02)
@@ -310,9 +342,9 @@ cases run as one batch, DB state verified with `executeSql`, then **all cert dat
 | DEF-CW02-001 | Low | **Closed** (MAT-01 remediation) | MAT-01 |
 | DEF-CW02-002 | Medium | **Closed** (platform — `useToast`→`useOdsNotify`) | MAT-01 |
 | DEF-CW02-003 | Low | **Closed** (MAT-01 remediation) | MAT-01 |
-| DEF-CW02-004 | **High** | **Open** — awaiting CTO approval | MAT-02 |
-| DEF-CW02-005 | **Medium** | **Open** — awaiting CTO approval | MAT-02 |
-| DEF-CW02-006 | **Medium** | **Open** — awaiting CTO ruling (business rule) | MAT-02 |
+| DEF-CW02-004 | **High** | **Closed** (MAT-02 remediation — schema bounds + 400) | MAT-02 |
+| DEF-CW02-005 | **Medium** | **Closed** (MAT-02 remediation — minLength + trim + 400) | MAT-02 |
+| DEF-CW02-006 | **Medium** | **Closed** (MAT-02 remediation — controlled correction workflow) | MAT-02 |
 
 | Observation | For |
 |-------------|-----|
@@ -327,8 +359,9 @@ cases run as one batch, DB state verified with `executeSql`, then **all cert dat
 - [x] **CTO triage decision** — Option 1 approved: DEF-CW02-002 fixed as a platform certification defect.
 - [x] **MAT-01 defects remediated + re-tested → FULL PASS** (10/10; DEF-001/002/003 all Closed).
 - [x] **MAT-02 executed (full batch)** — 8 Pass / 1 Partial / 1 Fail (10-pt); 3 defects filed (DEF-004 High, DEF-005/006 Medium); cert data torn down.
-- [ ] **CTO approval on MAT-02 defects** — pending (DEF-004/005 schema fix; DEF-006 business-rule ruling).
-- [ ] MAT-02 remediation (batch) + full re-run → close gate.
+- [x] **CTO approval on MAT-02 defects** — approved single-batch remediation of all 3 (DEF-004/005 schema fix; DEF-006 controlled correction workflow).
+- [x] **MAT-02 remediation (single batch) + FULL re-run → PASS** (16/16 GR assertions; 10/10 scorecard; SS-02/03/04 green). **DEF-004/005/006 all Closed.**
+- [x] **MAT-02 gate CLOSED** — 0 open Critical/High.
 - [ ] MAT-03 → MAT-06.
 
 **Plan signed:** Replit Agent (QA) · 2026-06-28

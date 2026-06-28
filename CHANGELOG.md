@@ -7,8 +7,48 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased] — CW-02 Cell Grading (in progress)
 
-> **Certification Wave 02 — Cell Grading.** MAT-01 (Page & Navigation) executed and closed at
-> FULL PASS (10/10). Platform/ODS remains frozen except CTO-approved cert-driven corrections.
+> **Certification Wave 02 — Cell Grading.** MAT-01 (Page & Navigation) and MAT-02 (CRUD &
+> Data Integrity) both executed and closed at FULL PASS (10/10 each). Platform/ODS remains
+> frozen except CTO-approved cert-driven corrections.
+
+### 🛡️ MAT-02 remediation — data integrity & controlled corrections (DEF-CW02-004/005/006)
+
+CTO-approved single-batch remediation of all 3 MAT-02 defects; full MAT-02 batch re-run to PASS.
+
+- **DEF-CW02-004 (High) — strict numeric measurement validation.** `CellGradeInput` (and the new
+  `CellCorrectionInput`) now bound engineering values: `capacityAh` and `voltageV` carry
+  `exclusiveMinimum: 0`, `internalResistanceMohm` carries `minimum: 0` (IR=0 is physically valid).
+  Zod/hooks regenerated; the server rejects out-of-range values with **400** before any DB write,
+  so corrupt data can no longer enter the certified grade record or feed downstream matching.
+- **DEF-CW02-005 (Medium) — operator attribution required.** `gradedBy` (and correction
+  `correctedBy`) carry `minLength: 1`; the server **trims** then rejects blank/whitespace with
+  **400**, closing the empty-actor traceability gap.
+- **DEF-CW02-006 (Medium) — controlled correction workflow.** Graded cells are no longer locked
+  out of correction. New append-only `cell_grade_measurements` store (sequence, type
+  `original|correction`, measurements, grade/status, gradedBy, correctionReason, createdAt; latest
+  sequence = active). `POST /cells/{id}/correct` (**supervisor/director only, mandatory
+  `correctionReason`**) recomputes the grade, **appends** a correction (original immutable),
+  updates the cell snapshot, and emits a `cell_grade_corrected` audit event. `GET
+  /cells/{id}/measurements` exposes the full reconstructable genealogy. The grade route now also
+  writes the seq-1 `original` measurement. ODS-only supervisor+ **Correct** action + mandatory-reason
+  modal added to the grading page.
+  - **Concurrency hardening (architect review):** the `reserved`/`allocated` production-committed
+    guard is re-validated INSIDE the correction transaction under a `SELECT … FOR UPDATE` row lock,
+    not only in the pre-check — closing a TOCTOU window and serialising concurrent corrections so the
+    append `sequence` cannot collide.
+  - **Security matrices extended (cannot drift):** SS-02 authz adds `cells.correct`
+    (supervisor/director write; operator/viewer/anon denied) + `cells.measurements` (all authed
+    read); SS-03 audit adds `cell_grade_corrected` (store `cell_lot`). SS-01 security matrix doc
+    updated for both new endpoints.
+- **Verification (FULL MAT-02 re-run, batch — no per-defect loops):** 16/16 GR assertions PASS;
+  10/10 scorecard (Edit/correction + Validation now ✅). SS-02 (235/235), SS-03 (12/12 +
+  immutability static+runtime), SS-04 (31 pass · 3 dev-warn · 0 fail) all green; `typecheck` +
+  `lint` (0 warnings) green. All throwaway cert fixtures torn down. **DEF-CW02-004/005/006 Closed;
+  MAT-02 gate closed (0 open Critical/High).**
+  - **Observations (recorded, not in scope):** the correction pattern (append-only versioned
+    measurement + mandatory-reason audit + immutable original) is a candidate for a reusable
+    platform framework; a repo-wide SS-01 sweep of other unconstrained numeric schemas is
+    recommended — both deferred to a future wave.
 
 ### ♻️ Platform certification defect — notifications unified on ODS (DEF-CW02-002)
 

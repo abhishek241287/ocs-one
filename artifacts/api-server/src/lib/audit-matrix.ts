@@ -137,4 +137,13 @@ export const AUDIT_MATRIX: AuditCheck[] = [
     expectedEventType: "lot_fully_graded",
     requires: ALL,
   },
+  {
+    // DEF-CW02-006: every controlled correction must be audited with its
+    // mandatory reason, actor, entity, and before/after detail.
+    id: "cell_grade_corrected",
+    action: "Correct a graded cell (controlled re-grade)",
+    store: "cell_lot",
+    expectedEventType: "cell_grade_corrected",
+    requires: ALL,
+  },
 ];

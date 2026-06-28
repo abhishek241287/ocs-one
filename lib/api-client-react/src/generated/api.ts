@@ -37,6 +37,7 @@ import type {
   CableMasterInput,
   CableMasterUpdate,
   Cell,
+  CellCorrectionInput,
   CellDetail,
   CellGradeConfig,
   CellGradeConfigInput,
@@ -50,6 +51,7 @@ import type {
   CellMasterUpdate,
   CellMatchDetail,
   CellMatchInput,
+  CellMeasurement,
   ChargerMaster,
   ChargerMasterInput,
   ChargerMasterUpdate,
@@ -7026,6 +7028,156 @@ export const useGradeCell = <TError = ErrorType<void>,
       > => {
       return useMutation(getGradeCellMutationOptions(options));
     }
+
+export const getCorrectCellUrl = (id: string,) => {
+
+
+
+
+  return `/api/cells/${id}/correct`
+}
+
+/**
+ * DEF-CW02-006 controlled correction workflow. Supervisor/Director only. Re-measures an already-graded cell with a mandatory correction reason. The original measurement is preserved immutably; the correction is appended as a new measurement record and becomes the active grade. Emits an audit event (cell_grade_corrected) on the lot timeline.
+ * @summary Correct a graded cell's measurements (controlled re-grade)
+ */
+export const correctCell = async (id: string,
+    cellCorrectionInput: CellCorrectionInput, options?: RequestInit): Promise<Cell> => {
+
+  return customFetch<Cell>(getCorrectCellUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cellCorrectionInput)
+  }
+);}
+
+
+
+
+export const getCorrectCellMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof correctCell>>, TError,{id: string;data: BodyType<CellCorrectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof correctCell>>, TError,{id: string;data: BodyType<CellCorrectionInput>}, TContext> => {
+
+const mutationKey = ['correctCell'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof correctCell>>, {id: string;data: BodyType<CellCorrectionInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  correctCell(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CorrectCellMutationResult = NonNullable<Awaited<ReturnType<typeof correctCell>>>
+    export type CorrectCellMutationBody = BodyType<CellCorrectionInput>
+    export type CorrectCellMutationError = ErrorType<void>
+
+    /**
+ * @summary Correct a graded cell's measurements (controlled re-grade)
+ */
+export const useCorrectCell = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof correctCell>>, TError,{id: string;data: BodyType<CellCorrectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof correctCell>>,
+        TError,
+        {id: string;data: BodyType<CellCorrectionInput>},
+        TContext
+      > => {
+      return useMutation(getCorrectCellMutationOptions(options));
+    }
+
+export const getListCellMeasurementsUrl = (id: string,) => {
+
+
+
+
+  return `/api/cells/${id}/measurements`
+}
+
+/**
+ * Returns every measurement record for the cell ordered by sequence — the original grading plus any corrections — so the grading genealogy is always reconstructable. The highest-sequence record is the active measurement.
+ * @summary Full measurement history for a cell (genealogy)
+ */
+export const listCellMeasurements = async (id: string, options?: RequestInit): Promise<CellMeasurement[]> => {
+
+  return customFetch<CellMeasurement[]>(getListCellMeasurementsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCellMeasurementsQueryKey = (id: string,) => {
+    return [
+    `/api/cells/${id}/measurements`
+    ] as const;
+    }
+
+
+export const getListCellMeasurementsQueryOptions = <TData = Awaited<ReturnType<typeof listCellMeasurements>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCellMeasurements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCellMeasurementsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCellMeasurements>>> = ({ signal }) => listCellMeasurements(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCellMeasurements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCellMeasurementsQueryResult = NonNullable<Awaited<ReturnType<typeof listCellMeasurements>>>
+export type ListCellMeasurementsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Full measurement history for a cell (genealogy)
+ */
+
+export function useListCellMeasurements<TData = Awaited<ReturnType<typeof listCellMeasurements>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCellMeasurements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCellMeasurementsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getReportCellReceivingUrl = () => {
 
