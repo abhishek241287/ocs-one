@@ -13,6 +13,7 @@ import {
   masterBmsTable,
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
+import { BALANCING_THRESHOLDS } from "../../lib/manufacturing-config";
 import {
   ListOrderStagesParams,
   GetOrderStageParams,
@@ -189,8 +190,8 @@ async function onChargingComplete(
   const diffMv = parseFloat(voltageDiffMv ?? "0");
   let balancingStatus: string | null = null;
   if (stageData?.topBalancingRequired) {
-    if (diffMv <= 20) balancingStatus = "pass";
-    else if (diffMv <= 50) balancingStatus = "warning";
+    if (diffMv <= BALANCING_THRESHOLDS.passMaxMv) balancingStatus = "pass";
+    else if (diffMv <= BALANCING_THRESHOLDS.warningMaxMv) balancingStatus = "warning";
     else balancingStatus = "fail";
   }
 

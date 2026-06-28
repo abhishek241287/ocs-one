@@ -30,6 +30,7 @@ import {
   BrainCircuit,
   Network,
   Activity,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -124,6 +125,8 @@ const navSections: NavSection[] = [
     items: [
       { label: "Architecture Map", href: "/developer/architecture", icon: Network },
       { label: "Engineering Health", href: "/developer/performance", icon: Activity },
+      { label: "Security Posture", href: "/developer/security", icon: ShieldCheck },
+      { label: "Configuration", href: "/developer/configuration", icon: SlidersHorizontal },
     ],
   },
 ];

@@ -24,6 +24,10 @@ args = "authz"
 task = "workflow.run"
 args = "audit"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "config"
+
 [[workflows.workflow]]
 name = "authz"
 author = "agent"
@@ -42,6 +46,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/api-server run test:audit"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "config"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:config"
 
 [workflows.workflow.metadata]
 isValidation = true

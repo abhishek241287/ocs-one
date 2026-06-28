@@ -7,13 +7,13 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { recordRequest } from "./lib/metrics";
-import { CSP_DIRECTIVES, RATE_LIMITS } from "./lib/security-config";
+import { CSP_DIRECTIVES, RATE_LIMITS, TRUST_PROXY } from "./lib/security-config";
 import { recordSecurityEvent, reqMeta } from "./lib/security-events";
 
 const app: Express = express();
 
 // Trust Replit's reverse proxy so express-rate-limit can read the real client IP
-app.set("trust proxy", 1);
+app.set("trust proxy", TRUST_PROXY);
 
 // ─── Security headers ─────────────────────────────────────────────────────────
 // CSP directives come from the shared security-config so the /developer/security

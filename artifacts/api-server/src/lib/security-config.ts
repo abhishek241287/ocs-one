@@ -44,6 +44,11 @@ export const RATE_LIMITS: Record<"global" | "auth" | "register", RateLimitPolicy
   },
 };
 
+// Replit's reverse proxy adds exactly one X-Forwarded-For hop. Centralised here
+// so app.ts applies it and SS-04 can verify it never drifts (wrong value breaks
+// client-IP attribution and therefore rate limiting).
+export const TRUST_PROXY = 1;
+
 export const COOKIE_NAME = "ocs_token";
 
 export const JWT_EXPIRES_IN = "8h";

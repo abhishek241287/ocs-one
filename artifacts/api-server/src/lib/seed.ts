@@ -2,6 +2,11 @@ import bcrypt from "bcryptjs";
 import { db, pool, usersTable, cellGradeConfigTable } from "@workspace/db";
 import { logger } from "./logger";
 
+// The seed default admin password. Exported so SS-04 (config-integrity) can
+// detect — without ever logging the value — whether this known default is still
+// in use, and fail certification in production if so.
+export const DEFAULT_ADMIN_PASSWORD = "OCS@Admin2026!";
+
 export async function seedDatabase(): Promise<void> {
   // Create sequences used for race-condition-safe order number generation
   await pool.query(`
@@ -24,7 +29,7 @@ export async function seedDatabase(): Promise<void> {
 
   if (!existing) {
     const email = process.env.ADMIN_EMAIL ?? "admin@ocs.local";
-    const password = process.env.ADMIN_PASSWORD ?? "OCS@Admin2026!";
+    const password = process.env.ADMIN_PASSWORD ?? DEFAULT_ADMIN_PASSWORD;
     const passwordHash = await bcrypt.hash(password, 12);
 
     await db.insert(usersTable).values({
