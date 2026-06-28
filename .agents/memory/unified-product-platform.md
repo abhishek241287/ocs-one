@@ -133,3 +133,12 @@ This is **new capability on top of frozen platforms** (ODS/ECF/Security/Cert/Aud
 adoption, not expansion) — allowed under the freeze. Product corrections must go through ECF.
 The workflow-driven trigger is **additive and v1.0-compatible** (CTO-directed, explicitly "not a
 scope change"): a new column + enum, no certified table touched, downstream contract unchanged.
+
+## Downstream product_status transitions are NOT wired (gap for Inventory)
+Legacy packing (mfg packing stage) and logistics dispatch write only `mfg_battery_timeline`; they do
+**not** transition `products.product_status` to `packed`/`dispatched`/`delivered_to_dealer`, nor emit
+`product_events`. Product is created at QC-pass as `qc_passed` and then never advances. Any
+finished-goods/Product-Inventory/Dealer-Inventory feature MUST close this gap: on packing & dispatch,
+update `product_status` by Official Product Serial AND emit a paired `product_event` + audit event in the
+same tx. `logistics_dispatch_items` is already dual-keyed (`production_order_id` + `product_id`), and
+`logistics_dealers` is the dealer master — reuse, don't rebuild.

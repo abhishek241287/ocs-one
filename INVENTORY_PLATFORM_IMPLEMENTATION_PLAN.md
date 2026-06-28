@@ -1,141 +1,154 @@
-# Inventory Platform — Implementation Plan (LEAN)
+# Inventory Platform — Implementation Plan v1.0 (LEAN, factory-deployment scope)
 
-> **Status:** PLAN ONLY (not yet implemented). Authorized by CTO 2026-06-28 as the next major business
-> capability required before deployment. Built on the **frozen** baseline (CW-01 Cell Receiving, CW-02
-> Cell Grading + ECF v1.0, CW-03 Manufacturing Orders + Unified Product Platform v1.0). Consumes the
-> frozen platforms (ODS / ECF / Security SS-01…SS-04 / Certification / Unified Product Platform)
-> **unmodified** — no new architecture work.
+> **Status:** PLAN ONLY (not yet implemented). Scope **approved & tightened by CTO 2026-06-28**.
+> Objective: make OCS One **operational for real factory use as early as possible** — simple, reliable
+> workflows over feature richness. Built on the **frozen** baseline (CW-01/02/03 + Unified Product
+> Platform v1.0); consumes frozen platforms (ODS / ECF / Security SS-01…SS-04 / Certification / Product
+> Platform) **unmodified**. No new architecture.
+>
+> **Cadence (every phase):** Implement → Test → Report Blockers → Fix Critical → Freeze.
 
-## 1. Objective
+## 1. Architectural principles (CTO-mandated — apply to every phase)
 
-Make OCS One **factory-operational** for inventory: track everything that comes **in** (raw materials,
-components, packaging), gate it through **incoming inspection**, hold it as **stock by location**, issue
-it into **manufacturing**, and track everything that goes **out** (finished Products) — with an
-**immutable stock-movement ledger** as the single source of truth for every quantity change.
+- **P1 — Movement-driven, always paired.** *Every physical movement of a material or product generates
+  (a) an inventory transaction (one append-only ledger row) **and** (b) an audit event — automatically and
+  atomically, in the same DB transaction as the state change.* No silent stock change anywhere.
+- **P2 — Ledger-first & serial-first.** **Current Stock = the balance** (a derived/maintained snapshot);
+  the **Stock Movement Ledger = the authoritative history.** Balances are always recomputable and
+  auditable from the ledger. Every finished unit is tracked by its **Official Product Serial** end-to-end.
+- **P3 — One source, no duplication.** Product Inventory is **filtered views over the ONE frozen
+  `products` table** by category — never duplicate inventory tables or business logic. **Product** movement
+  history reuses the frozen append-only **`product_events`** (each lifecycle event = one product movement +
+  audit); **Materials** use the new `inventory_stock_movements`. Reuse existing logistics/dealer/dispatch
+  and the manufacturing packing stage rather than rebuilding them.
 
-Priority is business + data-integrity correctness (audit, traceability, no silent overwrites). No
-cosmetic work.
+## 2. Scope — Inventory Platform v1.0 (5 phases, in order)
 
-## 2. Scope — the 8 modules (CTO-listed) and how they fit
+| Phase | Capability | Build type |
+|-------|-----------|-----------|
+| **1** | **Material Receiving** — Goods Receipt (GRN) · Incoming Inspection · Material Inventory | **NEW** (material side) |
+| **2** | **Product Inventory** — unified view by Product Category (Battery / Inbuilt Lithium Inverter / Hybrid Inverter) | **NEW views** over frozen `products` |
+| **3** | **Packing** — by Product Serial | **REUSE** mfg packing stage + close status gap |
+| **4** | **Dispatch** — Dispatch No · Date · Dealer · Invoice No · Product Serials (only) | **REUSE/EXTEND** logistics dispatch |
+| **5** | **Dealer** — Dealer Master · Dealer Inventory · Dealer Dispatch History | **REUSE** logistics dealers + NEW views |
 
-| # | Module | Role | Backed by |
-|---|--------|------|-----------|
-| 1 | **Material Master** | Defines *what* can be stocked (code, name, type, unit of measure, reorder level). | new `inventory_materials` |
-| 2 | **Goods Receipt (GRN)** | Records inbound deliveries against a supplier (header + line items). | new `inventory_grn`, `inventory_grn_items` |
-| 3 | **Incoming Inspection** | **Mandatory gate** — accept/reject received quantities before they can enter stock. | new `inventory_incoming_inspection` |
-| 4 | **Material Inventory** | Current on-hand per material (and batch), derived from the ledger. | `inventory_material_stock` (snapshot) |
-| 5 | **Warehouse Stock** | Same stock, **partitioned by location/warehouse**; reservations for orders. | `inventory_warehouses` + stock location keys |
-| 6 | **Stock Movements** | **Append-only immutable ledger** — every receipt/issue/transfer/adjustment/rejection. | new `inventory_stock_movements` |
-| 7 | **Rejected Inventory** | Quarantine for failed-inspection material + rejected/scrapped Products, with disposition. | new `inventory_rejected` |
-| 8 | **Product Inventory** | Finished-goods stock = **projection over the frozen `products` table** (no new serial store). | existing `products` (+ movements keyed by `product_id`) |
+**Permanent rule reused:** *No Product before QC PASS.* Product Inventory never mints serials; it reflects
+Products already created by the frozen Product Platform at the QC-pass gate.
 
-**Permanent rule reused:** *No Product before QC PASS.* Product Inventory never mints serials; it only
-reflects Products already created by the Unified Product Platform at the QC-pass gate.
+## 3. What already exists — reuse map (confirmed by codebase review)
 
-## 3. Data model (new `lib/db/src/schema/inventory.ts`)
+| Need | Already exists | v1.0 action |
+|------|----------------|-------------|
+| Dealer Master | `logistics_dealers` (+ CRUD API + `DealerMasterPage`) | **Reuse as-is.** |
+| Dispatch | `logistics_dispatch_orders` / `logistics_dispatch_items` (**dual-keyed: `production_order_id` + `product_id`**) / `logistics_shipment_events` (+ pages) | **Reuse & extend** (serial-first; add `invoice_number`; surface only the 5 allowed fields). |
+| Packing | Manufacturing **packing stage** (`mfg_order_stages` type `packing`) + `PackingDashboardPage` | **Reuse**; add the product-status transition. |
+| Dealer Dispatch History | `logistics_dispatch_orders` filtered by `dealer_id` | **Reuse** (new filtered view/query). |
+| Product finished-goods | frozen `products` (`product_status`, `category_id`, `official_product_serial`) + append-only `product_events` | **Reuse** (filtered views). |
 
-Additive only — no existing certified table is renamed or altered. Export from `schema/index.ts`; push
-with `pnpm --filter @workspace/db run push`.
+**Critical gap to close in v1.0:** dispatch/packing today write only the legacy `mfg_battery_timeline`
+and **do NOT transition `products.product_status`** to `packed` / `dispatched` / `delivered_to_dealer`,
+nor emit the matching `product_events`. Per P1+P3, v1.0 wires these transitions so each product movement
+updates status + emits one `product_event` + one audit event. This is the backbone that makes Product
+Inventory, Packing, Dispatch, and Dealer Inventory all consistent from one source.
 
-- **`inventory_warehouses`** — `id`, `code` (unique), `name`, `type` (enum: `RAW`/`FINISHED_GOODS`/`QUARANTINE`/`GENERAL`), `is_active`.
-- **`inventory_materials`** (Material Master) — `id`, `material_code` (unique), `name`, `material_type` (enum: `RAW`/`COMPONENT`/`CONSUMABLE`/`PACKAGING`), `uom` (enum: `PCS`/`KG`/`M`/`L`/`SET`/`ROLL`), `reorder_level` (numeric ≥ 0, SS-01 bounded), `manufacturer_id` (→ `master_manufacturers`, nullable), `spec` (jsonb), `is_active`.
-- **`inventory_grn`** (GRN header) — `id`, `grn_no` (unique, Postgres-sequence generated like mfg ids), `supplier_name`, `supplier_ref`, `received_at`, `received_by`, `status` (enum: `draft`/`received`/`inspected`/`posted`/`cancelled`), `notes`.
-- **`inventory_grn_items`** — `id`, `grn_id`, `material_id`, `batch_no`, `qty_received` (numeric > 0), `uom`, `unit_cost` (numeric ≥ 0, nullable).
-- **`inventory_incoming_inspection`** — `id`, `grn_item_id` (unique), `inspected_by`, `inspected_at`, `result` (enum: `pass`/`fail`/`partial`), `accepted_qty` (≥ 0), `rejected_qty` (≥ 0), `reason` (mandatory when any rejection). Constraint: `accepted_qty + rejected_qty = grn_item.qty_received`.
-- **`inventory_material_stock`** (Material Inventory / Warehouse Stock snapshot) — `id`, `material_id`, `warehouse_id`, `batch_no`, `qty_on_hand` (≥ 0), `qty_reserved` (≥ 0). Unique on (`material_id`, `warehouse_id`, `batch_no`). **Derived/maintained from the ledger; never edited directly by users.**
-- **`inventory_stock_movements`** (immutable ledger) — `id`, `movement_no` (unique sequence), `movement_type` (enum: `RECEIPT`/`ISSUE`/`TRANSFER`/`ADJUSTMENT`/`REJECTION`/`CONSUMPTION`), `item_kind` (enum: `MATERIAL`/`PRODUCT`), `material_id` (nullable), `product_id` (nullable, → `products`), `batch_no`, `from_warehouse_id` (nullable), `to_warehouse_id` (nullable), `qty` (signed/typed by movement), `ref_type`, `ref_id`, `dedupe_key` (unique), `performed_by`, `created_at`. **Append-only — no app route ever `.update()`/`.delete()`s it (joins SS-03 immutability suite).**
-  - **Idempotency (mandatory):** a **UNIQUE `dedupe_key`** (e.g. `${movement_type}:${ref_type}:${ref_id}:${item_kind}:${batch_no}`) makes every posting **once-only** — a retry, double-submit, or QC re-approval can never double-post a RECEIPT/ISSUE even though Product creation is itself idempotent. The posting engine upserts on `dedupe_key` (insert-or-no-op) inside the same transaction as the snapshot update.
-  - **Cardinality (DB CHECK):** exactly one target per row — `item_kind='MATERIAL'` ⇒ `material_id` NOT NULL AND `product_id` NULL; `item_kind='PRODUCT'` ⇒ `product_id` NOT NULL AND `material_id` NULL. Invalid ledger rows are impossible, so reconciliation + immutability audit stay sound.
-- **`inventory_rejected`** (Rejected Inventory) — `id`, `source` (enum: `INCOMING_INSPECTION`/`PRODUCT_QC`/`ADJUSTMENT`), `material_id`/`product_id` (one of), `batch_no`, `qty`, `reason`, `disposition` (enum: `pending`/`return_to_supplier`/`scrap`/`rework`), `recorded_by`, `recorded_at`.
+## 4. New data model (Phase 1 only) — `lib/db/src/schema/inventory.ts`
 
-**Correction policy (data-integrity):** posted quantities are **never silently overwritten**. A
-correction is a new **`ADJUSTMENT`** movement (append-only) with an actor + reason — same principle as
-the certified Cell-Grading correction model. ECF integration for inventory corrections is a **future**
-enhancement (platform frozen); the adjustment-movement pattern covers correctness now.
+Additive only; export from `schema/index.ts`; push with `pnpm --filter @workspace/db run push`. No
+existing certified table renamed/altered. (Single-factory v1.0 → **no multi-warehouse**; stock is per
+material + batch.)
 
-## 4. Flows (the operating loop)
+- **`inventory_materials`** (Material Master) — `id`, `material_code` (unique), `name`, `material_type`
+  (enum `RAW`/`COMPONENT`/`CONSUMABLE`/`PACKAGING`), `uom` (enum `PCS`/`KG`/`M`/`L`/`SET`/`ROLL`),
+  `reorder_level` (numeric ≥ 0, SS-01 bounded), `manufacturer_id` (→ `master_manufacturers`, nullable),
+  `spec` (jsonb), `is_active`.
+- **`inventory_grn`** (GRN header) — `id`, `grn_no` (unique, Postgres-sequence id like mfg ids),
+  `supplier_name`, `supplier_ref`, `received_at`, `received_by`, `status` (enum
+  `draft`/`received`/`inspected`/`posted`/`cancelled`), `notes`.
+- **`inventory_grn_items`** — `id`, `grn_id`, `material_id`, `batch_no`, `qty_received` (numeric > 0),
+  `uom`, `unit_cost` (numeric ≥ 0, nullable).
+- **`inventory_incoming_inspection`** — `id`, `grn_item_id` (unique), `inspected_by`, `inspected_at`,
+  `result` (enum `pass`/`fail`/`partial`), `accepted_qty` (≥ 0), `rejected_qty` (≥ 0), `reason`
+  (mandatory when any rejection). CHECK: `accepted_qty + rejected_qty = grn_item.qty_received`.
+- **`inventory_material_stock`** (Material Inventory = the **balance**) — `id`, `material_id`, `batch_no`,
+  `qty_on_hand` (≥ 0). Unique (`material_id`, `batch_no`). **Derived/maintained from the ledger; never
+  edited directly.**
+- **`inventory_stock_movements`** (material **ledger** = the **history**, immutable) — `id`, `movement_no`
+  (unique sequence), `movement_type` (enum `RECEIPT`/`REJECTION`/`ADJUSTMENT`), `material_id`, `batch_no`,
+  `qty` (typed by movement), `ref_type`, `ref_id`, `dedupe_key` (**unique**), `reason` (required for
+  `ADJUSTMENT`/`REJECTION`), `performed_by`, `created_at`. **Append-only — joins the SS-03 immutability
+  suite.**
+  - **Idempotency (P1):** UNIQUE `dedupe_key` (e.g. `${movement_type}:${ref_type}:${ref_id}:${batch_no}`)
+    → every posting is once-only; retries/re-submits never double-post. Engine upserts on `dedupe_key`
+    inside the same tx as the snapshot update + audit event.
+  - **No-bypass control:** a material `RECEIPT` may originate **only** from the inspection-posting path
+    (`ref_type='incoming_inspection'`, referencing a passed/partial inspection). No ad-hoc receipt
+    endpoint. Stock corrections are `ADJUSTMENT` movements (supervisor/director + mandatory reason),
+    never a raw RECEIPT. → the inspection gate is structurally unbypassable.
 
-1. **Receive:** create GRN (header) + items → status `received`. No stock yet.
-2. **Inspect (mandatory gate):** Incoming Inspection per item → `accepted_qty` posts a **RECEIPT**
-   movement into a RAW/GENERAL warehouse (updates `inventory_material_stock`); `rejected_qty` posts a
-   **REJECTION** movement into QUARANTINE + an `inventory_rejected` row. GRN → `inspected`/`posted`.
-   **Nothing enters sellable/usable stock without passing inspection.**
-   **Control invariant (no bypass):** a `RECEIPT` of `item_kind='MATERIAL'` may be posted **only** by the
-   inspection-posting path (`ref_type='incoming_inspection'`, referencing a passed/partial inspection
-   row) — there is **no ad-hoc material-receipt endpoint**, and the movement engine rejects a MATERIAL
-   RECEIPT whose `ref_type` is anything else. Stock corrections use **`ADJUSTMENT`** movements
-   (supervisor/director + mandatory reason), never a raw RECEIPT. This makes the inspection gate
-   structurally unbypassable, not merely procedural.
-3. **Consume:** when a manufacturing order allocates materials, post **ISSUE/CONSUMPTION** movements
-   (decrement stock, link `ref_type=production_order`). (Wiring into the *existing frozen* manufacturing
-   allocation is integration-only — read its allocations; do not modify certified manufacturing code.)
-4. **Finished goods:** at QC-pass the Product Platform mints the Product (unchanged). Inventory posts a
-   **RECEIPT** movement keyed by `product_id` into the FINISHED_GOODS warehouse → **Product Inventory**.
-5. **Dispatch out:** when a Product is dispatched, post an **ISSUE** movement (`ref_type=dispatch`).
-   Product Inventory availability follows `products.product_status` + finished-goods stock.
-6. **Ledger:** every step above writes exactly one (or a paired) `inventory_stock_movements` row —
-   current stock is always reconcilable to the ledger.
+> **Rejected material** is captured by the inspection row (`rejected_qty` + reason) **and** a `REJECTION`
+> ledger movement — no separate rejected table (no duplication). "Rejected materials" is a filtered view
+> over those.
+>
+> **Material consumption into manufacturing** is **out of v1.0 scope** (not among the 5 phases) — when
+> added later it is simply a new `ISSUE`/`CONSUMPTION` movement type, fully covered by P1/P2.
 
-## 5. API + Security (per frozen Security Standards)
+## 5. Phase-by-phase
 
-- OpenAPI-first: add an `inventory` tag + paths to `lib/api-spec/openapi.yaml`, then
-  `pnpm --filter @workspace/api-spec run codegen` (hooks + Zod). No hand-written contracts.
-- Routes under `artifacts/api-server/src/routes/inventory/`, registered in `app.ts`; reuse
-  `createMasterRouter` for the simple masters (warehouses, materials).
-- **SS-01** matrix entry for **every** endpoint before merge (`docs/security-matrix.md`): auth required? /
-  min role / audit required? / rate limited? / input validation? / output sanitised?
-- **RBAC** (writes via `requireWriteRole`, reads open to any authed user → viewer read-only):
-  - Receipt / inspection / movements: **operator+** (operator/supervisor/director).
-  - Stock adjustments, rejected-disposition, warehouse/material master writes: **supervisor/director**.
-  - Director included in every write list.
-- **Audit (SS-03):** material receipt, inspection pass/fail, stock issue/adjustment, rejection, and
-  product finished-goods receipt emit `security_events` and/or are inherently captured by the append-only
-  movement ledger. The ledger + rejected table join the SS-03 immutability suite (static + runtime).
-- **Validation (SS-01):** all numeric quantities bounded (no bare `number`); all-optional PATCH bodies
-  rejected when empty (the documented gotcha); enum cross-checks against schema.
-- **Config (SS-04):** add new RBAC entries to `lib/authz-matrix.ts` so SS-02 covers every new endpoint;
-  add any new feature flags/thresholds to `config-integrity.ts`.
+### Phase 1 — Material Receiving (NEW)
+- Material Master (supporting), GRN (header + items), Incoming Inspection gate, Material Inventory.
+- Flow: create GRN → inspect each item → `accepted_qty` posts `RECEIPT` (updates balance) + audit;
+  `rejected_qty` posts `REJECTION` + audit. **Nothing enters usable stock without passing inspection.**
+- Test: gate enforcement, idempotent posting, balance == sum(ledger), SS-01..04. Freeze.
 
-## 6. Frontend (ODS only)
+### Phase 2 — Product Inventory (NEW views over frozen `products`)
+- One unified Product Inventory = `products` joined to `product_categories`, filtered by category for the
+  three V1.0 views: **Battery / Inbuilt Lithium Inverter / Hybrid Inverter**. Availability driven by
+  `product_status` (`qc_passed` → in stock; `dispatched`/`delivered_to_dealer` → left stock). No new table.
+- Test: counts per category/status reconcile to `products`; serial search. Freeze.
 
-- Feature folder `artifacts/ocs-one/src/features/inventory/` (`components/`, `hooks/`, `pages/`,
-  `types/`); routes in `config/routes.ts`. All UI uses **frozen ODS v1.0** components — no one-off styling.
-- Pages: Material Master, Warehouses, Goods Receipt (create + inspect), Material Inventory / Warehouse
-  Stock, Stock Movements ledger (read-only timeline), Rejected Inventory, Product Inventory.
+### Phase 3 — Packing (REUSE mfg packing stage + close gap)
+- Reuse the manufacturing `packing` stage. On packing completion/approval for a unit, transition that
+  Product's `product_status` → `packed` (by **Official Product Serial**) and emit one `product_event`
+  (`product.packed`) + one audit event (P1). No new packing table.
+- Test: serial-level packed status + event/audit pairing; idempotent. Freeze.
 
-## 7. Build phases — simplified cadence (Implement → Test → Report blockers → Fix critical → Freeze)
+### Phase 4 — Dispatch (REUSE/EXTEND logistics dispatch — minimal fields only)
+- Reuse `logistics_dispatch_orders`/`items`. v1.0 dispatch surfaces **only**: Dispatch Number, Dispatch
+  Date, Dealer, **Invoice Number** (additive column), and **Product Serials**. **Do NOT surface** LR
+  Number, Vehicle Number, Transporter, Driver details (legacy columns remain in schema, unused — additive,
+  backward-compatible).
+- Make dispatch **serial-first** (select Products by `official_product_serial`; keep the
+  `production_order_id` link for genealogy). On dispatch confirm/deliver, transition `product_status` →
+  `dispatched` then `delivered_to_dealer`, each emitting a `product_event` + audit (closes the gap).
+- Test: serial-based dispatch, status/event/audit pairing, dealer linkage. Freeze.
 
-Per CTO: run the simple cadence per phase; priority = correctness, not ceremony.
+### Phase 5 — Dealer (REUSE master + NEW views)
+- **Dealer Master:** reuse `logistics_dealers` as-is.
+- **Dealer Inventory (NEW view):** Products currently with a dealer (status `delivered_to_dealer`),
+  dealer resolved via the dispatch linkage (`dispatch_items → dispatch_order.dealer_id`) — **no new
+  `dealer_id` column on `products`** (derive, don't duplicate).
+- **Dealer Dispatch History (NEW view):** `logistics_dispatch_orders` filtered by `dealer_id` with their
+  product serials.
+- Test: dealer inventory == delivered products; history completeness. Freeze.
 
-- **Phase A — Foundations:** schema (`inventory.ts`) + sequences + Warehouses & Material masters + the
-  Stock-Movement ledger engine (the function every other phase calls to post a movement + update snapshot
-  atomically in a transaction). Test ledger atomicity. Freeze.
-- **Phase B — Inbound:** GRN (header/items) → Incoming Inspection gate → RECEIPT/REJECTION posting →
-  Material Inventory + Rejected Inventory. Test the gate (no stock without inspection). Freeze.
-- **Phase C — Consumption:** integrate material ISSUE/CONSUMPTION with the existing frozen manufacturing
-  allocation (read-only integration). Test stock decrements + reconciliation. Freeze.
-- **Phase D — Finished goods:** Product Inventory projection over `products` + finished-goods RECEIPT at
-  QC-pass and ISSUE at dispatch. Test idempotency (one product = one finished-goods receipt). Freeze.
-- **Phase E — Visibility:** Warehouse Stock views, Stock Movements ledger UI, low-stock/reorder
-  indicators, director inventory KPIs. Test + Freeze.
+## 6. Security / cert (frozen Security Standards)
+- OpenAPI-first: add `inventory` tag + paths to `lib/api-spec/openapi.yaml`, then
+  `pnpm --filter @workspace/api-spec run codegen`. Extend logistics paths for the dispatch/invoice change.
+- **SS-01** matrix row for **every** new/changed endpoint (`docs/security-matrix.md`).
+- **RBAC** (`requireWriteRole`; reads open to any authed → viewer read-only): receipt/inspection/packing/
+  dispatch writes = **operator+**; stock adjustments, material/dealer master writes, dispatch
+  cancellation = **supervisor/director**; director in every write list. Add new endpoints to
+  `lib/authz-matrix.ts` so **SS-02** covers them.
+- **SS-03 audit:** material ledger + every product-status transition (packed/dispatched/delivered) emit
+  audit events; `inventory_stock_movements` joins the immutability suite (static + runtime).
+- **SS-04 config:** register any new RBAC/flags in `config-integrity.ts`.
+- All UI uses **frozen ODS v1.0** components only.
 
-Each phase ends with: typecheck + lint clean, SS-02/SS-03/SS-04 green, blockers reported, **only**
-critical/high fixed, then frozen.
-
-## 8. Integration points (consume, do not modify, frozen modules)
-
-- **Unified Product Platform** — read `products` (status, serial, `manufacturing_completed_at`) for
-  Product Inventory; never mint serials here.
-- **Manufacturing Orders** — read material allocations to drive consumption movements.
-- **Dispatch & Logistics** — finished-goods ISSUE on dispatch.
-- **Masters** — `master_manufacturers` for material origin.
-
-## 9. Out of scope (backlog, not now)
-
-- ECF integration for inventory corrections (adjustment-movement pattern used instead) → future.
-- Costing/valuation (FIFO/weighted-average), supplier master/PO module, barcode scanning, multi-UOM
-  conversion, e-Way Bill → post-deployment enhancement backlog.
+## 7. Out of scope for v1.0 (deferred)
+Warranty · Service · Installation History · Logistics Management (LR/vehicle/transport/driver) ·
+multi-warehouse · material consumption-to-manufacturing · returns · costing/valuation · supplier/PO
+master · barcode/scanning · multi-UOM conversion. (Each, when added later, is additive and covered by P1/P2.)
 
 ---
 
-*Plan authored 2026-06-28 · LEAN per CTO direction · consumes frozen platforms unmodified · no new architecture · implementation begins on CTO go-ahead.*
+*Plan v1.0 authored 2026-06-28 · CTO-tightened 5-phase factory-deployment scope · ledger-first + serial-first + movement-always-audited · maximal reuse of frozen platforms & existing logistics · no new architecture · implementation begins on CTO go-ahead.*
