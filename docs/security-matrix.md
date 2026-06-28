@@ -112,6 +112,29 @@ unless a minimum role is stated.
 | `/api/masters/material-categories*` | POST/PATCH | ✅ | **director** | global | no | ✅ (Inventory — category lookup is a director-only governance concept) |
 | `/api/masters/materials*` | GET | ✅ | viewer (read) | global | no | ✅ (Inventory — Material Master) |
 | `/api/masters/materials*` | POST/PATCH | ✅ | **supervisor, director** | global | no | ✅ (Inventory — Material Master; invalid category_id → 400 via FK guard) |
+| `/api/masters/suppliers*` | GET | ✅ | viewer (read) | global | no | ✅ (Inventory — Supplier Master) |
+| `/api/masters/suppliers*` | POST/PATCH | ✅ | **supervisor, director** | global | no | ✅ (Inventory — Supplier Master; GRN supplier_id FK source) |
+| `/api/masters/material-workflows*` | GET | ✅ | viewer (read) | global | no | ✅ (Inventory — Material Workflow master) |
+| `/api/masters/material-workflows*` | POST/PATCH | ✅ | **director** | global | no | ✅ (Inventory — workflow master is a director-only governance concept; carries post_receipt_action) |
+
+### Inventory (`/api/inventory`) — Inventory Platform v1.0 (GRN)
+
+| Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |
+|---|---|---|---|---|---|---|
+| `/material-workflow-assignments` | GET | ✅ | viewer (read) | global | no | ✅ (category→workflow routing config) |
+| `/material-workflow-assignments` | PUT | ✅ | **director** | global | no | ✅ (upsert by category UNIQUE; bad category/workflow id → 400 via FK guard) |
+| `/grns` | GET | ✅ | viewer (read) | global | no | ✅ |
+| `/grns/:id` | GET | ✅ | viewer (read) | global | no | ✅ |
+| `/grns/:id/transactions` | GET | ✅ | viewer (read) | global | no | ✅ (immutable inventory transactions a GRN generated) |
+| `/grns` | POST | ✅ | **supervisor, director** | global | ✅ (`grn.created`) | ✅ (qty>0 via zod gt(0); unknown material_id / FK → 400; uom snapshot from Material) |
+| `/grns/:id/post` | POST | ✅ | **supervisor, director** | global | ✅ (`grn.posted`) | ✅ (draft→posted guarded FOR UPDATE inside tx (TOCTOU); per-line workflow routing; atomic txn gen; non-draft → 409) |
+| `/grns/:id` | DELETE | ✅ | **supervisor, director** | global | no | ✅ (only draft deletable, guarded FOR UPDATE; posted → 409) |
+
+> **Workflow-driven receipt routing:** posting reads each line's Material → Category →
+> assigned Material Workflow → `post_receipt_action` (exhaustive switch, `never` default).
+> `INCOMING_INSPECTION` → line `inspection_status=pending`, transaction `stock_state=inspection_pending`;
+> `DIRECT_TO_INVENTORY` → `inspection_status=NULL`, `stock_state=available`. A category with no
+> assignment defaults to `DIRECT_TO_INVENTORY`. The engine never assumes one inspection process per GRN.
 
 ### Manufacturing (`/api/manufacturing`)
 

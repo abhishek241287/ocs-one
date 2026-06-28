@@ -29,3 +29,4 @@
 - [Drizzle select key casing](drizzle-select-key-casing.md) — bare `.select()`+numify emits camelCase; snake_case API contracts need explicit `.select({snake: table.camel})` — gates/typecheck won't catch the drift.
 - [Cert validation-workflow false reds](cert-workflow-false-reds.md) — authz/audit "failed" = auth-limiter saturation, not a regression; authoritative run = restart api-server, no competing traffic.
 - [Masters factory PG errors](masters-factory-pg-errors.md) — shared master router maps 23505→409 (field-aware) + 23503 FK→400 for every master; declare constraints in schema, no per-route handlers.
+- [Master-pick dropdowns filter active](master-pick-dropdowns-active-filter.md) — empty ocs-one master dropdown = no ACTIVE rows, not a bug; activate masters before e2e; PATCH doesn't change status (toggle route only).

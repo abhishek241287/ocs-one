@@ -1939,6 +1939,162 @@ export type MaterialMasterUpdate = MasterCommonUpdate & ({
   manufacturer?: string | null;
 });
 
+export type Supplier = MasterCommon;
+
+export type SupplierInput = MasterCommonInput;
+
+export type SupplierUpdate = MasterCommonUpdate;
+
+export type MaterialPostReceiptAction = typeof MaterialPostReceiptAction[keyof typeof MaterialPostReceiptAction];
+
+
+export const MaterialPostReceiptAction = {
+  INCOMING_INSPECTION: 'INCOMING_INSPECTION',
+  DIRECT_TO_INVENTORY: 'DIRECT_TO_INVENTORY',
+} as const;
+
+export type MaterialWorkflow = MasterCommon & {
+  post_receipt_action: MaterialPostReceiptAction;
+};
+
+export type MaterialWorkflowInput = MasterCommonInput & {
+  post_receipt_action: MaterialPostReceiptAction;
+};
+
+export type MaterialWorkflowUpdate = MasterCommonUpdate & {
+  post_receipt_action?: MaterialPostReceiptAction;
+};
+
+export interface MaterialWorkflowAssignment {
+  id: string;
+  category_id: string;
+  workflow_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MaterialWorkflowAssignmentUpsert {
+  category_id: string;
+  workflow_id: string;
+}
+
+export type GrnStatus = typeof GrnStatus[keyof typeof GrnStatus];
+
+
+export const GrnStatus = {
+  draft: 'draft',
+  posted: 'posted',
+} as const;
+
+/**
+ * @nullable
+ */
+export type GrnInspectionStatus = typeof GrnInspectionStatus[keyof typeof GrnInspectionStatus] | null;
+
+
+export const GrnInspectionStatus = {
+  pending: 'pending',
+  passed: 'passed',
+  rejected: 'rejected',
+  partial: 'partial',
+} as const;
+
+export type InventoryUom = typeof InventoryUom[keyof typeof InventoryUom];
+
+
+export const InventoryUom = {
+  PCS: 'PCS',
+  KG: 'KG',
+  M: 'M',
+  L: 'L',
+  SET: 'SET',
+  ROLL: 'ROLL',
+} as const;
+
+export interface GrnLineItem {
+  id: string;
+  grn_id: string;
+  line_number: number;
+  material_id: string;
+  quantity_received: number;
+  uom: InventoryUom;
+  inspection_status?: GrnInspectionStatus | null;
+  /** @nullable */
+  remarks?: string | null;
+  created_at: string;
+}
+
+export interface GrnLineItemInput {
+  material_id: string;
+  /** @exclusiveMinimum 0 */
+  quantity_received: number;
+  /** @nullable */
+  remarks?: string | null;
+}
+
+export interface Grn {
+  id: string;
+  grn_number: string;
+  supplier_id: string;
+  received_date: string;
+  status: GrnStatus;
+  /** @nullable */
+  remarks?: string | null;
+  /** @nullable */
+  posted_at?: string | null;
+  /** @nullable */
+  posted_by?: string | null;
+  /** @nullable */
+  created_by?: string | null;
+  created_at: string;
+  /** @nullable */
+  updated_by?: string | null;
+  updated_at: string;
+}
+
+export type GrnDetail = Grn & {
+  lines: GrnLineItem[];
+};
+
+export interface GrnInput {
+  supplier_id: string;
+  received_date: string;
+  /** @nullable */
+  remarks?: string | null;
+  /** @minItems 1 */
+  lines: GrnLineItemInput[];
+}
+
+export type InventoryTransactionTransactionType = typeof InventoryTransactionTransactionType[keyof typeof InventoryTransactionTransactionType];
+
+
+export const InventoryTransactionTransactionType = {
+  GRN_RECEIPT: 'GRN_RECEIPT',
+} as const;
+
+export type InventoryTransactionStockState = typeof InventoryTransactionStockState[keyof typeof InventoryTransactionStockState];
+
+
+export const InventoryTransactionStockState = {
+  inspection_pending: 'inspection_pending',
+  available: 'available',
+} as const;
+
+export interface InventoryTransaction {
+  id: string;
+  transaction_type: InventoryTransactionTransactionType;
+  material_id: string;
+  quantity: number;
+  uom: InventoryUom;
+  stock_state: InventoryTransactionStockState;
+  source_document_type: string;
+  source_document_id: string;
+  source_line_id: string;
+  /** @nullable */
+  created_by?: string | null;
+  created_at: string;
+}
+
 export type SearchParamParameter = string;
 
 export type StatusParamParameter = typeof StatusParamParameter[keyof typeof StatusParamParameter];
@@ -2355,5 +2511,54 @@ pageSize?: PageSizeParamParameter;
 
 export type ListMaterialMasters200 = MasterListResponse & {
   items?: MaterialMaster[];
+};
+
+export type ListSuppliersParams = {
+search?: SearchParamParameter;
+status?: StatusParamParameter;
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+};
+
+export type ListSuppliers200 = MasterListResponse & {
+  items?: MasterCommon[];
+};
+
+export type ListMaterialWorkflowsParams = {
+search?: SearchParamParameter;
+status?: StatusParamParameter;
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+};
+
+export type ListMaterialWorkflows200 = MasterListResponse & {
+  items?: MaterialWorkflow[];
+};
+
+export type ListMaterialWorkflowAssignments200 = {
+  items: MaterialWorkflowAssignment[];
+};
+
+export type ListGrnsParams = {
+search?: SearchParamParameter;
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+status?: ListGrnsStatus;
+};
+
+export type ListGrnsStatus = typeof ListGrnsStatus[keyof typeof ListGrnsStatus];
+
+
+export const ListGrnsStatus = {
+  draft: 'draft',
+  posted: 'posted',
+} as const;
+
+export type ListGrns200 = MasterListResponse & {
+  items?: Grn[];
+};
+
+export type ListGrnTransactions200 = {
+  items: InventoryTransaction[];
 };
 

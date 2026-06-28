@@ -76,6 +76,15 @@ const navSections: NavSection[] = [
     items: [
       { label: "Material Master", href: "/masters/materials", icon: Package },
       { label: "Material Categories", href: "/masters/material-categories", icon: Tags },
+      { label: "Supplier Master", href: "/masters/suppliers", icon: Factory },
+      { label: "Material Workflows", href: "/masters/material-workflows", icon: GitBranch },
+    ],
+  },
+  {
+    title: "Inventory",
+    items: [
+      { label: "Goods Receipt Notes", href: "/inventory/grns", icon: Archive },
+      { label: "Workflow Assignment", href: "/inventory/workflow-assignments", icon: Network },
     ],
   },
   {

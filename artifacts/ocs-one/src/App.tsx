@@ -20,6 +20,12 @@ import ProductCategoryPage from "@/features/masters/pages/ProductCategoryPage";
 import ProductWorkflowPage from "@/features/masters/pages/ProductWorkflowPage";
 import MaterialMasterPage from "@/features/masters/pages/MaterialMasterPage";
 import MaterialCategoryPage from "@/features/masters/pages/MaterialCategoryPage";
+import SupplierMasterPage from "@/features/masters/pages/SupplierMasterPage";
+import MaterialWorkflowPage from "@/features/masters/pages/MaterialWorkflowPage";
+import MaterialWorkflowAssignmentPage from "@/features/inventory/pages/MaterialWorkflowAssignmentPage";
+import GrnListPage from "@/features/inventory/pages/GrnListPage";
+import GrnCreatePage from "@/features/inventory/pages/GrnCreatePage";
+import GrnDetailPage from "@/features/inventory/pages/GrnDetailPage";
 import ProductsListPage from "@/features/products/pages/ProductsListPage";
 import ProductDetailPage from "@/features/products/pages/ProductDetailPage";
 import CellMasterPage from "@/features/masters/pages/CellMasterPage";
@@ -84,6 +90,8 @@ function Router() {
       <Route path="/masters/product-workflows" component={ProductWorkflowPage} />
       <Route path="/masters/material-categories" component={MaterialCategoryPage} />
       <Route path="/masters/materials" component={MaterialMasterPage} />
+      <Route path="/masters/suppliers" component={SupplierMasterPage} />
+      <Route path="/masters/material-workflows" component={MaterialWorkflowPage} />
       <Route path="/masters/cells" component={CellMasterPage} />
       <Route path="/masters/bms" component={BmsMasterPage} />
       <Route path="/masters/cabinets" component={CabinetMasterPage} />
@@ -92,6 +100,15 @@ function Router() {
       <Route path="/masters/busbars" component={BusbarMasterPage} />
       <Route path="/masters/chargers" component={ChargerMasterPage} />
       <Route path="/masters/test-equipment" component={TestEquipmentMasterPage} />
+
+      {/* Inventory */}
+      <Route path="/inventory">
+        <Redirect to="/inventory/grns" />
+      </Route>
+      <Route path="/inventory/grns" component={GrnListPage} />
+      <Route path="/inventory/grns/new" component={GrnCreatePage} />
+      <Route path="/inventory/grns/:id" component={GrnDetailPage} />
+      <Route path="/inventory/workflow-assignments" component={MaterialWorkflowAssignmentPage} />
 
       {/* Manufacturing */}
       <Route path="/manufacturing">

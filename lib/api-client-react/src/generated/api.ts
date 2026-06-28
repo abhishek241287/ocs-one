@@ -77,6 +77,8 @@ import type {
   GetCellLotHistory200,
   GetOrderGenealogy200,
   GetOrderTimeline200,
+  GrnDetail,
+  GrnInput,
   HealthStatus,
   ListBmsMasters200,
   ListBmsMastersParams,
@@ -104,10 +106,16 @@ import type {
   ListDealersParams,
   ListDispatchOrders200,
   ListDispatchOrdersParams,
+  ListGrnTransactions200,
+  ListGrns200,
+  ListGrnsParams,
   ListMaterialCategories200,
   ListMaterialCategoriesParams,
   ListMaterialMasters200,
   ListMaterialMastersParams,
+  ListMaterialWorkflowAssignments200,
+  ListMaterialWorkflows200,
+  ListMaterialWorkflowsParams,
   ListOrderStages200,
   ListProductCategories200,
   ListProductCategoriesParams,
@@ -120,6 +128,8 @@ import type {
   ListProductsParams,
   ListReworkTickets200,
   ListReworkTicketsParams,
+  ListSuppliers200,
+  ListSuppliersParams,
   ListTestEquipmentMasters200,
   ListTestEquipmentMastersParams,
   LoginRequest,
@@ -132,6 +142,11 @@ import type {
   MaterialMaster,
   MaterialMasterInput,
   MaterialMasterUpdate,
+  MaterialWorkflow,
+  MaterialWorkflowAssignment,
+  MaterialWorkflowAssignmentUpsert,
+  MaterialWorkflowInput,
+  MaterialWorkflowUpdate,
   OrderStage,
   PackingDashboard,
   PatchCellLotBody,
@@ -10596,4 +10611,1237 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getToggleMaterialMasterStatusMutationOptions(options));
     }
+
+export const getListSuppliersUrl = (params?: ListSuppliersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/masters/suppliers?${stringifiedParams}` : `/api/masters/suppliers`
+}
+
+export const listSuppliers = async (params?: ListSuppliersParams, options?: RequestInit): Promise<ListSuppliers200> => {
+
+  return customFetch<ListSuppliers200>(getListSuppliersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSuppliersQueryKey = (params?: ListSuppliersParams,) => {
+    return [
+    `/api/masters/suppliers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSuppliersQueryOptions = <TData = Awaited<ReturnType<typeof listSuppliers>>, TError = ErrorType<unknown>>(params?: ListSuppliersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSuppliers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSuppliersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSuppliers>>> = ({ signal }) => listSuppliers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSuppliers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSuppliersQueryResult = NonNullable<Awaited<ReturnType<typeof listSuppliers>>>
+export type ListSuppliersQueryError = ErrorType<unknown>
+
+
+
+export function useListSuppliers<TData = Awaited<ReturnType<typeof listSuppliers>>, TError = ErrorType<unknown>>(
+ params?: ListSuppliersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSuppliers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSuppliersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateSupplierUrl = () => {
+
+
+
+
+  return `/api/masters/suppliers`
+}
+
+export const createSupplier = async (masterCommonInput: MasterCommonInput, options?: RequestInit): Promise<MasterCommon> => {
+
+  return customFetch<MasterCommon>(getCreateSupplierUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(masterCommonInput)
+  }
+);}
+
+
+
+
+export const getCreateSupplierMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSupplier>>, TError,{data: BodyType<MasterCommonInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSupplier>>, TError,{data: BodyType<MasterCommonInput>}, TContext> => {
+
+const mutationKey = ['createSupplier'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSupplier>>, {data: BodyType<MasterCommonInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSupplier(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSupplierMutationResult = NonNullable<Awaited<ReturnType<typeof createSupplier>>>
+    export type CreateSupplierMutationBody = BodyType<MasterCommonInput>
+    export type CreateSupplierMutationError = ErrorType<unknown>
+
+    export const useCreateSupplier = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSupplier>>, TError,{data: BodyType<MasterCommonInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSupplier>>,
+        TError,
+        {data: BodyType<MasterCommonInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSupplierMutationOptions(options));
+    }
+
+export const getGetSupplierUrl = (id: string,) => {
+
+
+
+
+  return `/api/masters/suppliers/${id}`
+}
+
+export const getSupplier = async (id: string, options?: RequestInit): Promise<MasterCommon> => {
+
+  return customFetch<MasterCommon>(getGetSupplierUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSupplierQueryKey = (id: string,) => {
+    return [
+    `/api/masters/suppliers/${id}`
+    ] as const;
+    }
+
+
+export const getGetSupplierQueryOptions = <TData = Awaited<ReturnType<typeof getSupplier>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSupplier>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSupplierQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSupplier>>> = ({ signal }) => getSupplier(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSupplier>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSupplierQueryResult = NonNullable<Awaited<ReturnType<typeof getSupplier>>>
+export type GetSupplierQueryError = ErrorType<unknown>
+
+
+
+export function useGetSupplier<TData = Awaited<ReturnType<typeof getSupplier>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSupplier>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSupplierQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateSupplierUrl = (id: string,) => {
+
+
+
+
+  return `/api/masters/suppliers/${id}`
+}
+
+export const updateSupplier = async (id: string,
+    masterCommonUpdate: MasterCommonUpdate, options?: RequestInit): Promise<MasterCommon> => {
+
+  return customFetch<MasterCommon>(getUpdateSupplierUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(masterCommonUpdate)
+  }
+);}
+
+
+
+
+export const getUpdateSupplierMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSupplier>>, TError,{id: string;data: BodyType<MasterCommonUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSupplier>>, TError,{id: string;data: BodyType<MasterCommonUpdate>}, TContext> => {
+
+const mutationKey = ['updateSupplier'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSupplier>>, {id: string;data: BodyType<MasterCommonUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateSupplier(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSupplierMutationResult = NonNullable<Awaited<ReturnType<typeof updateSupplier>>>
+    export type UpdateSupplierMutationBody = BodyType<MasterCommonUpdate>
+    export type UpdateSupplierMutationError = ErrorType<unknown>
+
+    export const useUpdateSupplier = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSupplier>>, TError,{id: string;data: BodyType<MasterCommonUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSupplier>>,
+        TError,
+        {id: string;data: BodyType<MasterCommonUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateSupplierMutationOptions(options));
+    }
+
+export const getToggleSupplierStatusUrl = (id: string,) => {
+
+
+
+
+  return `/api/masters/suppliers/${id}/status`
+}
+
+export const toggleSupplierStatus = async (id: string,
+    masterStatusToggle: MasterStatusToggle, options?: RequestInit): Promise<MasterCommon> => {
+
+  return customFetch<MasterCommon>(getToggleSupplierStatusUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(masterStatusToggle)
+  }
+);}
+
+
+
+
+export const getToggleSupplierStatusMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleSupplierStatus>>, TError,{id: string;data: BodyType<MasterStatusToggle>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleSupplierStatus>>, TError,{id: string;data: BodyType<MasterStatusToggle>}, TContext> => {
+
+const mutationKey = ['toggleSupplierStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleSupplierStatus>>, {id: string;data: BodyType<MasterStatusToggle>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  toggleSupplierStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleSupplierStatusMutationResult = NonNullable<Awaited<ReturnType<typeof toggleSupplierStatus>>>
+    export type ToggleSupplierStatusMutationBody = BodyType<MasterStatusToggle>
+    export type ToggleSupplierStatusMutationError = ErrorType<unknown>
+
+    export const useToggleSupplierStatus = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleSupplierStatus>>, TError,{id: string;data: BodyType<MasterStatusToggle>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleSupplierStatus>>,
+        TError,
+        {id: string;data: BodyType<MasterStatusToggle>},
+        TContext
+      > => {
+      return useMutation(getToggleSupplierStatusMutationOptions(options));
+    }
+
+export const getListMaterialWorkflowsUrl = (params?: ListMaterialWorkflowsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/masters/material-workflows?${stringifiedParams}` : `/api/masters/material-workflows`
+}
+
+export const listMaterialWorkflows = async (params?: ListMaterialWorkflowsParams, options?: RequestInit): Promise<ListMaterialWorkflows200> => {
+
+  return customFetch<ListMaterialWorkflows200>(getListMaterialWorkflowsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMaterialWorkflowsQueryKey = (params?: ListMaterialWorkflowsParams,) => {
+    return [
+    `/api/masters/material-workflows`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListMaterialWorkflowsQueryOptions = <TData = Awaited<ReturnType<typeof listMaterialWorkflows>>, TError = ErrorType<unknown>>(params?: ListMaterialWorkflowsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMaterialWorkflows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMaterialWorkflowsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMaterialWorkflows>>> = ({ signal }) => listMaterialWorkflows(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMaterialWorkflows>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMaterialWorkflowsQueryResult = NonNullable<Awaited<ReturnType<typeof listMaterialWorkflows>>>
+export type ListMaterialWorkflowsQueryError = ErrorType<unknown>
+
+
+
+export function useListMaterialWorkflows<TData = Awaited<ReturnType<typeof listMaterialWorkflows>>, TError = ErrorType<unknown>>(
+ params?: ListMaterialWorkflowsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMaterialWorkflows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMaterialWorkflowsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateMaterialWorkflowUrl = () => {
+
+
+
+
+  return `/api/masters/material-workflows`
+}
+
+export const createMaterialWorkflow = async (materialWorkflowInput: MaterialWorkflowInput, options?: RequestInit): Promise<MaterialWorkflow> => {
+
+  return customFetch<MaterialWorkflow>(getCreateMaterialWorkflowUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(materialWorkflowInput)
+  }
+);}
+
+
+
+
+export const getCreateMaterialWorkflowMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMaterialWorkflow>>, TError,{data: BodyType<MaterialWorkflowInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMaterialWorkflow>>, TError,{data: BodyType<MaterialWorkflowInput>}, TContext> => {
+
+const mutationKey = ['createMaterialWorkflow'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMaterialWorkflow>>, {data: BodyType<MaterialWorkflowInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMaterialWorkflow(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMaterialWorkflowMutationResult = NonNullable<Awaited<ReturnType<typeof createMaterialWorkflow>>>
+    export type CreateMaterialWorkflowMutationBody = BodyType<MaterialWorkflowInput>
+    export type CreateMaterialWorkflowMutationError = ErrorType<unknown>
+
+    export const useCreateMaterialWorkflow = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMaterialWorkflow>>, TError,{data: BodyType<MaterialWorkflowInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMaterialWorkflow>>,
+        TError,
+        {data: BodyType<MaterialWorkflowInput>},
+        TContext
+      > => {
+      return useMutation(getCreateMaterialWorkflowMutationOptions(options));
+    }
+
+export const getGetMaterialWorkflowUrl = (id: string,) => {
+
+
+
+
+  return `/api/masters/material-workflows/${id}`
+}
+
+export const getMaterialWorkflow = async (id: string, options?: RequestInit): Promise<MaterialWorkflow> => {
+
+  return customFetch<MaterialWorkflow>(getGetMaterialWorkflowUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMaterialWorkflowQueryKey = (id: string,) => {
+    return [
+    `/api/masters/material-workflows/${id}`
+    ] as const;
+    }
+
+
+export const getGetMaterialWorkflowQueryOptions = <TData = Awaited<ReturnType<typeof getMaterialWorkflow>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMaterialWorkflow>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMaterialWorkflowQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMaterialWorkflow>>> = ({ signal }) => getMaterialWorkflow(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMaterialWorkflow>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMaterialWorkflowQueryResult = NonNullable<Awaited<ReturnType<typeof getMaterialWorkflow>>>
+export type GetMaterialWorkflowQueryError = ErrorType<unknown>
+
+
+
+export function useGetMaterialWorkflow<TData = Awaited<ReturnType<typeof getMaterialWorkflow>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMaterialWorkflow>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMaterialWorkflowQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateMaterialWorkflowUrl = (id: string,) => {
+
+
+
+
+  return `/api/masters/material-workflows/${id}`
+}
+
+export const updateMaterialWorkflow = async (id: string,
+    materialWorkflowUpdate: MaterialWorkflowUpdate, options?: RequestInit): Promise<MaterialWorkflow> => {
+
+  return customFetch<MaterialWorkflow>(getUpdateMaterialWorkflowUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(materialWorkflowUpdate)
+  }
+);}
+
+
+
+
+export const getUpdateMaterialWorkflowMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMaterialWorkflow>>, TError,{id: string;data: BodyType<MaterialWorkflowUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMaterialWorkflow>>, TError,{id: string;data: BodyType<MaterialWorkflowUpdate>}, TContext> => {
+
+const mutationKey = ['updateMaterialWorkflow'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMaterialWorkflow>>, {id: string;data: BodyType<MaterialWorkflowUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateMaterialWorkflow(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMaterialWorkflowMutationResult = NonNullable<Awaited<ReturnType<typeof updateMaterialWorkflow>>>
+    export type UpdateMaterialWorkflowMutationBody = BodyType<MaterialWorkflowUpdate>
+    export type UpdateMaterialWorkflowMutationError = ErrorType<unknown>
+
+    export const useUpdateMaterialWorkflow = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMaterialWorkflow>>, TError,{id: string;data: BodyType<MaterialWorkflowUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMaterialWorkflow>>,
+        TError,
+        {id: string;data: BodyType<MaterialWorkflowUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateMaterialWorkflowMutationOptions(options));
+    }
+
+export const getToggleMaterialWorkflowStatusUrl = (id: string,) => {
+
+
+
+
+  return `/api/masters/material-workflows/${id}/status`
+}
+
+export const toggleMaterialWorkflowStatus = async (id: string,
+    masterStatusToggle: MasterStatusToggle, options?: RequestInit): Promise<MaterialWorkflow> => {
+
+  return customFetch<MaterialWorkflow>(getToggleMaterialWorkflowStatusUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(masterStatusToggle)
+  }
+);}
+
+
+
+
+export const getToggleMaterialWorkflowStatusMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleMaterialWorkflowStatus>>, TError,{id: string;data: BodyType<MasterStatusToggle>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleMaterialWorkflowStatus>>, TError,{id: string;data: BodyType<MasterStatusToggle>}, TContext> => {
+
+const mutationKey = ['toggleMaterialWorkflowStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleMaterialWorkflowStatus>>, {id: string;data: BodyType<MasterStatusToggle>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  toggleMaterialWorkflowStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleMaterialWorkflowStatusMutationResult = NonNullable<Awaited<ReturnType<typeof toggleMaterialWorkflowStatus>>>
+    export type ToggleMaterialWorkflowStatusMutationBody = BodyType<MasterStatusToggle>
+    export type ToggleMaterialWorkflowStatusMutationError = ErrorType<unknown>
+
+    export const useToggleMaterialWorkflowStatus = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleMaterialWorkflowStatus>>, TError,{id: string;data: BodyType<MasterStatusToggle>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleMaterialWorkflowStatus>>,
+        TError,
+        {id: string;data: BodyType<MasterStatusToggle>},
+        TContext
+      > => {
+      return useMutation(getToggleMaterialWorkflowStatusMutationOptions(options));
+    }
+
+export const getListMaterialWorkflowAssignmentsUrl = () => {
+
+
+
+
+  return `/api/inventory/material-workflow-assignments`
+}
+
+export const listMaterialWorkflowAssignments = async ( options?: RequestInit): Promise<ListMaterialWorkflowAssignments200> => {
+
+  return customFetch<ListMaterialWorkflowAssignments200>(getListMaterialWorkflowAssignmentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMaterialWorkflowAssignmentsQueryKey = () => {
+    return [
+    `/api/inventory/material-workflow-assignments`
+    ] as const;
+    }
+
+
+export const getListMaterialWorkflowAssignmentsQueryOptions = <TData = Awaited<ReturnType<typeof listMaterialWorkflowAssignments>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMaterialWorkflowAssignments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMaterialWorkflowAssignmentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMaterialWorkflowAssignments>>> = ({ signal }) => listMaterialWorkflowAssignments({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMaterialWorkflowAssignments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMaterialWorkflowAssignmentsQueryResult = NonNullable<Awaited<ReturnType<typeof listMaterialWorkflowAssignments>>>
+export type ListMaterialWorkflowAssignmentsQueryError = ErrorType<unknown>
+
+
+
+export function useListMaterialWorkflowAssignments<TData = Awaited<ReturnType<typeof listMaterialWorkflowAssignments>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMaterialWorkflowAssignments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMaterialWorkflowAssignmentsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpsertMaterialWorkflowAssignmentUrl = () => {
+
+
+
+
+  return `/api/inventory/material-workflow-assignments`
+}
+
+export const upsertMaterialWorkflowAssignment = async (materialWorkflowAssignmentUpsert: MaterialWorkflowAssignmentUpsert, options?: RequestInit): Promise<MaterialWorkflowAssignment> => {
+
+  return customFetch<MaterialWorkflowAssignment>(getUpsertMaterialWorkflowAssignmentUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(materialWorkflowAssignmentUpsert)
+  }
+);}
+
+
+
+
+export const getUpsertMaterialWorkflowAssignmentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertMaterialWorkflowAssignment>>, TError,{data: BodyType<MaterialWorkflowAssignmentUpsert>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertMaterialWorkflowAssignment>>, TError,{data: BodyType<MaterialWorkflowAssignmentUpsert>}, TContext> => {
+
+const mutationKey = ['upsertMaterialWorkflowAssignment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertMaterialWorkflowAssignment>>, {data: BodyType<MaterialWorkflowAssignmentUpsert>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  upsertMaterialWorkflowAssignment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertMaterialWorkflowAssignmentMutationResult = NonNullable<Awaited<ReturnType<typeof upsertMaterialWorkflowAssignment>>>
+    export type UpsertMaterialWorkflowAssignmentMutationBody = BodyType<MaterialWorkflowAssignmentUpsert>
+    export type UpsertMaterialWorkflowAssignmentMutationError = ErrorType<unknown>
+
+    export const useUpsertMaterialWorkflowAssignment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertMaterialWorkflowAssignment>>, TError,{data: BodyType<MaterialWorkflowAssignmentUpsert>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertMaterialWorkflowAssignment>>,
+        TError,
+        {data: BodyType<MaterialWorkflowAssignmentUpsert>},
+        TContext
+      > => {
+      return useMutation(getUpsertMaterialWorkflowAssignmentMutationOptions(options));
+    }
+
+export const getListGrnsUrl = (params?: ListGrnsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/inventory/grns?${stringifiedParams}` : `/api/inventory/grns`
+}
+
+export const listGrns = async (params?: ListGrnsParams, options?: RequestInit): Promise<ListGrns200> => {
+
+  return customFetch<ListGrns200>(getListGrnsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGrnsQueryKey = (params?: ListGrnsParams,) => {
+    return [
+    `/api/inventory/grns`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListGrnsQueryOptions = <TData = Awaited<ReturnType<typeof listGrns>>, TError = ErrorType<unknown>>(params?: ListGrnsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGrns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGrnsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGrns>>> = ({ signal }) => listGrns(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGrns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGrnsQueryResult = NonNullable<Awaited<ReturnType<typeof listGrns>>>
+export type ListGrnsQueryError = ErrorType<unknown>
+
+
+
+export function useListGrns<TData = Awaited<ReturnType<typeof listGrns>>, TError = ErrorType<unknown>>(
+ params?: ListGrnsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGrns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGrnsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateGrnUrl = () => {
+
+
+
+
+  return `/api/inventory/grns`
+}
+
+export const createGrn = async (grnInput: GrnInput, options?: RequestInit): Promise<GrnDetail> => {
+
+  return customFetch<GrnDetail>(getCreateGrnUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(grnInput)
+  }
+);}
+
+
+
+
+export const getCreateGrnMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGrn>>, TError,{data: BodyType<GrnInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createGrn>>, TError,{data: BodyType<GrnInput>}, TContext> => {
+
+const mutationKey = ['createGrn'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createGrn>>, {data: BodyType<GrnInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createGrn(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateGrnMutationResult = NonNullable<Awaited<ReturnType<typeof createGrn>>>
+    export type CreateGrnMutationBody = BodyType<GrnInput>
+    export type CreateGrnMutationError = ErrorType<unknown>
+
+    export const useCreateGrn = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGrn>>, TError,{data: BodyType<GrnInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createGrn>>,
+        TError,
+        {data: BodyType<GrnInput>},
+        TContext
+      > => {
+      return useMutation(getCreateGrnMutationOptions(options));
+    }
+
+export const getGetGrnUrl = (id: string,) => {
+
+
+
+
+  return `/api/inventory/grns/${id}`
+}
+
+export const getGrn = async (id: string, options?: RequestInit): Promise<GrnDetail> => {
+
+  return customFetch<GrnDetail>(getGetGrnUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGrnQueryKey = (id: string,) => {
+    return [
+    `/api/inventory/grns/${id}`
+    ] as const;
+    }
+
+
+export const getGetGrnQueryOptions = <TData = Awaited<ReturnType<typeof getGrn>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGrn>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGrnQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGrn>>> = ({ signal }) => getGrn(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGrn>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGrnQueryResult = NonNullable<Awaited<ReturnType<typeof getGrn>>>
+export type GetGrnQueryError = ErrorType<unknown>
+
+
+
+export function useGetGrn<TData = Awaited<ReturnType<typeof getGrn>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGrn>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGrnQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteGrnUrl = (id: string,) => {
+
+
+
+
+  return `/api/inventory/grns/${id}`
+}
+
+export const deleteGrn = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteGrnUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteGrnMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteGrn>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteGrn>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteGrn'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteGrn>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteGrn(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteGrnMutationResult = NonNullable<Awaited<ReturnType<typeof deleteGrn>>>
+
+    export type DeleteGrnMutationError = ErrorType<unknown>
+
+    export const useDeleteGrn = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteGrn>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteGrn>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteGrnMutationOptions(options));
+    }
+
+export const getPostGrnUrl = (id: string,) => {
+
+
+
+
+  return `/api/inventory/grns/${id}/post`
+}
+
+export const postGrn = async (id: string, options?: RequestInit): Promise<GrnDetail> => {
+
+  return customFetch<GrnDetail>(getPostGrnUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getPostGrnMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postGrn>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postGrn>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['postGrn'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postGrn>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  postGrn(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostGrnMutationResult = NonNullable<Awaited<ReturnType<typeof postGrn>>>
+
+    export type PostGrnMutationError = ErrorType<unknown>
+
+    export const usePostGrn = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postGrn>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof postGrn>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getPostGrnMutationOptions(options));
+    }
+
+export const getListGrnTransactionsUrl = (id: string,) => {
+
+
+
+
+  return `/api/inventory/grns/${id}/transactions`
+}
+
+export const listGrnTransactions = async (id: string, options?: RequestInit): Promise<ListGrnTransactions200> => {
+
+  return customFetch<ListGrnTransactions200>(getListGrnTransactionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGrnTransactionsQueryKey = (id: string,) => {
+    return [
+    `/api/inventory/grns/${id}/transactions`
+    ] as const;
+    }
+
+
+export const getListGrnTransactionsQueryOptions = <TData = Awaited<ReturnType<typeof listGrnTransactions>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGrnTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGrnTransactionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGrnTransactions>>> = ({ signal }) => listGrnTransactions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGrnTransactions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGrnTransactionsQueryResult = NonNullable<Awaited<ReturnType<typeof listGrnTransactions>>>
+export type ListGrnTransactionsQueryError = ErrorType<unknown>
+
+
+
+export function useListGrnTransactions<TData = Awaited<ReturnType<typeof listGrnTransactions>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGrnTransactions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGrnTransactionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

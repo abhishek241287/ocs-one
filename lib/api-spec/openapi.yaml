@@ -20,6 +20,8 @@ tags:
     description: Director dashboard operations
   - name: products
     description: Serialized Product (unit) operations — Unified Product Platform
+  - name: inventory
+    description: Inventory Platform operations — GRN receiving, workflow routing, stock ledger
 paths:
   /healthz:
     get:
@@ -2771,6 +2773,307 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/MaterialMaster" }
 
+  # ─── Inventory Platform — Supplier Master ────────────────────────────────────
+  /masters/suppliers:
+    get:
+      operationId: listSuppliers
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of suppliers
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Supplier"
+    post:
+      operationId: createSupplier
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SupplierInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Supplier" }
+
+  /masters/suppliers/{id}:
+    get:
+      operationId: getSupplier
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single supplier
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Supplier" }
+    patch:
+      operationId: updateSupplier
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SupplierUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Supplier" }
+
+  /masters/suppliers/{id}/status:
+    patch:
+      operationId: toggleSupplierStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MasterStatusToggle" }
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Supplier" }
+
+  # ─── Inventory Platform — Material Workflow Master ───────────────────────────
+  /masters/material-workflows:
+    get:
+      operationId: listMaterialWorkflows
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of material workflows
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/MaterialWorkflow"
+    post:
+      operationId: createMaterialWorkflow
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MaterialWorkflowInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialWorkflow" }
+
+  /masters/material-workflows/{id}:
+    get:
+      operationId: getMaterialWorkflow
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single material workflow
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialWorkflow" }
+    patch:
+      operationId: updateMaterialWorkflow
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MaterialWorkflowUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialWorkflow" }
+
+  /masters/material-workflows/{id}/status:
+    patch:
+      operationId: toggleMaterialWorkflowStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MasterStatusToggle" }
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialWorkflow" }
+
+  # ─── Inventory Platform — Material Workflow Assignments ──────────────────────
+  /inventory/material-workflow-assignments:
+    get:
+      operationId: listMaterialWorkflowAssignments
+      tags: [inventory]
+      responses:
+        "200":
+          description: List of category-to-workflow assignments
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MaterialWorkflowAssignment"
+    put:
+      operationId: upsertMaterialWorkflowAssignment
+      tags: [inventory]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MaterialWorkflowAssignmentUpsert" }
+      responses:
+        "200":
+          description: Assignment upserted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialWorkflowAssignment" }
+
+  # ─── Inventory Platform — Goods Receipt Note (GRN) ───────────────────────────
+  /inventory/grns:
+    get:
+      operationId: listGrns
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [draft, posted] }
+      responses:
+        "200":
+          description: List of GRNs
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Grn"
+    post:
+      operationId: createGrn
+      tags: [inventory]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GrnInput" }
+      responses:
+        "201":
+          description: GRN draft created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GrnDetail" }
+
+  /inventory/grns/{id}:
+    get:
+      operationId: getGrn
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single GRN with line items
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GrnDetail" }
+    delete:
+      operationId: deleteGrn
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Draft GRN deleted
+
+  /inventory/grns/{id}/post:
+    post:
+      operationId: postGrn
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: GRN posted (inventory transactions generated)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GrnDetail" }
+
+  /inventory/grns/{id}/transactions:
+    get:
+      operationId: listGrnTransactions
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Inventory transactions generated by this GRN
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/InventoryTransaction"
+
 components:
   parameters:
     IdParam:
@@ -4429,3 +4732,152 @@ components:
             category_id: { type: string, format: uuid }
             uom: { type: string, enum: [PCS, KG, M, L, SET, ROLL] }
             manufacturer: { type: ["string", "null"] }
+
+    # ─── Inventory Platform — Supplier Master ──────────────────────────────────
+    Supplier:
+      $ref: "#/components/schemas/MasterCommon"
+
+    SupplierInput:
+      $ref: "#/components/schemas/MasterCommonInput"
+
+    SupplierUpdate:
+      $ref: "#/components/schemas/MasterCommonUpdate"
+
+    # ─── Inventory Platform — Material Workflow Master ─────────────────────────
+    MaterialPostReceiptAction:
+      type: string
+      enum: [INCOMING_INSPECTION, DIRECT_TO_INVENTORY]
+
+    MaterialWorkflow:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          required: [post_receipt_action]
+          properties:
+            post_receipt_action: { $ref: "#/components/schemas/MaterialPostReceiptAction" }
+
+    MaterialWorkflowInput:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          required: [post_receipt_action]
+          properties:
+            post_receipt_action: { $ref: "#/components/schemas/MaterialPostReceiptAction" }
+
+    MaterialWorkflowUpdate:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            post_receipt_action: { $ref: "#/components/schemas/MaterialPostReceiptAction" }
+
+    # ─── Inventory Platform — Material Workflow Assignment ─────────────────────
+    MaterialWorkflowAssignment:
+      type: object
+      required: [id, category_id, workflow_id, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        category_id: { type: string, format: uuid }
+        workflow_id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    MaterialWorkflowAssignmentUpsert:
+      type: object
+      required: [category_id, workflow_id]
+      properties:
+        category_id: { type: string, format: uuid }
+        workflow_id: { type: string, format: uuid }
+
+    # ─── Inventory Platform — GRN ──────────────────────────────────────────────
+    GrnStatus:
+      type: string
+      enum: [draft, posted]
+
+    GrnInspectionStatus:
+      type: ["string", "null"]
+      enum: [pending, passed, rejected, partial, null]
+
+    InventoryUom:
+      type: string
+      enum: [PCS, KG, M, L, SET, ROLL]
+
+    GrnLineItem:
+      type: object
+      required:
+        [id, grn_id, line_number, material_id, quantity_received, uom, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        grn_id: { type: string, format: uuid }
+        line_number: { type: integer }
+        material_id: { type: string, format: uuid }
+        quantity_received: { type: number }
+        uom: { $ref: "#/components/schemas/InventoryUom" }
+        inspection_status: { $ref: "#/components/schemas/GrnInspectionStatus" }
+        remarks: { type: ["string", "null"] }
+        created_at: { type: string, format: date-time }
+
+    GrnLineItemInput:
+      type: object
+      required: [material_id, quantity_received]
+      properties:
+        material_id: { type: string, format: uuid }
+        quantity_received: { type: number, exclusiveMinimum: 0 }
+        remarks: { type: ["string", "null"] }
+
+    Grn:
+      type: object
+      required:
+        [id, grn_number, supplier_id, received_date, status, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        grn_number: { type: string }
+        supplier_id: { type: string, format: uuid }
+        received_date: { type: string }
+        status: { $ref: "#/components/schemas/GrnStatus" }
+        remarks: { type: ["string", "null"] }
+        posted_at: { type: ["string", "null"], format: date-time }
+        posted_by: { type: ["string", "null"], format: uuid }
+        created_by: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_by: { type: ["string", "null"], format: uuid }
+        updated_at: { type: string, format: date-time }
+
+    GrnDetail:
+      allOf:
+        - $ref: "#/components/schemas/Grn"
+        - type: object
+          required: [lines]
+          properties:
+            lines:
+              type: array
+              items: { $ref: "#/components/schemas/GrnLineItem" }
+
+    GrnInput:
+      type: object
+      required: [supplier_id, received_date, lines]
+      properties:
+        supplier_id: { type: string, format: uuid }
+        received_date: { type: string }
+        remarks: { type: ["string", "null"] }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/GrnLineItemInput" }
+
+    InventoryTransaction:
+      type: object
+      required:
+        [id, transaction_type, material_id, quantity, uom, stock_state, source_document_type, source_document_id, source_line_id, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        transaction_type: { type: string, enum: [GRN_RECEIPT] }
+        material_id: { type: string, format: uuid }
+        quantity: { type: number }
+        uom: { $ref: "#/components/schemas/InventoryUom" }
+        stock_state: { type: string, enum: [inspection_pending, available] }
+        source_document_type: { type: string }
+        source_document_id: { type: string, format: uuid }
+        source_line_id: { type: string, format: uuid }
+        created_by: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }

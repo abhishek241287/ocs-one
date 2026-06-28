@@ -10,7 +10,7 @@ Each frozen platform maintains the ten fields below. Update on: a module adoptin
 platform, a permitted (Critical/High/security) platform change, a defect opening/closing,
 or a certification-wave gate.
 
-_Last reviewed: 2026-06-28 (CW-03 — Manufacturing Orders CERTIFIED; Unified Product Platform v1.0 first adoption)._
+_Last reviewed: 2026-06-28 (CW-03 — Manufacturing Orders CERTIFIED; Unified Product Platform v1.0 first adoption; Inventory Platform v1.0 — GRN delivered & frozen on the lean cadence)._
 
 ## Health legend
 
@@ -74,7 +74,7 @@ _Last reviewed: 2026-06-28 (CW-03 — Manufacturing Orders CERTIFIED; Unified Pr
 |-------|-------|
 | **Version** | v1.0 (permanent) |
 | **Freeze Status** | FROZEN |
-| **Modules Using It** | Platform-wide — every protected endpoint / module (Cell Receiving + Cell Grading + Manufacturing Orders certified) |
+| **Modules Using It** | Platform-wide — every protected endpoint / module (Cell Receiving + Cell Grading + Manufacturing Orders certified; Inventory/GRN adopted — endpoints in authz-matrix + grn.created/grn.posted audit events) |
 | **Last Platform Change** | v1.0 (CW-01, 2026-06-28) — unchanged through CW-02 |
 | **Open Critical Defects** | 0 |
 | **Open High Defects** | 0 |
@@ -89,7 +89,7 @@ _Last reviewed: 2026-06-28 (CW-03 — Manufacturing Orders CERTIFIED; Unified Pr
 |-------|-------|
 | **Version** | v1.0 |
 | **Freeze Status** | FROZEN |
-| **Modules Using It** | Per wave — CW-01 Cell Receiving · CW-02 Cell Grading · CW-03 Manufacturing Orders (all certified) |
+| **Modules Using It** | Per wave — CW-01 Cell Receiving · CW-02 Cell Grading · CW-03 Manufacturing Orders (all certified) · Inventory Platform v1.0 GRN (lean cadence — SS-02/SS-03/SS-04 gates green, architect-reviewed, e2e verified) |
 | **Last Platform Change** | v1.0 (CW-01, 2026-06-28) |
 | **Open Critical Defects** | 0 |
 | **Open High Defects** | 0 |

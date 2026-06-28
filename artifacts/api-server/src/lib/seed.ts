@@ -8,6 +8,7 @@ import {
   productCategoriesTable,
   productWorkflowsTable,
   materialCategoriesTable,
+  materialWorkflowsTable,
 } from "@workspace/db";
 import { logger } from "./logger";
 
@@ -23,6 +24,8 @@ export async function seedDatabase(): Promise<void> {
     CREATE SEQUENCE IF NOT EXISTS mfg_battery_seq START 1 INCREMENT 1;
     -- ECF: global monotonic counter for the human Correction ID (CORR-YYYYMMDD-NNNNNN).
     CREATE SEQUENCE IF NOT EXISTS ecf_correction_seq START 1 INCREMENT 1;
+    -- Inventory: race-safe GRN number generation (GRN-YYYYMMDD-NNNN).
+    CREATE SEQUENCE IF NOT EXISTS grn_seq START 1 INCREMENT 1;
   `);
 
   // Forward-only resync of each id sequence to the max value already persisted in
@@ -56,6 +59,12 @@ export async function seedDatabase(): Promise<void> {
         FROM engineering_corrections WHERE correction_id ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
       IF m > 0 THEN
         PERFORM setval('ecf_correction_seq', GREATEST((SELECT last_value FROM ecf_correction_seq), m), true);
+      END IF;
+
+      SELECT COALESCE(MAX(split_part(grn_number, '-', 3)::bigint), 0) INTO m
+        FROM grn_headers WHERE grn_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
+      IF m > 0 THEN
+        PERFORM setval('grn_seq', GREATEST((SELECT last_value FROM grn_seq), m), true);
       END IF;
     END $$;
   `);
@@ -133,6 +142,57 @@ export async function seedDatabase(): Promise<void> {
       { code: "ACCESSORIES", name: "Accessories", status: "active" },
     ])
     .onConflictDoNothing({ target: materialCategoriesTable.code });
+
+  // ── Inventory Platform: Material Workflows (idempotent) ───────────────────
+  // Mirror the Product Workflow master. Two workflows cover the v1 routing model.
+  // `postReceiptAction` is platform config (it drives behavioral dispatch in the GRN
+  // posting engine), so re-seeding reasserts the canonical action via onConflictDoUpdate
+  // (from `excluded`) without touching director-editable name/status.
+  await db
+    .insert(materialWorkflowsTable)
+    .values([
+      {
+        code: "INCOMING_INSPECTION",
+        name: "Incoming Inspection",
+        status: "active",
+        postReceiptAction: "INCOMING_INSPECTION",
+      },
+      {
+        code: "DIRECT_TO_INVENTORY",
+        name: "Direct to Inventory",
+        status: "active",
+        postReceiptAction: "DIRECT_TO_INVENTORY",
+      },
+    ])
+    .onConflictDoUpdate({
+      target: materialWorkflowsTable.code,
+      set: { postReceiptAction: sql`excluded.post_receipt_action` },
+    });
+
+  // Default Material-Category → Workflow assignments (idempotent). Inspection-bearing
+  // categories (cells, inverters, electronics) route through Incoming Inspection;
+  // generic/consumable categories (connectors, cables, packing, accessories) go direct.
+  // onConflictDoNothing preserves any director re-assignment on re-seed. A category
+  // left UNASSIGNED is treated as DIRECT_TO_INVENTORY by the posting engine.
+  await pool.query(`
+    INSERT INTO material_workflow_assignments (category_id, workflow_id)
+    SELECT c.id, w.id
+    FROM (VALUES
+      ('LIFEPO4_CELL', 'INCOMING_INSPECTION'),
+      ('EMPTY_INBUILT_LITHIUM_INVERTER', 'INCOMING_INSPECTION'),
+      ('HYBRID_INVERTER', 'INCOMING_INSPECTION'),
+      ('PCB', 'INCOMING_INSPECTION'),
+      ('BMS', 'INCOMING_INSPECTION'),
+      ('CHARGER', 'INCOMING_INSPECTION'),
+      ('CONNECTOR', 'DIRECT_TO_INVENTORY'),
+      ('CABLE', 'DIRECT_TO_INVENTORY'),
+      ('PACKING_MATERIAL', 'DIRECT_TO_INVENTORY'),
+      ('ACCESSORIES', 'DIRECT_TO_INVENTORY')
+    ) AS m(cat_code, wf_code)
+    JOIN master_material_categories c ON c.code = m.cat_code
+    JOIN material_workflows w ON w.code = m.wf_code
+    ON CONFLICT (category_id) DO NOTHING;
+  `);
 
   // Seed default director account if no users exist
   const [existing] = await db

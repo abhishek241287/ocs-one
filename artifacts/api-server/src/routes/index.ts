@@ -15,6 +15,9 @@ import productCategoryMasterRouter from "./masters/product-categories";
 import productWorkflowMasterRouter from "./masters/product-workflows";
 import materialCategoryMasterRouter from "./masters/material-categories";
 import materialMasterRouter from "./masters/materials";
+import supplierMasterRouter from "./masters/suppliers";
+import materialWorkflowMasterRouter from "./masters/material-workflows";
+import inventoryRouter from "./inventory/index";
 import productsRouter from "./products/index";
 import manufacturingRouter from "./manufacturing/index";
 import cellsRouter from "./cells/index";
@@ -46,6 +49,11 @@ router.use("/masters/product-categories", productCategoryMasterRouter);
 router.use("/masters/product-workflows", productWorkflowMasterRouter);
 router.use("/masters/material-categories", materialCategoryMasterRouter);
 router.use("/masters/materials", materialMasterRouter);
+router.use("/masters/suppliers", supplierMasterRouter);
+router.use("/masters/material-workflows", materialWorkflowMasterRouter);
+
+// Inventory Platform — Goods Receipt Notes + workflow assignment routing
+router.use("/inventory", inventoryRouter);
 
 // Unified Product Platform — serialized Products (units)
 router.use("/products", productsRouter);

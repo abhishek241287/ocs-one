@@ -9,6 +9,9 @@ export const ROUTES = {
   // Operations
   manufacturing: "/manufacturing",
   inventory: "/inventory",
+  inventoryGrns: "/inventory/grns",
+  inventoryGrnNew: "/inventory/grns/new",
+  inventoryWorkflowAssignments: "/inventory/workflow-assignments",
   cellGrading: "/cell-grading",
   qualityControl: "/qc",
 

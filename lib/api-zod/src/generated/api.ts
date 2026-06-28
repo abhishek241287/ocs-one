@@ -5443,3 +5443,573 @@ export const ToggleMaterialMasterStatusResponse = zod.object({
 }))
 
 
+export const listSuppliersQueryPageDefault = 1;
+export const listSuppliersQueryPageSizeDefault = 25;
+
+export const ListSuppliersQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.enum(['active', 'inactive']).optional(),
+  "page": zod.coerce.number().default(listSuppliersQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listSuppliersQueryPageSizeDefault)
+})
+
+export const ListSuppliersResponse = zod.object({
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+}).and(zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}))
+}))
+
+
+export const CreateSupplierBody = zod.object({
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional()
+})
+
+export const CreateSupplierResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const GetSupplierParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetSupplierResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const UpdateSupplierParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateSupplierBody = zod.object({
+  "code": zod.string().optional(),
+  "name": zod.string().optional(),
+  "description": zod.string().nullish(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional()
+})
+
+export const UpdateSupplierResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const ToggleSupplierStatusParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ToggleSupplierStatusBody = zod.object({
+  "status": zod.enum(['active', 'inactive'])
+})
+
+export const ToggleSupplierStatusResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const listMaterialWorkflowsQueryPageDefault = 1;
+export const listMaterialWorkflowsQueryPageSizeDefault = 25;
+
+export const ListMaterialWorkflowsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.enum(['active', 'inactive']).optional(),
+  "page": zod.coerce.number().default(listMaterialWorkflowsQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listMaterialWorkflowsQueryPageSizeDefault)
+})
+
+export const ListMaterialWorkflowsResponse = zod.object({
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+}).and(zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "post_receipt_action": zod.enum(['INCOMING_INSPECTION', 'DIRECT_TO_INVENTORY'])
+})))
+}))
+
+
+export const CreateMaterialWorkflowBody = zod.object({
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional()
+}).and(zod.object({
+  "post_receipt_action": zod.enum(['INCOMING_INSPECTION', 'DIRECT_TO_INVENTORY'])
+}))
+
+export const CreateMaterialWorkflowResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "post_receipt_action": zod.enum(['INCOMING_INSPECTION', 'DIRECT_TO_INVENTORY'])
+}))
+
+
+export const GetMaterialWorkflowParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetMaterialWorkflowResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "post_receipt_action": zod.enum(['INCOMING_INSPECTION', 'DIRECT_TO_INVENTORY'])
+}))
+
+
+export const UpdateMaterialWorkflowParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateMaterialWorkflowBody = zod.object({
+  "code": zod.string().optional(),
+  "name": zod.string().optional(),
+  "description": zod.string().nullish(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional()
+}).and(zod.object({
+  "post_receipt_action": zod.enum(['INCOMING_INSPECTION', 'DIRECT_TO_INVENTORY']).optional()
+}))
+
+export const UpdateMaterialWorkflowResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "post_receipt_action": zod.enum(['INCOMING_INSPECTION', 'DIRECT_TO_INVENTORY'])
+}))
+
+
+export const ToggleMaterialWorkflowStatusParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ToggleMaterialWorkflowStatusBody = zod.object({
+  "status": zod.enum(['active', 'inactive'])
+})
+
+export const ToggleMaterialWorkflowStatusResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive']),
+  "revision_number": zod.number(),
+  "effective_date": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "attachments": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "url": zod.string(),
+  "fileType": zod.string(),
+  "uploadedAt": zod.coerce.date()
+})).optional(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "post_receipt_action": zod.enum(['INCOMING_INSPECTION', 'DIRECT_TO_INVENTORY'])
+}))
+
+
+export const ListMaterialWorkflowAssignmentsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "category_id": zod.string().uuid(),
+  "workflow_id": zod.string().uuid(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}))
+})
+
+
+export const UpsertMaterialWorkflowAssignmentBody = zod.object({
+  "category_id": zod.string().uuid(),
+  "workflow_id": zod.string().uuid()
+})
+
+export const UpsertMaterialWorkflowAssignmentResponse = zod.object({
+  "id": zod.string().uuid(),
+  "category_id": zod.string().uuid(),
+  "workflow_id": zod.string().uuid(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const listGrnsQueryPageDefault = 1;
+export const listGrnsQueryPageSizeDefault = 25;
+
+export const ListGrnsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "page": zod.coerce.number().default(listGrnsQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listGrnsQueryPageSizeDefault),
+  "status": zod.enum(['draft', 'posted']).optional()
+})
+
+export const ListGrnsResponse = zod.object({
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+}).and(zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "grn_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "received_date": zod.string(),
+  "status": zod.enum(['draft', 'posted']),
+  "remarks": zod.string().nullish(),
+  "posted_at": zod.coerce.date().nullish(),
+  "posted_by": zod.string().uuid().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}))
+}))
+
+
+export const createGrnBodyLinesItemQuantityReceivedExclusiveMin = 0;
+
+
+
+
+export const CreateGrnBody = zod.object({
+  "supplier_id": zod.string().uuid(),
+  "received_date": zod.string(),
+  "remarks": zod.string().nullish(),
+  "lines": zod.array(zod.object({
+  "material_id": zod.string().uuid(),
+  "quantity_received": zod.number().gt(createGrnBodyLinesItemQuantityReceivedExclusiveMin),
+  "remarks": zod.string().nullish()
+})).min(1)
+})
+
+export const CreateGrnResponse = zod.object({
+  "id": zod.string().uuid(),
+  "grn_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "received_date": zod.string(),
+  "status": zod.enum(['draft', 'posted']),
+  "remarks": zod.string().nullish(),
+  "posted_at": zod.coerce.date().nullish(),
+  "posted_by": zod.string().uuid().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "grn_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "quantity_received": zod.number(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
+  "remarks": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const GetGrnParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetGrnResponse = zod.object({
+  "id": zod.string().uuid(),
+  "grn_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "received_date": zod.string(),
+  "status": zod.enum(['draft', 'posted']),
+  "remarks": zod.string().nullish(),
+  "posted_at": zod.coerce.date().nullish(),
+  "posted_by": zod.string().uuid().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "grn_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "quantity_received": zod.number(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
+  "remarks": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const DeleteGrnParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DeleteGrnResponse = zod.void()
+
+
+export const PostGrnParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const PostGrnResponse = zod.object({
+  "id": zod.string().uuid(),
+  "grn_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "received_date": zod.string(),
+  "status": zod.enum(['draft', 'posted']),
+  "remarks": zod.string().nullish(),
+  "posted_at": zod.coerce.date().nullish(),
+  "posted_by": zod.string().uuid().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "grn_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "quantity_received": zod.number(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
+  "remarks": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const ListGrnTransactionsParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ListGrnTransactionsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "transaction_type": zod.enum(['GRN_RECEIPT']),
+  "material_id": zod.string().uuid(),
+  "quantity": zod.number(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "stock_state": zod.enum(['inspection_pending', 'available']),
+  "source_document_type": zod.string(),
+  "source_document_id": zod.string().uuid(),
+  "source_line_id": zod.string().uuid(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+}))
+})
+
+
