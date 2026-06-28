@@ -1,0 +1,152 @@
+# Final Architecture Refinement – Unified Product Platform v1.0
+
+The Architecture Impact Report is approved.
+
+Before implementation begins, I want to freeze a few final architecture principles.
+
+This is an architecture activity only.
+
+**Do not implement code.**
+
+---
+
+# 1. Introduce Manufacturer as a Permanent Master
+
+Please review whether Manufacturer should become an independent master entity.
+
+Suggested examples:
+
+* OCS
+* Techfine
+* Deye
+* Growatt
+* Voltronic
+* MUST
+
+A Product Model should reference Manufacturer.
+
+Products should inherit Manufacturer from the Product Model.
+
+Do not duplicate manufacturer information on every serialized product unless technically required.
+
+Please evaluate whether this simplifies the architecture.
+
+---
+
+# 2. Simplify Product Serial Architecture
+
+Instead of treating Manufacturer Serial Number and OCS Serial Number as equal concepts, evaluate a unified serial model.
+
+Suggested design:
+
+Official Product Serial
+
+Serial Source
+
+Serial Source values:
+
+* OCS
+* Manufacturer
+
+Examples
+
+Battery Pack
+
+Official Product Serial = OCS250700001
+
+Serial Source = OCS
+
+---
+
+Inbuilt Lithium Inverter
+
+Official Product Serial = OCS250800001
+
+Serial Source = OCS
+
+---
+
+Hybrid Inverter
+
+Official Product Serial = TF-AB123456
+
+Serial Source = Manufacturer
+
+Downstream modules should work only with **Official Product Serial** and should never need to know whether it originated from OCS or the manufacturer.
+
+Please evaluate whether this reduces system complexity.
+
+---
+
+# 3. Freeze Product Creation Rule
+
+Please record the following as a permanent manufacturing rule.
+
+No Product exists before QC PASS.
+
+Manufacturing
+
+↓
+
+Testing
+
+↓
+
+QC
+
+↓
+
+Product Creation
+
+↓
+
+Packing
+
+↓
+
+Dispatch
+
+↓
+
+Dealer
+
+Every downstream module shall reference only the Product created after QC approval.
+
+---
+
+# 4. Verify Against Existing Architecture
+
+Please verify that these refinements:
+
+* do not conflict with the approved Unified Product Platform,
+* do not require redesign of the Product Model,
+* do not require redesign of the Workflow Master,
+* remain compatible with the frozen platforms:
+
+  * ODS
+  * Engineering Correction Framework (ECF)
+  * Security Standards
+  * Certification Framework
+
+---
+
+# Deliverable
+
+Do not write code.
+
+Instead provide:
+
+1. Architecture Review of these refinements.
+2. Advantages and disadvantages.
+3. Whether Manufacturer should become an independent master.
+4. Whether Official Product Serial + Serial Source is preferable to Manufacturer Serial + OCS Serial.
+5. Any migration impact.
+6. Final recommendation.
+
+At the end clearly state one of the following:
+
+* APPROVED
+* APPROVED WITH MINOR CHANGES
+* NOT RECOMMENDED
+
+No implementation until this final review is complete.

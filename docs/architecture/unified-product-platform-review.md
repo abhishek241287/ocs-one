@@ -460,3 +460,102 @@ baseline.
 
 > No code until this architecture review is approved. On approval, implementation proceeds per
 > the phased plan above.
+
+---
+---
+
+# Refinement v1.1 — Manufacturer Master · Unified Serial · QC-Gate Freeze (final principles)
+
+> The Unified Product Platform (incl. Refinement v1.0) is **approved**. This final refinement
+> freezes three principles before implementation. **Architecture only — no code.** _Added:
+> 2026-06-28._
+
+## 1. Architecture review of the three refinements
+
+### 1A. Manufacturer as a permanent independent master — **YES, recommended**
+Today `manufacturer` is a **free-text `varchar`** repeated on `master_bms`, `master_chargers`,
+etc. — no single list, prone to drift ("Techfine" vs "techfine"). Introduce **`master_manufacturers`**
+(NEW master, follows `createMasterCommonColumns`), seeded OCS · Techfine · Deye · Growatt ·
+Voltronic · MUST. **Product Model (`master_products`) gains a nullable `manufacturer_id` FK**;
+**Product (`products`) inherits manufacturer by derivation through `model_id → manufacturer_id`** —
+**do NOT store manufacturer/brand on the serialized unit** (not technically required in v1.0; a
+unit's manufacturer cannot differ from its model's). This is the fifth *supporting* master; it
+does **not** alter the four-concept model — it sits behind concept **B (Product Model)**.
+
+### 1B. Unified serial model — **YES, recommended (supersedes §3.2/§3.3 two-serial design)**
+Replace the two parallel nullable fields (`manufacturer_serial` + `ocs_product_serial`) on
+`products` with **one** authoritative field plus provenance:
+- **`official_product_serial`** (UNIQUE, NOT NULL) — the single serial every downstream module uses.
+- **`serial_source`** enum — `OCS | MANUFACTURER` (provenance metadata only).
+
+Generation rule keyed by source: **OCS** → generated from the Postgres sequence pattern;
+**MANUFACTURER** → external value, validated **present + unique** (e.g. Hybrid reuses the Techfine
+serial `TF-AB123456`). One global uniqueness namespace on `official_product_serial`. **Downstream
+never inspects `serial_source`** — it works only with `official_product_serial`. Component-level
+serials (imported PCB, etc.) live in **`product_genealogy`** for traceability, **not** as product
+serial fields.
+
+Worked examples (CTO):
+
+| Category | official_product_serial | serial_source |
+|----------|------------------------|---------------|
+| Battery Pack | `OCS250700001` | OCS |
+| Inbuilt Lithium Inverter | `OCS250800001` | OCS |
+| Hybrid Inverter | `TF-AB123456` | MANUFACTURER |
+
+### 1C. Product Creation Rule — **FREEZE as a permanent manufacturing rule**
+**No Product exists before QC PASS.** `Manufacturing → Testing → QC → Product Creation → Packing →
+Dispatch → Dealer`. A `products` row is created at exactly one point: the **QC-pass gate**.
+Work-in-progress lives in `mfg_production_orders`/`mfg_order_stages`; downstream modules reference
+**only** Products created after QC approval — so they never see in-progress units. (This formalizes
+the single creation gate already in §D2.)
+
+## 2. Advantages / disadvantages
+
+| Refinement | Advantages | Disadvantages / cost |
+|------------|-----------|----------------------|
+| Manufacturer master | Normalized list, no drift, dropdowns, manufacturer-level reporting, future-proof for ESS/EV/BMS; one place to manage | One extra join for manufacturer lookups; existing free-text columns must be backfilled (additive, later phase) |
+| Unified serial | One field downstream, no null/"which serial" logic, single uniqueness constraint, simpler ODS form & API | `serial_source` adds a small provenance enum; generation logic branches by source (already needed) |
+| QC-gate freeze | Eliminates ambiguous "is it a product yet?" states; clean downstream contract; matches the single creation point | None — it constrains, it does not add surface |
+
+## 3. Should Manufacturer become an independent master? **Yes.**
+It removes denormalized free-text, aligns with the existing master pattern, and is purely additive.
+Model references it; Product inherits it (derived, not duplicated).
+
+## 4. Is "Official Product Serial + Serial Source" preferable? **Yes.**
+It is strictly simpler than two equal serial concepts: downstream depends on one field, uniqueness
+is enforced once, and provenance is preserved without leaking into consumers. It **reduces** system
+complexity.
+
+## 5. Migration impact (all additive — no certified table renamed/removed)
+- **NEW** `master_manufacturers`; seed the six manufacturers.
+- **`master_products`** gains nullable `manufacturer_id` FK (additive); backfill from existing
+  free-text manufacturer values where present.
+- **`products`** (NOT yet built) adopts `official_product_serial` + `serial_source` from the start —
+  **zero migration cost**, no two-serial columns ever ship.
+- Free-text `manufacturer` columns on other masters are normalized to `manufacturer_id` in a later
+  **additive** phase and removed **only post-cert** (Phase 5) — never during cert waves.
+- Workflow Master and the four-concept model are **untouched**.
+
+## 6. Compatibility verification
+- **No conflict** with the approved Unified Product Platform — refines concept **B/D** internals only.
+- **No Product Model redesign** — `master_products` keeps its role; gains one nullable FK.
+- **No Workflow Master redesign** — serial/manufacturer are Product/Model concerns, orthogonal to workflow.
+- **Frozen platforms consumed unmodified** — ODS (simpler form: Manufacturer dropdown + single
+  Serial field), ECF (unchanged; corrections still polymorphic on `products.id`), Security Standards
+  (per-endpoint SS-01..04), Certification Framework (per-phase). No platform change required.
+
+## Final recommendation
+
+### ✅ APPROVED WITH MINOR CHANGES
+
+All three refinements are compatible, additive, and reduce complexity. The two minor clarifications
+(confirmations, not redesigns):
+1. **Manufacturer is derived on the Product, not duplicated** — `products` has no manufacturer/brand
+   column; it resolves through `model_id → manufacturer_id`.
+2. **Component serials (PCB, etc.) live in `product_genealogy`**, not as product serial fields; the
+   `products` table carries exactly one serial (`official_product_serial`) plus `serial_source`.
+
+With those locked, the Manufacturer master, the unified serial model, and the **frozen "No Product
+before QC PASS" rule** are approved and fold cleanly into the phased, additive implementation plan
+(sequenced after CW-02 closes). No code until this final review is approved.

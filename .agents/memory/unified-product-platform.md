@@ -25,6 +25,22 @@ master, all orthogonal:
 A `products` row carries `category_id` AND `workflow_code` as TWO orthogonal FKs — never hardcode
 a category→workflow mapping (risk R10).
 
+## Final refinements v1.1 (APPROVED WITH MINOR CHANGES)
+
+- **Manufacturer master** — NEW `master_manufacturers` (OCS/Techfine/Deye/Growatt/Voltronic/MUST),
+  replacing free-text `manufacturer` on master_bms/chargers. `master_products` gets nullable
+  `manufacturer_id`. **Product DERIVES manufacturer via `model_id → manufacturer_id` — never store
+  manufacturer/brand on the serialized `products` row.**
+- **Unified serial** — `products` carries ONE `official_product_serial` (unique) + `serial_source`
+  enum (OCS|MANUFACTURER), NOT two parallel serial columns. OCS source = sequence-generated;
+  MANUFACTURER source = external value validated present+unique (Hybrid reuses Techfine serial).
+  Downstream uses ONLY `official_product_serial`, never inspects source. Component serials (PCB
+  etc.) go in `product_genealogy`, not as product fields.
+- **Frozen rule: No Product before QC PASS.** `products` row created at exactly one gate (QC-pass).
+  WIP lives in mfg_production_orders; downstream references only post-QC Products.
+- All additive; no certified table renamed/removed; `products` is new so the serial design costs
+  zero migration. Workflow Master + four-concept model untouched.
+
 ## The durable facts that shaped the recommendation
 
 - **`master_products` is a MODEL/SKU blueprint, NOT a unit identity.** It holds chemistry/
