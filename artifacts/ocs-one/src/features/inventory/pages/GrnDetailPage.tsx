@@ -252,9 +252,10 @@ export default function GrnDetailPage() {
           <DialogHeader>
             <DialogTitle>Post GRN {grn.grn_number}?</DialogTitle>
             <DialogDescription>
-              Posting is final. Each line is routed by its material workflow — inspected materials become
-              "inspection pending", others go straight to available inventory. Inventory transactions will be
-              generated and the GRN can no longer be edited or deleted.
+              Posting is final. Each line is routed by its material's assigned workflow — inspected materials
+              become "inspection pending", others go straight to available inventory. Every material's category
+              must have an assigned workflow or posting will be blocked. Inventory transactions will be generated
+              and the GRN can no longer be edited or deleted.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

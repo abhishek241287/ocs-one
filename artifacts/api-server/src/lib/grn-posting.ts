@@ -60,7 +60,8 @@ export type GrnPostResult =
   | { status: "posted"; grnId: string; lineCount: number }
   | { status: "not_found" }
   | { status: "invalid_state"; current: string }
-  | { status: "no_lines" };
+  | { status: "no_lines" }
+  | { status: "unassigned_category"; materials: { code: string; name: string }[] };
 
 /**
  * Post a draft GRN inside the caller's transaction (atomic with the header status
@@ -84,38 +85,46 @@ export async function postGrn(
   if (!grn) return { status: "not_found" };
   if (grn.status !== "draft") return { status: "invalid_state", current: grn.status };
 
+  // Resolve every line's routing in one pass: material → category → workflow
+  // assignment → post_receipt_action. A LEFT JOIN exposes lines whose category has
+  // NO assigned workflow (action === null) so we can FAIL FAST rather than guess.
   const lines = await tx
     .select({
       id: grnLineItemsTable.id,
       materialId: grnLineItemsTable.materialId,
+      materialCode: materialsTable.code,
+      materialName: materialsTable.name,
       quantityReceived: grnLineItemsTable.quantityReceived,
       uom: grnLineItemsTable.uom,
+      action: materialWorkflowsTable.postReceiptAction,
     })
     .from(grnLineItemsTable)
+    .innerJoin(materialsTable, eq(materialsTable.id, grnLineItemsTable.materialId))
+    .leftJoin(
+      materialWorkflowAssignmentsTable,
+      eq(materialWorkflowAssignmentsTable.categoryId, materialsTable.categoryId),
+    )
+    .leftJoin(
+      materialWorkflowsTable,
+      eq(materialWorkflowsTable.id, materialWorkflowAssignmentsTable.workflowId),
+    )
     .where(eq(grnLineItemsTable.grnId, grnId))
     .orderBy(asc(grnLineItemsTable.lineNumber));
   if (lines.length === 0) return { status: "no_lines" };
 
-  for (const line of lines) {
-    // Resolve the line's routing: material → category → workflow assignment →
-    // post_receipt_action. A category with NO assignment defaults to
-    // DIRECT_TO_INVENTORY ("Packing Material → Inventory if no inspection workflow").
-    const [route] = await tx
-      .select({ action: materialWorkflowsTable.postReceiptAction })
-      .from(materialsTable)
-      .innerJoin(
-        materialWorkflowAssignmentsTable,
-        eq(materialWorkflowAssignmentsTable.categoryId, materialsTable.categoryId),
-      )
-      .innerJoin(
-        materialWorkflowsTable,
-        eq(materialWorkflowsTable.id, materialWorkflowAssignmentsTable.workflowId),
-      )
-      .where(eq(materialsTable.id, line.materialId))
-      .limit(1);
+  // Mandatory workflow assignment (CTO directive — Fail Fast, Never Guess): the system
+  // never assumes a default receiving path. If any material's category has no assigned
+  // Material Workflow, posting fails and writes NOTHING (the whole tx rolls back).
+  const unassigned = lines.filter((l) => l.action == null);
+  if (unassigned.length > 0) {
+    return {
+      status: "unassigned_category",
+      materials: unassigned.map((l) => ({ code: l.materialCode, name: l.materialName })),
+    };
+  }
 
-    const action: PostReceiptAction = route?.action ?? "DIRECT_TO_INVENTORY";
-    const routing = resolvePostReceiptAction(action);
+  for (const line of lines) {
+    const routing = resolvePostReceiptAction(line.action as PostReceiptAction);
 
     await tx
       .update(grnLineItemsTable)

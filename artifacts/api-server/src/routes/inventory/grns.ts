@@ -253,6 +253,15 @@ router.post("/:id/post", async (req: Request, res: Response): Promise<void> => {
     res.status(409).json({ error: "GRN has no line items to post" });
     return;
   }
+  if (result.status === "unassigned_category") {
+    const list = result.materials.map((m) => `${m.name} (${m.code})`).join(", ");
+    res.status(422).json({
+      error:
+        `Cannot post GRN: the following material(s) belong to a category with no assigned ` +
+        `receiving workflow — assign a Material Workflow to each category first: ${list}`,
+    });
+    return;
+  }
 
   void recordSecurityEvent({
     eventType: "grn.posted",

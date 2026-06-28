@@ -133,9 +133,9 @@ export type MaterialWorkflow = typeof materialWorkflowsTable.$inferSelect;
 // Material → Workflow assignment, keyed by CATEGORY (the CTO routing examples are by
 // material type = category). Kept in a SEPARATE table — NOT a column on the frozen
 // Material Master / Material Category — so Material Master stays untouched. One
-// workflow per category (category_id UNIQUE). A category with no assignment is treated
-// as DIRECT_TO_INVENTORY by the posting engine ("Packing Material → Inventory if no
-// inspection workflow exists").
+// workflow per category (category_id UNIQUE). Assignment is MANDATORY: a category with
+// no assignment causes GRN posting to FAIL with a clear validation error — the posting
+// engine never assumes a default receiving path (CTO directive: Fail Fast, Never Guess).
 export const materialWorkflowAssignmentsTable = pgTable("material_workflow_assignments", {
   id: uuid("id").primaryKey().defaultRandom(),
   categoryId: uuid("category_id")

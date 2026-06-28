@@ -172,8 +172,9 @@ export async function seedDatabase(): Promise<void> {
   // Default Material-Category → Workflow assignments (idempotent). Inspection-bearing
   // categories (cells, inverters, electronics) route through Incoming Inspection;
   // generic/consumable categories (connectors, cables, packing, accessories) go direct.
-  // onConflictDoNothing preserves any director re-assignment on re-seed. A category
-  // left UNASSIGNED is treated as DIRECT_TO_INVENTORY by the posting engine.
+  // onConflictDoNothing preserves any director re-assignment on re-seed. Workflow
+  // assignment is MANDATORY (CTO directive): a category left UNASSIGNED causes GRN
+  // posting to FAIL with a clear error — the posting engine never assumes a default.
   await pool.query(`
     INSERT INTO material_workflow_assignments (category_id, workflow_id)
     SELECT c.id, w.id
