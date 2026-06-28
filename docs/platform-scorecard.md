@@ -10,7 +10,7 @@ Each frozen platform maintains the ten fields below. Update on: a module adoptin
 platform, a permitted (Critical/High/security) platform change, a defect opening/closing,
 or a certification-wave gate.
 
-_Last reviewed: 2026-06-28 (CW-02, Cell Grading in progress)._
+_Last reviewed: 2026-06-28 (CW-02 — Cell Grading CERTIFIED)._
 
 ## Health legend
 
@@ -34,7 +34,7 @@ _Last reviewed: 2026-06-28 (CW-02, Cell Grading in progress)._
 | **Open Critical Defects** | 0 |
 | **Open High Defects** | 0 |
 | **Breaking Changes Since Freeze** | 0 |
-| **Certification Status** | ✅ Standing gates green (SS-02/SS-03/SS-04); ledger in SS-03 immutability suite |
+| **Certification Status** | ✅ Certified under CW-02 (reference consumer); standing gates green (SS-02/SS-03/SS-04); ledger in SS-03 immutability suite |
 | **Next Planned Version** | v1.1 (post-certification roadmap) |
 | **Enhancement Backlog Count** | 5 (ECF-001…ECF-005) |
 
@@ -59,14 +59,14 @@ _Last reviewed: 2026-06-28 (CW-02, Cell Grading in progress)._
 |-------|-------|
 | **Version** | v1.0 (permanent) |
 | **Freeze Status** | FROZEN |
-| **Modules Using It** | Platform-wide — every protected endpoint / module |
-| **Last Platform Change** | v1.0 (CW-01, 2026-06-28) |
+| **Modules Using It** | Platform-wide — every protected endpoint / module (Cell Receiving + Cell Grading certified) |
+| **Last Platform Change** | v1.0 (CW-01, 2026-06-28) — unchanged through CW-02 |
 | **Open Critical Defects** | 0 |
 | **Open High Defects** | 0 |
 | **Breaking Changes Since Freeze** | 0 |
-| **Certification Status** | ✅ `authz` / `audit` / `config` suites green |
-| **Next Planned Version** | None — permanent standards |
-| **Enhancement Backlog Count** | 0 (none recorded) |
+| **Certification Status** | ✅ `authz` (235/235) / `audit` (authoritative 12/12) / `config` (31/3/0) suites green |
+| **Next Planned Version** | Security Framework v2.0 (post-certification roadmap) |
+| **Enhancement Backlog Count** | 1 (SEC-001 — `docs/security-framework-backlog.md`) |
 
 ## Certification Framework
 
@@ -74,12 +74,12 @@ _Last reviewed: 2026-06-28 (CW-02, Cell Grading in progress)._
 |-------|-------|
 | **Version** | v1.0 |
 | **Freeze Status** | FROZEN |
-| **Modules Using It** | Per wave — CW-01 Cell Receiving (certified); CW-02 Cell Grading (in progress) |
+| **Modules Using It** | Per wave — CW-01 Cell Receiving (certified); CW-02 Cell Grading (certified) |
 | **Last Platform Change** | v1.0 (CW-01, 2026-06-28) |
 | **Open Critical Defects** | 0 |
 | **Open High Defects** | 0 |
 | **Breaking Changes Since Freeze** | 0 |
-| **Certification Status** | ✅ CW-01 closed at full pass; CW-02 in progress |
+| **Certification Status** | ✅ CW-01 + CW-02 both closed at full pass; CW-03 authorized on CW-02 freeze-package approval |
 | **Next Planned Version** | None during CW-02→CW-08 |
 | **Enhancement Backlog Count** | 0 (none recorded) |
 

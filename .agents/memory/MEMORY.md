@@ -20,6 +20,7 @@
 - [Auth login redirect race](auth-redirect-race.md) — seed auth cache via setQueryData in login onSuccess; invalidateQueries races a synchronous redirect and bounces back to /login.
 - [Engineering Correction Framework (ECF)](ecf-framework.md) — one generic immutable engineering_corrections ledger across modules; module table = current state; lib stays module-agnostic; fail-closed authz.
 - [Unified Product Platform review](unified-product-platform.md) — model vs unit identity collision (master_products=SKU, products=unit); downstream already keys off production_order_id; workflow-driven stage engine is the big refactor.
+- [SS-03 ratelimit selector limitation](ss03-ratelimit-selector.md) — default-mode `audit` red is usually stale global-limiter residue; authoritative mode (CERT_AUDIT_RATELIMIT=1) is the real gate.
 - [Cert-harness teardown design](cert-harness-teardown.md) — tear down by stable prefix (set-based) not captured IDs; executeSql returns FK errors as TEXT (no throw); grading writes ECF originals so clear engineering_corrections too.
 - [Boundary cert float-bracketing](boundary-cert-float-bracketing.md) — certify inclusive numeric thresholds by bracketing ±0.01 (not the exact knife-edge) so float rounding never fakes a FAIL; prefix-tag + teardown in finally.
 - [Grading Import Framework](grading-import-framework.md) — ONE engine (calcGrade); future Excel/CSV imports adapt via GradingImportSource→normalized record→same engine; manual=one-row source; validation must mirror GradeCellBody.

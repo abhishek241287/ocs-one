@@ -5,9 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased] — CW-02 Cell Grading (in progress)
+## [Unreleased] — CW-02 Cell Grading
 
-### 🟦 MAT-06 — Security & Reliability Certification — EXECUTED, awaiting CTO sign-off (2026-06-28)
+### 🔵 CW-02 — Cell Grading — CERTIFIED (2026-06-28)
+
+Certification Wave 02 is **CERTIFIED** (MAT-01 → MAT-06 all PASS). The **Cell Grading** module and the
+**Engineering Correction Framework (ECF) v1.0** (reference consumer: Cell Grading) are frozen on top of
+OCS One Foundation v1.0. **0 Critical / 0 High / 0 Medium defects open**; 6 defects all Closed; 4 Low
+observations backlogged (SEC-001, MEB-001, MEB-002, accepted JWT residual). Closure suite re-run live:
+typecheck 0 · lint 0 · SS-02 235/235 · SS-03 authoritative 12/12 + immutable · SS-04 31/3/0.
+
+- **Freeze package:** `CW-02_CERTIFICATION_REPORT.md` (12 sections + CTO Approval Record `CW-02-APR-001`),
+  `CW-02_FREEZE_NOTICE.md` (freeze rules + CW-03 authorization), `certification/CW-02-Cell-Grading/PROJECT_STATUS.md`,
+  filled `certification/CW-02-Cell-Grading/Certification.md`. Git tag `CW-02-CERTIFIED` recorded (literal
+  ref pending a background task — main agent cannot tag).
+- **OBS-CW02-M06-001 → SEC-001** recorded as a **Security Framework v2.0** enhancement in
+  `docs/security-framework-backlog.md`; platform scorecard Security Standards backlog 0 → 1. No platform
+  code changed — freeze policy maintained.
+- **CW-03 — Manufacturing Orders** authorized to begin only after the CW-02 freeze package is approved.
+
+### 🟦 MAT-06 — Security & Reliability Certification — APPROVED & gate CLOSED (2026-06-28)
 
 Full-batch security & reliability certification of the Cell Grading module across the 14 standard
 security areas. Cell Grading's security is governed by the **frozen platform standards** (SS-01..04,
@@ -34,7 +51,8 @@ source-of-truth matrix, and adds grading-specific probes. **Scorecard 10/10 · 0
   **false FAIL** (the cause of the red `audit` workflow). Audit logging is correct & fully wired;
   authoritative mode passes 12/12. Recommend a small SS-03 selector fix or backlog under the freeze
   policy — **CTO decision; NO fix applied.**
-- **Gate:** MAT-06 **awaiting CTO sign-off** (decision PASS WITH NOTE). Full record:
+- **Gate:** MAT-06 **APPROVED & CLOSED by CTO (2026-06-28)** — decision PASS WITH NOTE; OBS-CW02-M06-001
+  accepted as a Low platform observation → SEC-001 (no platform code change authorized). Full record:
   `certification/CW-02-Cell-Grading/MAT-06.md`.
 
 ### ✅ MAT-05 — Performance & Stress Certification — APPROVED & gate CLOSED (2026-06-28)
