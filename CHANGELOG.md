@@ -74,6 +74,16 @@ module is touched, by direction.
   put); health metrics = *Open Critical/High Defects = 0* and *Breaking Changes Since
   Freeze = 0*. A healthy platform supports more manufacturing capability with fewer changes
   over time.
+- **Unified Product Platform — architecture FROZEN v1.0 (CTO, architecture-only).** Approved
+  and frozen design (no code): everything leaving the factory becomes a serialized **Product**
+  created at the QC-pass gate; all downstream modules reference Product. Four orthogonal
+  concepts (Product Category / Product Model = existing `master_products` / Manufacturing
+  Workflow / Product) + a Manufacturer master; unified `official_product_serial` + `serial_source`;
+  permanent rule **No Product before QC PASS**. Strictly additive phased migration, consumes the
+  frozen platforms unmodified. No new architectural concepts during CW-02→CW-08 except for a
+  Critical cert defect; implementation starts after CW-02 closes; future ideas tracked in the
+  Product Platform Enhancement Backlog (PP-001…PP-006). Full review + ERD/diagrams + freeze +
+  backlog: `docs/architecture/unified-product-platform-review.md`.
 
 
 > **Certification Wave 02 — Cell Grading.** MAT-01 (Page & Navigation) and MAT-02 (CRUD &

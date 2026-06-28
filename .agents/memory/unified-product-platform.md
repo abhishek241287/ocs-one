@@ -3,7 +3,13 @@ name: Unified Product Platform architecture review
 description: Key durable findings/decisions from the CTO architecture review for unifying all factory output under one "Product" identity (3 categories). Full report in docs/architecture/.
 ---
 
-# Unified Product Platform (architecture review — pending CTO approval)
+# Unified Product Platform (architecture FROZEN v1.0 — approved 2026-06-28, NOT yet implemented)
+
+**FROZEN v1.0.** Architecture approved + frozen; no new architectural concepts during CW-02→CW-08
+except to resolve a Critical cert defect. Implementation begins AFTER CW-02 closes, per the phased
+additive plan. Future ideas → Product Platform Enhancement Backlog (PP-001..PP-006) in the review
+doc; they must not modify v1.0 during certification. Focus is now building manufacturing capability
+on top of this frozen architecture, not redesigning it.
 
 Full deliverable: `docs/architecture/unified-product-platform-review.md` (original report + a
 "Refinement v1.0 — Four-Concept Foundation" section). Recommendation progressed from **APPROVED

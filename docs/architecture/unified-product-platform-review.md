@@ -1,5 +1,20 @@
 # Architecture Review — Unified Product Platform (v1.0)
 
+> ## 🧊 ARCHITECTURE FROZEN — Version 1.0 (approved 2026-06-28)
+> The Unified Product Platform architecture (this document: original report + Refinement v1.0
+> four-concept foundation + Refinement v1.1 manufacturer/serial/QC-gate) is **APPROVED and
+> FROZEN as Version 1.0.**
+> - **No new architectural concepts** during **CW-02 → CW-08** unless required to resolve a
+>   **Critical certification defect.**
+> - Implementation follows the **approved phased migration plan** (§D4) — additive, no certified
+>   table renamed/removed, sequenced **after CW-02 certification completes.**
+> - Future ideas go to the **Product Platform Enhancement Backlog** (§ end of doc) and must **not**
+>   modify the v1.0 architecture during certification.
+> - Engineering focus is now **building manufacturing capability on top of this frozen
+>   architecture**, not redesigning it.
+>
+> _The review history below is retained as the rationale of record._
+
 > **Status: ARCHITECTURE REVIEW ONLY. No code implemented.** This document responds to the
 > CTO Architecture Decision Request. It reviews the *current* architecture, assesses the
 > impact of the proposed Unified Product Platform, and ends with a recommendation. No
@@ -559,3 +574,24 @@ All three refinements are compatible, additive, and reduce complexity. The two m
 With those locked, the Manufacturer master, the unified serial model, and the **frozen "No Product
 before QC PASS" rule** are approved and fold cleanly into the phased, additive implementation plan
 (sequenced after CW-02 closes). No code until this final review is approved.
+
+---
+---
+
+# Product Platform Enhancement Backlog
+
+> Frozen-architecture rule: ideas here are **parked**, not built. They **must not** modify the
+> v1.0 architecture during CW-02 → CW-08. They are considered for a future **Product Platform
+> v2.0** on the post-certification roadmap. The only mid-certification exception is a change
+> required to resolve a **Critical certification defect**.
+
+| ID | Idea | Notes |
+|----|------|-------|
+| PP-001 | Future product categories (ESS, EV AC Charger, EV DC Charger, BMS) | Added via Product Category Master + Workflow Master as **data**, no schema redesign. |
+| PP-002 | Future workflow codes (`ESS`, `EV_AC_CHARGER`, `EV_DC_CHARGER`, `BMS`) | Reserved in Workflow Master; not seeded in v1.0. |
+| PP-003 | Future product lifecycle states (`installed`, `in_service`, `returned`, `scrapped`) | Reserved; v1.0 lifecycle ends at `delivered_to_dealer`. |
+| PP-004 | Post-Dealer modules — Installation, Warranty, Service, AMC, Remote Monitoring | Reserved extension points off `products.id`; out of Manufacturing v1.0 scope. |
+| PP-005 | Normalize free-text `manufacturer` on remaining masters to `manufacturer_id` | Additive; backfill, remove legacy columns only post-cert (Phase 5). |
+| PP-006 | Product Platform Scorecard row | Earned once the platform stabilizes (adoption > 0 modules built). |
+
+_New ideas during certification are appended here, not implemented._
