@@ -2461,6 +2461,91 @@ paths:
         "404":
           description: Product not found
 
+  # ─── Packing module (Product-Platform-driven fulfillment) ────────────────────
+  /packing:
+    post:
+      operationId: packProducts
+      tags: [packing]
+      summary: Pack ready-for-packing products (batch, atomic)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PackProductsInput" }
+      responses:
+        "200":
+          description: Products packed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PackProductsResult" }
+        "400":
+          description: Invalid request body
+        "422":
+          description: One or more products are not in ready_for_packing
+
+  # ─── Dispatch module (Product-Platform-driven fulfillment) ───────────────────
+  /dispatch:
+    post:
+      operationId: dispatchProducts
+      tags: [dispatch]
+      summary: Dispatch packed products to a dealer (batch, atomic)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DispatchProductsInput" }
+      responses:
+        "200":
+          description: Products dispatched
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DispatchProductsResult" }
+        "400":
+          description: Invalid request body
+        "404":
+          description: Dealer not found
+        "422":
+          description: One or more products are not in packed
+
+  # ─── Dealer module (read-only projection over the Product Platform) ──────────
+  /dealers/{id}/inventory:
+    get:
+      operationId: dealerInventory
+      tags: [dealers]
+      summary: Products currently assigned to a dealer (read-only projection)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Dealer inventory
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DealerInventoryResponse" }
+        "404":
+          description: Dealer not found
+
+  /dealers/{id}/dispatch-history:
+    get:
+      operationId: dealerDispatchHistory
+      tags: [dealers]
+      summary: Dispatch events for a dealer's products (read-only projection)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Dealer dispatch history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DealerDispatchHistoryResponse" }
+        "404":
+          description: Dealer not found
+
   # ─── Product Category master (A) ─────────────────────────────────────────────
   /masters/product-categories:
     get:
@@ -4799,6 +4884,95 @@ components:
       properties:
         status: { $ref: "#/components/schemas/ProductStatus" }
         reason: { type: string }
+
+    # ─── Packing module (Product-Platform-driven fulfillment) ──────────────────
+    PackProductsInput:
+      type: object
+      required: [product_ids, packing_date, packed_by]
+      properties:
+        product_ids:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+        packing_date: { type: string, format: date }
+        packed_by: { type: string, minLength: 1 }
+
+    PackProductsResult:
+      type: object
+      required: [packed, items]
+      properties:
+        packed: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+
+    # ─── Dispatch module (Product-Platform-driven fulfillment) ─────────────────
+    DispatchProductsInput:
+      type: object
+      required: [product_ids, dealer_id, dispatch_number, dispatch_date, invoice_number]
+      properties:
+        product_ids:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+        dealer_id: { type: string, format: uuid }
+        dispatch_number: { type: string, minLength: 1 }
+        dispatch_date: { type: string, format: date }
+        invoice_number: { type: string, minLength: 1 }
+
+    DispatchProductsResult:
+      type: object
+      required: [dispatched, items]
+      properties:
+        dispatched: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+
+    # ─── Dealer module (read-only projection over the Product Platform) ─────────
+    DealerSummary:
+      type: object
+      required: [id, dealerCode, dealerName, status]
+      properties:
+        id: { type: string, format: uuid }
+        dealerCode: { type: string }
+        dealerName: { type: string }
+        status: { type: string }
+
+    DealerInventoryResponse:
+      type: object
+      required: [dealer, total, items]
+      properties:
+        dealer: { $ref: "#/components/schemas/DealerSummary" }
+        total: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+
+    DealerDispatchHistoryEntry:
+      type: object
+      required: [event_id, product_id, official_product_serial, dispatched_at, actor]
+      properties:
+        event_id: { type: string, format: uuid }
+        product_id: { type: string, format: uuid }
+        official_product_serial: { type: string }
+        category_name: { type: ["string", "null"] }
+        model_name: { type: ["string", "null"] }
+        dispatch_number: { type: ["string", "null"] }
+        dispatch_date: { type: ["string", "null"] }
+        invoice_number: { type: ["string", "null"] }
+        dispatched_at: { type: string, format: date-time }
+        actor: { type: string }
+
+    DealerDispatchHistoryResponse:
+      type: object
+      required: [dealer, total, items]
+      properties:
+        dealer: { $ref: "#/components/schemas/DealerSummary" }
+        total: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/DealerDispatchHistoryEntry" }
 
     # Product Category master (A)
     ProductCategory:

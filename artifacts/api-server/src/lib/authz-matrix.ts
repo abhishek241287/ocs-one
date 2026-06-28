@@ -486,6 +486,46 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     expected: roles(P, P, F, F),
   },
 
+  // ─── Fulfillment writes (requireRole supervisor+director) ─────────────────────
+  {
+    id: "packing.create",
+    method: "POST",
+    path: "/api/packing",
+    group: "Fulfillment",
+    description: "Pack ready-for-packing products (write)",
+    guard: "requireRole(supervisor,director)",
+    body: {},
+    expected: roles(P, P, F, F),
+  },
+  {
+    id: "dispatch.create",
+    method: "POST",
+    path: "/api/dispatch",
+    group: "Fulfillment",
+    description: "Dispatch packed products to a dealer (write)",
+    guard: "requireRole(supervisor,director)",
+    body: {},
+    expected: roles(P, P, F, F),
+  },
+  {
+    id: "dealer.inventory",
+    method: "GET",
+    path: `/api/dealers/${DUMMY_ID}/inventory`,
+    group: "Fulfillment",
+    description: "Products assigned to a dealer (read)",
+    guard: "requireAuth (read open to all authed)",
+    expected: all(P),
+  },
+  {
+    id: "dealer.dispatch-history",
+    method: "GET",
+    path: `/api/dealers/${DUMMY_ID}/dispatch-history`,
+    group: "Fulfillment",
+    description: "Dispatch events for a dealer's products (read)",
+    guard: "requireAuth (read open to all authed)",
+    expected: all(P),
+  },
+
   // ─── Manufacturing writes ────────────────────────────────────────────────────
   {
     id: "manufacturing.orders.create",

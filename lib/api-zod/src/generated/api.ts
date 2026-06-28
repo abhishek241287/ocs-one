@@ -4706,6 +4706,153 @@ export const UpdateProductStatusResponse = zod.object({
 })
 
 
+/**
+ * @summary Pack ready-for-packing products (batch, atomic)
+ */
+
+
+
+
+export const PackProductsBody = zod.object({
+  "product_ids": zod.array(zod.string().uuid()).min(1),
+  "packing_date": zod.coerce.date(),
+  "packed_by": zod.string().min(1)
+})
+
+export const PackProductsResponse = zod.object({
+  "packed": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "category_id": zod.string().uuid(),
+  "model_id": zod.string().uuid(),
+  "workflow_code": zod.string(),
+  "source_production_order_id": zod.string().uuid().nullish(),
+  "official_product_serial": zod.string(),
+  "serial_source": zod.enum(['OCS', 'MANUFACTURER']),
+  "qc_status": zod.string().nullish(),
+  "product_status": zod.enum(['manufacturing', 'qc_passed', 'ready_for_packing', 'packed', 'dispatched', 'delivered_to_dealer']),
+  "current_location": zod.string().nullish(),
+  "dealer_id": zod.string().uuid().nullish(),
+  "manufacturing_completed_at": zod.coerce.date(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "category_name": zod.string().nullish(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "dealer_name": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Dispatch packed products to a dealer (batch, atomic)
+ */
+
+
+
+
+
+export const DispatchProductsBody = zod.object({
+  "product_ids": zod.array(zod.string().uuid()).min(1),
+  "dealer_id": zod.string().uuid(),
+  "dispatch_number": zod.string().min(1),
+  "dispatch_date": zod.coerce.date(),
+  "invoice_number": zod.string().min(1)
+})
+
+export const DispatchProductsResponse = zod.object({
+  "dispatched": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "category_id": zod.string().uuid(),
+  "model_id": zod.string().uuid(),
+  "workflow_code": zod.string(),
+  "source_production_order_id": zod.string().uuid().nullish(),
+  "official_product_serial": zod.string(),
+  "serial_source": zod.enum(['OCS', 'MANUFACTURER']),
+  "qc_status": zod.string().nullish(),
+  "product_status": zod.enum(['manufacturing', 'qc_passed', 'ready_for_packing', 'packed', 'dispatched', 'delivered_to_dealer']),
+  "current_location": zod.string().nullish(),
+  "dealer_id": zod.string().uuid().nullish(),
+  "manufacturing_completed_at": zod.coerce.date(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "category_name": zod.string().nullish(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "dealer_name": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Products currently assigned to a dealer (read-only projection)
+ */
+export const DealerInventoryParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DealerInventoryResponse = zod.object({
+  "dealer": zod.object({
+  "id": zod.string().uuid(),
+  "dealerCode": zod.string(),
+  "dealerName": zod.string(),
+  "status": zod.string()
+}),
+  "total": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "category_id": zod.string().uuid(),
+  "model_id": zod.string().uuid(),
+  "workflow_code": zod.string(),
+  "source_production_order_id": zod.string().uuid().nullish(),
+  "official_product_serial": zod.string(),
+  "serial_source": zod.enum(['OCS', 'MANUFACTURER']),
+  "qc_status": zod.string().nullish(),
+  "product_status": zod.enum(['manufacturing', 'qc_passed', 'ready_for_packing', 'packed', 'dispatched', 'delivered_to_dealer']),
+  "current_location": zod.string().nullish(),
+  "dealer_id": zod.string().uuid().nullish(),
+  "manufacturing_completed_at": zod.coerce.date(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "category_name": zod.string().nullish(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "dealer_name": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Dispatch events for a dealer's products (read-only projection)
+ */
+export const DealerDispatchHistoryParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DealerDispatchHistoryResponse = zod.object({
+  "dealer": zod.object({
+  "id": zod.string().uuid(),
+  "dealerCode": zod.string(),
+  "dealerName": zod.string(),
+  "status": zod.string()
+}),
+  "total": zod.number(),
+  "items": zod.array(zod.object({
+  "event_id": zod.string().uuid(),
+  "product_id": zod.string().uuid(),
+  "official_product_serial": zod.string(),
+  "category_name": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "dispatch_number": zod.string().nullish(),
+  "dispatch_date": zod.string().nullish(),
+  "invoice_number": zod.string().nullish(),
+  "dispatched_at": zod.coerce.date(),
+  "actor": zod.string()
+}))
+})
+
+
 export const listProductCategoriesQueryPageDefault = 1;
 export const listProductCategoriesQueryPageSizeDefault = 25;
 

@@ -36,6 +36,8 @@ import {
   GitBranch,
   Tags,
   Boxes,
+  PackageCheck,
+  Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -117,6 +119,14 @@ const navSections: NavSection[] = [
           { label: "Rework Queue", href: "/manufacturing/rework", icon: Wrench },
         ],
       },
+    ],
+  },
+  {
+    title: "Fulfillment",
+    items: [
+      { label: "Packing", href: "/fulfillment/packing", icon: PackageCheck },
+      { label: "Dispatch", href: "/fulfillment/dispatch", icon: Truck },
+      { label: "Dealer Portal", href: "/fulfillment/dealers", icon: Store },
     ],
   },
   {

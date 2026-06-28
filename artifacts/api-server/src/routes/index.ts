@@ -19,6 +19,9 @@ import supplierMasterRouter from "./masters/suppliers";
 import materialWorkflowMasterRouter from "./masters/material-workflows";
 import inventoryRouter from "./inventory/index";
 import productsRouter from "./products/index";
+import packingRouter from "./packing/index";
+import dispatchRouter from "./dispatch/index";
+import dealersRouter from "./dealers/index";
 import manufacturingRouter from "./manufacturing/index";
 import cellsRouter from "./cells/index";
 import logisticsRouter from "./logistics/index";
@@ -57,6 +60,15 @@ router.use("/inventory", inventoryRouter);
 
 // Unified Product Platform — serialized Products (units)
 router.use("/products", productsRouter);
+
+// Fulfillment — Packing (Product-Platform-driven; status + events only)
+router.use("/packing", packingRouter);
+
+// Fulfillment — Dispatch (Product-Platform-driven; status + dealer + events only)
+router.use("/dispatch", dispatchRouter);
+
+// Fulfillment — Dealer (read-only projection over the Product Platform)
+router.use("/dealers", dealersRouter);
 
 // Manufacturing
 router.use("/manufacturing", manufacturingRouter);

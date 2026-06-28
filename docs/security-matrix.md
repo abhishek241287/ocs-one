@@ -217,6 +217,29 @@ unless a minimum role is stated.
 > validated inside the transaction under a row lock (TOCTOU-safe). Per DP-3, product creation
 > writes no ECF baseline; `product_events` is the product timeline.
 
+### Fulfillment (`/api/packing`, `/api/dispatch`) — Product-Platform-driven
+
+| Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |
+|---|---|---|---|---|---|---|
+| `/api/packing` | POST | ✅ | **supervisor, director** | global | **yes** (`product.packed` on `product_events`) | ✅ (batch, atomic, FOR UPDATE re-check; ready_for_packing → packed) |
+| `/api/dispatch` | POST | ✅ | **supervisor, director** | global | **yes** (`product.dispatched` on `product_events`) | ✅ (batch, atomic, FOR UPDATE re-check; packed → dispatched + dealer assignment) |
+| `/api/dealers/{id}/inventory` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (read-only projection; products where `dealer_id={id}`) |
+| `/api/dealers/{id}/dispatch-history` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (read-only projection; `product.dispatched` events for the dealer's products) |
+
+> **Note (Fulfillment):** Packing and Dispatch are pure Product-Platform operations — no new table,
+> no ledger, no duplicated Product data. The eligible queues reuse
+> `GET /api/products?product_status=ready_for_packing` and `…=packed` respectively.
+> A **pack** transitions each product `ready_for_packing → packed` and appends an immutable `product.packed`
+> event (packing date + packed-by). A **dispatch** validates the dealer exists, transitions each product
+> `packed → dispatched`, assigns the dealer on the existing `products.dealer_id` column, and appends an
+> immutable `product.dispatched` event (dispatch number, date, invoice number, dealer) — NO LR/vehicle/driver/
+> transporter (that is the separate legacy logistics module). Both are fail-fast & atomic: if any product is
+> not in the required status (or the dealer is missing) the whole request is rejected (422/404) and nothing
+> is written. All event writes go to the append-only `product_events` timeline.
+> The **Dealer** endpoints are pure read-only projections — `inventory` lists the products currently
+> assigned to a dealer (`products.dealer_id`), `dispatch-history` replays that dealer's `product.dispatched`
+> events. No writes, no new tables; both 404 when the dealer does not exist.
+
 ### Dashboard / Reports / Developer
 
 | Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |

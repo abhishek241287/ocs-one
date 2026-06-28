@@ -1879,6 +1879,72 @@ export interface ProductStatusUpdate {
   reason?: string;
 }
 
+export interface PackProductsInput {
+  /** @minItems 1 */
+  product_ids: string[];
+  packing_date: string;
+  /** @minLength 1 */
+  packed_by: string;
+}
+
+export interface PackProductsResult {
+  packed: number;
+  items: Product[];
+}
+
+export interface DispatchProductsInput {
+  /** @minItems 1 */
+  product_ids: string[];
+  dealer_id: string;
+  /** @minLength 1 */
+  dispatch_number: string;
+  dispatch_date: string;
+  /** @minLength 1 */
+  invoice_number: string;
+}
+
+export interface DispatchProductsResult {
+  dispatched: number;
+  items: Product[];
+}
+
+export interface DealerSummary {
+  id: string;
+  dealerCode: string;
+  dealerName: string;
+  status: string;
+}
+
+export interface DealerInventoryResponse {
+  dealer: DealerSummary;
+  total: number;
+  items: Product[];
+}
+
+export interface DealerDispatchHistoryEntry {
+  event_id: string;
+  product_id: string;
+  official_product_serial: string;
+  /** @nullable */
+  category_name?: string | null;
+  /** @nullable */
+  model_name?: string | null;
+  /** @nullable */
+  dispatch_number?: string | null;
+  /** @nullable */
+  dispatch_date?: string | null;
+  /** @nullable */
+  invoice_number?: string | null;
+  dispatched_at: string;
+  actor: string;
+}
+
+export interface DealerDispatchHistoryResponse {
+  dealer: DealerSummary;
+  total: number;
+  items: DealerDispatchHistoryEntry[];
+}
+
 export type ProductCategory = MasterCommon;
 
 export type ProductCategoryInput = MasterCommonInput;

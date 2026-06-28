@@ -23,6 +23,11 @@ export const ROUTES = {
   productInventory: "/product-inventory",
   productInventoryList: "/product-inventory/list",
 
+  // Fulfillment (Product-Platform-driven)
+  fulfillmentPacking: "/fulfillment/packing",
+  fulfillmentDispatch: "/fulfillment/dispatch",
+  fulfillmentDealers: "/fulfillment/dealers",
+
   // Traceability
   qrTraceability: "/qr",
   dispatch: "/dispatch",

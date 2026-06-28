@@ -53,6 +53,9 @@ import CellGradingPage from "@/features/cells/pages/CellGradingPage";
 import CellInventoryPage from "@/features/cells/pages/CellInventoryPage";
 import CellMatchingPage from "@/features/cells/pages/CellMatchingPage";
 import GradeConfigPage from "@/features/cells/pages/GradeConfigPage";
+import PackingPage from "@/features/packing/pages/PackingPage";
+import DispatchPage from "@/features/dispatch/pages/DispatchPage";
+import DealerPortalPage from "@/features/dealer/pages/DealerPortalPage";
 import PackingDashboardPage from "@/features/logistics/pages/PackingDashboardPage";
 import DealerMasterPage from "@/features/logistics/pages/DealerMasterPage";
 import DispatchOrdersPage from "@/features/logistics/pages/DispatchOrdersPage";
@@ -139,6 +142,11 @@ function Router() {
       <Route path="/cells/inventory" component={CellInventoryPage} />
       <Route path="/cells/matching" component={CellMatchingPage} />
       <Route path="/cells/config" component={GradeConfigPage} />
+
+      {/* Fulfillment (Product-Platform-driven) */}
+      <Route path="/fulfillment/packing" component={PackingPage} />
+      <Route path="/fulfillment/dispatch" component={DispatchPage} />
+      <Route path="/fulfillment/dealers" component={DealerPortalPage} />
 
       {/* Logistics */}
       <Route path="/logistics">

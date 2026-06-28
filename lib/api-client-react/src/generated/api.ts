@@ -64,12 +64,16 @@ import type {
   ConnectorMasterInput,
   ConnectorMasterUpdate,
   Dealer,
+  DealerDispatchHistoryResponse,
   DealerInput,
+  DealerInventoryResponse,
   DirectorDashboard,
   DispatchItem,
   DispatchOrder,
   DispatchOrderDetail,
   DispatchOrderInput,
+  DispatchProductsInput,
+  DispatchProductsResult,
   FormationReport,
   GenealogyInput,
   GenealogyRecord,
@@ -154,6 +158,8 @@ import type {
   MaterialWorkflowInput,
   MaterialWorkflowUpdate,
   OrderStage,
+  PackProductsInput,
+  PackProductsResult,
   PackingDashboard,
   PatchCellLotBody,
   Product,
@@ -9323,6 +9329,300 @@ export const useUpdateProductStatus = <TError = ErrorType<void>,
       > => {
       return useMutation(getUpdateProductStatusMutationOptions(options));
     }
+
+export const getPackProductsUrl = () => {
+
+
+
+
+  return `/api/packing`
+}
+
+/**
+ * @summary Pack ready-for-packing products (batch, atomic)
+ */
+export const packProducts = async (packProductsInput: PackProductsInput, options?: RequestInit): Promise<PackProductsResult> => {
+
+  return customFetch<PackProductsResult>(getPackProductsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(packProductsInput)
+  }
+);}
+
+
+
+
+export const getPackProductsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof packProducts>>, TError,{data: BodyType<PackProductsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof packProducts>>, TError,{data: BodyType<PackProductsInput>}, TContext> => {
+
+const mutationKey = ['packProducts'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof packProducts>>, {data: BodyType<PackProductsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  packProducts(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PackProductsMutationResult = NonNullable<Awaited<ReturnType<typeof packProducts>>>
+    export type PackProductsMutationBody = BodyType<PackProductsInput>
+    export type PackProductsMutationError = ErrorType<void>
+
+    /**
+ * @summary Pack ready-for-packing products (batch, atomic)
+ */
+export const usePackProducts = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof packProducts>>, TError,{data: BodyType<PackProductsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof packProducts>>,
+        TError,
+        {data: BodyType<PackProductsInput>},
+        TContext
+      > => {
+      return useMutation(getPackProductsMutationOptions(options));
+    }
+
+export const getDispatchProductsUrl = () => {
+
+
+
+
+  return `/api/dispatch`
+}
+
+/**
+ * @summary Dispatch packed products to a dealer (batch, atomic)
+ */
+export const dispatchProducts = async (dispatchProductsInput: DispatchProductsInput, options?: RequestInit): Promise<DispatchProductsResult> => {
+
+  return customFetch<DispatchProductsResult>(getDispatchProductsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(dispatchProductsInput)
+  }
+);}
+
+
+
+
+export const getDispatchProductsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dispatchProducts>>, TError,{data: BodyType<DispatchProductsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof dispatchProducts>>, TError,{data: BodyType<DispatchProductsInput>}, TContext> => {
+
+const mutationKey = ['dispatchProducts'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dispatchProducts>>, {data: BodyType<DispatchProductsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  dispatchProducts(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DispatchProductsMutationResult = NonNullable<Awaited<ReturnType<typeof dispatchProducts>>>
+    export type DispatchProductsMutationBody = BodyType<DispatchProductsInput>
+    export type DispatchProductsMutationError = ErrorType<void>
+
+    /**
+ * @summary Dispatch packed products to a dealer (batch, atomic)
+ */
+export const useDispatchProducts = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dispatchProducts>>, TError,{data: BodyType<DispatchProductsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof dispatchProducts>>,
+        TError,
+        {data: BodyType<DispatchProductsInput>},
+        TContext
+      > => {
+      return useMutation(getDispatchProductsMutationOptions(options));
+    }
+
+export const getDealerInventoryUrl = (id: string,) => {
+
+
+
+
+  return `/api/dealers/${id}/inventory`
+}
+
+/**
+ * @summary Products currently assigned to a dealer (read-only projection)
+ */
+export const dealerInventory = async (id: string, options?: RequestInit): Promise<DealerInventoryResponse> => {
+
+  return customFetch<DealerInventoryResponse>(getDealerInventoryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDealerInventoryQueryKey = (id: string,) => {
+    return [
+    `/api/dealers/${id}/inventory`
+    ] as const;
+    }
+
+
+export const getDealerInventoryQueryOptions = <TData = Awaited<ReturnType<typeof dealerInventory>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof dealerInventory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDealerInventoryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof dealerInventory>>> = ({ signal }) => dealerInventory(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof dealerInventory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DealerInventoryQueryResult = NonNullable<Awaited<ReturnType<typeof dealerInventory>>>
+export type DealerInventoryQueryError = ErrorType<void>
+
+
+/**
+ * @summary Products currently assigned to a dealer (read-only projection)
+ */
+
+export function useDealerInventory<TData = Awaited<ReturnType<typeof dealerInventory>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof dealerInventory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDealerInventoryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDealerDispatchHistoryUrl = (id: string,) => {
+
+
+
+
+  return `/api/dealers/${id}/dispatch-history`
+}
+
+/**
+ * @summary Dispatch events for a dealer's products (read-only projection)
+ */
+export const dealerDispatchHistory = async (id: string, options?: RequestInit): Promise<DealerDispatchHistoryResponse> => {
+
+  return customFetch<DealerDispatchHistoryResponse>(getDealerDispatchHistoryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDealerDispatchHistoryQueryKey = (id: string,) => {
+    return [
+    `/api/dealers/${id}/dispatch-history`
+    ] as const;
+    }
+
+
+export const getDealerDispatchHistoryQueryOptions = <TData = Awaited<ReturnType<typeof dealerDispatchHistory>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof dealerDispatchHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDealerDispatchHistoryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof dealerDispatchHistory>>> = ({ signal }) => dealerDispatchHistory(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof dealerDispatchHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DealerDispatchHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof dealerDispatchHistory>>>
+export type DealerDispatchHistoryQueryError = ErrorType<void>
+
+
+/**
+ * @summary Dispatch events for a dealer's products (read-only projection)
+ */
+
+export function useDealerDispatchHistory<TData = Awaited<ReturnType<typeof dealerDispatchHistory>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof dealerDispatchHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDealerDispatchHistoryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListProductCategoriesUrl = (params?: ListProductCategoriesParams,) => {
   const normalizedParams = new URLSearchParams();
