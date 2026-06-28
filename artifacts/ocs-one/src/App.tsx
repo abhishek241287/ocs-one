@@ -18,6 +18,8 @@ import DirectorDashboardPage from "@/pages/DirectorDashboardPage";
 import ProductMasterPage from "@/features/masters/pages/ProductMasterPage";
 import ProductCategoryPage from "@/features/masters/pages/ProductCategoryPage";
 import ProductWorkflowPage from "@/features/masters/pages/ProductWorkflowPage";
+import MaterialMasterPage from "@/features/masters/pages/MaterialMasterPage";
+import MaterialCategoryPage from "@/features/masters/pages/MaterialCategoryPage";
 import ProductsListPage from "@/features/products/pages/ProductsListPage";
 import ProductDetailPage from "@/features/products/pages/ProductDetailPage";
 import CellMasterPage from "@/features/masters/pages/CellMasterPage";
@@ -80,6 +82,8 @@ function Router() {
       <Route path="/masters/products" component={ProductMasterPage} />
       <Route path="/masters/product-categories" component={ProductCategoryPage} />
       <Route path="/masters/product-workflows" component={ProductWorkflowPage} />
+      <Route path="/masters/material-categories" component={MaterialCategoryPage} />
+      <Route path="/masters/materials" component={MaterialMasterPage} />
       <Route path="/masters/cells" component={CellMasterPage} />
       <Route path="/masters/bms" component={BmsMasterPage} />
       <Route path="/masters/cabinets" component={CabinetMasterPage} />

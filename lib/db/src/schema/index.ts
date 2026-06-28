@@ -32,6 +32,7 @@ export * from "./cell-grading";
 export * from "./engineering-corrections";
 export * from "./product-masters";
 export * from "./products";
+export * from "./inventory";
 export * from "./logistics";
 export * from "./users";
 export * from "./performance-snapshots";

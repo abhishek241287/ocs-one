@@ -47,3 +47,14 @@ that poison shared state for the next run — notably tripping a real rate limit
 auth for the window and breaks subsequent logins. Prefer: verify the limit-event shape
 from history + a **static assertion that the logging call is still wired**, and gate the
 real burst behind an opt-in env flag (restart the server afterward to clear the limiter).
+
+### Shape-mode `ratelimit.exceeded` is fragile to row ordering (false FAIL)
+Default shape-mode reads the **most-recent** `ratelimit.exceeded` row and asserts its
+`path` includes `/auth/login`. The audit trail is correct, but ANY trip of the **global**
+limiter (heavy test traffic — e.g. running the authz suite, which hammers endpoints and
+trips `/api/reports/logistics`) writes a non-login `ratelimit.exceeded` row that becomes
+most-recent → the `audit` workflow flakes red with `MISSING path≠login`. This is a
+**suite fragility, not an audit defect**. To get a true verdict run
+`CERT_AUDIT_RATELIMIT=1 pnpm --filter @workspace/api-server run test:audit` (bursts the
+auth limiter so a fresh login row is the one verified), then restart api-server to clear
+the limiter. A robust fix would scope shape-mode to the latest *login-path* row.

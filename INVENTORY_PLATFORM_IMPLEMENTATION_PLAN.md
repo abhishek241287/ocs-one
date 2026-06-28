@@ -26,7 +26,7 @@
 
 | Phase | Capability | Build type |
 |-------|-----------|-----------|
-| **1** | **Material Receiving** — Goods Receipt (GRN) · Incoming Inspection · Material Inventory | **NEW** (material side) |
+| **1** | **Material Receiving** — **Material Master** → GRN → Incoming Inspection → Material Inventory | **NEW** (material side) |
 | **2** | **Product Inventory** — unified view by Product Category (Battery / Inbuilt Lithium Inverter / Hybrid Inverter) | **NEW views** over frozen `products` |
 | **3** | **Packing** — by Product Serial | **REUSE** mfg packing stage + close status gap |
 | **4** | **Dispatch** — Dispatch No · Date · Dealer · Invoice No · Product Serials (only) | **REUSE/EXTEND** logistics dispatch |
@@ -57,10 +57,16 @@ Additive only; export from `schema/index.ts`; push with `pnpm --filter @workspac
 existing certified table renamed/altered. (Single-factory v1.0 → **no multi-warehouse**; stock is per
 material + batch.)
 
-- **`inventory_materials`** (Material Master) — `id`, `material_code` (unique), `name`, `material_type`
-  (enum `RAW`/`COMPONENT`/`CONSUMABLE`/`PACKAGING`), `uom` (enum `PCS`/`KG`/`M`/`L`/`SET`/`ROLL`),
-  `reorder_level` (numeric ≥ 0, SS-01 bounded), `manufacturer_id` (→ `master_manufacturers`, nullable),
-  `spec` (jsonb), `is_active`.
+- **`inventory_material_categories`** (Material Category master — keeps Material Master generic) — `id`,
+  `category_code` (unique), `name`, `is_active`. Seeded with v1.0 categories (LiFePO₄ Cell, Empty Inbuilt
+  Lithium Inverter, Hybrid Inverter, PCB, BMS, Charger, Connector, Cable, Packing Material, Accessories).
+  **A reference table, NOT a pgEnum** — new material categories are added as data (no engine/code change),
+  while still preventing free-text duplicates.
+- **`inventory_materials`** (Material Master — **deliberately minimal, 6 fields**) — `id`,
+  `material_code` (unique), `name`, `category_id` (→ `inventory_material_categories`), `uom` (enum
+  `PCS`/`KG`/`M`/`L`/`SET`/`ROLL`), `manufacturer_id` (→ `master_manufacturers`, **optional**),
+  `is_active`. No reorder/min-max, no spec blob in v1.0 (deferred). **Every GRN line references one
+  `inventory_materials` row** — single source of material identity, no duplicate definitions.
 - **`inventory_grn`** (GRN header) — `id`, `grn_no` (unique, Postgres-sequence id like mfg ids),
   `supplier_name`, `supplier_ref`, `received_at`, `received_by`, `status` (enum
   `draft`/`received`/`inspected`/`posted`/`cancelled`), `notes`.
@@ -94,11 +100,16 @@ material + batch.)
 
 ## 5. Phase-by-phase
 
-### Phase 1 — Material Receiving (NEW)
-- Material Master (supporting), GRN (header + items), Incoming Inspection gate, Material Inventory.
-- Flow: create GRN → inspect each item → `accepted_qty` posts `RECEIPT` (updates balance) + audit;
-  `rejected_qty` posts `REJECTION` + audit. **Nothing enters usable stock without passing inspection.**
-- Test: gate enforcement, idempotent posting, balance == sum(ledger), SS-01..04. Freeze.
+### Phase 1 — Material Receiving (NEW) — implement in this sub-sequence
+**1. Material Master (foundation, build FIRST)** → **2. Goods Receipt (GRN)** → **3. Incoming Inspection**
+→ **4. Material Inventory.** Material Master is the foundation for all material transactions; **every GRN
+line must reference a Material Master record** (prevents duplicate definitions, keeps inventory consistent).
+- Flow (after master exists): create GRN (each line → an `inventory_materials` row) → inspect each item →
+  `accepted_qty` posts `RECEIPT` (updates balance) + audit; `rejected_qty` posts `REJECTION` + audit.
+  **Nothing enters usable stock without passing inspection.**
+- **Material Inventory is always derived from the ledger** (P2), never maintained independently.
+- Test per sub-step: master CRUD + code uniqueness; gate enforcement; idempotent posting; balance ==
+  sum(ledger); SS-01..04. Freeze Phase 1 only after all four sub-steps are green.
 
 ### Phase 2 — Product Inventory (NEW views over frozen `products`)
 - One unified Product Inventory = `products` joined to `product_categories`, filtered by category for the

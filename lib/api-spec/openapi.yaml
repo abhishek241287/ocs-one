@@ -2599,6 +2599,178 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ProductWorkflow" }
 
+  # ─── Inventory Platform — Material Category master (lookup) ───────────────────
+  /masters/material-categories:
+    get:
+      operationId: listMaterialCategories
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of material categories
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/MaterialCategory"
+    post:
+      operationId: createMaterialCategory
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MaterialCategoryInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialCategory" }
+
+  /masters/material-categories/{id}:
+    get:
+      operationId: getMaterialCategory
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single material category
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialCategory" }
+    patch:
+      operationId: updateMaterialCategory
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MaterialCategoryUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialCategory" }
+
+  /masters/material-categories/{id}/status:
+    patch:
+      operationId: toggleMaterialCategoryStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MasterStatusToggle" }
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialCategory" }
+
+  # ─── Inventory Platform — Material Master ────────────────────────────────────
+  /masters/materials:
+    get:
+      operationId: listMaterialMasters
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of material masters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/MaterialMaster"
+    post:
+      operationId: createMaterialMaster
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MaterialMasterInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialMaster" }
+
+  /masters/materials/{id}:
+    get:
+      operationId: getMaterialMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single material master
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialMaster" }
+    patch:
+      operationId: updateMaterialMaster
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MaterialMasterUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialMaster" }
+
+  /masters/materials/{id}/status:
+    patch:
+      operationId: toggleMaterialMasterStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MasterStatusToggle" }
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialMaster" }
+
 components:
   parameters:
     IdParam:
@@ -4218,3 +4390,42 @@ components:
             stage_sequence:
               type: array
               items: { type: string }
+
+    # ─── Inventory Platform — Material Category master (lookup) ─────────────────
+    MaterialCategory:
+      $ref: "#/components/schemas/MasterCommon"
+
+    MaterialCategoryInput:
+      $ref: "#/components/schemas/MasterCommonInput"
+
+    MaterialCategoryUpdate:
+      $ref: "#/components/schemas/MasterCommonUpdate"
+
+    # ─── Inventory Platform — Material Master ──────────────────────────────────
+    MaterialMaster:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          properties:
+            category_id: { type: string, format: uuid }
+            uom: { type: string, enum: [PCS, KG, M, L, SET, ROLL] }
+            manufacturer: { type: ["string", "null"] }
+
+    MaterialMasterInput:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          required: [category_id, uom]
+          properties:
+            category_id: { type: string, format: uuid }
+            uom: { type: string, enum: [PCS, KG, M, L, SET, ROLL] }
+            manufacturer: { type: ["string", "null"] }
+
+    MaterialMasterUpdate:
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            category_id: { type: string, format: uuid }
+            uom: { type: string, enum: [PCS, KG, M, L, SET, ROLL] }
+            manufacturer: { type: ["string", "null"] }

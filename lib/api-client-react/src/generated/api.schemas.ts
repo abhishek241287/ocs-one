@@ -1876,6 +1876,69 @@ export type ProductWorkflowUpdate = MasterCommonUpdate & {
   stage_sequence?: string[];
 };
 
+export type MaterialCategory = MasterCommon;
+
+export type MaterialCategoryInput = MasterCommonInput;
+
+export type MaterialCategoryUpdate = MasterCommonUpdate;
+
+export type MaterialMasterUom = typeof MaterialMasterUom[keyof typeof MaterialMasterUom];
+
+
+export const MaterialMasterUom = {
+  PCS: 'PCS',
+  KG: 'KG',
+  M: 'M',
+  L: 'L',
+  SET: 'SET',
+  ROLL: 'ROLL',
+} as const;
+
+export type MaterialMaster = MasterCommon & ({
+  category_id?: string;
+  uom?: MaterialMasterUom;
+  /** @nullable */
+  manufacturer?: string | null;
+});
+
+export type MaterialMasterInputUom = typeof MaterialMasterInputUom[keyof typeof MaterialMasterInputUom];
+
+
+export const MaterialMasterInputUom = {
+  PCS: 'PCS',
+  KG: 'KG',
+  M: 'M',
+  L: 'L',
+  SET: 'SET',
+  ROLL: 'ROLL',
+} as const;
+
+export type MaterialMasterInput = MasterCommonInput & ({
+  category_id: string;
+  uom: MaterialMasterInputUom;
+  /** @nullable */
+  manufacturer?: string | null;
+});
+
+export type MaterialMasterUpdateUom = typeof MaterialMasterUpdateUom[keyof typeof MaterialMasterUpdateUom];
+
+
+export const MaterialMasterUpdateUom = {
+  PCS: 'PCS',
+  KG: 'KG',
+  M: 'M',
+  L: 'L',
+  SET: 'SET',
+  ROLL: 'ROLL',
+} as const;
+
+export type MaterialMasterUpdate = MasterCommonUpdate & ({
+  category_id?: string;
+  uom?: MaterialMasterUpdateUom;
+  /** @nullable */
+  manufacturer?: string | null;
+});
+
 export type SearchParamParameter = string;
 
 export type StatusParamParameter = typeof StatusParamParameter[keyof typeof StatusParamParameter];
@@ -2270,5 +2333,27 @@ pageSize?: PageSizeParamParameter;
 
 export type ListProductWorkflows200 = MasterListResponse & {
   items?: ProductWorkflow[];
+};
+
+export type ListMaterialCategoriesParams = {
+search?: SearchParamParameter;
+status?: StatusParamParameter;
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+};
+
+export type ListMaterialCategories200 = MasterListResponse & {
+  items?: MasterCommon[];
+};
+
+export type ListMaterialMastersParams = {
+search?: SearchParamParameter;
+status?: StatusParamParameter;
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+};
+
+export type ListMaterialMasters200 = MasterListResponse & {
+  items?: MaterialMaster[];
 };
 

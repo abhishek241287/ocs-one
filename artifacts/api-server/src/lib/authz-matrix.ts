@@ -218,6 +218,48 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     expected: roles(P, F, F, F),
   },
 
+  // ─── Inventory Platform — Material Category (read all; write DIRECTOR-only) ───
+  {
+    id: "masters.material-categories.list",
+    method: "GET",
+    path: "/api/masters/material-categories",
+    group: "Masters",
+    description: "List material categories (read)",
+    guard: "requireWriteRole(director) — GET passes for all authed",
+    expected: all(P),
+  },
+  {
+    id: "masters.material-categories.create",
+    method: "POST",
+    path: "/api/masters/material-categories",
+    group: "Masters",
+    description: "Create material category (write, director-only)",
+    guard: "requireWriteRole(director)",
+    body: {},
+    expected: roles(P, F, F, F),
+  },
+
+  // ─── Inventory Platform — Material Master (read all; write supervisor+director) ─
+  {
+    id: "masters.materials.list",
+    method: "GET",
+    path: "/api/masters/materials",
+    group: "Masters",
+    description: "List material masters (read)",
+    guard: "requireWriteRole(supervisor,director) — GET passes for all authed",
+    expected: all(P),
+  },
+  {
+    id: "masters.materials.create",
+    method: "POST",
+    path: "/api/masters/materials",
+    group: "Masters",
+    description: "Create material master (write)",
+    guard: "requireWriteRole(supervisor,director)",
+    body: {},
+    expected: roles(P, P, F, F),
+  },
+
   // ─── Unified Product Platform — serialized Products ───────────────────────────
   {
     id: "products.list",

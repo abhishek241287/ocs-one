@@ -33,6 +33,7 @@ import {
   SlidersHorizontal,
   Layers,
   GitBranch,
+  Tags,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -68,6 +69,13 @@ const navSections: NavSection[] = [
       { label: "Busbar Master", href: "/masters/busbars", icon: Minus },
       { label: "Charger Master", href: "/masters/chargers", icon: BatteryCharging },
       { label: "Test Equipment", href: "/masters/test-equipment", icon: FlaskConical },
+    ],
+  },
+  {
+    title: "Inventory Masters",
+    items: [
+      { label: "Material Master", href: "/masters/materials", icon: Package },
+      { label: "Material Categories", href: "/masters/material-categories", icon: Tags },
     ],
   },
   {

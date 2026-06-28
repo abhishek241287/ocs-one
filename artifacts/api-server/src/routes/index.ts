@@ -13,6 +13,8 @@ import chargerMasterRouter from "./masters/chargers";
 import testEquipmentMasterRouter from "./masters/test-equipment";
 import productCategoryMasterRouter from "./masters/product-categories";
 import productWorkflowMasterRouter from "./masters/product-workflows";
+import materialCategoryMasterRouter from "./masters/material-categories";
+import materialMasterRouter from "./masters/materials";
 import productsRouter from "./products/index";
 import manufacturingRouter from "./manufacturing/index";
 import cellsRouter from "./cells/index";
@@ -42,6 +44,8 @@ router.use("/masters/chargers", chargerMasterRouter);
 router.use("/masters/test-equipment", testEquipmentMasterRouter);
 router.use("/masters/product-categories", productCategoryMasterRouter);
 router.use("/masters/product-workflows", productWorkflowMasterRouter);
+router.use("/masters/material-categories", materialCategoryMasterRouter);
+router.use("/masters/materials", materialMasterRouter);
 
 // Unified Product Platform — serialized Products (units)
 router.use("/products", productsRouter);

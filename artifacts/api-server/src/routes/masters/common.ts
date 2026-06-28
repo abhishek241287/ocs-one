@@ -32,6 +32,33 @@ function serializeRow(item: Record<string, unknown>): Record<string, unknown> {
   );
 }
 
+// Map Postgres constraint violations on master writes to client errors. Drizzle
+// wraps pg errors as `new Error(..., { cause: pgErr })`, so the code can live on
+// `err.cause.code`. Returns true if it responded. Generic so EVERY master benefits
+// (Material Master is the first with an FK; 23503 → 400 covers a bad category_id,
+// 23505 → 409 covers a duplicate code on both create and update).
+function handlePgWriteError(err: any, res: Response, resourceName: string): boolean {
+  const pgCode = err?.code ?? (err?.cause as any)?.code;
+  if (pgCode === "23505") {
+    // Name the violated field when Postgres reports it (detail: "Key (col)=(val) already
+    // exists."), so masters with non-`code` unique columns (e.g. serial_number) get an
+    // accurate message; fall back to a constraint-agnostic message otherwise.
+    const detail: string = err?.detail ?? (err?.cause as any)?.detail ?? "";
+    const field = /Key \(([^)]+)\)/.exec(detail)?.[1];
+    res.status(409).json({
+      error: field
+        ? `${resourceName} with this ${field} already exists`
+        : `${resourceName} with these values already exists`,
+    });
+    return true;
+  }
+  if (pgCode === "23503") {
+    res.status(400).json({ error: `Invalid ${resourceName}: a referenced record does not exist` });
+    return true;
+  }
+  return false;
+}
+
 export function createMasterRouter<
   TTable extends PgTableWithColumns<any>,
   _TEntity,
@@ -118,12 +145,7 @@ export function createMasterRouter<
       const [item] = await db.insert(table).values(camelData as any).returning();
       res.status(201).json(serializeRow(item as Record<string, unknown>));
     } catch (err: any) {
-      // Drizzle wraps pg errors: throw new Error("Failed query...", { cause: pgErr })
-      const pgCode = err.code ?? (err.cause as any)?.code;
-      if (pgCode === "23505") {
-        res.status(409).json({ error: `${resourceName} with this code already exists` });
-        return;
-      }
+      if (handlePgWriteError(err, res, resourceName)) return;
       throw err;
     }
   });
@@ -156,22 +178,27 @@ export function createMasterRouter<
 
     const camelData = bodyToCamel(parsed.data as Record<string, unknown>);
 
-    const [item] = (await db
-      .update(table as any)
-      .set({
-        ...camelData,
-        revisionNumber: sql`${(table as any).revisionNumber} + 1`,
-        updatedAt: new Date(),
-      })
-      .where(eq((table as any).id, id))
-      .returning()) as any[];
+    try {
+      const [item] = (await db
+        .update(table as any)
+        .set({
+          ...camelData,
+          revisionNumber: sql`${(table as any).revisionNumber} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq((table as any).id, id))
+        .returning()) as any[];
 
-    if (!item) {
-      res.status(404).json({ error: `${resourceName} not found` });
-      return;
+      if (!item) {
+        res.status(404).json({ error: `${resourceName} not found` });
+        return;
+      }
+
+      res.json(serializeRow(item as Record<string, unknown>));
+    } catch (err: any) {
+      if (handlePgWriteError(err, res, resourceName)) return;
+      throw err;
     }
-
-    res.json(serializeRow(item as Record<string, unknown>));
   });
 
   // Toggle Status

@@ -108,6 +108,10 @@ unless a minimum role is stated.
 | `/api/masters/product-categories*` | POST/PATCH | ✅ | **director** | global | no | ✅ (CW-03 — category master is a director-only governance concept) |
 | `/api/masters/product-workflows*` | GET | ✅ | viewer (read) | global | no | ✅ (CW-03) |
 | `/api/masters/product-workflows*` | POST/PATCH | ✅ | **director** | global | no | ✅ (CW-03 — workflow master is a director-only governance concept) |
+| `/api/masters/material-categories*` | GET | ✅ | viewer (read) | global | no | ✅ (Inventory — Material Master) |
+| `/api/masters/material-categories*` | POST/PATCH | ✅ | **director** | global | no | ✅ (Inventory — category lookup is a director-only governance concept) |
+| `/api/masters/materials*` | GET | ✅ | viewer (read) | global | no | ✅ (Inventory — Material Master) |
+| `/api/masters/materials*` | POST/PATCH | ✅ | **supervisor, director** | global | no | ✅ (Inventory — Material Master; invalid category_id → 400 via FK guard) |
 
 ### Manufacturing (`/api/manufacturing`)
 

@@ -34,6 +34,8 @@ export const ROUTES = {
     busbars: "/masters/busbars",
     chargers: "/masters/chargers",
     testEquipment: "/masters/test-equipment",
+    materials: "/masters/materials",
+    materialCategories: "/masters/material-categories",
   },
 
   // Analytics

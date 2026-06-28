@@ -7,6 +7,7 @@ import {
   cellGradeConfigTable,
   productCategoriesTable,
   productWorkflowsTable,
+  materialCategoriesTable,
 } from "@workspace/db";
 import { logger } from "./logger";
 
@@ -112,6 +113,26 @@ export async function seedDatabase(): Promise<void> {
       target: productWorkflowsTable.code,
       set: { productCreationTrigger: sql`excluded.product_creation_trigger` },
     });
+
+  // ── Inventory Platform: Material Category lookup (idempotent) ──────────────
+  // Seeded as DATA so receiving/inspection have categories on a fresh DB; a
+  // director can add more live via the Material Category master. onConflictDoNothing
+  // preserves any director edits (name/status) on re-seed.
+  await db
+    .insert(materialCategoriesTable)
+    .values([
+      { code: "LIFEPO4_CELL", name: "LiFePO4 Cell", status: "active" },
+      { code: "EMPTY_INBUILT_LITHIUM_INVERTER", name: "Empty Inbuilt Lithium Inverter", status: "active" },
+      { code: "HYBRID_INVERTER", name: "Hybrid Inverter", status: "active" },
+      { code: "PCB", name: "PCB", status: "active" },
+      { code: "BMS", name: "BMS", status: "active" },
+      { code: "CHARGER", name: "Charger", status: "active" },
+      { code: "CONNECTOR", name: "Connector", status: "active" },
+      { code: "CABLE", name: "Cable", status: "active" },
+      { code: "PACKING_MATERIAL", name: "Packing Material", status: "active" },
+      { code: "ACCESSORIES", name: "Accessories", status: "active" },
+    ])
+    .onConflictDoNothing({ target: materialCategoriesTable.code });
 
   // Seed default director account if no users exist
   const [existing] = await db

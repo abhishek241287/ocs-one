@@ -28,3 +28,4 @@
 - [Doc refactor sprint (deferred)](doc-refactor-sprint.md) — run docs-only cleanup right AFTER CW-02 closes: thin replit.md → docs/architecture|governance|product; during CW-02 keep updating existing locations, no churn.
 - [Drizzle select key casing](drizzle-select-key-casing.md) — bare `.select()`+numify emits camelCase; snake_case API contracts need explicit `.select({snake: table.camel})` — gates/typecheck won't catch the drift.
 - [Cert validation-workflow false reds](cert-workflow-false-reds.md) — authz/audit "failed" = auth-limiter saturation, not a regression; authoritative run = restart api-server, no competing traffic.
+- [Masters factory PG errors](masters-factory-pg-errors.md) — shared master router maps 23505→409 (field-aware) + 23503 FK→400 for every master; declare constraints in schema, no per-route handlers.
