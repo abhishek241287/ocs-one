@@ -75,6 +75,7 @@ Operations control system for OCS Oorja Green Pvt. Ltd. — end-to-end manufactu
   - **Module-specific** → fix only that module.
   - **Platform improvement** → fix it once in the shared framework (ODS, hooks, middleware, API/security layer) so **every** module benefits, not just the one under cert.
   - Precedent (fixed once, now benefit every module): ODS keyboard navigation, RBAC, performance dashboard, authentication, error handling. Default to the platform-level fix whenever a defect is systemic.
+- **Batch MAT cycle — run the WHOLE phase before fixing anything (every cert wave).** For each MAT phase: (1) run the ENTIRE phase's tests as a batch — every case, no stopping; (2) collect ALL defects; (3) classify each Critical / High / Medium / Low; (4) present the full defect set to the CTO and get approval BEFORE any fix; (5) fix all Critical/High/Medium together in one remediation pass; (6) re-run the FULL phase; (7) close the gate; (8) only then proceed. NO per-defect test→fix→retest loops. Mantra: _Do not assume. Measure. Verify. Document._
 
 ## Gotchas
 

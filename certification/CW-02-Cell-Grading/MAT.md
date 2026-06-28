@@ -238,6 +238,71 @@ module is fully ODS-compliant via `useOdsNotify`. MAT-01 is **closed**; MAT-02 m
 
 ---
 
+## MAT-02 — Functional Certification · EXECUTED 2026-06-28
+
+**Method:** full-batch live execution via `code_execution` harness against `localhost:80` with
+real auth cookies for **5 principals** (director/operator/supervisor/viewer/anonymous). A
+dedicated cert lot (`nominalCapacityAh = 280`, 12 `received` cells) was created, all 18 `GR`
+cases run as one batch, DB state verified with `executeSql`, then **all cert data torn down**
+(events → cells → lot → temp users; 0 residual). No fixes applied mid-run (batch-MAT cycle).
+
+### MAT-GR Test Catalogue — Actual Results
+
+| ID | Area | Expected | Actual | Status |
+|----|------|----------|--------|--------|
+| GR-01 | Create | 200, grade A, approved | 200 grade=A status=approved | ✅ Pass |
+| GR-02 | Create | 200, grade B | 200 grade=B | ✅ Pass |
+| GR-03 | Create | 200, grade C | 200 grade=C | ✅ Pass |
+| GR-04 | Create | 200, reject, rejected | 200 grade=reject status=rejected | ✅ Pass |
+| GR-05 | Edit | 200 recomputed | recompute path works (200) **but no API path sets a cell to `grading`** — first grade locks cell to approved/rejected | ⚠️ Partial → **DEF-CW02-006** |
+| GR-06 | Edit | 400 status guard | 400 "only received or grading cells can be graded" | ✅ Pass |
+| GR-07 | Save | notify + invalidate | source-verified: `notify.success` + `invalidateQueries(['/api/cells'],['/api/cells/inventory'])` + `isPending` guard | ✅ Pass |
+| GR-08 | Search | 200 match / 200 empty | match=true, empty=true | ✅ Pass |
+| GR-09 | Filter | filtered set | status filter clean, grade filter clean | ✅ Pass |
+| GR-10 | Validation | 400 missing fields | omit capacity → 400; **empty `gradedBy=""` → 200 (graded with blank operator)** | ⚠️ Partial → **DEF-CW02-005** |
+| GR-11 | Validation | negative/non-numeric → 400 | non-numeric → 400; **negative capacity → 200; negative V + negative IR → 200** | ❌ **Fail** → **DEF-CW02-004** |
+| GR-12 | Validation | injection inert, 200 | 200, items=0, table intact | ✅ Pass |
+| GR-13 | Relationships | lot=graded + event | lot.status=graded; `grading_started`=1; `lot_fully_graded`=1 | ✅ Pass |
+| GR-14 | Security | viewer → 403 | 403 | ✅ Pass |
+| GR-15 | Security | anonymous → 401 | 401 | ✅ Pass |
+| GR-16 | Security | operator config PUT → 403 | operator 403 / supervisor 200 / operator grade 200 (positive control) | ✅ Pass |
+| GR-17 | Audit | gradedBy/gradedAt + `cell_graded` | cell has graded_by+graded_at (A/approved); `cell_graded` events persisted | ✅ Pass |
+| GR-18 | Performance | within budget, index used | avg 5.4 ms, p95 8 ms (well under budget); status filter seq-scans at low row volume (small table — defer to MAT-05) | ✅ Pass |
+
+### MAT-02 10-Point Scorecard
+
+| # | Area | Status | Evidence |
+|---|------|--------|----------|
+| 1 | Create | ✅ Pass | GR-01..04 — all grade bands + reject compute correctly. |
+| 2 | Edit | ⚠️ Partial | GR-06 guard correct, but GR-05 — no API path to re-grade/correct a cell after first grade (**DEF-CW02-006**). |
+| 3 | Save | ✅ Pass | GR-07. |
+| 4 | Search | ✅ Pass | GR-08. |
+| 5 | Filter | ✅ Pass | GR-09. |
+| 6 | Validation | ❌ **Fail** | GR-11 — negative measurements accepted (**DEF-CW02-004**); GR-10 — empty `gradedBy` accepted (**DEF-CW02-005**). |
+| 7 | Relationships | ✅ Pass | GR-13 — lot roll-up + events. |
+| 8 | Security | ✅ Pass | GR-14/15/16. |
+| 9 | Audit | ✅ Pass | GR-17. |
+| 10 | Performance | ✅ Pass | GR-18. |
+
+**MAT-02 result: 8 Pass · 1 Partial · 1 Fail (10-pt scorecard) / 15 Pass · 2 Partial · 1 Fail (18 GR cases).**
+
+### MAT-02 Defects (root-caused — NO fixes applied; awaiting CTO approval)
+
+| ID | Sev | Classification | Description | Root cause | Proposed fix |
+|----|-----|----------------|-------------|------------|--------------|
+| DEF-CW02-004 | **High** | Module-specific (schema), with platform observation | Negative / physically-impossible measurements accepted: `capacityAh=-5` → 200 (graded `reject`); `voltageV=-1, internalResistanceMohm=-0.5` → 200. Corrupt data enters the certified grade record and feeds downstream matching/genealogy. | `CellGradeInput` (openapi.yaml ~3292) types `voltageV/capacityAh/internalResistanceMohm` as bare `number` with **no `minimum`** — generated Zod is `z.number()`, so negatives pass. Frontend guards only. | Add `minimum: 0` (capacity/IR) and a sane `minimum`/`exclusiveMinimum` on voltage in the schema; regen Zod; server then rejects 400. **Platform note:** audit other numeric API schemas for the same unconstrained-number pattern (SS-01 input-validation). |
+| DEF-CW02-005 | **Medium** | Module-specific (schema) | `gradedBy=""` accepted → cell graded with **blank operator attribution** + audit event with empty actor. Traceability/audit-integrity gap (SS-03 spirit). | `gradedBy: { type: string }` has **no `minLength`** → `z.string()` accepts `""`. | Add `minLength: 1` to `gradedBy`; regen; server rejects 400. Fixable in the same schema pass as DEF-CW02-004. |
+| DEF-CW02-006 | **Medium** | Module-specific (business rule) — **needs CTO ruling** | No correction path: once graded, a cell is `approved`/`rejected` and locked out (GR-06 → 400). The recompute logic only runs for `received`/`grading` cells, but **no API path ever sets a cell to `grading`** (only the lot gets `grading`), so an operator who mis-enters a measurement cannot re-grade without DB surgery. MAT scorecard item 2 ("Edit/correction") is unmet. | First grade sets cell status directly to terminal `approved`/`rejected`; the `grading` cell-status branch in `calcGrade`/guard is unreachable through the public API. | **CTO decision required:** (a) intended immutability → keep, downgrade scorecard item 2 to "correction by re-receive", document; or (b) add an explicit supervisor+ re-grade/correction endpoint (audited) that re-opens a graded cell. |
+
+### Cert-wave triage (per standing CTO preference — classify BEFORE remediation)
+
+- **DEF-CW02-004 & DEF-CW02-005 → module-specific schema fix** in `CellGradeInput` (add `minimum`/`minLength`, regen Zod). Both fixable together in one codegen pass. DEF-004 also carries a **platform observation**: other numeric input schemas may share the unconstrained-`number` pattern — recommend a follow-up SS-01 sweep (tracked, not part of this fix unless CTO widens scope).
+- **DEF-CW02-006 → business-rule decision**, not a pure code defect. Needs CTO ruling (immutable grades vs. add a correction endpoint) before any code.
+
+> **MAT-02 status: executed in full; awaiting CTO approval on the 3 defects (1 High + 2 Medium) before remediation.** Per the batch-MAT cycle, all approved Critical/High/Medium fixes will be made together, then the full MAT-02 batch re-run before the gate is closed.
+
+---
+
 ## Open Defects (CW-02)
 
 | ID | Sev | Status | Phase |
@@ -245,10 +310,14 @@ module is fully ODS-compliant via `useOdsNotify`. MAT-01 is **closed**; MAT-02 m
 | DEF-CW02-001 | Low | **Closed** (MAT-01 remediation) | MAT-01 |
 | DEF-CW02-002 | Medium | **Closed** (platform — `useToast`→`useOdsNotify`) | MAT-01 |
 | DEF-CW02-003 | Low | **Closed** (MAT-01 remediation) | MAT-01 |
+| DEF-CW02-004 | **High** | **Open** — awaiting CTO approval | MAT-02 |
+| DEF-CW02-005 | **Medium** | **Open** — awaiting CTO approval | MAT-02 |
+| DEF-CW02-006 | **Medium** | **Open** — awaiting CTO ruling (business rule) | MAT-02 |
 
 | Observation | For |
 |-------------|-----|
 | OBS-CW02-001 — `nominalIrMohm` makes IR non-binding in grade calc | MAT-03 |
+| OBS-CW02-002 — cells list status filter seq-scans (low volume; verify index under representative load) | MAT-05 |
 
 ---
 
@@ -257,6 +326,9 @@ module is fully ODS-compliant via `useOdsNotify`. MAT-01 is **closed**; MAT-02 m
 - [x] **MAT-01 executed** — 7 Pass / 2 Partial / 1 Fail; 3 defects filed; triage pending.
 - [x] **CTO triage decision** — Option 1 approved: DEF-CW02-002 fixed as a platform certification defect.
 - [x] **MAT-01 defects remediated + re-tested → FULL PASS** (10/10; DEF-001/002/003 all Closed).
-- [ ] MAT-02 → MAT-06 (MAT-01 now closed; MAT-02 may begin)
+- [x] **MAT-02 executed (full batch)** — 8 Pass / 1 Partial / 1 Fail (10-pt); 3 defects filed (DEF-004 High, DEF-005/006 Medium); cert data torn down.
+- [ ] **CTO approval on MAT-02 defects** — pending (DEF-004/005 schema fix; DEF-006 business-rule ruling).
+- [ ] MAT-02 remediation (batch) + full re-run → close gate.
+- [ ] MAT-03 → MAT-06.
 
 **Plan signed:** Replit Agent (QA) · 2026-06-28
