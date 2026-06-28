@@ -18,6 +18,17 @@
 > This is **implementation of an already-approved, frozen architecture — not a redesign and not a scope
 > extension.**
 
+> **CTO Decision — Execution Sequence (2026-06-28, supersedes any standalone Product-Platform cert plan).**
+> Phase 0 (Unified Product Platform) is **accepted complete and frozen as the approved baseline**. There
+> will be **NO separate Product Platform Certification Wave** — the Product Platform is an *enabling
+> platform*, not a standalone business capability, and its correctness is verified through the business
+> modules that consume it (Manufacturing, Inventory, Packing, Dispatch, Dealer, Reports). Proceed directly
+> with the **remaining CW-03 Manufacturing implementation + certification (Phases 1→4 below)**; once CW-03
+> is certified, proceed **immediately to Inventory** (now the next major business capability). **Governing
+> principle from here on: development priority is set by *business capability*, not framework completeness —
+> the objective is to deploy a working manufacturing ERP for OCS Oorja as early as possible.** Future
+> Product-Platform enhancements are validated through consuming modules, not an independent cert programme.
+
 ---
 
 ## 1. CTO-Directed Roadmap
