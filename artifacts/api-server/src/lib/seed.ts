@@ -30,6 +30,8 @@ export async function seedDatabase(): Promise<void> {
     CREATE SEQUENCE IF NOT EXISTS incoming_inspection_seq START 1 INCREMENT 1;
     -- Fulfillment: race-safe Dispatch number (DIS-YYYYMMDD-NNNNNN).
     CREATE SEQUENCE IF NOT EXISTS dispatch_seq START 1 INCREMENT 1;
+    -- Inventory: race-safe Material Transfer number (TRF-YYYYMMDD-NNNNNN).
+    CREATE SEQUENCE IF NOT EXISTS material_transfer_seq START 1 INCREMENT 1;
   `);
 
   // Forward-only resync of each id sequence to the max value already persisted in
@@ -81,6 +83,12 @@ export async function seedDatabase(): Promise<void> {
         FROM dispatches WHERE dispatch_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
       IF m > 0 THEN
         PERFORM setval('dispatch_seq', GREATEST((SELECT last_value FROM dispatch_seq), m), true);
+      END IF;
+
+      SELECT COALESCE(MAX(split_part(transfer_number, '-', 3)::bigint), 0) INTO m
+        FROM material_transfers WHERE transfer_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
+      IF m > 0 THEN
+        PERFORM setval('material_transfer_seq', GREATEST((SELECT last_value FROM material_transfer_seq), m), true);
       END IF;
     END $$;
   `);

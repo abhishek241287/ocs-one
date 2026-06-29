@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, inArray, and, or, ilike, count, desc } from "drizzle-orm";
+import { eq, inArray, or, ilike, count, desc } from "drizzle-orm";
 import {
   db,
   pool,

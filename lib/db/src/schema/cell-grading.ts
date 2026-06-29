@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { masterProductsTable } from "./master-products";
 import { masterCellsTable } from "./master-cells";
+import { materialTransfersTable } from "./inventory";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -54,12 +55,19 @@ export const cellLotsTable = pgTable(
     nominalCapacityAh: doublePrecision("nominal_capacity_ah").notNull(),
     lotNumber: varchar("lot_number", { length: 100 }).notNull().unique(),
     invoiceNumber: varchar("invoice_number", { length: 100 }),
+    // Supplier's manufacturing lot/batch (D2) — carried from the GRN line on transfer,
+    // for warranty & recall traceability. Distinct from lotNumber (the OCS internal lot
+    // id = transfer number), since one supplier lot may yield several partial transfers.
+    supplierLotNumber: varchar("supplier_lot_number", { length: 100 }),
     dateReceived: text("date_received").notNull(),
     quantityReceived: integer("quantity_received").notNull(),
     receivedBy: text("received_by").notNull(),
     remarks: text("remarks"),
     status: cellLotStatusEnum("status").notNull().default("received"),
     cellMasterId: uuid("cell_master_id").references(() => masterCellsTable.id),
+    // Link to the Material Transfer document this lot was created from (production path).
+    // NULL only for the director-only Historical Import / Emergency Recovery manual path.
+    transferId: uuid("transfer_id").references(() => materialTransfersTable.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },

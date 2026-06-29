@@ -13,4 +13,6 @@ export type MaterialMasterUpdate = MasterCommonUpdate & ({
   uom?: MaterialMasterUpdateUom;
   /** @nullable */
   manufacturer?: string | null;
+  /** @nullable */
+  cell_master_id?: string | null;
 });

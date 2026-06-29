@@ -1,0 +1,191 @@
+1. Inventory must become the only entry point for raw cells ✅
+
+Today the flow is:
+
+Supplier
+    ↓
+GRN
+    ↓
+Incoming Inspection
+    ↓
+Material Inventory
+
+It should continue as:
+
+Material Inventory
+      ↓
+Receive Into Cell Processing
+      ↓
+Cell Lot
+      ↓
+Individual Cells
+      ↓
+Grading
+      ↓
+Matching
+
+There should never be duplicate manual entry of the same cells.
+
+2. Cell Receiving should be renamed
+
+I would actually rename the module.
+
+Instead of
+
+Cell Receiving
+
+make it
+
+Material to Cell Processing
+
+or
+
+Receive From Inventory
+
+because the cells have already been received in the GRN.
+
+The operator is not receiving them again—they are transferring them into manufacturing.
+
+3. D3 (Material → Cell Master mapping) is mandatory ✅
+
+This is the most important part.
+
+Every material like
+
+EVE LF280K
+
+must already know
+
+Cell chemistry
+Capacity
+Nominal Voltage
+Cell Model
+
+The operator should never choose these again.
+
+4. D1 (Invoice Number) should be added to GRN ✅
+
+Absolutely.
+
+Invoice belongs to procurement.
+
+Not to manufacturing.
+
+Once entered in GRN it should automatically flow everywhere.
+
+5. D2 (Supplier Lot Number) should also be added ✅
+
+Very important for warranty and recalls.
+
+Imagine EVE says
+
+Lot 240612 has a manufacturing defect.
+
+Without supplier lot you cannot trace affected batteries.
+
+So yes.
+
+I would change one thing
+
+Instead of
+
+CELL_ISSUE
+
+I would name the transaction
+
+MATERIAL_TRANSFER_TO_CELL_PROCESSING
+
+Why?
+
+Because "Issue" is too generic.
+
+Six months later you'll also have
+
+Issue to Assembly
+Issue to Packing
+Issue to Service
+Issue to Scrap
+
+Using descriptive transaction names makes reports much easier to understand.
+
+I would also add this
+
+Every inventory transfer should create a transfer document.
+
+Example
+
+Transfer No.
+
+TRF-20260701-0001
+
+This document records
+
+From Store
+To Cell Processing
+Material
+Quantity
+GRN
+Operator
+Date
+
+Then
+
+Cell Lot
+
+references
+
+Transfer No.
+
+instead of directly referencing GRN.
+
+That gives a complete audit trail.
+
+Manual entry
+
+I would not allow manual entry for production.
+
+Instead:
+
+Inventory Transfer = production mode
+Manual Cell Entry = Administrator only
+
+Label it
+
+Historical Import / Emergency Recovery
+
+so normal operators never use it.
+
+Another thing I would ask Replit to design
+
+What if one GRN contains
+
+1000 Cells
+
+and
+
+500 BMS
+
+The inventory picker should only show cell materials.
+
+It should automatically filter by
+
+Material Category = LiFePO4 Cell
+
+so operators never accidentally receive BMS into Cell Processing.
+
+Final approval I'd send to Replit
+
+Design approved with these modifications:
+
+Inventory is the only source for cell intake.
+Rename "Cell Receiving" to "Receive From Inventory" (or "Material to Cell Processing").
+Approve D1 (Invoice on GRN).
+Approve D2 (Supplier Lot on GRN line).
+Approve D3 (Material → Cell Master bridge).
+Replace CELL_ISSUE with a clearer transaction type such as MATERIAL_TRANSFER_TO_CELL_PROCESSING.
+Generate a Transfer Document (TRF-YYYYMMDD-XXXX) for every inventory-to-manufacturing movement and link the Cell Lot to that transfer.
+Show only materials in the LiFePO₄ Cell category in the picker.
+Disable manual cell receipt for normal operators. Keep it only as an Administrator-only "Historical Import / Emergency Recovery" function.
+Support partial transfers from a single GRN line until the available balance reaches zero.
+
+If you implement it this way, OCS One will have a much stronger inventory-to-manufacturing architecture. It will eliminate duplicate entry, preserve full traceability, and be much easier to extend later for scrap, returns, warehouse transfers, and multi-store inventory.

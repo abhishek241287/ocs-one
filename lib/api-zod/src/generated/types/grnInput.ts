@@ -11,6 +11,8 @@ export interface GrnInput {
   supplier_id: string;
   received_date: string;
   /** @nullable */
+  invoice_number?: string | null;
+  /** @nullable */
   remarks?: string | null;
   /** @minItems 1 */
   lines: GrnLineItemInput[];

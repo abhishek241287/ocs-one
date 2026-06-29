@@ -69,10 +69,15 @@ router.get("/", async (req, res) => {
   });
 });
 
-// POST /cells/lots — requires operator or above
+// POST /cells/lots — DIRECTOR-ONLY "Historical Import / Emergency Recovery".
+// The production path for cell intake is now Inventory → Material Transfer
+// (POST /inventory/transfers), which creates the lot + cells atomically and nets
+// inventory stock. This manual create remains only for back-filling historical lots
+// or emergency recovery, and is restricted to director (admin-equivalent) to prevent
+// duplicate / un-netted cell entry bypassing inventory.
 router.post(
   "/",
-  requireRole("operator", "supervisor", "director"),
+  requireRole("director"),
   async (req, res) => {
     const body = CreateCellLotBody.parse(req.body);
 

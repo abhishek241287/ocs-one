@@ -3365,6 +3365,87 @@ paths:
                   meta:
                     $ref: "#/components/schemas/MasterListMeta"
 
+  /inventory/cell-stock:
+    get:
+      operationId: listCellStock
+      tags: [inventory]
+      summary: Available cell-category stock, netted per GRN line, eligible for transfer into Cell Processing
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+      responses:
+        "200":
+          description: Per-GRN-line available cell stock eligible for transfer
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CellStockLine"
+
+  /inventory/transfers:
+    get:
+      operationId: listMaterialTransfers
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: List of material transfer documents
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, meta]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MaterialTransfer"
+                  meta:
+                    $ref: "#/components/schemas/MasterListMeta"
+    post:
+      operationId: createMaterialTransfer
+      tags: [inventory]
+      summary: Transfer available cell stock from a GRN line into Cell Processing (creates the cell lot + cells, decrements stock)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MaterialTransferInput" }
+      responses:
+        "201":
+          description: Transfer document created; cell lot + cells generated; stock decremented
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialTransferDetail" }
+        "404":
+          description: GRN line not found
+        "409":
+          description: Conflict
+        "422":
+          description: Insufficient available stock, or material has no cell-master mapping
+
+  /inventory/transfers/{id}:
+    get:
+      operationId: getMaterialTransfer
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Single transfer document with the created cell lot
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialTransferDetail" }
+        "404":
+          description: Not found
+
 components:
   parameters:
     IdParam:
@@ -4274,6 +4355,8 @@ components:
           type: string
           enum: [received, grading, graded, complete]
         cellMasterId: { type: ["string", "null"], format: uuid }
+        supplierLotNumber: { type: ["string", "null"] }
+        transferId: { type: ["string", "null"], format: uuid }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 
@@ -4304,6 +4387,7 @@ components:
         nominalCapacityAh: { type: number }
         lotNumber: { type: string }
         invoiceNumber: { type: ["string", "null"] }
+        supplierLotNumber: { type: ["string", "null"] }
         dateReceived: { type: string }
         quantityReceived: { type: integer, minimum: 1 }
         receivedBy: { type: string }
@@ -5214,6 +5298,7 @@ components:
             category_id: { type: string, format: uuid }
             uom: { type: string, enum: [PCS, KG, M, L, SET, ROLL] }
             manufacturer: { type: ["string", "null"] }
+            cell_master_id: { type: ["string", "null"], format: uuid }
 
     MaterialMasterInput:
       allOf:
@@ -5224,6 +5309,7 @@ components:
             category_id: { type: string, format: uuid }
             uom: { type: string, enum: [PCS, KG, M, L, SET, ROLL] }
             manufacturer: { type: ["string", "null"] }
+            cell_master_id: { type: ["string", "null"], format: uuid }
 
     MaterialMasterUpdate:
       allOf:
@@ -5233,6 +5319,7 @@ components:
             category_id: { type: string, format: uuid }
             uom: { type: string, enum: [PCS, KG, M, L, SET, ROLL] }
             manufacturer: { type: ["string", "null"] }
+            cell_master_id: { type: ["string", "null"], format: uuid }
 
     # ─── Inventory Platform — Supplier Master ──────────────────────────────────
     Supplier:
@@ -5314,6 +5401,7 @@ components:
         material_id: { type: string, format: uuid }
         quantity_received: { type: number }
         uom: { $ref: "#/components/schemas/InventoryUom" }
+        supplier_lot_number: { type: ["string", "null"] }
         inspection_status: { $ref: "#/components/schemas/GrnInspectionStatus" }
         remarks: { type: ["string", "null"] }
         created_at: { type: string, format: date-time }
@@ -5324,6 +5412,7 @@ components:
       properties:
         material_id: { type: string, format: uuid }
         quantity_received: { type: number, exclusiveMinimum: 0 }
+        supplier_lot_number: { type: ["string", "null"] }
         remarks: { type: ["string", "null"] }
 
     Grn:
@@ -5335,6 +5424,7 @@ components:
         grn_number: { type: string }
         supplier_id: { type: string, format: uuid }
         received_date: { type: string }
+        invoice_number: { type: ["string", "null"] }
         status: { $ref: "#/components/schemas/GrnStatus" }
         remarks: { type: ["string", "null"] }
         posted_at: { type: ["string", "null"], format: date-time }
@@ -5360,11 +5450,79 @@ components:
       properties:
         supplier_id: { type: string, format: uuid }
         received_date: { type: string }
+        invoice_number: { type: ["string", "null"] }
         remarks: { type: ["string", "null"] }
         lines:
           type: array
           minItems: 1
           items: { $ref: "#/components/schemas/GrnLineItemInput" }
+
+    # ─── Inventory Platform — Cell Stock & Material Transfer ───────────────────
+    CellStockLine:
+      type: object
+      required: [grn_line_id, grn_id, grn_number, material_id, material_code, material_name, supplier_id, supplier_name, uom, received_date, available_qty, is_mapped]
+      properties:
+        grn_line_id: { type: string, format: uuid }
+        grn_id: { type: string, format: uuid }
+        grn_number: { type: string }
+        material_id: { type: string, format: uuid }
+        material_code: { type: string }
+        material_name: { type: string }
+        supplier_id: { type: string, format: uuid }
+        supplier_name: { type: string }
+        manufacturer: { type: ["string", "null"] }
+        invoice_number: { type: ["string", "null"] }
+        supplier_lot_number: { type: ["string", "null"] }
+        uom: { $ref: "#/components/schemas/InventoryUom" }
+        received_date: { type: string }
+        available_qty: { type: number }
+        is_mapped:
+          type: boolean
+          description: True when the material has a cell-master mapping (D3); a transfer requires this
+        cell_master_id: { type: ["string", "null"], format: uuid }
+        cell_model: { type: ["string", "null"] }
+        cell_chemistry: { type: ["string", "null"] }
+        nominal_capacity_ah: { type: ["number", "null"] }
+        nominal_voltage_v: { type: ["number", "null"] }
+
+    MaterialTransfer:
+      type: object
+      required: [id, transfer_number, from_location, to_location, material_id, grn_id, grn_line_id, supplier_id, quantity, uom, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        transfer_number: { type: string }
+        from_location: { type: string }
+        to_location: { type: string }
+        material_id: { type: string, format: uuid }
+        material_code: { type: ["string", "null"] }
+        material_name: { type: ["string", "null"] }
+        grn_id: { type: string, format: uuid }
+        grn_number: { type: ["string", "null"] }
+        grn_line_id: { type: string, format: uuid }
+        supplier_id: { type: string, format: uuid }
+        supplier_name: { type: ["string", "null"] }
+        quantity: { type: number }
+        uom: { $ref: "#/components/schemas/InventoryUom" }
+        transferred_by: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+        cell_lot_id: { type: ["string", "null"], format: uuid }
+        lot_number: { type: ["string", "null"] }
+
+    MaterialTransferDetail:
+      allOf:
+        - $ref: "#/components/schemas/MaterialTransfer"
+        - type: object
+          properties:
+            cell_lot: { $ref: "#/components/schemas/CellLot" }
+
+    MaterialTransferInput:
+      type: object
+      required: [grn_line_id, quantity]
+      properties:
+        grn_line_id: { type: string, format: uuid }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        received_by: { type: ["string", "null"] }
+        remarks: { type: ["string", "null"] }
 
     InventoryTransaction:
       type: object

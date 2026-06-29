@@ -3597,6 +3597,8 @@ export const ListCellLotsResponse = zod.object({
   "remarks": zod.string().nullish(),
   "status": zod.enum(['received', 'grading', 'graded', 'complete']),
   "cellMasterId": zod.string().uuid().nullish(),
+  "supplierLotNumber": zod.string().nullish(),
+  "transferId": zod.string().uuid().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })),
@@ -3623,6 +3625,7 @@ export const CreateCellLotBody = zod.object({
   "nominalCapacityAh": zod.number(),
   "lotNumber": zod.string(),
   "invoiceNumber": zod.string().nullish(),
+  "supplierLotNumber": zod.string().nullish(),
   "dateReceived": zod.string(),
   "quantityReceived": zod.number().min(1),
   "receivedBy": zod.string(),
@@ -3645,6 +3648,8 @@ export const CreateCellLotResponse = zod.object({
   "remarks": zod.string().nullish(),
   "status": zod.enum(['received', 'grading', 'graded', 'complete']),
   "cellMasterId": zod.string().uuid().nullish(),
+  "supplierLotNumber": zod.string().nullish(),
+  "transferId": zod.string().uuid().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
@@ -3682,6 +3687,8 @@ export const GetCellLotResponse = zod.object({
   "remarks": zod.string().nullish(),
   "status": zod.enum(['received', 'grading', 'graded', 'complete']),
   "cellMasterId": zod.string().uuid().nullish(),
+  "supplierLotNumber": zod.string().nullish(),
+  "transferId": zod.string().uuid().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
@@ -3733,6 +3740,8 @@ export const PatchCellLotResponse = zod.object({
   "remarks": zod.string().nullish(),
   "status": zod.enum(['received', 'grading', 'graded', 'complete']),
   "cellMasterId": zod.string().uuid().nullish(),
+  "supplierLotNumber": zod.string().nullish(),
+  "transferId": zod.string().uuid().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -4089,6 +4098,8 @@ export const GetCellResponse = zod.object({
   "remarks": zod.string().nullish(),
   "status": zod.enum(['received', 'grading', 'graded', 'complete']),
   "cellMasterId": zod.string().uuid().nullish(),
+  "supplierLotNumber": zod.string().nullish(),
+  "transferId": zod.string().uuid().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).optional(),
@@ -5824,7 +5835,8 @@ export const ListMaterialMastersResponse = zod.object({
 }).and(zod.object({
   "category_id": zod.string().uuid().optional(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']).optional(),
-  "manufacturer": zod.string().nullish()
+  "manufacturer": zod.string().nullish(),
+  "cell_master_id": zod.string().uuid().nullish()
 })))
 }))
 
@@ -5855,7 +5867,8 @@ export const CreateMaterialMasterBody = zod.object({
 }).and(zod.object({
   "category_id": zod.string().uuid(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
-  "manufacturer": zod.string().nullish()
+  "manufacturer": zod.string().nullish(),
+  "cell_master_id": zod.string().uuid().nullish()
 }))
 
 export const CreateMaterialMasterResponse = zod.object({
@@ -5881,7 +5894,8 @@ export const CreateMaterialMasterResponse = zod.object({
 }).and(zod.object({
   "category_id": zod.string().uuid().optional(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']).optional(),
-  "manufacturer": zod.string().nullish()
+  "manufacturer": zod.string().nullish(),
+  "cell_master_id": zod.string().uuid().nullish()
 }))
 
 
@@ -5912,7 +5926,8 @@ export const GetMaterialMasterResponse = zod.object({
 }).and(zod.object({
   "category_id": zod.string().uuid().optional(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']).optional(),
-  "manufacturer": zod.string().nullish()
+  "manufacturer": zod.string().nullish(),
+  "cell_master_id": zod.string().uuid().nullish()
 }))
 
 
@@ -5946,7 +5961,8 @@ export const UpdateMaterialMasterBody = zod.object({
 }).and(zod.object({
   "category_id": zod.string().uuid().optional(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']).optional(),
-  "manufacturer": zod.string().nullish()
+  "manufacturer": zod.string().nullish(),
+  "cell_master_id": zod.string().uuid().nullish()
 }))
 
 export const UpdateMaterialMasterResponse = zod.object({
@@ -5972,7 +5988,8 @@ export const UpdateMaterialMasterResponse = zod.object({
 }).and(zod.object({
   "category_id": zod.string().uuid().optional(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']).optional(),
-  "manufacturer": zod.string().nullish()
+  "manufacturer": zod.string().nullish(),
+  "cell_master_id": zod.string().uuid().nullish()
 }))
 
 
@@ -6007,7 +6024,8 @@ export const ToggleMaterialMasterStatusResponse = zod.object({
 }).and(zod.object({
   "category_id": zod.string().uuid().optional(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']).optional(),
-  "manufacturer": zod.string().nullish()
+  "manufacturer": zod.string().nullish(),
+  "cell_master_id": zod.string().uuid().nullish()
 }))
 
 
@@ -6473,6 +6491,7 @@ export const ListGrnsResponse = zod.object({
   "grn_number": zod.string(),
   "supplier_id": zod.string().uuid(),
   "received_date": zod.string(),
+  "invoice_number": zod.string().nullish(),
   "status": zod.enum(['draft', 'posted']),
   "remarks": zod.string().nullish(),
   "posted_at": zod.coerce.date().nullish(),
@@ -6493,10 +6512,12 @@ export const createGrnBodyLinesItemQuantityReceivedExclusiveMin = 0;
 export const CreateGrnBody = zod.object({
   "supplier_id": zod.string().uuid(),
   "received_date": zod.string(),
+  "invoice_number": zod.string().nullish(),
   "remarks": zod.string().nullish(),
   "lines": zod.array(zod.object({
   "material_id": zod.string().uuid(),
   "quantity_received": zod.number().gt(createGrnBodyLinesItemQuantityReceivedExclusiveMin),
+  "supplier_lot_number": zod.string().nullish(),
   "remarks": zod.string().nullish()
 })).min(1)
 })
@@ -6506,6 +6527,7 @@ export const CreateGrnResponse = zod.object({
   "grn_number": zod.string(),
   "supplier_id": zod.string().uuid(),
   "received_date": zod.string(),
+  "invoice_number": zod.string().nullish(),
   "status": zod.enum(['draft', 'posted']),
   "remarks": zod.string().nullish(),
   "posted_at": zod.coerce.date().nullish(),
@@ -6522,6 +6544,7 @@ export const CreateGrnResponse = zod.object({
   "material_id": zod.string().uuid(),
   "quantity_received": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "supplier_lot_number": zod.string().nullish(),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
   "created_at": zod.coerce.date()
@@ -6538,6 +6561,7 @@ export const GetGrnResponse = zod.object({
   "grn_number": zod.string(),
   "supplier_id": zod.string().uuid(),
   "received_date": zod.string(),
+  "invoice_number": zod.string().nullish(),
   "status": zod.enum(['draft', 'posted']),
   "remarks": zod.string().nullish(),
   "posted_at": zod.coerce.date().nullish(),
@@ -6554,6 +6578,7 @@ export const GetGrnResponse = zod.object({
   "material_id": zod.string().uuid(),
   "quantity_received": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "supplier_lot_number": zod.string().nullish(),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
   "created_at": zod.coerce.date()
@@ -6577,6 +6602,7 @@ export const PostGrnResponse = zod.object({
   "grn_number": zod.string(),
   "supplier_id": zod.string().uuid(),
   "received_date": zod.string(),
+  "invoice_number": zod.string().nullish(),
   "status": zod.enum(['draft', 'posted']),
   "remarks": zod.string().nullish(),
   "posted_at": zod.coerce.date().nullish(),
@@ -6593,6 +6619,7 @@ export const PostGrnResponse = zod.object({
   "material_id": zod.string().uuid(),
   "quantity_received": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "supplier_lot_number": zod.string().nullish(),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
   "created_at": zod.coerce.date()
@@ -6758,5 +6785,181 @@ export const ListStockBalancesResponse = zod.object({
   "totalPages": zod.number()
 })
 })
+
+
+/**
+ * @summary Available cell-category stock, netted per GRN line, eligible for transfer into Cell Processing
+ */
+export const ListCellStockQueryParams = zod.object({
+  "search": zod.coerce.string().optional()
+})
+
+export const ListCellStockResponse = zod.object({
+  "items": zod.array(zod.object({
+  "grn_line_id": zod.string().uuid(),
+  "grn_id": zod.string().uuid(),
+  "grn_number": zod.string(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string(),
+  "material_name": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_name": zod.string(),
+  "manufacturer": zod.string().nullish(),
+  "invoice_number": zod.string().nullish(),
+  "supplier_lot_number": zod.string().nullish(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "received_date": zod.string(),
+  "available_qty": zod.number(),
+  "is_mapped": zod.boolean().describe('True when the material has a cell-master mapping (D3); a transfer requires this'),
+  "cell_master_id": zod.string().uuid().nullish(),
+  "cell_model": zod.string().nullish(),
+  "cell_chemistry": zod.string().nullish(),
+  "nominal_capacity_ah": zod.number().nullish(),
+  "nominal_voltage_v": zod.number().nullish()
+}))
+})
+
+
+export const listMaterialTransfersQueryPageDefault = 1;
+export const listMaterialTransfersQueryPageSizeDefault = 25;
+
+export const ListMaterialTransfersQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "page": zod.coerce.number().default(listMaterialTransfersQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listMaterialTransfersQueryPageSizeDefault)
+})
+
+export const ListMaterialTransfersResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "transfer_number": zod.string(),
+  "from_location": zod.string(),
+  "to_location": zod.string(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "grn_id": zod.string().uuid(),
+  "grn_number": zod.string().nullish(),
+  "grn_line_id": zod.string().uuid(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_name": zod.string().nullish(),
+  "quantity": zod.number(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "transferred_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "cell_lot_id": zod.string().uuid().nullish(),
+  "lot_number": zod.string().nullish()
+})),
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+})
+
+
+/**
+ * @summary Transfer available cell stock from a GRN line into Cell Processing (creates the cell lot + cells, decrements stock)
+ */
+export const createMaterialTransferBodyQuantityExclusiveMin = 0;
+
+
+
+export const CreateMaterialTransferBody = zod.object({
+  "grn_line_id": zod.string().uuid(),
+  "quantity": zod.number().gt(createMaterialTransferBodyQuantityExclusiveMin),
+  "received_by": zod.string().nullish(),
+  "remarks": zod.string().nullish()
+})
+
+export const CreateMaterialTransferResponse = zod.object({
+  "id": zod.string().uuid(),
+  "transfer_number": zod.string(),
+  "from_location": zod.string(),
+  "to_location": zod.string(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "grn_id": zod.string().uuid(),
+  "grn_number": zod.string().nullish(),
+  "grn_line_id": zod.string().uuid(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_name": zod.string().nullish(),
+  "quantity": zod.number(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "transferred_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "cell_lot_id": zod.string().uuid().nullish(),
+  "lot_number": zod.string().nullish()
+}).and(zod.object({
+  "cell_lot": zod.object({
+  "id": zod.string().uuid(),
+  "supplier": zod.string(),
+  "manufacturer": zod.string(),
+  "cellModel": zod.string(),
+  "cellChemistry": zod.string(),
+  "nominalCapacityAh": zod.number(),
+  "lotNumber": zod.string(),
+  "invoiceNumber": zod.string().nullish(),
+  "dateReceived": zod.string(),
+  "quantityReceived": zod.number(),
+  "receivedBy": zod.string(),
+  "remarks": zod.string().nullish(),
+  "status": zod.enum(['received', 'grading', 'graded', 'complete']),
+  "cellMasterId": zod.string().uuid().nullish(),
+  "supplierLotNumber": zod.string().nullish(),
+  "transferId": zod.string().uuid().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).optional()
+}))
+
+
+export const GetMaterialTransferParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetMaterialTransferResponse = zod.object({
+  "id": zod.string().uuid(),
+  "transfer_number": zod.string(),
+  "from_location": zod.string(),
+  "to_location": zod.string(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "grn_id": zod.string().uuid(),
+  "grn_number": zod.string().nullish(),
+  "grn_line_id": zod.string().uuid(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_name": zod.string().nullish(),
+  "quantity": zod.number(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "transferred_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "cell_lot_id": zod.string().uuid().nullish(),
+  "lot_number": zod.string().nullish()
+}).and(zod.object({
+  "cell_lot": zod.object({
+  "id": zod.string().uuid(),
+  "supplier": zod.string(),
+  "manufacturer": zod.string(),
+  "cellModel": zod.string(),
+  "cellChemistry": zod.string(),
+  "nominalCapacityAh": zod.number(),
+  "lotNumber": zod.string(),
+  "invoiceNumber": zod.string().nullish(),
+  "dateReceived": zod.string(),
+  "quantityReceived": zod.number(),
+  "receivedBy": zod.string(),
+  "remarks": zod.string().nullish(),
+  "status": zod.enum(['received', 'grading', 'graded', 'complete']),
+  "cellMasterId": zod.string().uuid().nullish(),
+  "supplierLotNumber": zod.string().nullish(),
+  "transferId": zod.string().uuid().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}).optional()
+}))
 
 

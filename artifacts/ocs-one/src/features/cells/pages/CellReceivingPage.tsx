@@ -1,7 +1,9 @@
-import { useState, useRef, Fragment } from "react";
+import { useState, useRef, useMemo, Fragment } from "react";
+import { Link } from "wouter";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 import { useTableKeyboardNav } from "@/hooks/use-table-keyboard-nav";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { ModuleHeader, OdsToolbar, OdsTableSkeleton, OdsEmptyState } from "@/components/ods";
 import AppLayout from "@/layouts/AppLayout";
@@ -9,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -37,8 +40,11 @@ import {
   useGetCellLot,
   usePatchCellLot,
   useGetCellLotHistory,
+  useListCellStock,
+  useListMaterialTransfers,
+  useCreateMaterialTransfer,
 } from "@workspace/api-client-react";
-import { Plus, ChevronDown, ChevronUp, Loader2, Pencil, History } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, Loader2, Pencil, History, ArrowRightLeft, ExternalLink } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 // ─── Lot stats pill row (lazy-loaded per lot) ────────────────────────────────
@@ -162,7 +168,7 @@ function LotHistoryDialog({ lotId, open, onClose }: { lotId: string; open: boole
   );
 }
 
-// ─── Create form defaults ─────────────────────────────────────────────────────
+// ─── Manual ("Historical Import") create form defaults ───────────────────────
 
 const DEFAULT_FORM = {
   supplier: "",
@@ -178,11 +184,303 @@ const DEFAULT_FORM = {
   remarks: "",
 };
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Transfer dialog defaults ────────────────────────────────────────────────
 
-export default function CellReceivingPage() {
+const DEFAULT_TRANSFER = {
+  grnLineId: "",
+  quantity: "",
+  receivedBy: "",
+  remarks: "",
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// New Transfer dialog — inventory picker (cell-stock) → select line + qty → POST
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function NewTransferDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const notify = useOdsNotify();
   const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [form, setForm] = useState(DEFAULT_TRANSFER);
+
+  const { data, isLoading } = useListCellStock(
+    { search: search || undefined },
+    { query: { enabled: open } } as any,
+  );
+  const lines = data?.items ?? [];
+  const selected = useMemo(
+    () => lines.find((l) => l.grn_line_id === form.grnLineId),
+    [lines, form.grnLineId],
+  );
+
+  const createTransfer = useCreateMaterialTransfer({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/inventory/transfers"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/inventory/cell-stock"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/cells/lots"] });
+        notify.success("Transfer recorded", { description: "Cell lot and individual cell records generated." });
+        setForm(DEFAULT_TRANSFER);
+        onClose();
+      },
+      onError: (e: any) =>
+        notify.error("Transfer failed", { description: e?.response?.data?.error ?? e?.message ?? "Failed" }),
+    },
+  });
+
+  const qtyNum = Number(form.quantity);
+  const qtyValid = Number.isFinite(qtyNum) && qtyNum > 0 && (!selected || qtyNum <= selected.available_qty);
+  const canSubmit = !!selected && selected.is_mapped && qtyValid && !createTransfer.isPending;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selected) {
+      notify.error("Select a stock line to transfer");
+      return;
+    }
+    if (!selected.is_mapped) {
+      notify.error("Material not mapped", {
+        description: "This material has no cell-master mapping. Set Cell Master on the Material Master first.",
+      });
+      return;
+    }
+    if (!qtyValid) {
+      notify.error("Invalid quantity", { description: `Enter a quantity between 1 and ${selected.available_qty}.` });
+      return;
+    }
+    createTransfer.mutate({
+      data: {
+        grn_line_id: selected.grn_line_id,
+        quantity: qtyNum,
+        received_by: form.receivedBy.trim() || null,
+        remarks: form.remarks.trim() || null,
+      },
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) { setForm(DEFAULT_TRANSFER); onClose(); } }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Transfer From Inventory</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>Search stock</Label>
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search material, GRN, supplier…"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Cell stock line<Req /></Label>
+            {isLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                <Loader2 size={14} className="animate-spin" /> Loading available stock…
+              </div>
+            ) : lines.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">
+                No available cell stock. Receive and inspect a GRN for a LiFePO4 cell material first.
+              </p>
+            ) : (
+              <Select value={form.grnLineId} onValueChange={(v) => setForm((f) => ({ ...f, grnLineId: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a GRN line to transfer from…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {lines.map((l) => (
+                    <SelectItem key={l.grn_line_id} value={l.grn_line_id} disabled={!l.is_mapped || l.available_qty <= 0}>
+                      {l.material_name} · GRN {l.grn_number} · {l.available_qty} {l.uom} avail
+                      {!l.is_mapped ? " · (unmapped)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          {selected && (
+            <>
+              <div className="rounded-md border bg-muted/30 p-3 text-sm grid grid-cols-2 gap-x-4 gap-y-1.5 md:grid-cols-3">
+                <div><span className="text-muted-foreground">Material:</span> {selected.material_name}</div>
+                <div><span className="text-muted-foreground">GRN:</span> {selected.grn_number}</div>
+                <div><span className="text-muted-foreground">Supplier:</span> {selected.supplier_name}</div>
+                <div><span className="text-muted-foreground">Cell Model:</span> {selected.cell_model ?? "—"}</div>
+                <div><span className="text-muted-foreground">Chemistry:</span> {selected.cell_chemistry ?? "—"}</div>
+                <div><span className="text-muted-foreground">Capacity:</span> {selected.nominal_capacity_ah != null ? `${selected.nominal_capacity_ah} Ah` : "—"}</div>
+                <div><span className="text-muted-foreground">Voltage:</span> {selected.nominal_voltage_v != null ? `${selected.nominal_voltage_v} V` : "—"}</div>
+                <div><span className="text-muted-foreground">Supplier Lot:</span> {selected.supplier_lot_number ?? "—"}</div>
+                <div><span className="text-muted-foreground">Available:</span> <strong>{selected.available_qty} {selected.uom}</strong></div>
+              </div>
+              {!selected.is_mapped && (
+                <div className="rounded-md bg-yellow-50 border border-yellow-200 px-3 py-2 text-sm text-yellow-800">
+                  ⚠ This material has no cell-master mapping — set <strong>Cell Master</strong> on the Material Master before transferring.
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Quantity to transfer<Req /></Label>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={form.quantity}
+                onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
+                placeholder={selected ? `Max ${selected.available_qty}` : "0"}
+              />
+              {selected && qtyNum > selected.available_qty && (
+                <p className="text-xs text-red-500">Exceeds available ({selected.available_qty}).</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Received By</Label>
+              <Input
+                value={form.receivedBy}
+                onChange={(e) => setForm((f) => ({ ...f, receivedBy: e.target.value }))}
+                placeholder="Engineer name (optional)"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Remarks</Label>
+            <Input
+              value={form.remarks}
+              onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))}
+              placeholder="Any additional notes (optional)"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => { setForm(DEFAULT_TRANSFER); onClose(); }}>Cancel</Button>
+            <Button type="submit" disabled={!canSubmit}>
+              {createTransfer.isPending && <Loader2 size={14} className="mr-1 animate-spin" />}
+              Transfer to Cell Processing
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Transfers tab — transfer document list
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function TransfersTab() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [transferOpen, setTransferOpen] = useState(false);
+
+  const { data, isLoading, isFetching, refetch } = useListMaterialTransfers({
+    page,
+    pageSize: 25,
+    search: search || undefined,
+  } as any);
+
+  const transfers = data?.items ?? [];
+  const meta = data?.meta;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-3 items-center justify-between flex-wrap">
+        <OdsToolbar
+          search={{
+            value: search,
+            onChange: (v) => { setSearch(v); setPage(1); },
+            placeholder: "Search transfer no., material, GRN, supplier…",
+          }}
+          onRefresh={() => refetch()}
+          isRefreshing={isFetching}
+        />
+        <Button onClick={() => setTransferOpen(true)}>
+          <ArrowRightLeft size={16} className="mr-1" /> New Transfer
+        </Button>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Transfer No.</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Material</TableHead>
+              <TableHead>GRN</TableHead>
+              <TableHead>Supplier</TableHead>
+              <TableHead className="text-right">Qty</TableHead>
+              <TableHead>Cell Lot</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="p-0">
+                  <OdsTableSkeleton rows={6} columns={8} />
+                </TableCell>
+              </TableRow>
+            ) : transfers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="p-0">
+                  <OdsEmptyState
+                    icon="🔁"
+                    title="No transfers yet"
+                    description="Transfer received cell stock from inventory into Cell Processing."
+                    action={{ label: "New Transfer", onClick: () => setTransferOpen(true) }}
+                  />
+                </TableCell>
+              </TableRow>
+            ) : (
+              transfers.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell className="font-mono font-medium">{t.transfer_number}</TableCell>
+                  <TableCell>{new Date(t.created_at).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}</TableCell>
+                  <TableCell>{t.material_name ?? "—"}</TableCell>
+                  <TableCell className="font-mono text-xs">{t.grn_number ?? "—"}</TableCell>
+                  <TableCell>{t.supplier_name ?? "—"}</TableCell>
+                  <TableCell className="text-right font-medium">{t.quantity} {t.uom}</TableCell>
+                  <TableCell className="font-mono text-xs">{t.lot_number ?? "—"}</TableCell>
+                  <TableCell>
+                    <Link href={`/cells/transfers/${t.id}`}>
+                      <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs">
+                        <ExternalLink size={13} /> View
+                      </Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {meta && meta.totalPages > 1 && (
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
+          <span className="text-sm self-center">Page {page} of {meta.totalPages}</span>
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page >= meta.totalPages}>Next</Button>
+        </div>
+      )}
+
+      <NewTransferDialog open={transferOpen} onClose={() => setTransferOpen(false)} />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Cell Lots tab — existing lot list + edit + history + director-only manual import
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function CellLotsTab() {
+  const notify = useOdsNotify();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isDirector = user?.role === "director";
 
   // List filters
   const [search, setSearch] = useState("");
@@ -190,12 +488,12 @@ export default function CellReceivingPage() {
   const [page, setPage] = useState(1);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Create dialog
+  // Create dialog (Historical Import / Emergency Recovery — director only)
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(DEFAULT_FORM);
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
-  useModuleShortcuts({ onNew: () => setOpen(true), searchRef });
+  useModuleShortcuts({ onNew: () => { if (isDirector) setOpen(true); }, searchRef });
 
   // Row expand + action dialogs
   const [expandedLot, setExpandedLot] = useState<string | null>(null);
@@ -217,7 +515,6 @@ export default function CellReceivingPage() {
     reason: "",
   });
 
-  // API hooks
   const { data, isLoading, isFetching, refetch } = useListCellLots({
     page,
     pageSize: 25,
@@ -231,7 +528,7 @@ export default function CellReceivingPage() {
         queryClient.invalidateQueries({ queryKey: ["/api/cells/lots"] });
         setOpen(false);
         setForm(DEFAULT_FORM);
-        notify.success("Lot received", { description: "Individual cell records generated." });
+        notify.success("Lot imported", { description: "Individual cell records generated." });
       },
       onError: (e: any) => notify.error("Error", { description: e?.response?.data?.error ?? e?.message ?? "Failed" }),
     },
@@ -248,7 +545,6 @@ export default function CellReceivingPage() {
     },
   });
 
-  // Create submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const REQUIRED: Array<[keyof typeof form, string]> = [
@@ -281,7 +577,6 @@ export default function CellReceivingPage() {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  // Edit submit
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editLotId) return;
@@ -329,7 +624,6 @@ export default function CellReceivingPage() {
   const lots = data?.items ?? [];
   const meta = data?.meta;
 
-  // ODS Standard 15 — keyboard navigation for the lot table
   const kbd = useTableKeyboardNav({
     rowCount: lots.length,
     enabled: !isLoading,
@@ -344,20 +638,9 @@ export default function CellReceivingPage() {
   });
 
   return (
-    <AppLayout>
-      <div className="p-6 max-w-7xl mx-auto">
-        <ModuleHeader
-          icon="📦"
-          title="Cell Receiving"
-          description={`${meta?.total ?? 0} lots received`}
-          actions={
-            <Button onClick={() => setOpen(true)}>
-              <Plus size={16} className="mr-1" /> Receive New Lot
-            </Button>
-          }
-        />
-
-        <div className="flex gap-3 items-end mb-4 flex-wrap">
+    <div className="space-y-4">
+      <div className="flex gap-3 items-end justify-between flex-wrap">
+        <div className="flex gap-3 items-end flex-wrap">
           <OdsToolbar
             search={{
               value: search,
@@ -384,147 +667,161 @@ export default function CellReceivingPage() {
             </Select>
           </div>
         </div>
-
-        <div
-          {...(!isLoading && lots.length > 0 ? kbd.containerProps : {})}
-          className="rounded-md border outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-        >
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Lot Number</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead>Manufacturer</TableHead>
-                <TableHead>Cell Model</TableHead>
-                <TableHead className="text-right">Nominal Cap.</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
-                <TableHead>Date Received</TableHead>
-                <TableHead>Received By</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Grading</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={11} className="p-0">
-                    <OdsTableSkeleton rows={6} columns={11} />
-                  </TableCell>
-                </TableRow>
-              ) : lots.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={11} className="p-0">
-                    <OdsEmptyState
-                      icon="📦"
-                      title="No lots found"
-                      description="Adjust filters or receive a new lot."
-                      action={{ label: "Receive New Lot", onClick: () => setOpen(true) }}
-                    />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                lots.map((lot, rowIndex) => (
-                  <Fragment key={lot.id}>
-                    <TableRow
-                      ref={kbd.registerRow(rowIndex)}
-                      role="row"
-                      aria-selected={kbd.selectedIndex === rowIndex}
-                      className={cn(
-                        "cursor-pointer",
-                        kbd.selectedIndex === rowIndex && "bg-blue-50",
-                        kbd.activeIndex === rowIndex
-                          ? "ring-2 ring-inset ring-blue-500 bg-blue-50/60"
-                          : "hover:bg-muted/50"
-                      )}
-                      onClick={() => {
-                        kbd.setActiveIndex(rowIndex);
-                        setExpandedLot(expandedLot === lot.id ? null : lot.id);
-                      }}
-                    >
-                      <TableCell className="font-mono font-medium">{lot.lotNumber}</TableCell>
-                      <TableCell>{lot.supplier}</TableCell>
-                      <TableCell>{lot.manufacturer}</TableCell>
-                      <TableCell>{lot.cellModel}</TableCell>
-                      <TableCell className="text-right">{lot.nominalCapacityAh} Ah</TableCell>
-                      <TableCell className="text-right font-medium">{lot.quantityReceived}</TableCell>
-                      <TableCell>{formatDate(lot.dateReceived)}</TableCell>
-                      <TableCell>{lot.receivedBy}</TableCell>
-                      <TableCell><LotStatusBadge status={lot.status} /></TableCell>
-                      <TableCell><LotStatsRow lotId={lot.id} /></TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            aria-label="Edit lot"
-                            title="Edit lot"
-                            onClick={() => openEditDialog(lot)}
-                          >
-                            <Pencil size={14} />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7"
-                            aria-label="View manufacturing timeline"
-                            title="View manufacturing timeline"
-                            onClick={() => setHistoryLotId(lot.id)}
-                          >
-                            <History size={14} />
-                          </Button>
-                          {expandedLot === lot.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    {expandedLot === lot.id && (
-                      <TableRow>
-                        <TableCell colSpan={11} className="bg-muted/30 px-6 py-3 text-sm">
-                          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                            <div><span className="text-muted-foreground">Chemistry:</span> {lot.cellChemistry}</div>
-                            <div><span className="text-muted-foreground">Invoice #:</span> {lot.invoiceNumber ?? "—"}</div>
-                            <div><span className="text-muted-foreground">Remarks:</span> {lot.remarks ?? "—"}</div>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Cell IDs generated: CELL-{lot.dateReceived.replace(/-/g, "")}-000001 … {lot.quantityReceived}
-                          </p>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </Fragment>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {!isLoading && lots.length > 0 && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Tip: click the table, then use <kbd className="rounded border px-1">↑</kbd>{" "}
-            <kbd className="rounded border px-1">↓</kbd> to move,{" "}
-            <kbd className="rounded border px-1">Enter</kbd> to edit,{" "}
-            <kbd className="rounded border px-1">H</kbd> for history,{" "}
-            <kbd className="rounded border px-1">Space</kbd> to select,{" "}
-            <kbd className="rounded border px-1">Esc</kbd> to clear.
-          </p>
-        )}
-
-        {meta && meta.totalPages > 1 && (
-          <div className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-            <span className="text-sm self-center">Page {page} of {meta.totalPages}</span>
-            <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= meta.totalPages}>Next</Button>
-          </div>
+        {isDirector && (
+          <Button variant="outline" onClick={() => setOpen(true)}>
+            <Plus size={16} className="mr-1" /> Historical Import
+          </Button>
         )}
       </div>
 
-      {/* ── Create dialog ── */}
+      {isDirector && (
+        <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+          <strong>Historical Import / Emergency Recovery</strong> — manual lot entry bypasses inventory and is director-only.
+          Production cell intake must flow through <strong>Transfers</strong> from inventory.
+        </div>
+      )}
+
+      <div
+        {...(!isLoading && lots.length > 0 ? kbd.containerProps : {})}
+        className="rounded-md border outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+      >
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Lot Number</TableHead>
+              <TableHead>Supplier</TableHead>
+              <TableHead>Manufacturer</TableHead>
+              <TableHead>Cell Model</TableHead>
+              <TableHead className="text-right">Nominal Cap.</TableHead>
+              <TableHead className="text-right">Qty</TableHead>
+              <TableHead>Date Received</TableHead>
+              <TableHead>Received By</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Grading</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={11} className="p-0">
+                  <OdsTableSkeleton rows={6} columns={11} />
+                </TableCell>
+              </TableRow>
+            ) : lots.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={11} className="p-0">
+                  <OdsEmptyState
+                    icon="📦"
+                    title="No lots found"
+                    description="Cell lots appear here once stock is transferred from inventory."
+                  />
+                </TableCell>
+              </TableRow>
+            ) : (
+              lots.map((lot, rowIndex) => (
+                <Fragment key={lot.id}>
+                  <TableRow
+                    ref={kbd.registerRow(rowIndex)}
+                    role="row"
+                    aria-selected={kbd.selectedIndex === rowIndex}
+                    className={cn(
+                      "cursor-pointer",
+                      kbd.selectedIndex === rowIndex && "bg-blue-50",
+                      kbd.activeIndex === rowIndex
+                        ? "ring-2 ring-inset ring-blue-500 bg-blue-50/60"
+                        : "hover:bg-muted/50"
+                    )}
+                    onClick={() => {
+                      kbd.setActiveIndex(rowIndex);
+                      setExpandedLot(expandedLot === lot.id ? null : lot.id);
+                    }}
+                  >
+                    <TableCell className="font-mono font-medium">{lot.lotNumber}</TableCell>
+                    <TableCell>{lot.supplier}</TableCell>
+                    <TableCell>{lot.manufacturer}</TableCell>
+                    <TableCell>{lot.cellModel}</TableCell>
+                    <TableCell className="text-right">{lot.nominalCapacityAh} Ah</TableCell>
+                    <TableCell className="text-right font-medium">{lot.quantityReceived}</TableCell>
+                    <TableCell>{formatDate(lot.dateReceived)}</TableCell>
+                    <TableCell>{lot.receivedBy}</TableCell>
+                    <TableCell><LotStatusBadge status={lot.status} /></TableCell>
+                    <TableCell><LotStatsRow lotId={lot.id} /></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          aria-label="Edit lot"
+                          title="Edit lot"
+                          onClick={() => openEditDialog(lot)}
+                        >
+                          <Pencil size={14} />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          aria-label="View manufacturing timeline"
+                          title="View manufacturing timeline"
+                          onClick={() => setHistoryLotId(lot.id)}
+                        >
+                          <History size={14} />
+                        </Button>
+                        {expandedLot === lot.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {expandedLot === lot.id && (
+                    <TableRow>
+                      <TableCell colSpan={11} className="bg-muted/30 px-6 py-3 text-sm">
+                        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                          <div><span className="text-muted-foreground">Chemistry:</span> {lot.cellChemistry}</div>
+                          <div><span className="text-muted-foreground">Invoice #:</span> {lot.invoiceNumber ?? "—"}</div>
+                          <div><span className="text-muted-foreground">Remarks:</span> {lot.remarks ?? "—"}</div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Cell IDs generated: CELL-{lot.dateReceived.replace(/-/g, "")}-000001 … {lot.quantityReceived}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {!isLoading && lots.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Tip: click the table, then use <kbd className="rounded border px-1">↑</kbd>{" "}
+          <kbd className="rounded border px-1">↓</kbd> to move,{" "}
+          <kbd className="rounded border px-1">Enter</kbd> to edit,{" "}
+          <kbd className="rounded border px-1">H</kbd> for history,{" "}
+          <kbd className="rounded border px-1">Space</kbd> to select,{" "}
+          <kbd className="rounded border px-1">Esc</kbd> to clear.
+        </p>
+      )}
+
+      {meta && meta.totalPages > 1 && (
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
+          <span className="text-sm self-center">Page {page} of {meta.totalPages}</span>
+          <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= meta.totalPages}>Next</Button>
+        </div>
+      )}
+
+      {/* ── Historical Import dialog (director only) ── */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Receive New Cell Lot</DialogTitle>
+            <DialogTitle>Historical Import / Emergency Recovery</DialogTitle>
           </DialogHeader>
+          <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800 mb-1">
+            Manual lot entry bypasses inventory stock. Use only for migrating historical records or emergency recovery.
+          </div>
           <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -576,7 +873,7 @@ export default function CellReceivingPage() {
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={createLot.isPending}>
                 {createLot.isPending && <Loader2 size={14} className="mr-1 animate-spin" />}
-                Receive Lot
+                Import Lot
               </Button>
             </div>
           </form>
@@ -655,14 +952,42 @@ export default function CellReceivingPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── History dialog ── */}
       {historyLotId && (
-        <LotHistoryDialog
-          lotId={historyLotId}
-          open={!!historyLotId}
-          onClose={() => setHistoryLotId(null)}
-        />
+        <LotHistoryDialog lotId={historyLotId} open={!!historyLotId} onClose={() => setHistoryLotId(null)} />
       )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Page
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export default function CellReceivingPage() {
+  const [tab, setTab] = useState("transfers");
+
+  return (
+    <AppLayout>
+      <div className="p-6 max-w-7xl mx-auto">
+        <ModuleHeader
+          icon="📦"
+          title="Receive From Inventory"
+          description="Transfer received cell stock from inventory into Cell Processing"
+        />
+
+        <Tabs value={tab} onValueChange={setTab} className="mt-2">
+          <TabsList>
+            <TabsTrigger value="transfers">Transfers</TabsTrigger>
+            <TabsTrigger value="lots">Cell Lots</TabsTrigger>
+          </TabsList>
+          <TabsContent value="transfers" className="mt-4">
+            <TransfersTab />
+          </TabsContent>
+          <TabsContent value="lots" className="mt-4">
+            <CellLotsTab />
+          </TabsContent>
+        </Tabs>
+      </div>
     </AppLayout>
   );
 }

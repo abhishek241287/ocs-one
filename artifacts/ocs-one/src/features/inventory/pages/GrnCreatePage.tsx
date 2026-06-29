@@ -18,9 +18,9 @@ import { useOdsNotify } from "@/hooks/use-ods-notify";
 import { ModuleHeader } from "@/components/ods";
 import { Link, useLocation } from "wouter";
 
-type LineDraft = { material_id: string; quantity_received: string };
+type LineDraft = { material_id: string; quantity_received: string; supplier_lot_number: string };
 
-const EMPTY_LINE: LineDraft = { material_id: "", quantity_received: "" };
+const EMPTY_LINE: LineDraft = { material_id: "", quantity_received: "", supplier_lot_number: "" };
 
 export default function GrnCreatePage() {
   const notify = useOdsNotify();
@@ -28,6 +28,7 @@ export default function GrnCreatePage() {
 
   const [supplierId, setSupplierId] = useState("");
   const [receivedDate, setReceivedDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [remarks, setRemarks] = useState("");
   const [lines, setLines] = useState<LineDraft[]>([{ ...EMPTY_LINE }]);
 
@@ -76,12 +77,17 @@ export default function GrnCreatePage() {
         notify.error("Every line needs a quantity greater than 0");
         return;
       }
-      parsedLines.push({ material_id: l.material_id, quantity_received: qty });
+      parsedLines.push({
+        material_id: l.material_id,
+        quantity_received: qty,
+        supplier_lot_number: l.supplier_lot_number.trim() || undefined,
+      });
     }
 
     const payload: GrnInput = {
       supplier_id: supplierId,
       received_date: receivedDate,
+      invoice_number: invoiceNumber.trim() || undefined,
       remarks: remarks || undefined,
       lines: parsedLines,
     };
@@ -135,6 +141,10 @@ export default function GrnCreatePage() {
                 <Input type="date" value={receivedDate} onChange={(e) => setReceivedDate(e.target.value)} />
               </div>
               <div className="space-y-1.5">
+                <Label className="text-xs">Invoice Number</Label>
+                <Input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="Supplier invoice no." />
+              </div>
+              <div className="space-y-1.5 md:col-span-2">
                 <Label className="text-xs">Remarks</Label>
                 <Input value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Optional" />
               </div>
@@ -157,7 +167,7 @@ export default function GrnCreatePage() {
                 const mat = materialById.get(line.material_id);
                 return (
                   <div key={idx} className="grid grid-cols-12 gap-3 items-end">
-                    <div className="col-span-6 space-y-1.5">
+                    <div className="col-span-5 space-y-1.5">
                       <Label className="text-xs">Material *</Label>
                       <Select
                         value={line.material_id}
@@ -173,7 +183,7 @@ export default function GrnCreatePage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="col-span-3 space-y-1.5">
+                    <div className="col-span-2 space-y-1.5">
                       <Label className="text-xs">Quantity *</Label>
                       <Input
                         type="number"
@@ -184,7 +194,15 @@ export default function GrnCreatePage() {
                         placeholder="0"
                       />
                     </div>
-                    <div className="col-span-2 space-y-1.5">
+                    <div className="col-span-3 space-y-1.5">
+                      <Label className="text-xs">Supplier Lot No.</Label>
+                      <Input
+                        value={line.supplier_lot_number}
+                        onChange={(e) => updateLine(idx, { supplier_lot_number: e.target.value })}
+                        placeholder="Optional"
+                      />
+                    </div>
+                    <div className="col-span-1 space-y-1.5">
                       <Label className="text-xs">UOM</Label>
                       <Input value={mat?.uom ?? "—"} disabled readOnly className="bg-muted/40" />
                     </div>

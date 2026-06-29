@@ -15,6 +15,8 @@ export interface GrnLineItem {
   material_id: string;
   quantity_received: number;
   uom: InventoryUom;
+  /** @nullable */
+  supplier_lot_number?: string | null;
   inspection_status?: GrnInspectionStatus | null;
   /** @nullable */
   remarks?: string | null;

@@ -429,6 +429,45 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     expected: all(P),
   },
 
+  // ─── Inventory Platform — Material Transfer (read all; write supervisor+director) ─
+  {
+    id: "inventory.cell-stock.list",
+    method: "GET",
+    path: "/api/inventory/cell-stock",
+    group: "Inventory",
+    description: "Cell-stock transfer picker — available cell stock per GRN line (read)",
+    guard: "requireWriteRole(supervisor,director) — GET passes for all authed",
+    expected: all(P),
+  },
+  {
+    id: "inventory.transfers.list",
+    method: "GET",
+    path: "/api/inventory/transfers",
+    group: "Inventory",
+    description: "List material transfer documents (read)",
+    guard: "requireWriteRole(supervisor,director) — GET passes for all authed",
+    expected: all(P),
+  },
+  {
+    id: "inventory.transfers.get",
+    method: "GET",
+    path: `/api/inventory/transfers/${DUMMY_ID}`,
+    group: "Inventory",
+    description: "Get a material transfer document (read)",
+    guard: "requireWriteRole(supervisor,director) — GET passes for all authed",
+    expected: all(P),
+  },
+  {
+    id: "inventory.transfers.create",
+    method: "POST",
+    path: "/api/inventory/transfers",
+    group: "Inventory",
+    description: "Create a material transfer (Store → Cell Processing): lot + cells + signed txn",
+    guard: "requireWriteRole(supervisor,director)",
+    body: {},
+    expected: roles(P, P, F, F),
+  },
+
   // ─── Unified Product Platform — serialized Products ───────────────────────────
   {
     id: "products.list",
@@ -789,10 +828,10 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     method: "POST",
     path: "/api/cells/lots",
     group: "Cells",
-    description: "Receive a cell lot",
-    guard: "requireRole(operator,supervisor,director) per-route",
+    description: "Manual cell lot import (director-only Historical Import / Emergency Recovery)",
+    guard: "requireRole(director) per-route",
     body: {},
-    expected: roles(P, P, P, F),
+    expected: roles(P, F, F, F),
   },
   {
     id: "cells.lots.update",

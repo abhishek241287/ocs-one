@@ -29,6 +29,7 @@ function serializeHeader(h: Record<string, any>) {
     id: h.id,
     grn_number: h.grnNumber,
     supplier_id: h.supplierId,
+    invoice_number: h.invoiceNumber ?? null,
     received_date: h.receivedDate,
     status: h.status,
     remarks: h.remarks,
@@ -49,6 +50,7 @@ function serializeLine(l: Record<string, any>) {
     material_id: l.materialId,
     quantity_received: numify(l.quantityReceived),
     uom: l.uom,
+    supplier_lot_number: l.supplierLotNumber ?? null,
     inspection_status: l.inspectionStatus ?? null,
     remarks: l.remarks,
     created_at: l.createdAt,
@@ -158,6 +160,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
         .values({
           grnNumber,
           supplierId: body.supplier_id,
+          invoiceNumber: body.invoice_number ?? null,
           receivedDate: body.received_date,
           status: "draft",
           remarks: body.remarks ?? null,
@@ -172,6 +175,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
           materialId: l.material_id,
           quantityReceived: String(l.quantity_received),
           uom: uomById.get(l.material_id)!,
+          supplierLotNumber: l.supplier_lot_number ?? null,
           remarks: l.remarks ?? null,
         })),
       );

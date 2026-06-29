@@ -5,6 +5,7 @@ import {
   useUpdateMaterialMaster,
   useToggleMaterialMasterStatus,
   useListMaterialCategories,
+  useListCellMasters,
   getListMaterialMastersQueryKey,
 } from "@workspace/api-client-react";
 import { MaterialMaster } from "@workspace/api-client-react";
@@ -25,12 +26,24 @@ export default function MaterialMasterPage() {
   // Active categories drive both the create/edit select and the id→name display.
   const categoriesQuery = useListMaterialCategories();
 
+  // Cell masters drive the optional bridge — a material can map to a cell master
+  // so its chemistry / capacity / voltage / model auto-flow into a transfer.
+  const cellMastersQuery = useListCellMasters({ pageSize: 500 } as any);
+
   const categoryOptions = useMemo(
     () =>
       (categoriesQuery.data?.items ?? [])
         .filter((c: any) => c.status === "active")
         .map((c: any) => ({ label: c.name as string, value: c.id as string })),
     [categoriesQuery.data]
+  );
+
+  const cellMasterOptions = useMemo(
+    () =>
+      (cellMastersQuery.data?.items ?? [])
+        .filter((c: any) => c.status === "active")
+        .map((c: any) => ({ label: `${c.name} (${c.code})` as string, value: c.id as string })),
+    [cellMastersQuery.data]
   );
 
   const categoryNameById = useMemo(() => {
@@ -72,6 +85,13 @@ export default function MaterialMasterPage() {
       },
       { name: "uom", label: "Unit of Measure", type: "select", required: true, placeholder: "Select a UOM", options: UOM_OPTIONS },
       { name: "manufacturer", label: "Manufacturer", type: "text", placeholder: "Optional — e.g. EVE Energy" },
+      {
+        name: "cell_master_id",
+        label: "Cell Master (for cells)",
+        type: "select",
+        placeholder: "Map to a cell master — required to transfer into Cell Processing",
+        options: cellMasterOptions,
+      },
     ];
 
     return {
@@ -83,7 +103,7 @@ export default function MaterialMasterPage() {
       columns,
       fields: fields as any,
     };
-  }, [categoryOptions, categoryNameById]);
+  }, [categoryOptions, categoryNameById, cellMasterOptions]);
 
   return (
     <MasterPage

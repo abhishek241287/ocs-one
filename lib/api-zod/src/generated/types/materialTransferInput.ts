@@ -6,12 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface GrnLineItemInput {
-  material_id: string;
+export interface MaterialTransferInput {
+  grn_line_id: string;
   /** @exclusiveMinimum 0 */
-  quantity_received: number;
+  quantity: number;
   /** @nullable */
-  supplier_lot_number?: string | null;
+  received_by?: string | null;
   /** @nullable */
   remarks?: string | null;
 }

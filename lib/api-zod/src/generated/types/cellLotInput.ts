@@ -15,6 +15,8 @@ export interface CellLotInput {
   lotNumber: string;
   /** @nullable */
   invoiceNumber?: string | null;
+  /** @nullable */
+  supplierLotNumber?: string | null;
   dateReceived: string;
   /** @minimum 1 */
   quantityReceived: number;

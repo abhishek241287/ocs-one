@@ -13,4 +13,6 @@ export type MaterialMasterInput = MasterCommonInput & ({
   uom: MaterialMasterInputUom;
   /** @nullable */
   manufacturer?: string | null;
+  /** @nullable */
+  cell_master_id?: string | null;
 });

@@ -102,6 +102,8 @@ import type {
   ListCellMastersParams,
   ListCellMatches200,
   ListCellMatchesParams,
+  ListCellStock200,
+  ListCellStockParams,
   ListCells200,
   ListCellsParams,
   ListChargerMasters200,
@@ -125,6 +127,8 @@ import type {
   ListMaterialCategoriesParams,
   ListMaterialMasters200,
   ListMaterialMastersParams,
+  ListMaterialTransfers200,
+  ListMaterialTransfersParams,
   ListMaterialWorkflowAssignments200,
   ListMaterialWorkflows200,
   ListMaterialWorkflowsParams,
@@ -156,6 +160,8 @@ import type {
   MaterialMaster,
   MaterialMasterInput,
   MaterialMasterUpdate,
+  MaterialTransferDetail,
+  MaterialTransferInput,
   MaterialWorkflow,
   MaterialWorkflowAssignment,
   MaterialWorkflowAssignmentUpsert,
@@ -12816,6 +12822,309 @@ export function useListStockBalances<TData = Awaited<ReturnType<typeof listStock
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListStockBalancesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListCellStockUrl = (params?: ListCellStockParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/inventory/cell-stock?${stringifiedParams}` : `/api/inventory/cell-stock`
+}
+
+/**
+ * @summary Available cell-category stock, netted per GRN line, eligible for transfer into Cell Processing
+ */
+export const listCellStock = async (params?: ListCellStockParams, options?: RequestInit): Promise<ListCellStock200> => {
+
+  return customFetch<ListCellStock200>(getListCellStockUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCellStockQueryKey = (params?: ListCellStockParams,) => {
+    return [
+    `/api/inventory/cell-stock`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCellStockQueryOptions = <TData = Awaited<ReturnType<typeof listCellStock>>, TError = ErrorType<unknown>>(params?: ListCellStockParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCellStock>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCellStockQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCellStock>>> = ({ signal }) => listCellStock(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCellStock>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCellStockQueryResult = NonNullable<Awaited<ReturnType<typeof listCellStock>>>
+export type ListCellStockQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Available cell-category stock, netted per GRN line, eligible for transfer into Cell Processing
+ */
+
+export function useListCellStock<TData = Awaited<ReturnType<typeof listCellStock>>, TError = ErrorType<unknown>>(
+ params?: ListCellStockParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCellStock>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCellStockQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListMaterialTransfersUrl = (params?: ListMaterialTransfersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/inventory/transfers?${stringifiedParams}` : `/api/inventory/transfers`
+}
+
+export const listMaterialTransfers = async (params?: ListMaterialTransfersParams, options?: RequestInit): Promise<ListMaterialTransfers200> => {
+
+  return customFetch<ListMaterialTransfers200>(getListMaterialTransfersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMaterialTransfersQueryKey = (params?: ListMaterialTransfersParams,) => {
+    return [
+    `/api/inventory/transfers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListMaterialTransfersQueryOptions = <TData = Awaited<ReturnType<typeof listMaterialTransfers>>, TError = ErrorType<unknown>>(params?: ListMaterialTransfersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMaterialTransfers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMaterialTransfersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMaterialTransfers>>> = ({ signal }) => listMaterialTransfers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMaterialTransfers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMaterialTransfersQueryResult = NonNullable<Awaited<ReturnType<typeof listMaterialTransfers>>>
+export type ListMaterialTransfersQueryError = ErrorType<unknown>
+
+
+
+export function useListMaterialTransfers<TData = Awaited<ReturnType<typeof listMaterialTransfers>>, TError = ErrorType<unknown>>(
+ params?: ListMaterialTransfersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMaterialTransfers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMaterialTransfersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateMaterialTransferUrl = () => {
+
+
+
+
+  return `/api/inventory/transfers`
+}
+
+/**
+ * @summary Transfer available cell stock from a GRN line into Cell Processing (creates the cell lot + cells, decrements stock)
+ */
+export const createMaterialTransfer = async (materialTransferInput: MaterialTransferInput, options?: RequestInit): Promise<MaterialTransferDetail> => {
+
+  return customFetch<MaterialTransferDetail>(getCreateMaterialTransferUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(materialTransferInput)
+  }
+);}
+
+
+
+
+export const getCreateMaterialTransferMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMaterialTransfer>>, TError,{data: BodyType<MaterialTransferInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMaterialTransfer>>, TError,{data: BodyType<MaterialTransferInput>}, TContext> => {
+
+const mutationKey = ['createMaterialTransfer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMaterialTransfer>>, {data: BodyType<MaterialTransferInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMaterialTransfer(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMaterialTransferMutationResult = NonNullable<Awaited<ReturnType<typeof createMaterialTransfer>>>
+    export type CreateMaterialTransferMutationBody = BodyType<MaterialTransferInput>
+    export type CreateMaterialTransferMutationError = ErrorType<void>
+
+    /**
+ * @summary Transfer available cell stock from a GRN line into Cell Processing (creates the cell lot + cells, decrements stock)
+ */
+export const useCreateMaterialTransfer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMaterialTransfer>>, TError,{data: BodyType<MaterialTransferInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMaterialTransfer>>,
+        TError,
+        {data: BodyType<MaterialTransferInput>},
+        TContext
+      > => {
+      return useMutation(getCreateMaterialTransferMutationOptions(options));
+    }
+
+export const getGetMaterialTransferUrl = (id: string,) => {
+
+
+
+
+  return `/api/inventory/transfers/${id}`
+}
+
+export const getMaterialTransfer = async (id: string, options?: RequestInit): Promise<MaterialTransferDetail> => {
+
+  return customFetch<MaterialTransferDetail>(getGetMaterialTransferUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMaterialTransferQueryKey = (id: string,) => {
+    return [
+    `/api/inventory/transfers/${id}`
+    ] as const;
+    }
+
+
+export const getGetMaterialTransferQueryOptions = <TData = Awaited<ReturnType<typeof getMaterialTransfer>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMaterialTransfer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMaterialTransferQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMaterialTransfer>>> = ({ signal }) => getMaterialTransfer(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMaterialTransfer>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMaterialTransferQueryResult = NonNullable<Awaited<ReturnType<typeof getMaterialTransfer>>>
+export type GetMaterialTransferQueryError = ErrorType<void>
+
+
+
+export function useGetMaterialTransfer<TData = Awaited<ReturnType<typeof getMaterialTransfer>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMaterialTransfer>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMaterialTransferQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

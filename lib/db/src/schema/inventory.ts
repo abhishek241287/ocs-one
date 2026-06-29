@@ -13,6 +13,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { createMasterCommonColumns } from "./master-common";
+import { masterCellsTable } from "./master-cells";
 
 // ─── Inventory Platform v1.0 — Phase 1, sub-step 1: Material Master ────────────
 // The Material Master is the canonical definition of an inventory material. Every
@@ -53,6 +54,11 @@ export const materialsTable = pgTable("master_materials", {
   uom: materialUomEnum("uom").notNull(),
   // Optional — many raw/packing materials are generic and have no single maker.
   manufacturer: text("manufacturer"),
+  // D3 — Material → Cell Master bridge. For materials in the LiFePO4 Cell category this
+  // links the procurement material to its grading spec (master_cells), so cell
+  // chemistry / capacity / nominal voltage / model flow automatically into Cell
+  // Processing — the operator never re-enters them. Nullable: only cell materials map.
+  cellMasterId: uuid("cell_master_id").references(() => masterCellsTable.id),
 });
 
 export const insertMaterialCategorySchema = createInsertSchema(materialCategoriesTable).omit({
@@ -183,6 +189,10 @@ export const grnHeadersTable = pgTable(
       .notNull()
       .references(() => suppliersTable.id),
     receivedDate: date("received_date", { mode: "string" }).notNull(),
+    // D1 — supplier invoice number for this receipt. Procurement data that belongs on
+    // the GRN; once captured it flows automatically into downstream documents (Cell
+    // Lot, etc.). Nullable: not every receipt has an invoice at GRN time.
+    invoiceNumber: varchar("invoice_number", { length: 100 }),
     status: grnStatusEnum("status").notNull().default("draft"),
     remarks: text("remarks"),
     postedAt: timestamp("posted_at", { withTimezone: true }),
@@ -215,6 +225,10 @@ export const grnLineItemsTable = pgTable(
     quantityReceived: numeric("quantity_received", { precision: 14, scale: 3 }).notNull(),
     // UOM snapshot at receipt time so a later Material UOM change can't rewrite history.
     uom: materialUomEnum("uom").notNull(),
+    // D2 — supplier's manufacturing lot/batch number for this received line. Critical
+    // for warranty & recall traceability (e.g. supplier flags lot 240612 as defective).
+    // Flows into the Cell Lot on transfer. Nullable (not every material is lot-tracked).
+    supplierLotNumber: varchar("supplier_lot_number", { length: 100 }),
     // Per-line — set on post from the line's workflow; NULL until posted, and NULL for
     // DIRECT_TO_INVENTORY lines (no inspection process).
     inspectionStatus: grnInspectionStatusEnum("inspection_status"),
@@ -241,6 +255,11 @@ export const inventoryTransactionTypeEnum = pgEnum("inventory_transaction_type",
   "INSPECTION_RELEASE",
   "INSPECTION_ACCEPT",
   "INSPECTION_REJECT",
+  // Material → Cell Processing transfer: moves cell-category stock OUT of available
+  // inventory into manufacturing (Cell Receiving). Signed NEGATIVE quantity @available.
+  // Named descriptively (not a generic ISSUE) so future issue-to-assembly/packing/scrap
+  // transactions read clearly in reports.
+  "MATERIAL_TRANSFER_TO_CELL_PROCESSING",
 ]);
 
 // Where the moved quantity sits. inspection_pending = received but awaiting Incoming
@@ -276,6 +295,55 @@ export const inventoryTransactionsTable = pgTable(
     index("inventory_transactions_type_idx").on(t.transactionType),
   ],
 );
+
+// ─── Material Transfer (Store → Cell Processing) ──────────────────────────────
+// An immutable TRANSFER DOCUMENT for every inventory→manufacturing movement of cell
+// stock. Mirrors the house document pattern (GRN/Inspection/Dispatch): a header with a
+// system-generated number TRF-YYYYMMDD-NNNNNN (material_transfer_seq via nextval, never
+// client-supplied). The Cell Lot references this transfer (transfer_id) instead of the
+// GRN directly, giving a complete Store→Cell Processing audit trail. The signed
+// MATERIAL_TRANSFER_TO_CELL_PROCESSING ledger row is the stock movement; this is the
+// document. Partial transfers from one GRN line produce multiple transfers until the
+// line's available balance reaches zero.
+export const materialTransfersTable = pgTable(
+  "material_transfers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    transferNumber: varchar("transfer_number", { length: 32 })
+      .unique("material_transfers_number_unique")
+      .notNull(),
+    fromLocation: varchar("from_location", { length: 32 }).notNull().default("STORE"),
+    toLocation: varchar("to_location", { length: 32 }).notNull().default("CELL_PROCESSING"),
+    materialId: uuid("material_id")
+      .notNull()
+      .references(() => materialsTable.id),
+    grnId: uuid("grn_id")
+      .notNull()
+      .references(() => grnHeadersTable.id),
+    grnLineId: uuid("grn_line_id")
+      .notNull()
+      .references(() => grnLineItemsTable.id),
+    supplierId: uuid("supplier_id")
+      .notNull()
+      .references(() => suppliersTable.id),
+    quantity: numeric("quantity", { precision: 14, scale: 3 }).notNull(),
+    uom: materialUomEnum("uom").notNull(),
+    transferredBy: uuid("transferred_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("material_transfers_material_idx").on(t.materialId),
+    index("material_transfers_grn_idx").on(t.grnId),
+    index("material_transfers_grn_line_idx").on(t.grnLineId),
+  ],
+);
+
+export const insertMaterialTransferSchema = createInsertSchema(materialTransfersTable).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertMaterialTransfer = z.infer<typeof insertMaterialTransferSchema>;
+export type MaterialTransfer = typeof materialTransfersTable.$inferSelect;
 
 // ─── Incoming Inspection ──────────────────────────────────────────────────────
 // Incoming Inspection records what OCS ACCEPTED vs REJECTED from a posted GRN — a

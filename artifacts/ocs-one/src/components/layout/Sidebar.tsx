@@ -80,7 +80,7 @@ const navSections: NavSection[] = [
       {
         label: "Cell Processing",
         items: [
-          { label: "Cell Receiving", href: "/cells/receiving", icon: Package },
+          { label: "Receive From Inventory", href: "/cells/receiving", icon: Package },
           { label: "Cell Grading", href: "/cells/grading", icon: FlaskConical },
           { label: "Cell Matching", href: "/cells/matching", icon: BrainCircuit },
           { label: "Cell Inventory", href: "/cells/inventory", icon: Archive },

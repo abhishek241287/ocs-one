@@ -25,6 +25,10 @@ export interface CellLot {
   status: CellLotStatus;
   /** @nullable */
   cellMasterId?: string | null;
+  /** @nullable */
+  supplierLotNumber?: string | null;
+  /** @nullable */
+  transferId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

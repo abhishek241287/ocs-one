@@ -1022,6 +1022,10 @@ export interface CellLot {
   status: CellLotStatus;
   /** @nullable */
   cellMasterId?: string | null;
+  /** @nullable */
+  supplierLotNumber?: string | null;
+  /** @nullable */
+  transferId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1049,6 +1053,8 @@ export interface CellLotInput {
   lotNumber: string;
   /** @nullable */
   invoiceNumber?: string | null;
+  /** @nullable */
+  supplierLotNumber?: string | null;
   dateReceived: string;
   /** @minimum 1 */
   quantityReceived: number;
@@ -2115,6 +2121,8 @@ export type MaterialMaster = MasterCommon & ({
   uom?: MaterialMasterUom;
   /** @nullable */
   manufacturer?: string | null;
+  /** @nullable */
+  cell_master_id?: string | null;
 });
 
 export type MaterialMasterInputUom = typeof MaterialMasterInputUom[keyof typeof MaterialMasterInputUom];
@@ -2134,6 +2142,8 @@ export type MaterialMasterInput = MasterCommonInput & ({
   uom: MaterialMasterInputUom;
   /** @nullable */
   manufacturer?: string | null;
+  /** @nullable */
+  cell_master_id?: string | null;
 });
 
 export type MaterialMasterUpdateUom = typeof MaterialMasterUpdateUom[keyof typeof MaterialMasterUpdateUom];
@@ -2153,6 +2163,8 @@ export type MaterialMasterUpdate = MasterCommonUpdate & ({
   uom?: MaterialMasterUpdateUom;
   /** @nullable */
   manufacturer?: string | null;
+  /** @nullable */
+  cell_master_id?: string | null;
 });
 
 export type Supplier = MasterCommon;
@@ -2234,6 +2246,8 @@ export interface GrnLineItem {
   material_id: string;
   quantity_received: number;
   uom: InventoryUom;
+  /** @nullable */
+  supplier_lot_number?: string | null;
   inspection_status?: GrnInspectionStatus | null;
   /** @nullable */
   remarks?: string | null;
@@ -2245,6 +2259,8 @@ export interface GrnLineItemInput {
   /** @exclusiveMinimum 0 */
   quantity_received: number;
   /** @nullable */
+  supplier_lot_number?: string | null;
+  /** @nullable */
   remarks?: string | null;
 }
 
@@ -2253,6 +2269,8 @@ export interface Grn {
   grn_number: string;
   supplier_id: string;
   received_date: string;
+  /** @nullable */
+  invoice_number?: string | null;
   status: GrnStatus;
   /** @nullable */
   remarks?: string | null;
@@ -2276,9 +2294,85 @@ export interface GrnInput {
   supplier_id: string;
   received_date: string;
   /** @nullable */
+  invoice_number?: string | null;
+  /** @nullable */
   remarks?: string | null;
   /** @minItems 1 */
   lines: GrnLineItemInput[];
+}
+
+export interface CellStockLine {
+  grn_line_id: string;
+  grn_id: string;
+  grn_number: string;
+  material_id: string;
+  material_code: string;
+  material_name: string;
+  supplier_id: string;
+  supplier_name: string;
+  /** @nullable */
+  manufacturer?: string | null;
+  /** @nullable */
+  invoice_number?: string | null;
+  /** @nullable */
+  supplier_lot_number?: string | null;
+  uom: InventoryUom;
+  received_date: string;
+  available_qty: number;
+  /** True when the material has a cell-master mapping (D3); a transfer requires this */
+  is_mapped: boolean;
+  /** @nullable */
+  cell_master_id?: string | null;
+  /** @nullable */
+  cell_model?: string | null;
+  /** @nullable */
+  cell_chemistry?: string | null;
+  /** @nullable */
+  nominal_capacity_ah?: number | null;
+  /** @nullable */
+  nominal_voltage_v?: number | null;
+}
+
+export interface MaterialTransfer {
+  id: string;
+  transfer_number: string;
+  from_location: string;
+  to_location: string;
+  material_id: string;
+  /** @nullable */
+  material_code?: string | null;
+  /** @nullable */
+  material_name?: string | null;
+  grn_id: string;
+  /** @nullable */
+  grn_number?: string | null;
+  grn_line_id: string;
+  supplier_id: string;
+  /** @nullable */
+  supplier_name?: string | null;
+  quantity: number;
+  uom: InventoryUom;
+  /** @nullable */
+  transferred_by?: string | null;
+  created_at: string;
+  /** @nullable */
+  cell_lot_id?: string | null;
+  /** @nullable */
+  lot_number?: string | null;
+}
+
+export type MaterialTransferDetail = MaterialTransfer & {
+  cell_lot?: CellLot;
+};
+
+export interface MaterialTransferInput {
+  grn_line_id: string;
+  /** @exclusiveMinimum 0 */
+  quantity: number;
+  /** @nullable */
+  received_by?: string | null;
+  /** @nullable */
+  remarks?: string | null;
 }
 
 export type InventoryTransactionTransactionType = typeof InventoryTransactionTransactionType[keyof typeof InventoryTransactionTransactionType];
@@ -2933,6 +3027,25 @@ export const ListStockBalancesStockState = {
 
 export type ListStockBalances200 = {
   items: StockBalance[];
+  meta: MasterListMeta;
+};
+
+export type ListCellStockParams = {
+search?: SearchParamParameter;
+};
+
+export type ListCellStock200 = {
+  items: CellStockLine[];
+};
+
+export type ListMaterialTransfersParams = {
+search?: SearchParamParameter;
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+};
+
+export type ListMaterialTransfers200 = {
+  items: MaterialTransfer[];
   meta: MasterListMeta;
 };
 
