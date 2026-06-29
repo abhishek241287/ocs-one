@@ -1,9 +1,13 @@
 import { useGetOrderTimeline } from "@workspace/api-client-react";
-import { Package2, Clock, CheckCircle2, Loader2, CirclePlay, XCircle } from "lucide-react";
+import { Package2, Clock, CheckCircle2, Loader2, CirclePlay, CirclePause, XCircle } from "lucide-react";
 
 const EVENT_ICONS: Record<string, React.FC<{ className?: string }>> = {
   order_created: Package2,
   stage_started: CirclePlay,
+  stage_paused: CirclePause,
+  stage_resumed: CirclePlay,
+  charging_paused: CirclePause,
+  charging_resumed: CirclePlay,
   stage_completed: CheckCircle2,
   stage_approved: CheckCircle2,
   stage_rejected: XCircle,
@@ -12,6 +16,10 @@ const EVENT_ICONS: Record<string, React.FC<{ className?: string }>> = {
 const EVENT_COLORS: Record<string, string> = {
   order_created: "bg-orange-100 text-orange-600",
   stage_started: "bg-blue-100 text-blue-600",
+  stage_paused: "bg-amber-100 text-amber-600",
+  stage_resumed: "bg-blue-100 text-blue-600",
+  charging_paused: "bg-amber-100 text-amber-600",
+  charging_resumed: "bg-blue-100 text-blue-600",
   stage_completed: "bg-yellow-100 text-yellow-700",
   stage_approved: "bg-green-100 text-green-600",
   stage_rejected: "bg-red-100 text-red-600",

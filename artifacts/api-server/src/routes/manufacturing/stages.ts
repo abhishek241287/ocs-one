@@ -496,10 +496,10 @@ router.post("/:stage/pause", async (req, res) => {
 
     await logEvent(tx, {
       productionOrderId: id,
-      eventType: "charging_paused",
+      eventType: "stage_paused",
       stageType: stage as StageTypeValue,
       actor: body.operatorName,
-      description: `Charging paused${body.notes ? ` — ${body.notes}` : ""}`,
+      description: `Stage ${stage.replace(/_/g, " ")} paused${body.notes ? ` — ${body.notes}` : ""}`,
     });
   });
 
@@ -527,10 +527,10 @@ router.post("/:stage/resume", async (req, res) => {
 
     await logEvent(tx, {
       productionOrderId: id,
-      eventType: "charging_resumed",
+      eventType: "stage_resumed",
       stageType: stage as StageTypeValue,
       actor: body.operatorName,
-      description: `Charging resumed`,
+      description: `Stage ${stage.replace(/_/g, " ")} resumed`,
     });
   });
 
