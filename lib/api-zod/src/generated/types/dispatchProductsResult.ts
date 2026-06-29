@@ -9,5 +9,7 @@ import type { Product } from './product';
 
 export interface DispatchProductsResult {
   dispatched: number;
+  dispatch_id: string;
+  dispatch_number: string;
   items: Product[];
 }

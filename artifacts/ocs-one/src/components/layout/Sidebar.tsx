@@ -38,6 +38,7 @@ import {
   Boxes,
   PackageCheck,
   Store,
+  ListChecks,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -108,6 +109,7 @@ const navSections: NavSection[] = [
     items: [
       { label: "Packing", href: "/fulfillment/packing", icon: PackageCheck },
       { label: "Dispatch", href: "/fulfillment/dispatch", icon: Truck },
+      { label: "All Dispatches", href: "/fulfillment/dispatch/list", icon: ListChecks },
       { label: "Dealer Portal", href: "/fulfillment/dealers", icon: Store },
       { label: "Packing Dashboard", href: "/logistics/packing-dashboard", icon: Package },
       { label: "Dispatch Orders", href: "/logistics/dispatch-orders", icon: Truck },

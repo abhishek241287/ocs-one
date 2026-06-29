@@ -5,6 +5,7 @@ import {
   useListDealers,
   useDispatchProducts,
   getListProductsQueryKey,
+  getListDispatchesQueryKey,
 } from "@workspace/api-client-react";
 import type { DispatchProductsInput } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,7 +17,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Truck } from "lucide-react";
+import { Loader2, Truck, ListChecks } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { useOdsNotify } from "@/hooks/use-ods-notify";
 import { ModuleHeader } from "@/components/ods";
 
@@ -25,10 +27,10 @@ const today = () => new Date().toISOString().split("T")[0];
 export default function DispatchPage() {
   const notify = useOdsNotify();
   const qc = useQueryClient();
+  const [, navigate] = useLocation();
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dealerId, setDealerId] = useState("");
-  const [dispatchNumber, setDispatchNumber] = useState("");
   const [dispatchDate, setDispatchDate] = useState(today());
   const [invoiceNumber, setInvoiceNumber] = useState("");
 
@@ -66,10 +68,6 @@ export default function DispatchPage() {
       notify.error("Select a dealer");
       return;
     }
-    if (!dispatchNumber.trim()) {
-      notify.error("Dispatch number is required");
-      return;
-    }
     if (!dispatchDate) {
       notify.error("Dispatch date is required");
       return;
@@ -82,18 +80,20 @@ export default function DispatchPage() {
     const payload: DispatchProductsInput = {
       product_ids: Array.from(selected),
       dealer_id: dealerId,
-      dispatch_number: dispatchNumber.trim(),
       dispatch_date: dispatchDate,
       invoice_number: invoiceNumber.trim(),
     };
 
     try {
       const result = await dispatchProducts.mutateAsync({ data: payload });
-      notify.success(`Dispatched ${result.dispatched} product(s)`);
+      notify.success(`Dispatched ${result.dispatched} product(s)`, {
+        description: `${result.dispatch_number} — opening Dispatch Note…`,
+      });
       setSelected(new Set());
-      setDispatchNumber("");
       setInvoiceNumber("");
       qc.invalidateQueries({ queryKey: getListProductsQueryKey() });
+      qc.invalidateQueries({ queryKey: getListDispatchesQueryKey() });
+      navigate(`/fulfillment/dispatch/${result.dispatch_id}`);
     } catch (e: any) {
       const invalid = e?.response?.data?.invalid as
         | { serial?: string; product_id: string; reason: string }[]
@@ -110,12 +110,20 @@ export default function DispatchPage() {
   return (
     <AppLayout>
       <div className="p-6 space-y-5">
-        <ModuleHeader
-          icon="🚚"
-          title="Dispatch"
-          description="Dispatch packed products to a dealer. Each dispatch assigns the dealer and records the dispatch, invoice, and date on the product timeline."
-          certification="certified"
-        />
+        <div className="flex items-start justify-between gap-3">
+          <ModuleHeader
+            icon="🚚"
+            title="Dispatch"
+            description="Dispatch packed products to a dealer. Each dispatch assigns the dealer and records the dispatch, invoice, and date on the product timeline."
+            certification="certified"
+          />
+          <Link href="/fulfillment/dispatch/list">
+            <Button variant="outline" size="sm" className="gap-1 shrink-0">
+              <ListChecks className="h-4 w-4" />
+              All Dispatches
+            </Button>
+          </Link>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <Card className="lg:col-span-2">
@@ -206,13 +214,8 @@ export default function DispatchPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Dispatch Number *</Label>
-                <Input
-                  value={dispatchNumber}
-                  onChange={(e) => setDispatchNumber(e.target.value)}
-                  placeholder="e.g. DSP-2026-001"
-                />
+              <div className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+                Dispatch number is generated automatically (DIS-YYYYMMDD-NNNNNN).
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Dispatch Date *</Label>

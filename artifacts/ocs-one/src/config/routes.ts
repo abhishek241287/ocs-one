@@ -26,6 +26,7 @@ export const ROUTES = {
   // Fulfillment (Product-Platform-driven)
   fulfillmentPacking: "/fulfillment/packing",
   fulfillmentDispatch: "/fulfillment/dispatch",
+  fulfillmentDispatchList: "/fulfillment/dispatch/list",
   fulfillmentDealers: "/fulfillment/dealers",
 
   // Traceability

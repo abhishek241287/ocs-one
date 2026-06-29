@@ -68,7 +68,9 @@ import type {
   DealerInput,
   DealerInventoryResponse,
   DirectorDashboard,
+  DispatchDetail,
   DispatchItem,
+  DispatchListResponse,
   DispatchOrder,
   DispatchOrderDetail,
   DispatchOrderInput,
@@ -112,6 +114,7 @@ import type {
   ListDealersParams,
   ListDispatchOrders200,
   ListDispatchOrdersParams,
+  ListDispatchesParams,
   ListEligibleGrns200,
   ListGrnTransactions200,
   ListGrns200,
@@ -181,6 +184,7 @@ import type {
   QcApproval,
   QcApprovalInput,
   RegisterRequest,
+  ReverseDispatchInput,
   ReworkTicket,
   ReworkTicketUpdate,
   StageApproveInput,
@@ -9401,6 +9405,90 @@ export const usePackProducts = <TError = ErrorType<void>,
       return useMutation(getPackProductsMutationOptions(options));
     }
 
+export const getListDispatchesUrl = (params?: ListDispatchesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/dispatch?${stringifiedParams}` : `/api/dispatch`
+}
+
+/**
+ * @summary List dispatch documents (search + pagination)
+ */
+export const listDispatches = async (params?: ListDispatchesParams, options?: RequestInit): Promise<DispatchListResponse> => {
+
+  return customFetch<DispatchListResponse>(getListDispatchesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDispatchesQueryKey = (params?: ListDispatchesParams,) => {
+    return [
+    `/api/dispatch`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListDispatchesQueryOptions = <TData = Awaited<ReturnType<typeof listDispatches>>, TError = ErrorType<unknown>>(params?: ListDispatchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDispatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDispatchesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDispatches>>> = ({ signal }) => listDispatches(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDispatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDispatchesQueryResult = NonNullable<Awaited<ReturnType<typeof listDispatches>>>
+export type ListDispatchesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List dispatch documents (search + pagination)
+ */
+
+export function useListDispatches<TData = Awaited<ReturnType<typeof listDispatches>>, TError = ErrorType<unknown>>(
+ params?: ListDispatchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDispatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDispatchesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getDispatchProductsUrl = () => {
 
 
@@ -9469,6 +9557,154 @@ export const useDispatchProducts = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDispatchProductsMutationOptions(options));
+    }
+
+export const getGetDispatchUrl = (id: string,) => {
+
+
+
+
+  return `/api/dispatch/${id}`
+}
+
+/**
+ * @summary Get a dispatch document (powers the printable Dispatch Note)
+ */
+export const getDispatch = async (id: string, options?: RequestInit): Promise<DispatchDetail> => {
+
+  return customFetch<DispatchDetail>(getGetDispatchUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDispatchQueryKey = (id: string,) => {
+    return [
+    `/api/dispatch/${id}`
+    ] as const;
+    }
+
+
+export const getGetDispatchQueryOptions = <TData = Awaited<ReturnType<typeof getDispatch>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDispatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDispatchQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDispatch>>> = ({ signal }) => getDispatch(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDispatch>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDispatchQueryResult = NonNullable<Awaited<ReturnType<typeof getDispatch>>>
+export type GetDispatchQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a dispatch document (powers the printable Dispatch Note)
+ */
+
+export function useGetDispatch<TData = Awaited<ReturnType<typeof getDispatch>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDispatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDispatchQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReverseDispatchUrl = (id: string,) => {
+
+
+
+
+  return `/api/dispatch/${id}/reverse`
+}
+
+/**
+ * @summary Reverse a dispatch (append-only; restores products to packed)
+ */
+export const reverseDispatch = async (id: string,
+    reverseDispatchInput: ReverseDispatchInput, options?: RequestInit): Promise<DispatchDetail> => {
+
+  return customFetch<DispatchDetail>(getReverseDispatchUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reverseDispatchInput)
+  }
+);}
+
+
+
+
+export const getReverseDispatchMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reverseDispatch>>, TError,{id: string;data: BodyType<ReverseDispatchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reverseDispatch>>, TError,{id: string;data: BodyType<ReverseDispatchInput>}, TContext> => {
+
+const mutationKey = ['reverseDispatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reverseDispatch>>, {id: string;data: BodyType<ReverseDispatchInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reverseDispatch(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReverseDispatchMutationResult = NonNullable<Awaited<ReturnType<typeof reverseDispatch>>>
+    export type ReverseDispatchMutationBody = BodyType<ReverseDispatchInput>
+    export type ReverseDispatchMutationError = ErrorType<void>
+
+    /**
+ * @summary Reverse a dispatch (append-only; restores products to packed)
+ */
+export const useReverseDispatch = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reverseDispatch>>, TError,{id: string;data: BodyType<ReverseDispatchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reverseDispatch>>,
+        TError,
+        {id: string;data: BodyType<ReverseDispatchInput>},
+        TContext
+      > => {
+      return useMutation(getReverseDispatchMutationOptions(options));
     }
 
 export const getDealerInventoryUrl = (id: string,) => {

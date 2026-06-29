@@ -4923,9 +4923,42 @@ export const PackProductsResponse = zod.object({
 
 
 /**
+ * @summary List dispatch documents (search + pagination)
+ */
+export const listDispatchesQueryPageDefault = 1;
+export const listDispatchesQueryPageSizeDefault = 50;
+
+export const ListDispatchesQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "page": zod.coerce.number().default(listDispatchesQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listDispatchesQueryPageSizeDefault)
+})
+
+export const ListDispatchesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "dispatch_number": zod.string(),
+  "invoice_number": zod.string(),
+  "dispatch_date": zod.coerce.date(),
+  "dealer_id": zod.string().uuid(),
+  "dealer_name": zod.string().nullish(),
+  "dispatched_by": zod.string().optional(),
+  "item_count": zod.number(),
+  "status": zod.enum(['dispatched', 'reversed']),
+  "reversed_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+})
+
+
+/**
  * @summary Dispatch packed products to a dealer (batch, atomic)
  */
-
 
 
 
@@ -4933,13 +4966,14 @@ export const PackProductsResponse = zod.object({
 export const DispatchProductsBody = zod.object({
   "product_ids": zod.array(zod.string().uuid()).min(1),
   "dealer_id": zod.string().uuid(),
-  "dispatch_number": zod.string().min(1),
   "dispatch_date": zod.coerce.date(),
   "invoice_number": zod.string().min(1)
 })
 
 export const DispatchProductsResponse = zod.object({
   "dispatched": zod.number(),
+  "dispatch_id": zod.string().uuid(),
+  "dispatch_number": zod.string(),
   "items": zod.array(zod.object({
   "id": zod.string().uuid(),
   "category_id": zod.string().uuid(),
@@ -4959,6 +4993,97 @@ export const DispatchProductsResponse = zod.object({
   "model_code": zod.string().nullish(),
   "model_name": zod.string().nullish(),
   "dealer_name": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Get a dispatch document (powers the printable Dispatch Note)
+ */
+export const GetDispatchParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetDispatchResponse = zod.object({
+  "id": zod.string().uuid(),
+  "dispatch_number": zod.string(),
+  "invoice_number": zod.string(),
+  "dispatch_date": zod.coerce.date(),
+  "dealer_id": zod.string().uuid(),
+  "dispatched_by": zod.string().optional(),
+  "item_count": zod.number(),
+  "status": zod.enum(['dispatched', 'reversed']),
+  "created_at": zod.coerce.date(),
+  "dealer": zod.object({
+  "code": zod.string().nullish(),
+  "name": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "gst_number": zod.string().nullish(),
+  "contact_person": zod.string().nullish(),
+  "mobile": zod.string().nullish()
+}),
+  "reversal": zod.union([zod.object({
+  "reason": zod.string(),
+  "reversed_by": zod.string(),
+  "reversed_at": zod.coerce.date()
+}),zod.null()]).optional(),
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "product_id": zod.string().uuid(),
+  "product_serial": zod.string(),
+  "product_status": zod.string().nullish(),
+  "category_name": zod.string().nullish(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Reverse a dispatch (append-only; restores products to packed)
+ */
+export const ReverseDispatchParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+export const ReverseDispatchBody = zod.object({
+  "reason": zod.string().min(1)
+})
+
+export const ReverseDispatchResponse = zod.object({
+  "id": zod.string().uuid(),
+  "dispatch_number": zod.string(),
+  "invoice_number": zod.string(),
+  "dispatch_date": zod.coerce.date(),
+  "dealer_id": zod.string().uuid(),
+  "dispatched_by": zod.string().optional(),
+  "item_count": zod.number(),
+  "status": zod.enum(['dispatched', 'reversed']),
+  "created_at": zod.coerce.date(),
+  "dealer": zod.object({
+  "code": zod.string().nullish(),
+  "name": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "gst_number": zod.string().nullish(),
+  "contact_person": zod.string().nullish(),
+  "mobile": zod.string().nullish()
+}),
+  "reversal": zod.union([zod.object({
+  "reason": zod.string(),
+  "reversed_by": zod.string(),
+  "reversed_at": zod.coerce.date()
+}),zod.null()]).optional(),
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "product_id": zod.string().uuid(),
+  "product_serial": zod.string(),
+  "product_status": zod.string().nullish(),
+  "category_name": zod.string().nullish(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish()
 }))
 })
 

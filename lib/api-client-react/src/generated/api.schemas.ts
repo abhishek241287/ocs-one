@@ -1924,8 +1924,6 @@ export interface DispatchProductsInput {
   /** @minItems 1 */
   product_ids: string[];
   dealer_id: string;
-  /** @minLength 1 */
-  dispatch_number: string;
   dispatch_date: string;
   /** @minLength 1 */
   invoice_number: string;
@@ -1933,7 +1931,107 @@ export interface DispatchProductsInput {
 
 export interface DispatchProductsResult {
   dispatched: number;
+  dispatch_id: string;
+  dispatch_number: string;
   items: Product[];
+}
+
+export interface ReverseDispatchInput {
+  /** @minLength 1 */
+  reason: string;
+}
+
+export type DispatchSummaryStatus = typeof DispatchSummaryStatus[keyof typeof DispatchSummaryStatus];
+
+
+export const DispatchSummaryStatus = {
+  dispatched: 'dispatched',
+  reversed: 'reversed',
+} as const;
+
+export interface DispatchSummary {
+  id: string;
+  dispatch_number: string;
+  invoice_number: string;
+  dispatch_date: string;
+  dealer_id: string;
+  /** @nullable */
+  dealer_name?: string | null;
+  dispatched_by?: string;
+  item_count: number;
+  status: DispatchSummaryStatus;
+  /** @nullable */
+  reversed_at?: string | null;
+  created_at: string;
+}
+
+export type DispatchListResponseMeta = {
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export interface DispatchListResponse {
+  items: DispatchSummary[];
+  meta: DispatchListResponseMeta;
+}
+
+export interface DispatchDealerInfo {
+  /** @nullable */
+  code?: string | null;
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  gst_number?: string | null;
+  /** @nullable */
+  contact_person?: string | null;
+  /** @nullable */
+  mobile?: string | null;
+}
+
+export interface DispatchItemView {
+  id: string;
+  product_id: string;
+  product_serial: string;
+  /** @nullable */
+  product_status?: string | null;
+  /** @nullable */
+  category_name?: string | null;
+  /** @nullable */
+  model_code?: string | null;
+  /** @nullable */
+  model_name?: string | null;
+}
+
+export interface DispatchReversalInfo {
+  reason: string;
+  reversed_by: string;
+  reversed_at: string;
+}
+
+export type DispatchDetailStatus = typeof DispatchDetailStatus[keyof typeof DispatchDetailStatus];
+
+
+export const DispatchDetailStatus = {
+  dispatched: 'dispatched',
+  reversed: 'reversed',
+} as const;
+
+export interface DispatchDetail {
+  id: string;
+  dispatch_number: string;
+  invoice_number: string;
+  dispatch_date: string;
+  dealer_id: string;
+  dispatched_by?: string;
+  item_count: number;
+  status: DispatchDetailStatus;
+  created_at: string;
+  dealer: DispatchDealerInfo;
+  reversal?: DispatchReversalInfo | null;
+  items: DispatchItemView[];
 }
 
 export interface DealerSummary {
@@ -2676,6 +2774,12 @@ manufactured_from?: string;
 manufactured_to?: string;
 page?: PageParamParameter;
 pageSize?: PageSizeParamParameter;
+};
+
+export type ListDispatchesParams = {
+search?: string;
+page?: number;
+pageSize?: number;
 };
 
 export type ListProductCategoriesParams = {

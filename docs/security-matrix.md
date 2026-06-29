@@ -222,7 +222,10 @@ unless a minimum role is stated.
 | Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |
 |---|---|---|---|---|---|---|
 | `/api/packing` | POST | ✅ | **supervisor, director** | global | **yes** (`product.packed` on `product_events`) | ✅ (batch, atomic, FOR UPDATE re-check; ready_for_packing → packed) |
-| `/api/dispatch` | POST | ✅ | **supervisor, director** | global | **yes** (`product.dispatched` on `product_events`) | ✅ (batch, atomic, FOR UPDATE re-check; packed → dispatched + dealer assignment) |
+| `/api/dispatch` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (list dispatch documents; search + pagination) |
+| `/api/dispatch` | POST | ✅ | **supervisor, director** | global | **yes** (`product.dispatched` on `product_events`) | ✅ (batch, atomic, FOR UPDATE re-check; packed → dispatched + dealer assignment; system-generated unique dispatch no.; D1 inactive-dealer reject 422; D2 unique invoice 409) |
+| `/api/dispatch/{id}` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (dispatch document detail; powers printable Dispatch Note) |
+| `/api/dispatch/{id}/reverse` | POST | ✅ | **supervisor, director** | global | **yes** (`product.dispatch_reversed` on `product_events`) | ✅ (D4 append-only reversal; restores products → packed + clears dealer; one reversal per dispatch) |
 | `/api/dealers/{id}/inventory` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (read-only projection; products where `dealer_id={id}`) |
 | `/api/dealers/{id}/dispatch-history` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (read-only projection; `product.dispatched` events for the dealer's products) |
 

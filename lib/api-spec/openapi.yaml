@@ -2485,6 +2485,20 @@ paths:
 
   # ─── Dispatch module (Product-Platform-driven fulfillment) ───────────────────
   /dispatch:
+    get:
+      operationId: listDispatches
+      tags: [dispatch]
+      summary: List dispatch documents (search + pagination)
+      parameters:
+        - { name: search, in: query, required: false, schema: { type: string } }
+        - { name: page, in: query, required: false, schema: { type: integer, default: 1 } }
+        - { name: pageSize, in: query, required: false, schema: { type: integer, default: 50 } }
+      responses:
+        "200":
+          description: Dispatch documents
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DispatchListResponse" }
     post:
       operationId: dispatchProducts
       tags: [dispatch]
@@ -2504,8 +2518,53 @@ paths:
           description: Invalid request body
         "404":
           description: Dealer not found
+        "409":
+          description: Invoice number already used
         "422":
-          description: One or more products are not in packed
+          description: Dealer inactive, or one or more products are not in packed
+
+  /dispatch/{id}:
+    get:
+      operationId: getDispatch
+      tags: [dispatch]
+      summary: Get a dispatch document (powers the printable Dispatch Note)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Dispatch document detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DispatchDetail" }
+        "404":
+          description: Dispatch not found
+
+  /dispatch/{id}/reverse:
+    post:
+      operationId: reverseDispatch
+      tags: [dispatch]
+      summary: Reverse a dispatch (append-only; restores products to packed)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReverseDispatchInput" }
+      responses:
+        "200":
+          description: Dispatch reversed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DispatchDetail" }
+        "400":
+          description: Invalid request body
+        "404":
+          description: Dispatch not found
+        "409":
+          description: Dispatch already reversed
+        "422":
+          description: One or more products can no longer be reversed
 
   # ─── Dealer module (read-only projection over the Product Platform) ──────────
   /dealers/{id}/inventory:
@@ -4924,25 +4983,115 @@ components:
     # ─── Dispatch module (Product-Platform-driven fulfillment) ─────────────────
     DispatchProductsInput:
       type: object
-      required: [product_ids, dealer_id, dispatch_number, dispatch_date, invoice_number]
+      required: [product_ids, dealer_id, dispatch_date, invoice_number]
       properties:
         product_ids:
           type: array
           minItems: 1
           items: { type: string, format: uuid }
         dealer_id: { type: string, format: uuid }
-        dispatch_number: { type: string, minLength: 1 }
         dispatch_date: { type: string, format: date }
         invoice_number: { type: string, minLength: 1 }
 
     DispatchProductsResult:
       type: object
-      required: [dispatched, items]
+      required: [dispatched, dispatch_id, dispatch_number, items]
       properties:
         dispatched: { type: integer }
+        dispatch_id: { type: string, format: uuid }
+        dispatch_number: { type: string }
         items:
           type: array
           items: { $ref: "#/components/schemas/Product" }
+
+    ReverseDispatchInput:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1 }
+
+    DispatchSummary:
+      type: object
+      required: [id, dispatch_number, invoice_number, dispatch_date, dealer_id, item_count, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        dispatch_number: { type: string }
+        invoice_number: { type: string }
+        dispatch_date: { type: string, format: date }
+        dealer_id: { type: string, format: uuid }
+        dealer_name: { type: ["string", "null"] }
+        dispatched_by: { type: string }
+        item_count: { type: integer }
+        status: { type: string, enum: [dispatched, reversed] }
+        reversed_at: { type: ["string", "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+
+    DispatchListResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/DispatchSummary" }
+        meta:
+          type: object
+          required: [total, page, pageSize]
+          properties:
+            total: { type: integer }
+            page: { type: integer }
+            pageSize: { type: integer }
+
+    DispatchDealerInfo:
+      type: object
+      properties:
+        code: { type: ["string", "null"] }
+        name: { type: ["string", "null"] }
+        address: { type: ["string", "null"] }
+        gst_number: { type: ["string", "null"] }
+        contact_person: { type: ["string", "null"] }
+        mobile: { type: ["string", "null"] }
+
+    DispatchItemView:
+      type: object
+      required: [id, product_id, product_serial]
+      properties:
+        id: { type: string, format: uuid }
+        product_id: { type: string, format: uuid }
+        product_serial: { type: string }
+        product_status: { type: ["string", "null"] }
+        category_name: { type: ["string", "null"] }
+        model_code: { type: ["string", "null"] }
+        model_name: { type: ["string", "null"] }
+
+    DispatchReversalInfo:
+      type: object
+      required: [reason, reversed_by, reversed_at]
+      properties:
+        reason: { type: string }
+        reversed_by: { type: string }
+        reversed_at: { type: string, format: date-time }
+
+    DispatchDetail:
+      type: object
+      required: [id, dispatch_number, invoice_number, dispatch_date, dealer_id, item_count, status, created_at, dealer, items]
+      properties:
+        id: { type: string, format: uuid }
+        dispatch_number: { type: string }
+        invoice_number: { type: string }
+        dispatch_date: { type: string, format: date }
+        dealer_id: { type: string, format: uuid }
+        dispatched_by: { type: string }
+        item_count: { type: integer }
+        status: { type: string, enum: [dispatched, reversed] }
+        created_at: { type: string, format: date-time }
+        dealer: { $ref: "#/components/schemas/DispatchDealerInfo" }
+        reversal:
+          oneOf:
+            - $ref: "#/components/schemas/DispatchReversalInfo"
+            - type: "null"
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/DispatchItemView" }
 
     # ─── Dealer module (read-only projection over the Product Platform) ─────────
     DealerSummary:

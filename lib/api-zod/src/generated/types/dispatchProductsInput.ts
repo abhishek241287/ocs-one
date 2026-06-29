@@ -10,8 +10,6 @@ export interface DispatchProductsInput {
   /** @minItems 1 */
   product_ids: string[];
   dealer_id: string;
-  /** @minLength 1 */
-  dispatch_number: string;
   dispatch_date: Date;
   /** @minLength 1 */
   invoice_number: string;
