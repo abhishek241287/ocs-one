@@ -1590,12 +1590,15 @@ export const DealerInputStatus = {
 export interface DealerInput {
   dealerCode: string;
   dealerName: string;
+  /** @pattern ^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z]$ */
   gstNumber?: string;
   address?: string;
   contactPerson?: string;
+  /** @pattern ^(\+91[- ]?|0)?[6-9][0-9]{9}$ */
   mobile?: string;
   email?: string;
   territory?: string;
+  /** @minimum 0 */
   creditLimit?: number;
   status?: DealerInputStatus;
 }

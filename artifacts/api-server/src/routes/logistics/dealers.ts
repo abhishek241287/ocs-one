@@ -1,5 +1,6 @@
 import { Router, IRouter } from "express";
 import { requireWriteRole } from "../../middleware/auth";
+import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
 import { db, logisticsDealersTable } from "@workspace/db";
 import { eq, ilike, count, or, sql } from "drizzle-orm";
 import {
@@ -68,6 +69,16 @@ router.post("/", async (req, res) => {
       status: (body.status as "active" | "inactive") ?? "active",
     })
     .returning();
+  // DEF-DLR-002: audit dealer creation (mirrors the masters audit pattern).
+  void recordSecurityEvent({
+    eventType: "dealer.created",
+    actorId: req.user?.userId ?? null,
+    actorEmail: req.user?.email ?? null,
+    actorRole: req.user?.role ?? null,
+    ...reqMeta(req),
+    statusCode: 201,
+    detail: `Dealer created: ${dealer.dealerCode} (id=${dealer.id})`,
+  });
   res.status(201).json(dealer);
 });
 
@@ -89,7 +100,7 @@ router.put("/:id", async (req, res) => {
   const body = UpdateDealerBody.parse(req.body);
 
   const [existing] = await db
-    .select({ id: logisticsDealersTable.id })
+    .select({ id: logisticsDealersTable.id, status: logisticsDealersTable.status })
     .from(logisticsDealersTable)
     .where(eq(logisticsDealersTable.id, id))
     .limit(1);
@@ -112,6 +123,29 @@ router.put("/:id", async (req, res) => {
     })
     .where(eq(logisticsDealersTable.id, id))
     .returning();
+  // DEF-DLR-002: audit dealer update.
+  void recordSecurityEvent({
+    eventType: "dealer.updated",
+    actorId: req.user?.userId ?? null,
+    actorEmail: req.user?.email ?? null,
+    actorRole: req.user?.role ?? null,
+    ...reqMeta(req),
+    statusCode: 200,
+    detail: `Dealer updated: ${updated.dealerCode} (id=${updated.id})`,
+  });
+  // DEF-DLR-002: a status transition is a distinct, higher-signal audit event.
+  if (updated.status !== existing.status) {
+    void recordSecurityEvent({
+      eventType: "dealer.status_changed",
+      severity: "warning",
+      actorId: req.user?.userId ?? null,
+      actorEmail: req.user?.email ?? null,
+      actorRole: req.user?.role ?? null,
+      ...reqMeta(req),
+      statusCode: 200,
+      detail: `Dealer status ${existing.status} → ${updated.status}: ${updated.dealerCode} (id=${updated.id})`,
+    });
+  }
   res.json(updated);
 });
 
@@ -119,12 +153,40 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const { id } = DeleteDealerParams.parse(req.params);
   const [existing] = await db
-    .select({ id: logisticsDealersTable.id })
+    .select({ id: logisticsDealersTable.id, dealerCode: logisticsDealersTable.dealerCode })
     .from(logisticsDealersTable)
     .where(eq(logisticsDealersTable.id, id))
     .limit(1);
   if (!existing) { res.status(404).json({ error: "Dealer not found" }); return; }
-  await db.delete(logisticsDealersTable).where(eq(logisticsDealersTable.id, id));
+  try {
+    await db.delete(logisticsDealersTable).where(eq(logisticsDealersTable.id, id));
+  } catch (err: unknown) {
+    // DEF-DLR-001: a dealer referenced by products / dispatch records cannot be hard-
+    // deleted (FK is NO ACTION). Return a business-friendly 409 instead of leaking the
+    // DB constraint name, and steer the operator toward deactivation.
+    const pgCode =
+      (err as { code?: string })?.code ??
+      (err as { cause?: { code?: string } })?.cause?.code;
+    if (pgCode === "23503") {
+      res.status(409).json({
+        error:
+          "This dealer cannot be deleted because it is linked to existing products or dispatch records. Set the dealer's status to Inactive instead.",
+      });
+      return;
+    }
+    throw err;
+  }
+  // DEF-DLR-002: audit dealer deletion.
+  void recordSecurityEvent({
+    eventType: "dealer.deleted",
+    severity: "warning",
+    actorId: req.user?.userId ?? null,
+    actorEmail: req.user?.email ?? null,
+    actorRole: req.user?.role ?? null,
+    ...reqMeta(req),
+    statusCode: 204,
+    detail: `Dealer deleted: ${existing.dealerCode} (id=${existing.id})`,
+  });
   res.status(204).send();
 });
 

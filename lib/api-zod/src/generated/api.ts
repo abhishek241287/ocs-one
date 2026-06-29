@@ -4290,16 +4290,22 @@ export const ListDealersResponse = zod.object({
 /**
  * @summary Create a new dealer
  */
+export const createDealerBodyGstNumberRegExp = new RegExp('^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z]$');
+export const createDealerBodyMobileRegExp = new RegExp('^(\\+91[- ]?|0)?[6-9][0-9]{9}$');
+export const createDealerBodyCreditLimitMin = 0;
+
+
+
 export const CreateDealerBody = zod.object({
   "dealerCode": zod.string(),
   "dealerName": zod.string(),
-  "gstNumber": zod.string().optional(),
+  "gstNumber": zod.string().regex(createDealerBodyGstNumberRegExp).optional(),
   "address": zod.string().optional(),
   "contactPerson": zod.string().optional(),
-  "mobile": zod.string().optional(),
-  "email": zod.string().optional(),
+  "mobile": zod.string().regex(createDealerBodyMobileRegExp).optional(),
+  "email": zod.string().email().optional(),
   "territory": zod.string().optional(),
-  "creditLimit": zod.number().optional(),
+  "creditLimit": zod.number().min(createDealerBodyCreditLimitMin).optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
@@ -4351,16 +4357,22 @@ export const UpdateDealerParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateDealerBodyGstNumberRegExp = new RegExp('^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z]$');
+export const updateDealerBodyMobileRegExp = new RegExp('^(\\+91[- ]?|0)?[6-9][0-9]{9}$');
+export const updateDealerBodyCreditLimitMin = 0;
+
+
+
 export const UpdateDealerBody = zod.object({
   "dealerCode": zod.string(),
   "dealerName": zod.string(),
-  "gstNumber": zod.string().optional(),
+  "gstNumber": zod.string().regex(updateDealerBodyGstNumberRegExp).optional(),
   "address": zod.string().optional(),
   "contactPerson": zod.string().optional(),
-  "mobile": zod.string().optional(),
-  "email": zod.string().optional(),
+  "mobile": zod.string().regex(updateDealerBodyMobileRegExp).optional(),
+  "email": zod.string().email().optional(),
   "territory": zod.string().optional(),
-  "creditLimit": zod.number().optional(),
+  "creditLimit": zod.number().min(updateDealerBodyCreditLimitMin).optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
