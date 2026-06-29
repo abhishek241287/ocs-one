@@ -186,6 +186,7 @@ export * from './listProductCategoriesParams';
 export * from './listProductionOrders200';
 export * from './listProductionOrdersParams';
 export * from './listProductionOrdersPriority';
+export * from './listProductionOrdersStage';
 export * from './listProductionOrdersStatus';
 export * from './listProductMasters200';
 export * from './listProductMastersParams';

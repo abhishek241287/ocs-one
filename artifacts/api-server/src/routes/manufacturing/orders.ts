@@ -27,12 +27,13 @@ const router: IRouter = Router({ mergeParams: true });
 // GET /manufacturing/orders
 router.get("/", async (req, res) => {
   const query = ListProductionOrdersQueryParams.parse(req.query);
-  const { page, pageSize, search, status, priority } = query as {
+  const { page, pageSize, search, status, priority, stage } = query as {
     page: number;
     pageSize: number;
     search?: string;
     status?: string;
     priority?: string;
+    stage?: string;
   };
 
   const conditions = [];
@@ -53,6 +54,14 @@ router.get("/", async (req, res) => {
   if (priority) {
     conditions.push(
       eq(mfgProductionOrdersTable.priority, priority as typeof mfgProductionOrdersTable.priority._.data)
+    );
+  }
+  if (stage) {
+    conditions.push(
+      eq(
+        mfgProductionOrdersTable.currentStage,
+        stage as typeof mfgProductionOrdersTable.currentStage._.data
+      )
     );
   }
 

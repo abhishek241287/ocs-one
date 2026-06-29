@@ -2433,7 +2433,8 @@ export const ListProductionOrdersQueryParams = zod.object({
   "page": zod.coerce.number().default(listProductionOrdersQueryPageDefault),
   "pageSize": zod.coerce.number().default(listProductionOrdersQueryPageSizeDefault),
   "status": zod.enum(['draft', 'released', 'in_progress', 'completed', 'cancelled']).optional(),
-  "priority": zod.enum(['low', 'medium', 'high']).optional()
+  "priority": zod.enum(['low', 'medium', 'high']).optional(),
+  "stage": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing']).optional().describe('Filter orders to those currently at a given manufacturing stage (e.g. quality_control for the QC queue).')
 })
 
 export const ListProductionOrdersResponse = zod.object({

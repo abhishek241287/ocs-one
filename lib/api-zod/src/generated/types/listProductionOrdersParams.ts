@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ListProductionOrdersPriority } from './listProductionOrdersPriority';
+import type { ListProductionOrdersStage } from './listProductionOrdersStage';
 import type { ListProductionOrdersStatus } from './listProductionOrdersStatus';
 import type { PageParamParameter } from './pageParamParameter';
 import type { PageSizeParamParameter } from './pageSizeParamParameter';
@@ -17,4 +18,8 @@ page?: PageParamParameter;
 pageSize?: PageSizeParamParameter;
 status?: ListProductionOrdersStatus;
 priority?: ListProductionOrdersPriority;
+/**
+ * Filter orders to those currently at a given manufacturing stage (e.g. quality_control for the QC queue).
+ */
+stage?: ListProductionOrdersStage;
 };

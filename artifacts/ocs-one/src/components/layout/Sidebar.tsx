@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useState, useRef, useLayoutEffect } from "react";
+import { Link, useLocation, useSearch } from "wouter";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -98,8 +98,8 @@ const navSections: NavSection[] = [
       {
         label: "Quality",
         items: [
-          { label: "QC", href: "/manufacturing/orders", icon: ShieldCheck },
-          { label: "Product Traceability", href: "/products", icon: QrCode },
+          { label: "QC", href: "/manufacturing/orders?stage=quality_control", icon: ShieldCheck },
+          { label: "Product Traceability", href: "/traceability", icon: QrCode },
         ],
       },
     ],
@@ -169,17 +169,38 @@ const navSections: NavSection[] = [
   },
 ];
 
+// Nav hrefs that carry a query string (e.g. the QC queue =
+// /manufacturing/orders?stage=quality_control). A plain href on the same path
+// should yield to one of these when the current URL exactly matches it.
+const QUERY_OWNED_HREFS: string[] = navSections
+  .flatMap((s) => [...(s.items ?? []), ...(s.groups ?? []).flatMap((g) => g.items)])
+  .map((i) => i.href)
+  .filter((h) => h.includes("?"));
+
 function NavItemLink({
   item,
   collapsed,
   location,
+  search,
 }: {
   item: NavItem;
   collapsed: boolean;
   location: string;
+  search: string;
 }) {
   const Icon = item.icon;
-  const isActive = location === item.href || location.startsWith(item.href + "/");
+  // Items can declare a query string (e.g. the QC queue is the orders page
+  // pre-filtered to ?stage=quality_control). Match the full path+query for
+  // those, and make a plain href yield to a sibling ONLY when the current URL
+  // is exactly owned by a query-bearing sibling, so the two never highlight at
+  // once (and unrelated query params don't blank out the highlight).
+  const hrefHasQuery = item.href.includes("?");
+  const fullPath = search ? `${location}?${search}` : location;
+  const claimedByQuerySibling = QUERY_OWNED_HREFS.includes(fullPath);
+  const isActive = hrefHasQuery
+    ? fullPath === item.href
+    : (location === item.href || location.startsWith(item.href + "/")) &&
+      !(location === item.href && claimedByQuerySibling);
   return (
     <li>
       <Link href={item.href}>
@@ -205,10 +226,12 @@ function CollapsibleSection({
   section,
   collapsed,
   location,
+  search,
 }: {
   section: NavSection;
   collapsed: boolean;
   location: string;
+  search: string;
 }) {
   const items = section.items ?? [];
   const hasActive = items.some(
@@ -220,7 +243,7 @@ function CollapsibleSection({
     return (
       <ul className="space-y-1 px-2">
         {items.map((item) => (
-          <NavItemLink key={item.label} item={item} collapsed={collapsed} location={location} />
+          <NavItemLink key={item.label} item={item} collapsed={collapsed} location={location} search={search} />
         ))}
       </ul>
     );
@@ -240,7 +263,7 @@ function CollapsibleSection({
       {open && (
         <ul className="space-y-1 px-2">
           {items.map((item) => (
-            <NavItemLink key={item.label} item={item} collapsed={collapsed} location={location} />
+            <NavItemLink key={item.label} item={item} collapsed={collapsed} location={location} search={search} />
           ))}
         </ul>
       )}
@@ -248,9 +271,27 @@ function CollapsibleSection({
   );
 }
 
+const SIDEBAR_SCROLL_KEY = "ocs.sidebar.scrollTop";
+
 export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed: (val: boolean) => void }) {
   const [location] = useLocation();
+  const search = useSearch();
   const { user } = useAuth();
+
+  // The layout (and thus this Sidebar) remounts on every navigation, which
+  // resets the nav scroll to the top. Persist the scroll position so a deep
+  // menu selection keeps its place. Restore before paint to avoid a flash.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const saved = sessionStorage.getItem(SIDEBAR_SCROLL_KEY);
+    if (saved) el.scrollTop = parseInt(saved, 10) || 0;
+  }, []);
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (el) sessionStorage.setItem(SIDEBAR_SCROLL_KEY, String(el.scrollTop));
+  };
 
   const visibleSections = navSections.filter(
     (section) => !section.directorOnly || user?.role === "director"
@@ -276,11 +317,11 @@ export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCo
         </Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-4">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto py-4">
         {visibleSections.map((section, idx) => (
           <div key={section.title} className={cn("mb-6", idx === visibleSections.length - 1 && "mb-0")}>
             {section.collapsible ? (
-              <CollapsibleSection section={section} collapsed={collapsed} location={location} />
+              <CollapsibleSection section={section} collapsed={collapsed} location={location} search={search} />
             ) : (
               <>
                 {!collapsed && (
@@ -298,7 +339,7 @@ export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCo
                       )}
                       <ul className="space-y-1 px-2">
                         {group.items.map((item) => (
-                          <NavItemLink key={item.label} item={item} collapsed={collapsed} location={location} />
+                          <NavItemLink key={item.label} item={item} collapsed={collapsed} location={location} search={search} />
                         ))}
                       </ul>
                     </div>
@@ -306,7 +347,7 @@ export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCo
                 ) : (
                   <ul className="space-y-1 px-2">
                     {(section.items ?? []).map((item) => (
-                      <NavItemLink key={item.label} item={item} collapsed={collapsed} location={location} />
+                      <NavItemLink key={item.label} item={item} collapsed={collapsed} location={location} search={search} />
                     ))}
                   </ul>
                 )}

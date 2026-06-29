@@ -896,6 +896,21 @@ paths:
           schema:
             type: string
             enum: [low, medium, high]
+        - name: stage
+          in: query
+          required: false
+          description: Filter orders to those currently at a given manufacturing stage (e.g. quality_control for the QC queue).
+          schema:
+            type: string
+            enum:
+              - cell_allocation
+              - bms_allocation
+              - assembly
+              - compression
+              - charging
+              - testing
+              - quality_control
+              - packing
       responses:
         "200":
           description: List of production orders

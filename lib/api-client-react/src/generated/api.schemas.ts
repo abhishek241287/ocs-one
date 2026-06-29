@@ -2516,6 +2516,10 @@ page?: PageParamParameter;
 pageSize?: PageSizeParamParameter;
 status?: ListProductionOrdersStatus;
 priority?: ListProductionOrdersPriority;
+/**
+ * Filter orders to those currently at a given manufacturing stage (e.g. quality_control for the QC queue).
+ */
+stage?: ListProductionOrdersStage;
 };
 
 export type ListProductionOrdersStatus = typeof ListProductionOrdersStatus[keyof typeof ListProductionOrdersStatus];
@@ -2536,6 +2540,20 @@ export const ListProductionOrdersPriority = {
   low: 'low',
   medium: 'medium',
   high: 'high',
+} as const;
+
+export type ListProductionOrdersStage = typeof ListProductionOrdersStage[keyof typeof ListProductionOrdersStage];
+
+
+export const ListProductionOrdersStage = {
+  cell_allocation: 'cell_allocation',
+  bms_allocation: 'bms_allocation',
+  assembly: 'assembly',
+  compression: 'compression',
+  charging: 'charging',
+  testing: 'testing',
+  quality_control: 'quality_control',
+  packing: 'packing',
 } as const;
 
 export type ListProductionOrders200 = {

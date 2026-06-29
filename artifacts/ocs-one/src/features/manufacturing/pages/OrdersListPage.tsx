@@ -7,7 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useListProductionOrders, ProductionOrder } from "@workspace/api-client-react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import CreateOrderDrawer from "../components/CreateOrderDrawer";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 import {
@@ -95,7 +95,20 @@ const COLUMNS: ColumnDef<ProductionOrder>[] = [
   },
 ];
 
+const STAGE_VALUES = [
+  "cell_allocation", "bms_allocation", "assembly", "compression",
+  "charging", "testing", "quality_control", "packing",
+] as const;
+type StageValue = (typeof STAGE_VALUES)[number];
+
 export default function OrdersListPage() {
+  const rawSearch = useSearch();
+  const rawStage = new URLSearchParams(rawSearch).get("stage");
+  const stage = STAGE_VALUES.includes(rawStage as StageValue)
+    ? (rawStage as StageValue)
+    : undefined;
+  const isQcView = stage === "quality_control";
+
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState<string>("all");
@@ -116,6 +129,10 @@ export default function OrdersListPage() {
         : undefined,
     priority:
       priority !== "all" ? (priority as "low" | "medium" | "high") : undefined,
+    stage:
+      stage as
+        | "cell_allocation" | "bms_allocation" | "assembly" | "compression"
+        | "charging" | "testing" | "quality_control" | "packing" | undefined,
   });
 
   const handleSearch = (val: string) => {
@@ -163,9 +180,13 @@ export default function OrdersListPage() {
     <AppLayout>
       <div className="p-6 space-y-5">
         <ModuleHeader
-          icon="🏭"
-          title="Production Orders"
-          description={`${meta?.total ?? 0} orders total`}
+          icon={isQcView ? "🛡️" : "🏭"}
+          title={isQcView ? "Quality Control" : "Production Orders"}
+          description={
+            isQcView
+              ? `${meta?.total ?? 0} order(s) currently awaiting Quality Control`
+              : `${meta?.total ?? 0} orders total`
+          }
           certification="certified"
           actions={
             <Button onClick={() => setCreateOpen(true)} className="bg-orange-600 hover:bg-orange-700">
