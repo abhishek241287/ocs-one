@@ -1,0 +1,103 @@
+CTO Decision — Sidebar Navigation v1.0
+
+Thank you for reviewing the existing navigation.
+
+Proceed with the following decisions.
+
+### Decision 1 — Scope
+
+Choose **Option A**.
+
+Do **not** remove or hide any existing functionality.
+
+Every existing module must remain accessible, but reorganize the navigation so it reflects how a factory actually works rather than how the codebase evolved.
+
+The objective is improved usability, not fewer features.
+
+---
+
+### Decision 2 — QC
+
+Choose **Option B**.
+
+Do not create a standalone QC page.
+
+For v1.0, the **QC** menu shall simply open the existing Production Orders module.
+
+QC is already one stage within the Production workflow, so there is no need to duplicate functionality.
+
+---
+
+### Decision 3 — Material Inventory
+
+Choose **Option B**.
+
+Inventory shall contain three separate submenus:
+
+• Goods Receipt (GRN)
+• Incoming Inspection
+• Stock On Hand
+
+These represent different business activities and should remain separate.
+
+---
+
+## Revised Sidebar Structure
+
+Dashboard
+
+Inventory
+
+* Goods Receipt
+* Incoming Inspection
+* Stock On Hand
+* Product Inventory
+
+Production
+
+* Cell Receiving
+* Cell Grading
+* Cell Matching
+* Production Orders
+* Charging
+* Testing
+* Rework
+* Product Traceability
+
+Dispatch
+
+* Packing
+* Dispatch
+* Dealer Portal
+
+Masters
+
+* Material Master
+* Material Categories
+* Supplier Master
+* Dealer Master
+* Product Categories
+* Product Workflows
+* Keep all existing masters here (Cell, BMS, Charger, Battery Models, etc.)
+
+Reports
+
+Developer (collapsed at the bottom, visible only to authorized users)
+
+---
+
+### Important Principles
+
+1. Do not remove any working functionality.
+
+2. Do not duplicate existing pages.
+
+3. Reuse existing routes.
+
+4. Navigation should reflect the actual factory workflow.
+
+5. Remove the separate **Fulfillment** and **Logistics** headings. Merge them into a single **Dispatch** section.
+
+6. The goal is that a new factory employee should immediately understand where to go without ERP training.
+
+This is a navigation refactoring only. No backend logic, APIs, database schema, or business rules should change.

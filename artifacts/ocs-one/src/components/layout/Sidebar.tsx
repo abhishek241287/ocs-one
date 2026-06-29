@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 import {
   LayoutDashboard,
   Factory,
@@ -9,7 +10,6 @@ import {
   ShieldCheck,
   QrCode,
   Truck,
-  FileCheck,
   Wrench,
   ChevronLeft,
   ChevronRight,
@@ -41,11 +41,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-type NavItem = { label: string; href: string; icon: any; disabled?: boolean };
+type NavItem = { label: string; href: string; icon: any };
 type NavSection = {
   title: string;
-  items?: NavItem[];
-  groups?: { label: string; icon: any; items: NavItem[] }[];
+  items: NavItem[];
+  collapsible?: boolean;
+  directorOnly?: boolean;
 };
 
 const navSections: NavSection[] = [
@@ -54,18 +55,53 @@ const navSections: NavSection[] = [
     items: [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
   },
   {
-    title: "Products",
+    title: "Inventory",
     items: [
+      { label: "Goods Receipt", href: "/inventory/grns", icon: Archive },
+      { label: "Incoming Inspection", href: "/inventory/inspections", icon: ClipboardCheck },
+      { label: "Stock On Hand", href: "/inventory/stock", icon: Package },
       { label: "Product Inventory", href: "/product-inventory", icon: Boxes },
-      { label: "Products", href: "/products", icon: Package },
+      { label: "Workflow Assignment", href: "/inventory/workflow-assignments", icon: Network },
     ],
   },
   {
-    title: "Engineering Masters",
+    title: "Production",
     items: [
-      { label: "Product Master", href: "/masters/products", icon: BookOpen },
+      { label: "Cell Receiving", href: "/cells/receiving", icon: Package },
+      { label: "Cell Grading", href: "/cells/grading", icon: FlaskConical },
+      { label: "Cell Matching", href: "/cells/matching", icon: BrainCircuit },
+      { label: "Cell Inventory", href: "/cells/inventory", icon: Archive },
+      { label: "Grade Config", href: "/cells/config", icon: Settings },
+      { label: "Production Orders", href: "/manufacturing/orders", icon: Factory },
+      { label: "QC", href: "/manufacturing/orders", icon: ShieldCheck },
+      { label: "Charger Management", href: "/manufacturing/chargers", icon: BatteryCharging },
+      { label: "Charging", href: "/manufacturing/charging-dashboard", icon: Zap },
+      { label: "Testing", href: "/manufacturing/testing-dashboard", icon: FlaskConical },
+      { label: "Rework", href: "/manufacturing/rework", icon: Wrench },
+      { label: "Product Traceability", href: "/products", icon: QrCode },
+    ],
+  },
+  {
+    title: "Dispatch",
+    items: [
+      { label: "Packing", href: "/fulfillment/packing", icon: PackageCheck },
+      { label: "Dispatch", href: "/fulfillment/dispatch", icon: Truck },
+      { label: "Dealer Portal", href: "/fulfillment/dealers", icon: Store },
+      { label: "Packing Dashboard", href: "/logistics/packing-dashboard", icon: Package },
+      { label: "Dispatch Orders", href: "/logistics/dispatch-orders", icon: Truck },
+    ],
+  },
+  {
+    title: "Masters",
+    items: [
+      { label: "Material Master", href: "/masters/materials", icon: Package },
+      { label: "Material Categories", href: "/masters/material-categories", icon: Tags },
+      { label: "Supplier Master", href: "/masters/suppliers", icon: Factory },
+      { label: "Dealer Master", href: "/logistics/dealers", icon: Store },
       { label: "Product Categories", href: "/masters/product-categories", icon: Layers },
       { label: "Product Workflows", href: "/masters/product-workflows", icon: GitBranch },
+      { label: "Material Workflows", href: "/masters/material-workflows", icon: GitBranch },
+      { label: "Product Master", href: "/masters/products", icon: BookOpen },
       { label: "Cell Master", href: "/masters/cells", icon: Battery },
       { label: "BMS Master", href: "/masters/bms", icon: Cpu },
       { label: "Cabinet Master", href: "/masters/cabinets", icon: Box },
@@ -74,80 +110,6 @@ const navSections: NavSection[] = [
       { label: "Busbar Master", href: "/masters/busbars", icon: Minus },
       { label: "Charger Master", href: "/masters/chargers", icon: BatteryCharging },
       { label: "Test Equipment", href: "/masters/test-equipment", icon: FlaskConical },
-    ],
-  },
-  {
-    title: "Inventory Masters",
-    items: [
-      { label: "Material Master", href: "/masters/materials", icon: Package },
-      { label: "Material Categories", href: "/masters/material-categories", icon: Tags },
-      { label: "Supplier Master", href: "/masters/suppliers", icon: Factory },
-      { label: "Material Workflows", href: "/masters/material-workflows", icon: GitBranch },
-    ],
-  },
-  {
-    title: "Inventory",
-    items: [
-      { label: "Goods Receipt Notes", href: "/inventory/grns", icon: Archive },
-      { label: "Incoming Inspection", href: "/inventory/inspections", icon: ClipboardCheck },
-      { label: "Stock", href: "/inventory/stock", icon: Package },
-      { label: "Workflow Assignment", href: "/inventory/workflow-assignments", icon: Network },
-    ],
-  },
-  {
-    title: "Manufacturing",
-    groups: [
-      {
-        label: "Cell Lifecycle",
-        icon: Battery,
-        items: [
-          { label: "Cell Receiving", href: "/cells/receiving", icon: Package },
-          { label: "Cell Grading", href: "/cells/grading", icon: FlaskConical },
-          { label: "Cell Inventory", href: "/cells/inventory", icon: Archive },
-          { label: "Cell Matching", href: "/cells/matching", icon: BrainCircuit },
-          { label: "Grade Config", href: "/cells/config", icon: Settings },
-        ],
-      },
-      {
-        label: "Production",
-        icon: Factory,
-        items: [
-          { label: "Production Orders", href: "/manufacturing/orders", icon: Factory },
-          { label: "Charger Management", href: "/manufacturing/chargers", icon: BatteryCharging },
-          { label: "Charging Dashboard", href: "/manufacturing/charging-dashboard", icon: Zap },
-          { label: "Testing Dashboard", href: "/manufacturing/testing-dashboard", icon: FlaskConical },
-          { label: "Rework Queue", href: "/manufacturing/rework", icon: Wrench },
-        ],
-      },
-    ],
-  },
-  {
-    title: "Fulfillment",
-    items: [
-      { label: "Packing", href: "/fulfillment/packing", icon: PackageCheck },
-      { label: "Dispatch", href: "/fulfillment/dispatch", icon: Truck },
-      { label: "Dealer Portal", href: "/fulfillment/dealers", icon: Store },
-    ],
-  },
-  {
-    title: "Logistics",
-    items: [
-      { label: "Packing Dashboard", href: "/logistics/packing-dashboard", icon: Package },
-      { label: "Dispatch Orders", href: "/logistics/dispatch-orders", icon: Truck },
-      { label: "Dealer Master", href: "/logistics/dealers", icon: ShieldCheck },
-    ],
-  },
-  {
-    title: "Traceability",
-    items: [
-      { label: "QR Traceability", href: "#qr", icon: QrCode, disabled: true },
-    ],
-  },
-  {
-    title: "After-Sales",
-    items: [
-      { label: "Warranty", href: "#warranty", icon: FileCheck, disabled: true },
-      { label: "Service", href: "#service", icon: Wrench, disabled: true },
     ],
   },
   {
@@ -164,6 +126,8 @@ const navSections: NavSection[] = [
   },
   {
     title: "Developer",
+    collapsible: true,
+    directorOnly: true,
     items: [
       { label: "Architecture Map", href: "/developer/architecture", icon: Network },
       { label: "Engineering Health", href: "/developer/performance", icon: Activity },
@@ -173,43 +137,58 @@ const navSections: NavSection[] = [
   },
 ];
 
-function GroupedSection({
-  group,
+function NavItemLink({
+  item,
   collapsed,
   location,
 }: {
-  group: { label: string; icon: any; items: NavItem[] };
+  item: NavItem;
   collapsed: boolean;
   location: string;
 }) {
-  const hasActive = group.items.some((i) => location === i.href || location.startsWith(i.href + "/"));
+  const Icon = item.icon;
+  const isActive = location === item.href || location.startsWith(item.href + "/");
+  return (
+    <li>
+      <Link href={item.href}>
+        <span
+          className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer group",
+            isActive
+              ? "bg-primary/10 text-primary font-medium"
+              : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+            collapsed && "justify-center px-0"
+          )}
+          title={collapsed ? item.label : undefined}
+        >
+          <Icon size={20} className={cn("shrink-0", isActive ? "text-primary" : "")} />
+          {!collapsed && <span className="truncate">{item.label}</span>}
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+function CollapsibleSection({
+  section,
+  collapsed,
+  location,
+}: {
+  section: NavSection;
+  collapsed: boolean;
+  location: string;
+}) {
+  const hasActive = section.items.some(
+    (i) => location === i.href || location.startsWith(i.href + "/")
+  );
   const [open, setOpen] = useState(hasActive);
-  const GroupIcon = group.icon;
 
   if (collapsed) {
     return (
       <ul className="space-y-1 px-2">
-        {group.items.map((item) => {
-          const Icon = item.icon;
-          const isActive = location === item.href || location.startsWith(item.href + "/");
-          return (
-            <li key={item.label}>
-              <Link href={item.href}>
-                <span
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer justify-center px-0",
-                    isActive
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  )}
-                  title={item.label}
-                >
-                  <Icon size={20} className={cn("shrink-0", isActive ? "text-primary" : "")} />
-                </span>
-              </Link>
-            </li>
-          );
-        })}
+        {section.items.map((item) => (
+          <NavItemLink key={item.label} item={item} collapsed={collapsed} location={location} />
+        ))}
       </ul>
     );
   }
@@ -218,35 +197,18 @@ function GroupedSection({
     <div>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 w-full px-5 py-1.5 text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground/80 transition-colors"
+        className="flex items-center gap-2 w-full px-4 mb-2 text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground/80 transition-colors"
       >
-        <GroupIcon size={13} />
-        <span className="uppercase tracking-wider font-semibold flex-1 text-left">{group.label}</span>
+        <span className="uppercase tracking-wider font-semibold flex-1 text-left">
+          {section.title}
+        </span>
         {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
       </button>
       {open && (
         <ul className="space-y-1 px-2">
-          {group.items.map((item) => {
-            const Icon = item.icon;
-            const isActive = location === item.href || location.startsWith(item.href + "/");
-            return (
-              <li key={item.label}>
-                <Link href={item.href}>
-                  <span
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer",
-                      isActive
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    )}
-                  >
-                    <Icon size={18} className={cn("shrink-0 ml-1", isActive ? "text-primary" : "")} />
-                    <span className="truncate text-sm">{item.label}</span>
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
+          {section.items.map((item) => (
+            <NavItemLink key={item.label} item={item} collapsed={collapsed} location={location} />
+          ))}
         </ul>
       )}
     </div>
@@ -255,6 +217,11 @@ function GroupedSection({
 
 export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed: (val: boolean) => void }) {
   const [location] = useLocation();
+  const { user } = useAuth();
+
+  const visibleSections = navSections.filter(
+    (section) => !section.directorOnly || user?.role === "director"
+  );
 
   return (
     <aside
@@ -277,72 +244,23 @@ export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCo
       </div>
 
       <div className="flex-1 overflow-y-auto py-4">
-        {navSections.map((section, idx) => (
-          <div key={section.title} className={cn("mb-6", idx === navSections.length - 1 && "mb-0")}>
-            {!collapsed && (
-              <h4 className="px-4 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">
-                {section.title}
-              </h4>
-            )}
-
-            {section.groups ? (
-              <div className="space-y-2">
-                {section.groups.map((group) => (
-                  <GroupedSection
-                    key={group.label}
-                    group={group}
-                    collapsed={collapsed}
-                    location={location}
-                  />
-                ))}
-              </div>
+        {visibleSections.map((section, idx) => (
+          <div key={section.title} className={cn("mb-6", idx === visibleSections.length - 1 && "mb-0")}>
+            {section.collapsible ? (
+              <CollapsibleSection section={section} collapsed={collapsed} location={location} />
             ) : (
-              <ul className="space-y-1 px-2">
-                {(section.items ?? []).map((item) => {
-                  const isActive = location === item.href || location.startsWith(item.href + "/");
-                  const Icon = item.icon;
-                  if (item.disabled) {
-                    return (
-                      <li key={item.label}>
-                        <span
-                          className={cn(
-                            "flex items-center gap-3 px-3 py-2 rounded-md cursor-not-allowed opacity-40 select-none",
-                            collapsed && "justify-center px-0"
-                          )}
-                          title={collapsed ? `${item.label} (coming soon)` : undefined}
-                        >
-                          <Icon size={20} className="shrink-0" />
-                          {!collapsed && (
-                            <span className="truncate text-sm flex items-center gap-1.5">
-                              {item.label}
-                              <span className="text-[10px] font-medium uppercase tracking-wide opacity-60">soon</span>
-                            </span>
-                          )}
-                        </span>
-                      </li>
-                    );
-                  }
-                  return (
-                    <li key={item.label}>
-                      <Link href={item.href}>
-                        <span
-                          className={cn(
-                            "flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer group",
-                            isActive
-                              ? "bg-primary/10 text-primary font-medium"
-                              : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                            collapsed && "justify-center px-0"
-                          )}
-                          title={collapsed ? item.label : undefined}
-                        >
-                          <Icon size={20} className={cn("shrink-0", isActive ? "text-primary" : "")} />
-                          {!collapsed && <span className="truncate">{item.label}</span>}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
+              <>
+                {!collapsed && (
+                  <h4 className="px-4 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">
+                    {section.title}
+                  </h4>
+                )}
+                <ul className="space-y-1 px-2">
+                  {section.items.map((item) => (
+                    <NavItemLink key={item.label} item={item} collapsed={collapsed} location={location} />
+                  ))}
+                </ul>
+              </>
             )}
           </div>
         ))}
