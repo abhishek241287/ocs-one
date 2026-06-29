@@ -36,3 +36,4 @@
 - [executeSql RETURNING gotcha](executesql-returning-gotcha.md) — code_execution executeSql returns the command tag ("INSERT 0 1"), not RETURNING rows; SELECT separately for generated ids.
 - [Commercial-document master snapshot](dispatch-document-snapshot.md) — printable/legal docs (dispatch note, invoice) must SNAPSHOT referenced master data (dealer name/addr/GST) into the doc header at creation; never render live from the master or a later edit retroactively alters issued documents.
 - [Concurrent test/load 502s](concurrent-test-proxy-502.md) — parallel runTest journeys + load test on shared proxy can throw transient 502/blank page; re-run solo + curl 200 before logging a defect.
+- [OdsDrawer focus-loss anti-pattern](ods-drawer-focus-loss.md) — inline ref callback re-running autofocus every render steals focus after 1 keystroke; use useRef + useEffect([open]) once; fix the shared surface, not the leaf form.

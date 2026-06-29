@@ -55,7 +55,7 @@ export function OdsDrawer({
   children,
   className,
 }: OdsDrawerProps) {
-  const firstFocusRef = useRef<HTMLElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -69,6 +69,22 @@ export function OdsDrawer({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [open, onSave, isSaving, isSaveDisabled, onClose]);
+
+  // Auto-focus the first field ONCE when the drawer opens. Keyed on `open` only,
+  // so it never re-fires on the re-renders caused by typing — an inline ref
+  // callback here would re-run on every render and steal focus after each
+  // keystroke (the classic "only the first character is entered" bug).
+  useEffect(() => {
+    if (!open) return;
+    const el = contentRef.current;
+    if (!el) return;
+    const t = setTimeout(() => {
+      el.querySelector<HTMLElement>(
+        "input:not([type=hidden]),textarea,select,button:not([data-dismiss])"
+      )?.focus();
+    }, 80);
+    return () => clearTimeout(t);
+  }, [open]);
 
   const defaultFooter = onSave ? (
     <>
@@ -92,17 +108,8 @@ export function OdsDrawer({
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
+        ref={contentRef}
         className={cn(SIZE_MAP[size], "flex flex-col p-0 gap-0", className)}
-        ref={(el) => {
-          if (el && open) {
-            setTimeout(() => {
-              firstFocusRef.current = el.querySelector<HTMLElement>(
-                "input:not([type=hidden]),textarea,select,button:not([data-dismiss])"
-              );
-              firstFocusRef.current?.focus();
-            }, 80);
-          }
-        }}
       >
         {/* Header */}
         <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
