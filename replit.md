@@ -79,6 +79,7 @@ Operations control system for OCS Oorja Green Pvt. Ltd. — end-to-end manufactu
 
 ## User preferences
 
+- **Commercial-readiness focus until deployment (CTO directive 2026-06-29 — supersedes cert-wave cadence).** From now until a successful deploy, work ONLY on commercial readiness. Priority modules: **Inventory, Dispatch, Dealer, Reports, Dashboard, and UAT.** Only fix issues that affect **real factory operations or external parties**. Do NOT add architecture or certification documentation. **Defer** until after deployment: documentation cleanup (including trimming `replit.md`), Export Center, Warranty, Service, and all other future enhancements. When unsure whether something is in scope, ask: _does this block a real factory operation or an external party right now?_ If not, defer it.
 - **Cert-wave triage — module-specific vs. platform improvement (ask FIRST, every wave).** At the start of every certification wave, before fixing any defect, classify it: _"Is this defect module-specific, or is it a platform improvement?"_
   - **Module-specific** → fix only that module.
   - **Platform improvement** → fix it once in the shared framework (ODS, hooks, middleware, API/security layer) so **every** module benefits, not just the one under cert.
