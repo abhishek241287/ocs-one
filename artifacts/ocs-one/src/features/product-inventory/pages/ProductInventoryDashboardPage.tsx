@@ -33,7 +33,7 @@ export default function ProductInventoryDashboardPage() {
     { key: "available", label: "Available", value: s?.available ?? 0, icon: CheckCircle2, tone: "text-green-600 bg-green-100", status: "qc_passed" },
     { key: "packed", label: "Packed", value: s?.packed ?? 0, icon: Boxes, tone: "text-indigo-600 bg-indigo-100", status: "packed" },
     { key: "dispatched", label: "Dispatched", value: s?.dispatched ?? 0, icon: Truck, tone: "text-orange-600 bg-orange-100", status: "dispatched" },
-    { key: "dealer_stock", label: "Dealer Stock", value: s?.dealer_stock ?? 0, icon: Store, tone: "text-emerald-600 bg-emerald-100", status: "delivered_to_dealer" },
+    { key: "dealer_stock", label: "Dealer Stock", value: s?.dealer_stock ?? 0, icon: Store, tone: "text-emerald-600 bg-emerald-100", status: "dispatched" },
     { key: "quarantined", label: "Quarantined", value: s?.quarantined ?? 0, icon: ShieldAlert, tone: "text-rose-600 bg-rose-100" },
   ];
 
@@ -41,7 +41,7 @@ export default function ProductInventoryDashboardPage() {
     { key: "ready_for_packing", label: "Ready for Packing", value: s?.ready_for_packing ?? 0, icon: PackageCheck, status: "ready_for_packing", desc: "Products awaiting packing" },
     { key: "packed", label: "Packed", value: s?.packed ?? 0, icon: Boxes, status: "packed", desc: "Packed, ready for dispatch" },
     { key: "dispatched", label: "Dispatched", value: s?.dispatched ?? 0, icon: Truck, status: "dispatched", desc: "In transit to dealers" },
-    { key: "dealer_inventory", label: "Dealer Inventory", value: s?.dealer_stock ?? 0, icon: Store, status: "delivered_to_dealer", desc: "Delivered to dealers" },
+    { key: "dealer_inventory", label: "Dealer Inventory", value: s?.dealer_stock ?? 0, icon: Store, status: "dispatched", desc: "Dispatched to dealers" },
   ];
 
   return (

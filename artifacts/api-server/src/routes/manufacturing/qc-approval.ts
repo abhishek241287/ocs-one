@@ -12,7 +12,11 @@ import { eq, and, count, like } from "drizzle-orm";
 import {
   CreateQcApprovalBody,
 } from "@workspace/api-zod";
-import { createProductFromOrder } from "../../lib/product-creation";
+import {
+  completeOrderWithProduct,
+  OrderCompletionBlockedError,
+  type ProductCreationResult,
+} from "../../lib/product-creation";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -59,11 +63,11 @@ router.post("/", async (req, res) => {
     .limit(1);
   if (!order) { res.status(404).json({ error: "Order not found" }); return; }
 
-  let productCreation:
-    | Awaited<ReturnType<typeof createProductFromOrder>>
-    | null = null;
+  let productCreation: ProductCreationResult | null = null;
 
-  const result = await db.transaction(async (tx) => {
+  let result: Record<string, unknown> & { reworkTicketId: string | null };
+  try {
+    result = await db.transaction(async (tx) => {
     const [approval] = await tx
       .insert(mfgQcApprovalsTable)
       .values({
@@ -118,15 +122,11 @@ router.post("/", async (req, res) => {
             eq(mfgOrderStagesTable.stageType, "quality_control")
           )
         );
-      await tx
-        .update(mfgProductionOrdersTable)
-        .set({ status: "completed", currentStage: null })
-        .where(eq(mfgProductionOrdersTable.id, id));
-
-      // Unified Product Platform — "No Product before QC PASS": the QC-pass gate
-      // is the single creation point for a serialized Product. Runs in this same
-      // transaction (atomic with the order completion) and is idempotent.
-      productCreation = await createProductFromOrder(tx, id, body.inspectorName);
+      // F2 (CTO Critical): single completion gate — validates Model + QC PASS +
+      // genealogy, marks the order completed, and mints the serialized Product, all
+      // atomically. Blocks (throws → full rollback → 422) if any commercial
+      // condition is unmet, so QC approval can never leave an orphan completed order.
+      productCreation = await completeOrderWithProduct(tx, id, body.inspectorName);
     }
 
     await tx.insert(mfgBatteryTimelineTable).values({
@@ -142,7 +142,14 @@ router.post("/", async (req, res) => {
     });
 
     return { ...approval, reworkTicketId };
-  });
+    });
+  } catch (e) {
+    if (e instanceof OrderCompletionBlockedError) {
+      res.status(422).json({ error: e.message, reason: e.reason });
+      return;
+    }
+    throw e;
+  }
 
   res.status(201).json({ ...result, product: productCreation });
 });

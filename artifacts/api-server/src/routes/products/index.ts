@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, and, or, ilike, count, desc, gte, lte } from "drizzle-orm";
+import { eq, and, or, ilike, count, desc, gte, lte, isNotNull } from "drizzle-orm";
 import {
   db,
   productsTable,
@@ -127,7 +127,12 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
 // Product Platform. Pure aggregate counts (no new tables, no ledger, no mutation).
 // Status→card mapping uses ONLY the existing product_status lifecycle:
 //   available = qc_passed (units that have passed QC and are not yet packed)
-//   dealer_stock = delivered_to_dealer
+//   dealer_stock = Dealer Inventory — products dispatched against a dealer
+//                  (count where dealer_id IS NOT NULL). F3 (CTO, 2026-06-29):
+//                  this is the SAME commercial definition the Dealer Portal uses
+//                  (GET /dealers/{id}/inventory counts by dealer_id), so the two
+//                  views can never disagree. No new lifecycle state is introduced;
+//                  dealer-receipt confirmation is a future Logistics phase.
 //   quarantined = 0 — no quarantine state exists in the lifecycle (Products are minted
 //                 only at QC PASS), surfaced for completeness.
 // Registered BEFORE "/:id" so the literal path wins over the id param.
@@ -156,13 +161,20 @@ router.get("/inventory-summary", async (_req: Request, res: Response): Promise<v
     .groupBy(productsTable.categoryId, productCategoriesTable.name)
     .orderBy(desc(count()));
 
+  // F3: Dealer Inventory = products dispatched against a dealer (dealer_id assigned).
+  // Same definition the Dealer Portal uses, so the two views always agree.
+  const [dealerAssigned] = await db
+    .select({ c: count() })
+    .from(productsTable)
+    .where(isNotNull(productsTable.dealerId));
+
   res.json({
     total,
     available: byStatus["qc_passed"] ?? 0,
     ready_for_packing: byStatus["ready_for_packing"] ?? 0,
     packed: byStatus["packed"] ?? 0,
     dispatched: byStatus["dispatched"] ?? 0,
-    dealer_stock: byStatus["delivered_to_dealer"] ?? 0,
+    dealer_stock: Number(dealerAssigned?.c ?? 0),
     quarantined: 0,
     by_status: {
       manufacturing: byStatus["manufacturing"] ?? 0,

@@ -32,3 +32,5 @@
 - [Masters factory PG errors](masters-factory-pg-errors.md) — shared master router maps 23505→409 (field-aware) + 23503 FK→400 for every master; declare constraints in schema, no per-route handlers.
 - [Master-pick dropdowns filter active](master-pick-dropdowns-active-filter.md) — empty ocs-one master dropdown = no ACTIVE rows, not a bug; activate masters before e2e; PATCH doesn't change status (toggle route only).
 - [Inventory signed-ledger state model](inventory-signed-ledger.md) — stock is a SUM projection of append-only signed txns (never overwritten); move = neg+pos rows; FOR UPDATE + DB UNIQUE guards; receipts immutable, downstream only reflects a status badge.
+- [Order completion dual-path](order-completion-dual-path.md) — a production order completes via TWO routes (qc-approval + terminal stage approval); integrity guards must live in ONE shared gate both call, or one path orphans the order.
+- [executeSql RETURNING gotcha](executesql-returning-gotcha.md) — code_execution executeSql returns the command tag ("INSERT 0 1"), not RETURNING rows; SELECT separately for generated ids.

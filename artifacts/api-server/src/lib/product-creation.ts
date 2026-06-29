@@ -1,4 +1,4 @@
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, count } from "drizzle-orm";
 import {
   type Transaction,
   productsTable,
@@ -58,6 +58,22 @@ export type ProductCreationResult =
   | { status: "created"; productId: string; serial: string }
   | { status: "exists"; productId: string; serial: string }
   | { status: "skipped"; reason: string };
+
+/**
+ * F2 (CTO Critical, 2026-06-29): raised when a Production Order cannot be completed
+ * because a mandatory commercial condition is unmet. Callers catch it and return a
+ * 422 naming the missing requirement; throwing inside the caller's transaction rolls
+ * the whole completion back, so an order can NEVER reach `completed` half-satisfied.
+ */
+export class OrderCompletionBlockedError extends Error {
+  constructor(
+    public readonly reason: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "OrderCompletionBlockedError";
+  }
+}
 
 /**
  * Create a serialized Product from a completed production order, inside the
@@ -149,6 +165,19 @@ export async function createProductFromOrder(
     };
   }
 
+  // F1 (CTO Critical, 2026-06-29): a Product shall NEVER be created without
+  // complete manufacturing genealogy. Fetch the lineage FIRST and refuse creation
+  // if none exists — a serialized finished good with no component traceability is a
+  // commercial defect. "Complete" here = at least one captured component row (the
+  // measurable, non-speculative rule; stricter per-BOM completeness is future scope).
+  const lineage = await tx
+    .select()
+    .from(mfgBatteryGenealogyTable)
+    .where(eq(mfgBatteryGenealogyTable.productionOrderId, order.id));
+  if (lineage.length === 0) {
+    return { status: "skipped", reason: "genealogy_incomplete" };
+  }
+
   // DP-2: reuse the order's battery_number as the single official serial.
   const [product] = await tx
     .insert(productsTable)
@@ -168,23 +197,18 @@ export async function createProductFromOrder(
   const productId = product.id;
 
   // DP-1: copy the manufacturing genealogy so the Product owns its lineage.
-  const lineage = await tx
-    .select()
-    .from(mfgBatteryGenealogyTable)
-    .where(eq(mfgBatteryGenealogyTable.productionOrderId, order.id));
-  if (lineage.length > 0) {
-    await tx.insert(productGenealogyTable).values(
-      lineage.map((g) => ({
-        productId,
-        componentType: g.componentType,
-        componentId: g.componentId,
-        componentName: g.componentName,
-        quantity: g.quantity,
-        serialNumber: g.serialNumber,
-        notes: g.notes,
-      })),
-    );
-  }
+  // `lineage` was fetched + asserted non-empty above (F1), so this always runs.
+  await tx.insert(productGenealogyTable).values(
+    lineage.map((g) => ({
+      productId,
+      componentType: g.componentType,
+      componentId: g.componentId,
+      componentName: g.componentName,
+      quantity: g.quantity,
+      serialNumber: g.serialNumber,
+      notes: g.notes,
+    })),
+  );
 
   // DP-3: record creation as a Manufacturing event on the append-only timeline.
   await tx.insert(productEventsTable).values({
@@ -205,6 +229,96 @@ export async function createProductFromOrder(
   });
 
   return { status: "created", productId, serial: order.batteryNumber };
+}
+
+// ─── F2 — single Production-Order completion gate ─────────────────────────────
+// CTO Critical (2026-06-29): a Production Order shall NEVER reach `completed`
+// unless ALL mandatory commercial conditions hold — (1) Product Model assigned,
+// (2) QC PASS recorded, (3) manufacturing genealogy complete, (4) a serialized
+// Product successfully created. This is the ONE place any path completes an order
+// (QC approval + terminal stage approval both call it), so no path can leave an
+// orphan completed order. Any unmet condition throws OrderCompletionBlockedError,
+// which rolls the caller's transaction back; the order stays not-completed.
+export async function completeOrderWithProduct(
+  tx: Transaction,
+  orderId: string,
+  actor: string,
+): Promise<ProductCreationResult> {
+  // Lock the order — serializes with any concurrent completer/creator (TOCTOU).
+  const [order] = await tx
+    .select({
+      id: mfgProductionOrdersTable.id,
+      modelId: mfgProductionOrdersTable.productId,
+    })
+    .from(mfgProductionOrdersTable)
+    .where(eq(mfgProductionOrdersTable.id, orderId))
+    .for("update")
+    .limit(1);
+  if (!order) {
+    throw new OrderCompletionBlockedError(
+      "order_not_found",
+      "Production order not found — cannot complete.",
+    );
+  }
+
+  // (1) Product Model assigned.
+  if (!order.modelId) {
+    throw new OrderCompletionBlockedError(
+      "model_missing",
+      "Cannot complete order: Product Model not assigned.",
+    );
+  }
+
+  // (2) QC PASS recorded — the quality_control stage is approved with a timestamp.
+  const [qcStage] = await tx
+    .select({
+      status: mfgOrderStagesTable.status,
+      approvedAt: mfgOrderStagesTable.approvedAt,
+    })
+    .from(mfgOrderStagesTable)
+    .where(
+      and(
+        eq(mfgOrderStagesTable.productionOrderId, orderId),
+        eq(mfgOrderStagesTable.stageType, "quality_control"),
+      ),
+    )
+    .orderBy(sql`${mfgOrderStagesTable.approvedAt} desc nulls last`)
+    .limit(1);
+  if (!qcStage || qcStage.status !== "approved" || qcStage.approvedAt == null) {
+    throw new OrderCompletionBlockedError(
+      "qc_not_passed",
+      "Cannot complete order: QC PASS not completed.",
+    );
+  }
+
+  // (3) Manufacturing genealogy complete (≥1 captured component row).
+  const [genealogyCount] = await tx
+    .select({ c: count() })
+    .from(mfgBatteryGenealogyTable)
+    .where(eq(mfgBatteryGenealogyTable.productionOrderId, orderId));
+  if (Number(genealogyCount?.c ?? 0) === 0) {
+    throw new OrderCompletionBlockedError(
+      "genealogy_incomplete",
+      "Cannot complete order: manufacturing genealogy incomplete.",
+    );
+  }
+
+  // Mark completed BEFORE creating the Product (the QC_PASS trigger gates on the
+  // order being `completed`); same-tx so it rolls back together on any failure.
+  await tx
+    .update(mfgProductionOrdersTable)
+    .set({ status: "completed", currentStage: null })
+    .where(eq(mfgProductionOrdersTable.id, orderId));
+
+  // (4) Product successfully created (or already exists — idempotent).
+  const result = await createProductFromOrder(tx, orderId, actor);
+  if (result.status !== "created" && result.status !== "exists") {
+    throw new OrderCompletionBlockedError(
+      `product_creation_failed:${result.reason}`,
+      `Cannot complete order: Product could not be created (${result.reason}).`,
+    );
+  }
+  return result;
 }
 
 // ─── Workflow-driven creation triggers ───────────────────────────────────────

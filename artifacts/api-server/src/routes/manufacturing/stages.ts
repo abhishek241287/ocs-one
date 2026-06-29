@@ -34,6 +34,10 @@ import {
 } from "@workspace/api-zod";
 import { logEvent, getNextStage, type StageTypeValue } from "./helpers";
 import { requireWriteRole } from "../../middleware/auth";
+import {
+  completeOrderWithProduct,
+  OrderCompletionBlockedError,
+} from "../../lib/product-creation";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -551,38 +555,48 @@ router.post("/:stage/approve", requireWriteRole("supervisor", "director"), async
     return;
   }
 
-  await db.transaction(async (tx) => {
-    await tx
-      .update(mfgOrderStagesTable)
-      .set({
-        status: "approved",
-        supervisorName: body.supervisorName,
-        approvedAt: new Date(),
-        notes: body.notes ?? found.notes,
-      })
-      .where(eq(mfgOrderStagesTable.id, found.id));
-
-    const nextStage = getNextStage(stage as StageTypeValue);
-    if (nextStage) {
+  try {
+    await db.transaction(async (tx) => {
       await tx
-        .update(mfgProductionOrdersTable)
-        .set({ currentStage: nextStage })
-        .where(eq(mfgProductionOrdersTable.id, id));
-    } else {
-      await tx
-        .update(mfgProductionOrdersTable)
-        .set({ status: "completed", currentStage: stage as StageTypeValue })
-        .where(eq(mfgProductionOrdersTable.id, id));
-    }
+        .update(mfgOrderStagesTable)
+        .set({
+          status: "approved",
+          supervisorName: body.supervisorName,
+          approvedAt: new Date(),
+          notes: body.notes ?? found.notes,
+        })
+        .where(eq(mfgOrderStagesTable.id, found.id));
 
-    await logEvent(tx, {
-      productionOrderId: id,
-      eventType: "stage_approved",
-      stageType: stage as StageTypeValue,
-      actor: body.supervisorName,
-      description: `Stage ${stage.replace(/_/g, " ")} approved by ${body.supervisorName}${nextStage ? ` — ${nextStage.replace(/_/g, " ")} unlocked` : " — battery production complete"}`,
+      const nextStage = getNextStage(stage as StageTypeValue);
+      if (nextStage) {
+        await tx
+          .update(mfgProductionOrdersTable)
+          .set({ currentStage: nextStage })
+          .where(eq(mfgProductionOrdersTable.id, id));
+      } else {
+        // Terminal stage approved → completes the order. F2 (CTO Critical): route
+        // completion through the single gate so this path enforces the same
+        // commercial conditions (Model + QC PASS + genealogy + Product) and mints
+        // the Product. Blocks (throws → rollback → 422) if any condition is unmet,
+        // closing the orphan-completion hole this path previously had.
+        await completeOrderWithProduct(tx, id, body.supervisorName);
+      }
+
+      await logEvent(tx, {
+        productionOrderId: id,
+        eventType: "stage_approved",
+        stageType: stage as StageTypeValue,
+        actor: body.supervisorName,
+        description: `Stage ${stage.replace(/_/g, " ")} approved by ${body.supervisorName}${nextStage ? ` — ${nextStage.replace(/_/g, " ")} unlocked` : " — battery production complete"}`,
+      });
     });
-  });
+  } catch (e) {
+    if (e instanceof OrderCompletionBlockedError) {
+      res.status(422).json({ error: e.message, reason: e.reason });
+      return;
+    }
+    throw e;
+  }
 
   const updated = await getStageOrFail(id, stage, res);
   res.json(updated);
