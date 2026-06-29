@@ -3262,6 +3262,19 @@ paths:
     get:
       operationId: listStockBalances
       tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: search
+          in: query
+          required: false
+          description: Filter by material code or name (case-insensitive substring)
+          schema: { type: string }
+        - name: stock_state
+          in: query
+          required: false
+          description: Filter to a single stock state
+          schema: { type: string, enum: [inspection_pending, available, rejected] }
       responses:
         "200":
           description: On-hand stock projected from the inventory ledger, by material + state
@@ -3269,12 +3282,14 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [items]
+                required: [items, meta]
                 properties:
                   items:
                     type: array
                     items:
                       $ref: "#/components/schemas/StockBalance"
+                  meta:
+                    $ref: "#/components/schemas/MasterListMeta"
 
 components:
   parameters:
@@ -3374,11 +3389,11 @@ components:
       type: object
       required: [code, name]
       properties:
-        code: { type: string }
-        name: { type: string }
-        description: { type: ["string", "null"] }
+        code: { type: string, minLength: 1, maxLength: 64 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: ["string", "null"], maxLength: 2000 }
         effective_date: { type: ["string", "null"] }
-        notes: { type: ["string", "null"] }
+        notes: { type: ["string", "null"], maxLength: 2000 }
         attachments:
           type: array
           items: { $ref: "#/components/schemas/Attachment" }
@@ -3386,11 +3401,11 @@ components:
     MasterCommonUpdate:
       type: object
       properties:
-        code: { type: string }
-        name: { type: string }
-        description: { type: ["string", "null"] }
+        code: { type: string, minLength: 1, maxLength: 64 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: ["string", "null"], maxLength: 2000 }
         effective_date: { type: ["string", "null"] }
-        notes: { type: ["string", "null"] }
+        notes: { type: ["string", "null"], maxLength: 2000 }
         attachments:
           type: array
           items: { $ref: "#/components/schemas/Attachment" }

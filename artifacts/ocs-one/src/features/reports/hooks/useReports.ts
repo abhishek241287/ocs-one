@@ -53,6 +53,8 @@ export interface InventoryReport {
   cells: { total: number; available: number; allocated: number; inProduction: number; rejected: number; statusBreakdown: { status: string; count: number }[]; gradeBreakdown: { grade: string; count: number }[] };
   batteries: { total: number; inProgress: number; completed: number; readyForDispatch: number; draft: number };
   byLot: { lotNumber: string; supplier: string; receivedAt: string; total: number; available: number; allocated: number; rejected: number; utilizationPct: number }[];
+  rawMaterials: { byState: { stock_state: string; total_qty: number; material_count: number }[]; availableQty: number };
+  finishedProducts: { total: number; available: number; readyForPacking: number; packed: number; dispatched: number; dealerStock: number; byStatus: { status: string; count: number }[] };
   refreshedAt: string;
 }
 

@@ -51,25 +51,53 @@ export interface MasterCommon {
 }
 
 export interface MasterCommonInput {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
   code: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
   name: string;
-  /** @nullable */
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
   description?: string | null;
   /** @nullable */
   effective_date?: string | null;
-  /** @nullable */
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
   notes?: string | null;
   attachments?: Attachment[];
 }
 
 export interface MasterCommonUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
   code?: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
   name?: string;
-  /** @nullable */
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
   description?: string | null;
   /** @nullable */
   effective_date?: string | null;
-  /** @nullable */
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
   notes?: string | null;
   attachments?: Attachment[];
 }
@@ -2756,7 +2784,30 @@ export type ListEligibleGrns200 = {
   items: EligibleGrn[];
 };
 
+export type ListStockBalancesParams = {
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+/**
+ * Filter by material code or name (case-insensitive substring)
+ */
+search?: string;
+/**
+ * Filter to a single stock state
+ */
+stock_state?: ListStockBalancesStockState;
+};
+
+export type ListStockBalancesStockState = typeof ListStockBalancesStockState[keyof typeof ListStockBalancesStockState];
+
+
+export const ListStockBalancesStockState = {
+  inspection_pending: 'inspection_pending',
+  available: 'available',
+  rejected: 'rejected',
+} as const;
+
 export type ListStockBalances200 = {
   items: StockBalance[];
+  meta: MasterListMeta;
 };
 

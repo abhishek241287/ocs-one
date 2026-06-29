@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { requireWriteRole } from "../../middleware/auth";
+import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
 import { eq, sql, and, or, ilike, count, desc } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { 
@@ -15,6 +16,20 @@ function snakeToCamel(str: string): string {
 function bodyToCamel(obj: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(obj).map(([k, v]) => [snakeToCamel(k), v])
+  );
+}
+
+// INV-005: trim leading/trailing whitespace on top-level string fields BEFORE
+// validation, so whitespace-only values collapse to "" and fail the schema's
+// minLength(1) — prevents blank / whitespace-only master data. Platform fix: every
+// master created via this router benefits, alongside the OpenAPI minLength/maxLength.
+function trimStrings(body: unknown): unknown {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return body;
+  return Object.fromEntries(
+    Object.entries(body as Record<string, unknown>).map(([k, v]) => [
+      k,
+      typeof v === "string" ? v.trim() : v,
+    ])
   );
 }
 
@@ -133,7 +148,7 @@ export function createMasterRouter<
 
   // Create
   router.post("/", async (req: Request, res: Response): Promise<void> => {
-    const parsed = inputSchema.safeParse(req.body);
+    const parsed = inputSchema.safeParse(trimStrings(req.body));
     if (!parsed.success) {
       req.log.warn({ errors: parsed.error.issues }, `Invalid ${resourceName} input`);
       res.status(400).json({ error: parsed.error.message });
@@ -143,6 +158,17 @@ export function createMasterRouter<
     try {
       const camelData = bodyToCamel(parsed.data as Record<string, unknown>);
       const [item] = await db.insert(table).values(camelData as any).returning();
+      const row = item as Record<string, any>;
+      // INV-001: master-data audit trail (platform fix — every master benefits).
+      void recordSecurityEvent({
+        eventType: "master.created",
+        actorId: req.user?.userId ?? null,
+        actorEmail: req.user?.email ?? null,
+        actorRole: req.user?.role ?? null,
+        ...reqMeta(req),
+        statusCode: 201,
+        detail: `${resourceName} created: ${row.code ?? row.id} (id=${row.id})`,
+      });
       res.status(201).json(serializeRow(item as Record<string, unknown>));
     } catch (err: any) {
       if (handlePgWriteError(err, res, resourceName)) return;
@@ -169,7 +195,7 @@ export function createMasterRouter<
   // Update
   router.patch("/:id", async (req: Request, res: Response): Promise<void> => {
     const id = req.params.id as string;
-    const parsed = updateSchema.safeParse(req.body);
+    const parsed = updateSchema.safeParse(trimStrings(req.body));
     if (!parsed.success) {
       req.log.warn({ errors: parsed.error.issues }, `Invalid ${resourceName} update`);
       res.status(400).json({ error: parsed.error.message });
@@ -194,6 +220,17 @@ export function createMasterRouter<
         return;
       }
 
+      const row = item as Record<string, any>;
+      // INV-001: master-data audit trail — record which fields changed.
+      void recordSecurityEvent({
+        eventType: "master.updated",
+        actorId: req.user?.userId ?? null,
+        actorEmail: req.user?.email ?? null,
+        actorRole: req.user?.role ?? null,
+        ...reqMeta(req),
+        statusCode: 200,
+        detail: `${resourceName} updated: ${row.code ?? row.id} (id=${row.id}); fields: ${Object.keys(parsed.data as Record<string, unknown>).join(", ") || "—"}`,
+      });
       res.json(serializeRow(item as Record<string, unknown>));
     } catch (err: any) {
       if (handlePgWriteError(err, res, resourceName)) return;
@@ -224,6 +261,18 @@ export function createMasterRouter<
       return;
     }
 
+    const row = item as Record<string, any>;
+    // INV-001: master-data audit trail — activation / deactivation.
+    void recordSecurityEvent({
+      eventType: "master.status_changed",
+      severity: "warning",
+      actorId: req.user?.userId ?? null,
+      actorEmail: req.user?.email ?? null,
+      actorRole: req.user?.role ?? null,
+      ...reqMeta(req),
+      statusCode: 200,
+      detail: `${resourceName} status → ${(parsed.data as any).status}: ${row.code ?? row.id} (id=${row.id})`,
+    });
     res.json(serializeRow(item as Record<string, unknown>));
   });
 

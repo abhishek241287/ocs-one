@@ -5,6 +5,8 @@ import {
   cellLotsTable,
   mfgProductionOrdersTable,
   logisticsDispatchItemsTable,
+  inventoryTransactionsTable,
+  productsTable,
 } from "@workspace/db";
 import { sql, count } from "drizzle-orm";
 
@@ -48,6 +50,56 @@ router.get("/", async (_req, res) => {
   }).from(mfgProductionOrdersTable)
     .leftJoin(logisticsDispatchItemsTable, sql`${logisticsDispatchItemsTable.productionOrderId} = ${mfgProductionOrdersTable.id}`)
     .where(sql`${mfgProductionOrdersTable.status} = 'completed'::mfg_order_status and ${logisticsDispatchItemsTable.id} is null`);
+
+  // INV-006: Raw-material on-hand by stock_state — rolls up the SAME per-(material,state)
+  // net-on-hand projection the Stock page uses (signed ledger, drop zero-net via HAVING),
+  // so the report can never drift from the inventory module.
+  const rawByState = await db
+    .select({
+      stock_state: sql<string>`sub.stock_state`,
+      total_qty: sql<string>`sum(sub.qty)`,
+      material_count: sql<number>`count(*)`,
+    })
+    .from(
+      db
+        .select({
+          materialId: inventoryTransactionsTable.materialId,
+          stock_state: inventoryTransactionsTable.stockState,
+          qty: sql<string>`sum(${inventoryTransactionsTable.quantity})`.as("qty"),
+        })
+        .from(inventoryTransactionsTable)
+        .groupBy(inventoryTransactionsTable.materialId, inventoryTransactionsTable.stockState)
+        .having(sql`sum(${inventoryTransactionsTable.quantity}) <> 0`)
+        .as("sub"),
+    )
+    .groupBy(sql`sub.stock_state`);
+
+  const rawByStateOut = rawByState.map((r) => ({
+    stock_state: r.stock_state,
+    total_qty: Number(r.total_qty),
+    material_count: Number(r.material_count),
+  }));
+  const rawAvailableQty = rawByStateOut.find((r) => r.stock_state === "available")?.total_qty ?? 0;
+
+  // INV-006: Finished-product counts by lifecycle status — products table is the single
+  // source of truth (Unified Product Platform). Mapping mirrors the Product Inventory
+  // dashboard: available=qc_passed, ready_for_packing, packed, dispatched, dealer_stock=
+  // delivered_to_dealer. No quarantine state exists (Products minted only at QC PASS).
+  const prodByStatus = await db
+    .select({ status: productsTable.productStatus, count: count() })
+    .from(productsTable)
+    .groupBy(productsTable.productStatus);
+
+  const prodMap = Object.fromEntries(prodByStatus.map((r) => [r.status, Number(r.count)]));
+  const finishedProducts = {
+    total: prodByStatus.reduce((s, r) => s + Number(r.count), 0),
+    available: prodMap["qc_passed"] ?? 0,
+    readyForPacking: prodMap["ready_for_packing"] ?? 0,
+    packed: prodMap["packed"] ?? 0,
+    dispatched: prodMap["dispatched"] ?? 0,
+    dealerStock: prodMap["delivered_to_dealer"] ?? 0,
+    byStatus: prodByStatus.map((r) => ({ status: r.status, count: Number(r.count) })),
+  };
 
   const inProduction = Number(cellInv?.reserved ?? 0) + Number(cellInv?.allocated ?? 0);
 
@@ -93,6 +145,11 @@ router.get("/", async (_req, res) => {
         ? Math.round(((Number(r.total) - Number(r.approved)) / Number(r.total)) * 100)
         : 0,
     })),
+    rawMaterials: {
+      byState: rawByStateOut,
+      availableQty: rawAvailableQty,
+    },
+    finishedProducts,
     refreshedAt: new Date().toISOString(),
   });
 });

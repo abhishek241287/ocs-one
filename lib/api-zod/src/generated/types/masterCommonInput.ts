@@ -8,13 +8,27 @@
 import type { Attachment } from './attachment';
 
 export interface MasterCommonInput {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
   code: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
   name: string;
-  /** @nullable */
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
   description?: string | null;
   /** @nullable */
   effective_date?: string | null;
-  /** @nullable */
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
   notes?: string | null;
   attachments?: Attachment[];
 }

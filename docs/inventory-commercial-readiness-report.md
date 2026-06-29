@@ -150,3 +150,36 @@ Inventory is **commercially sound at the transaction level** and safe to operate
 4. **INV-007, INV-008, INV-009, INV-010 (Low)** — include if cheap; otherwise backlog.
 
 On approval, we fix the agreed set in one batch, re-verify, and **freeze Inventory** before moving to Dispatch.
+
+---
+
+## Phase 1 batch — implemented & verified (2026-06-29)
+
+CTO-approved set shipped in **one batch**, re-verified live, Inventory **FROZEN**.
+
+| ID | Sev | Status | Verification |
+|----|-----|--------|--------------|
+| INV-001 | High | **DONE** | `master.created`/`master.updated`/`master.status_changed` + `master.workflow_assignment_changed` persist to `security_events` with actor+entity (confirmed via live create + status toggle). Fire-and-forget; never blocks the write; no audit-table mutation. |
+| INV-005 | Med | **DONE** | `trimStrings()` before `safeParse` on POST/PATCH; OpenAPI `code` 1–64, `name` 1–200, `description`/`notes` ≤2000. Live: whitespace-only name → 400; overlong code → 400; surrounding spaces trimmed on valid create. |
+| INV-003 | Med | **DONE** | `/inventory/stock` gained `page`/`pageSize`/`search`/`stock_state` + `items`+`meta`. Count taken from the grouped subquery (not raw txns); filters applied pre-group; Drizzle-parameterized. `meta.total` coerced via `Number()`. StockPage rewritten with search/state filter/pagination. |
+| INV-006 | Med | **DONE** | `/reports/inventory` extended additively with `rawMaterials` (signed-ledger netting by state) + `finishedProducts` (counts by `product_status`, single-source from `products`). No Product Platform change. Frontend renders both sections. |
+| INV-010 | Low | **DONE (minimal)** | StockPage flags any negative on-hand bucket in red with an alert icon + tooltip. |
+| INV-007 | Low | **DEFER** | Integer-for-discrete-UOM is conditional validation not expressible in codegen; backlog. |
+| INV-008 | Low | **DEFER** | Deep-link-to-assign UX; backlog. |
+| INV-009 | Low | **REJECTED** | Master deletion contradicts the lifecycle-via-status design; not pursued. |
+
+### Immutable-document principle — preserved
+No edit/PATCH route added for posted GRNs or completed inspections; no GRN/inspection mutability path touched. Master audit is append-only via `recordSecurityEvent` only.
+
+### Certification — green authoritatively (post-batch, clean api-server, no competing traffic)
+- **SS-02 (authz):** PASS — 410/410 assertions (incl. `inventory.stock.list`, `masters.*.create`, `inventory.assignments.upsert`, `reports.inventory`).
+- **SS-03 (audit):** PASS — 12/12 audited ops; immutability static + runtime byte-identical (run with `CERT_AUDIT_RATELIMIT=1`).
+- **SS-04 (config):** PASS — 31 pass / 3 documented dev-only warns / 0 fail.
+- `pnpm run typecheck` clean across all packages; codegen regenerated.
+- *Note:* the `audit` workflow's default (non-authoritative) mode shows a single ratelimit shape-mode false-red from global-limiter residue — green under the authoritative `CERT_AUDIT_RATELIMIT=1` gate.
+
+### Architect review
+PASS — no Critical/High. Only optional hardening (coerce `meta.total` with `Number()`) — **applied**.
+
+## Inventory — FROZEN v1.0 (2026-06-29)
+Inventory (GRN, Incoming Inspection, Stock On Hand, Master data + audit, Reports inventory sections) is **commercially frozen**. Further changes only for a Critical/High commercial-readiness defect or security vuln. Next: **Dispatch** review.

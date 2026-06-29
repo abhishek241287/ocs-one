@@ -3,6 +3,7 @@ import { asc } from "drizzle-orm";
 import { db, materialWorkflowAssignmentsTable } from "@workspace/db";
 import { UpsertMaterialWorkflowAssignmentBody } from "@workspace/api-zod";
 import { requireWriteRole } from "../../middleware/auth";
+import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
 
 const router: IRouter = Router();
 
@@ -53,6 +54,17 @@ router.put("/", async (req: Request, res: Response): Promise<void> => {
         set: { workflowId: parsed.data.workflow_id, updatedBy: actorId, updatedAt: new Date() },
       })
       .returning();
+    // INV-001: audit the routing-config change — assignment drives GRN posting.
+    void recordSecurityEvent({
+      eventType: "master.workflow_assignment_changed",
+      severity: "warning",
+      actorId,
+      actorEmail: req.user?.email ?? null,
+      actorRole: req.user?.role ?? null,
+      ...reqMeta(req),
+      statusCode: 200,
+      detail: `Workflow assignment set: category=${parsed.data.category_id} → workflow=${parsed.data.workflow_id}`,
+    });
     res.json(serialize(item as Record<string, any>));
   } catch (err: any) {
     const pgCode = err?.code ?? err?.cause?.code;

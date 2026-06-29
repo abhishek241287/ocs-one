@@ -8,10 +8,16 @@ import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-import { Battery, Package, Truck, Factory } from "lucide-react";
+import { Battery, Package, Truck, Factory, Boxes, Warehouse } from "lucide-react";
 
 const STATUS_COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"];
 const GRADE_COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"];
+
+const RAW_STATE_LABEL: Record<string, string> = {
+  inspection_pending: "Awaiting Inspection",
+  available: "Available",
+  rejected: "Rejected",
+};
 
 export default function InventoryAnalyticsPage() {
   const { data, isLoading, refetch } = useInventoryReport();
@@ -21,11 +27,45 @@ export default function InventoryAnalyticsPage() {
     <AppLayout>
       <ReportShell
         title="Inventory Analytics"
-        subtitle="Cell stock, battery WIP, finished goods, and lot utilization"
+        subtitle="Raw materials, cell stock, battery WIP, finished goods, and lot utilization"
         refreshedAt={data?.refreshedAt}
         onRefresh={() => { void qc.invalidateQueries({ queryKey: ["reports", "inventory"] }); void refetch(); }}
         isLoading={isLoading}
       >
+        {/* Raw Material Inventory KPIs */}
+        <section>
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Raw Material Stock</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard label="Available" value={data?.rawMaterials.availableQty ?? null} icon={<Warehouse size={18} />} accent="bg-green-100 dark:bg-green-950 text-green-700" loading={isLoading} />
+            {(["inspection_pending", "rejected"] as const).map((st) => {
+              const row = data?.rawMaterials.byState.find((r) => r.stock_state === st);
+              return (
+                <StatCard
+                  key={st}
+                  label={RAW_STATE_LABEL[st]}
+                  value={row ? row.total_qty : isLoading ? null : 0}
+                  icon={<Boxes size={18} />}
+                  accent={st === "rejected" ? "bg-red-100 dark:bg-red-950 text-red-600" : "bg-yellow-100 dark:bg-yellow-950 text-yellow-700"}
+                  loading={isLoading}
+                />
+              );
+            })}
+            <StatCard label="Materials On Hand" value={data ? data.rawMaterials.byState.reduce((s, r) => s + r.material_count, 0) : null} loading={isLoading} />
+          </div>
+        </section>
+
+        {/* Finished Goods Inventory KPIs */}
+        <section>
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Finished Goods (Products)</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <StatCard label="Available" value={data?.finishedProducts.available ?? null} icon={<Package size={18} />} accent="bg-green-100 dark:bg-green-950 text-green-700" loading={isLoading} />
+            <StatCard label="Ready to Pack" value={data?.finishedProducts.readyForPacking ?? null} accent="bg-blue-100 dark:bg-blue-950 text-blue-700" loading={isLoading} />
+            <StatCard label="Packed" value={data?.finishedProducts.packed ?? null} accent="bg-indigo-100 dark:bg-indigo-950 text-indigo-700" loading={isLoading} />
+            <StatCard label="Dispatched" value={data?.finishedProducts.dispatched ?? null} icon={<Truck size={18} />} accent="bg-orange-100 dark:bg-orange-950 text-orange-700" loading={isLoading} />
+            <StatCard label="Dealer Stock" value={data?.finishedProducts.dealerStock ?? null} accent="bg-emerald-100 dark:bg-emerald-950 text-emerald-700" loading={isLoading} />
+          </div>
+        </section>
+
         {/* Cell Inventory KPIs */}
         <section>
           <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Cell Stock</h2>

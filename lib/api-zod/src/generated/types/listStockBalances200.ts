@@ -5,8 +5,10 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MasterListMeta } from './masterListMeta';
 import type { StockBalance } from './stockBalance';
 
 export type ListStockBalances200 = {
   items: StockBalance[];
+  meta: MasterListMeta;
 };

@@ -186,6 +186,8 @@ export * from './listReworkTickets200';
 export * from './listReworkTicketsParams';
 export * from './listReworkTicketsStatus';
 export * from './listStockBalances200';
+export * from './listStockBalancesParams';
+export * from './listStockBalancesStockState';
 export * from './listSuppliers200';
 export * from './listSuppliersParams';
 export * from './listTestEquipmentMasters200';

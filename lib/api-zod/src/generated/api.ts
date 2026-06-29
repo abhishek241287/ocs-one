@@ -72,12 +72,22 @@ export const ListProductMastersResponse = zod.object({
 }))
 
 
+export const createProductMasterBodyOneCodeMax = 64;
+
+export const createProductMasterBodyOneNameMax = 200;
+
+export const createProductMasterBodyOneDescriptionMax = 2000;
+
+export const createProductMasterBodyOneNotesMax = 2000;
+
+
+
 export const CreateProductMasterBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createProductMasterBodyOneCodeMax),
+  "name": zod.string().min(1).max(createProductMasterBodyOneNameMax),
+  "description": zod.string().max(createProductMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createProductMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -180,12 +190,22 @@ export const UpdateProductMasterParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateProductMasterBodyOneCodeMax = 64;
+
+export const updateProductMasterBodyOneNameMax = 200;
+
+export const updateProductMasterBodyOneDescriptionMax = 2000;
+
+export const updateProductMasterBodyOneNotesMax = 2000;
+
+
+
 export const UpdateProductMasterBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateProductMasterBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateProductMasterBodyOneNameMax).optional(),
+  "description": zod.string().max(updateProductMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateProductMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -344,12 +364,22 @@ export const ListCellMastersResponse = zod.object({
 }))
 
 
+export const createCellMasterBodyOneCodeMax = 64;
+
+export const createCellMasterBodyOneNameMax = 200;
+
+export const createCellMasterBodyOneDescriptionMax = 2000;
+
+export const createCellMasterBodyOneNotesMax = 2000;
+
+
+
 export const CreateCellMasterBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createCellMasterBodyOneCodeMax),
+  "name": zod.string().min(1).max(createCellMasterBodyOneNameMax),
+  "description": zod.string().max(createCellMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createCellMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -455,12 +485,22 @@ export const UpdateCellMasterParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateCellMasterBodyOneCodeMax = 64;
+
+export const updateCellMasterBodyOneNameMax = 200;
+
+export const updateCellMasterBodyOneDescriptionMax = 2000;
+
+export const updateCellMasterBodyOneNotesMax = 2000;
+
+
+
 export const UpdateCellMasterBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateCellMasterBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateCellMasterBodyOneNameMax).optional(),
+  "description": zod.string().max(updateCellMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateCellMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -621,17 +661,25 @@ export const ListBmsMastersResponse = zod.object({
 }))
 
 
+export const createBmsMasterBodyOneCodeMax = 64;
+
+export const createBmsMasterBodyOneNameMax = 200;
+
+export const createBmsMasterBodyOneDescriptionMax = 2000;
+
+export const createBmsMasterBodyOneNotesMax = 2000;
+
 export const createBmsMasterBodyTwoHasBluetoothDefault = false;
 export const createBmsMasterBodyTwoHasCanDefault = false;
 export const createBmsMasterBodyTwoHasRs485Default = false;
 export const createBmsMasterBodyTwoHasUartDefault = false;
 
 export const CreateBmsMasterBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createBmsMasterBodyOneCodeMax),
+  "name": zod.string().min(1).max(createBmsMasterBodyOneNameMax),
+  "description": zod.string().max(createBmsMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createBmsMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -734,12 +782,22 @@ export const UpdateBmsMasterParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateBmsMasterBodyOneCodeMax = 64;
+
+export const updateBmsMasterBodyOneNameMax = 200;
+
+export const updateBmsMasterBodyOneDescriptionMax = 2000;
+
+export const updateBmsMasterBodyOneNotesMax = 2000;
+
+
+
 export const UpdateBmsMasterBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateBmsMasterBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateBmsMasterBodyOneNameMax).optional(),
+  "description": zod.string().max(updateBmsMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateBmsMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -892,12 +950,22 @@ export const ListCabinetMastersResponse = zod.object({
 }))
 
 
+export const createCabinetMasterBodyOneCodeMax = 64;
+
+export const createCabinetMasterBodyOneNameMax = 200;
+
+export const createCabinetMasterBodyOneDescriptionMax = 2000;
+
+export const createCabinetMasterBodyOneNotesMax = 2000;
+
+
+
 export const CreateCabinetMasterBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createCabinetMasterBodyOneCodeMax),
+  "name": zod.string().min(1).max(createCabinetMasterBodyOneNameMax),
+  "description": zod.string().max(createCabinetMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createCabinetMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -985,12 +1053,22 @@ export const UpdateCabinetMasterParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateCabinetMasterBodyOneCodeMax = 64;
+
+export const updateCabinetMasterBodyOneNameMax = 200;
+
+export const updateCabinetMasterBodyOneDescriptionMax = 2000;
+
+export const updateCabinetMasterBodyOneNotesMax = 2000;
+
+
+
 export const UpdateCabinetMasterBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateCabinetMasterBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateCabinetMasterBodyOneNameMax).optional(),
+  "description": zod.string().max(updateCabinetMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateCabinetMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -1127,12 +1205,22 @@ export const ListConnectorMastersResponse = zod.object({
 }))
 
 
+export const createConnectorMasterBodyOneCodeMax = 64;
+
+export const createConnectorMasterBodyOneNameMax = 200;
+
+export const createConnectorMasterBodyOneDescriptionMax = 2000;
+
+export const createConnectorMasterBodyOneNotesMax = 2000;
+
+
+
 export const CreateConnectorMasterBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createConnectorMasterBodyOneCodeMax),
+  "name": zod.string().min(1).max(createConnectorMasterBodyOneNameMax),
+  "description": zod.string().max(createConnectorMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createConnectorMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -1217,12 +1305,22 @@ export const UpdateConnectorMasterParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateConnectorMasterBodyOneCodeMax = 64;
+
+export const updateConnectorMasterBodyOneNameMax = 200;
+
+export const updateConnectorMasterBodyOneDescriptionMax = 2000;
+
+export const updateConnectorMasterBodyOneNotesMax = 2000;
+
+
+
 export const UpdateConnectorMasterBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateConnectorMasterBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateConnectorMasterBodyOneNameMax).optional(),
+  "description": zod.string().max(updateConnectorMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateConnectorMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -1355,12 +1453,22 @@ export const ListCableMastersResponse = zod.object({
 }))
 
 
+export const createCableMasterBodyOneCodeMax = 64;
+
+export const createCableMasterBodyOneNameMax = 200;
+
+export const createCableMasterBodyOneDescriptionMax = 2000;
+
+export const createCableMasterBodyOneNotesMax = 2000;
+
+
+
 export const CreateCableMasterBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createCableMasterBodyOneCodeMax),
+  "name": zod.string().min(1).max(createCableMasterBodyOneNameMax),
+  "description": zod.string().max(createCableMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createCableMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -1442,12 +1550,22 @@ export const UpdateCableMasterParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateCableMasterBodyOneCodeMax = 64;
+
+export const updateCableMasterBodyOneNameMax = 200;
+
+export const updateCableMasterBodyOneDescriptionMax = 2000;
+
+export const updateCableMasterBodyOneNotesMax = 2000;
+
+
+
 export const UpdateCableMasterBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateCableMasterBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateCableMasterBodyOneNameMax).optional(),
+  "description": zod.string().max(updateCableMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateCableMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -1577,12 +1695,22 @@ export const ListBusbarMastersResponse = zod.object({
 }))
 
 
+export const createBusbarMasterBodyOneCodeMax = 64;
+
+export const createBusbarMasterBodyOneNameMax = 200;
+
+export const createBusbarMasterBodyOneDescriptionMax = 2000;
+
+export const createBusbarMasterBodyOneNotesMax = 2000;
+
+
+
 export const CreateBusbarMasterBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createBusbarMasterBodyOneCodeMax),
+  "name": zod.string().min(1).max(createBusbarMasterBodyOneNameMax),
+  "description": zod.string().max(createBusbarMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createBusbarMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -1664,12 +1792,22 @@ export const UpdateBusbarMasterParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateBusbarMasterBodyOneCodeMax = 64;
+
+export const updateBusbarMasterBodyOneNameMax = 200;
+
+export const updateBusbarMasterBodyOneDescriptionMax = 2000;
+
+export const updateBusbarMasterBodyOneNotesMax = 2000;
+
+
+
 export const UpdateBusbarMasterBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateBusbarMasterBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateBusbarMasterBodyOneNameMax).optional(),
+  "description": zod.string().max(updateBusbarMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateBusbarMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -1801,12 +1939,22 @@ export const ListChargerMastersResponse = zod.object({
 }))
 
 
+export const createChargerMasterBodyOneCodeMax = 64;
+
+export const createChargerMasterBodyOneNameMax = 200;
+
+export const createChargerMasterBodyOneDescriptionMax = 2000;
+
+export const createChargerMasterBodyOneNotesMax = 2000;
+
+
+
 export const CreateChargerMasterBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createChargerMasterBodyOneCodeMax),
+  "name": zod.string().min(1).max(createChargerMasterBodyOneNameMax),
+  "description": zod.string().max(createChargerMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createChargerMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -1894,12 +2042,22 @@ export const UpdateChargerMasterParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateChargerMasterBodyOneCodeMax = 64;
+
+export const updateChargerMasterBodyOneNameMax = 200;
+
+export const updateChargerMasterBodyOneDescriptionMax = 2000;
+
+export const updateChargerMasterBodyOneNotesMax = 2000;
+
+
+
 export const UpdateChargerMasterBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateChargerMasterBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateChargerMasterBodyOneNameMax).optional(),
+  "description": zod.string().max(updateChargerMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateChargerMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -2040,12 +2198,22 @@ export const ListTestEquipmentMastersResponse = zod.object({
 }))
 
 
+export const createTestEquipmentMasterBodyOneCodeMax = 64;
+
+export const createTestEquipmentMasterBodyOneNameMax = 200;
+
+export const createTestEquipmentMasterBodyOneDescriptionMax = 2000;
+
+export const createTestEquipmentMasterBodyOneNotesMax = 2000;
+
+
+
 export const CreateTestEquipmentMasterBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createTestEquipmentMasterBodyOneCodeMax),
+  "name": zod.string().min(1).max(createTestEquipmentMasterBodyOneNameMax),
+  "description": zod.string().max(createTestEquipmentMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createTestEquipmentMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -2142,12 +2310,22 @@ export const UpdateTestEquipmentMasterParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateTestEquipmentMasterBodyOneCodeMax = 64;
+
+export const updateTestEquipmentMasterBodyOneNameMax = 200;
+
+export const updateTestEquipmentMasterBodyOneDescriptionMax = 2000;
+
+export const updateTestEquipmentMasterBodyOneNotesMax = 2000;
+
+
+
 export const UpdateTestEquipmentMasterBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateTestEquipmentMasterBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateTestEquipmentMasterBodyOneNameMax).optional(),
+  "description": zod.string().max(updateTestEquipmentMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateTestEquipmentMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -4895,12 +5073,22 @@ export const ListProductCategoriesResponse = zod.object({
 }))
 
 
+export const createProductCategoryBodyCodeMax = 64;
+
+export const createProductCategoryBodyNameMax = 200;
+
+export const createProductCategoryBodyDescriptionMax = 2000;
+
+export const createProductCategoryBodyNotesMax = 2000;
+
+
+
 export const CreateProductCategoryBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createProductCategoryBodyCodeMax),
+  "name": zod.string().min(1).max(createProductCategoryBodyNameMax),
+  "description": zod.string().max(createProductCategoryBodyDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createProductCategoryBodyNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -4964,12 +5152,22 @@ export const UpdateProductCategoryParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateProductCategoryBodyCodeMax = 64;
+
+export const updateProductCategoryBodyNameMax = 200;
+
+export const updateProductCategoryBodyDescriptionMax = 2000;
+
+export const updateProductCategoryBodyNotesMax = 2000;
+
+
+
 export const UpdateProductCategoryBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateProductCategoryBodyCodeMax).optional(),
+  "name": zod.string().min(1).max(updateProductCategoryBodyNameMax).optional(),
+  "description": zod.string().max(updateProductCategoryBodyDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateProductCategoryBodyNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -5077,12 +5275,22 @@ export const ListProductWorkflowsResponse = zod.object({
 }))
 
 
+export const createProductWorkflowBodyOneCodeMax = 64;
+
+export const createProductWorkflowBodyOneNameMax = 200;
+
+export const createProductWorkflowBodyOneDescriptionMax = 2000;
+
+export const createProductWorkflowBodyOneNotesMax = 2000;
+
+
+
 export const CreateProductWorkflowBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createProductWorkflowBodyOneCodeMax),
+  "name": zod.string().min(1).max(createProductWorkflowBodyOneNameMax),
+  "description": zod.string().max(createProductWorkflowBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createProductWorkflowBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -5152,12 +5360,22 @@ export const UpdateProductWorkflowParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateProductWorkflowBodyOneCodeMax = 64;
+
+export const updateProductWorkflowBodyOneNameMax = 200;
+
+export const updateProductWorkflowBodyOneDescriptionMax = 2000;
+
+export const updateProductWorkflowBodyOneNotesMax = 2000;
+
+
+
 export const UpdateProductWorkflowBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateProductWorkflowBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateProductWorkflowBodyOneNameMax).optional(),
+  "description": zod.string().max(updateProductWorkflowBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateProductWorkflowBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -5269,12 +5487,22 @@ export const ListMaterialCategoriesResponse = zod.object({
 }))
 
 
+export const createMaterialCategoryBodyCodeMax = 64;
+
+export const createMaterialCategoryBodyNameMax = 200;
+
+export const createMaterialCategoryBodyDescriptionMax = 2000;
+
+export const createMaterialCategoryBodyNotesMax = 2000;
+
+
+
 export const CreateMaterialCategoryBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createMaterialCategoryBodyCodeMax),
+  "name": zod.string().min(1).max(createMaterialCategoryBodyNameMax),
+  "description": zod.string().max(createMaterialCategoryBodyDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createMaterialCategoryBodyNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -5338,12 +5566,22 @@ export const UpdateMaterialCategoryParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateMaterialCategoryBodyCodeMax = 64;
+
+export const updateMaterialCategoryBodyNameMax = 200;
+
+export const updateMaterialCategoryBodyDescriptionMax = 2000;
+
+export const updateMaterialCategoryBodyNotesMax = 2000;
+
+
+
 export const UpdateMaterialCategoryBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateMaterialCategoryBodyCodeMax).optional(),
+  "name": zod.string().min(1).max(updateMaterialCategoryBodyNameMax).optional(),
+  "description": zod.string().max(updateMaterialCategoryBodyDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateMaterialCategoryBodyNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -5453,12 +5691,22 @@ export const ListMaterialMastersResponse = zod.object({
 }))
 
 
+export const createMaterialMasterBodyOneCodeMax = 64;
+
+export const createMaterialMasterBodyOneNameMax = 200;
+
+export const createMaterialMasterBodyOneDescriptionMax = 2000;
+
+export const createMaterialMasterBodyOneNotesMax = 2000;
+
+
+
 export const CreateMaterialMasterBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createMaterialMasterBodyOneCodeMax),
+  "name": zod.string().min(1).max(createMaterialMasterBodyOneNameMax),
+  "description": zod.string().max(createMaterialMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createMaterialMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -5534,12 +5782,22 @@ export const UpdateMaterialMasterParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateMaterialMasterBodyOneCodeMax = 64;
+
+export const updateMaterialMasterBodyOneNameMax = 200;
+
+export const updateMaterialMasterBodyOneDescriptionMax = 2000;
+
+export const updateMaterialMasterBodyOneNotesMax = 2000;
+
+
+
 export const UpdateMaterialMasterBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateMaterialMasterBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateMaterialMasterBodyOneNameMax).optional(),
+  "description": zod.string().max(updateMaterialMasterBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateMaterialMasterBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -5657,12 +5915,22 @@ export const ListSuppliersResponse = zod.object({
 }))
 
 
+export const createSupplierBodyCodeMax = 64;
+
+export const createSupplierBodyNameMax = 200;
+
+export const createSupplierBodyDescriptionMax = 2000;
+
+export const createSupplierBodyNotesMax = 2000;
+
+
+
 export const CreateSupplierBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createSupplierBodyCodeMax),
+  "name": zod.string().min(1).max(createSupplierBodyNameMax),
+  "description": zod.string().max(createSupplierBodyDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createSupplierBodyNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -5726,12 +5994,22 @@ export const UpdateSupplierParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateSupplierBodyCodeMax = 64;
+
+export const updateSupplierBodyNameMax = 200;
+
+export const updateSupplierBodyDescriptionMax = 2000;
+
+export const updateSupplierBodyNotesMax = 2000;
+
+
+
 export const UpdateSupplierBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateSupplierBodyCodeMax).optional(),
+  "name": zod.string().min(1).max(updateSupplierBodyNameMax).optional(),
+  "description": zod.string().max(updateSupplierBodyDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateSupplierBodyNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -5839,12 +6117,22 @@ export const ListMaterialWorkflowsResponse = zod.object({
 }))
 
 
+export const createMaterialWorkflowBodyOneCodeMax = 64;
+
+export const createMaterialWorkflowBodyOneNameMax = 200;
+
+export const createMaterialWorkflowBodyOneDescriptionMax = 2000;
+
+export const createMaterialWorkflowBodyOneNotesMax = 2000;
+
+
+
 export const CreateMaterialWorkflowBody = zod.object({
-  "code": zod.string(),
-  "name": zod.string(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(createMaterialWorkflowBodyOneCodeMax),
+  "name": zod.string().min(1).max(createMaterialWorkflowBodyOneNameMax),
+  "description": zod.string().max(createMaterialWorkflowBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(createMaterialWorkflowBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -5914,12 +6202,22 @@ export const UpdateMaterialWorkflowParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
+export const updateMaterialWorkflowBodyOneCodeMax = 64;
+
+export const updateMaterialWorkflowBodyOneNameMax = 200;
+
+export const updateMaterialWorkflowBodyOneDescriptionMax = 2000;
+
+export const updateMaterialWorkflowBodyOneNotesMax = 2000;
+
+
+
 export const UpdateMaterialWorkflowBody = zod.object({
-  "code": zod.string().optional(),
-  "name": zod.string().optional(),
-  "description": zod.string().nullish(),
+  "code": zod.string().min(1).max(updateMaterialWorkflowBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateMaterialWorkflowBodyOneNameMax).optional(),
+  "description": zod.string().max(updateMaterialWorkflowBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().nullish(),
+  "notes": zod.string().max(updateMaterialWorkflowBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -6296,6 +6594,16 @@ export const GetInspectionResponse = zod.object({
 }))
 
 
+export const listStockBalancesQueryPageDefault = 1;
+export const listStockBalancesQueryPageSizeDefault = 25;
+
+export const ListStockBalancesQueryParams = zod.object({
+  "page": zod.coerce.number().default(listStockBalancesQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listStockBalancesQueryPageSizeDefault),
+  "search": zod.coerce.string().optional().describe('Filter by material code or name (case-insensitive substring)'),
+  "stock_state": zod.enum(['inspection_pending', 'available', 'rejected']).optional().describe('Filter to a single stock state')
+})
+
 export const ListStockBalancesResponse = zod.object({
   "items": zod.array(zod.object({
   "material_id": zod.string().uuid(),
@@ -6304,7 +6612,13 @@ export const ListStockBalancesResponse = zod.object({
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
   "stock_state": zod.enum(['inspection_pending', 'available', 'rejected']),
   "quantity": zod.number()
-}))
+})),
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
 })
 
 
