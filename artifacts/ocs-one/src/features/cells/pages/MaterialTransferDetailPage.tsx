@@ -83,6 +83,10 @@ export default function MaterialTransferDetailPage() {
               <Row label="Material" value={data.material_name ?? data.material_code} />
               <Row label="Source GRN" value={data.grn_number} />
               <Row label="Supplier" value={data.supplier_name} />
+              <Row label="Invoice #" value={data.invoice_number} />
+              <Row label="Supplier Lot #" value={data.supplier_lot_number} />
+              <Row label="Operator" value={data.operator_name} />
+              <Row label="Remarks" value={data.remarks} />
             </CardContent>
           </Card>
 
@@ -99,6 +103,36 @@ export default function MaterialTransferDetailPage() {
                 <Row label="Manufacturer" value={lot.manufacturer} />
                 <Row label="Received By" value={lot.receivedBy} />
                 <Row label="Invoice #" value={lot.invoiceNumber} />
+              </CardContent>
+            </Card>
+          )}
+
+          {data.consumed_by && data.consumed_by.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Consumed By (Downstream Production Orders)</CardTitle>
+              </CardHeader>
+              <CardContent className="overflow-x-auto p-0">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-xs text-muted-foreground">
+                      <th className="px-4 py-2 font-medium">Production Order</th>
+                      <th className="px-4 py-2 font-medium">Battery #</th>
+                      <th className="px-4 py-2 font-medium">Status</th>
+                      <th className="px-4 py-2 font-medium text-right">Cells Consumed</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.consumed_by.map((c) => (
+                      <tr key={c.production_order_id} className="border-b last:border-0">
+                        <td className="px-4 py-2 font-mono">{c.order_number ?? "—"}</td>
+                        <td className="px-4 py-2 font-mono">{c.battery_number ?? "—"}</td>
+                        <td className="px-4 py-2">{c.status ?? "—"}</td>
+                        <td className="px-4 py-2 text-right">{c.cells_consumed}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </CardContent>
             </Card>
           )}

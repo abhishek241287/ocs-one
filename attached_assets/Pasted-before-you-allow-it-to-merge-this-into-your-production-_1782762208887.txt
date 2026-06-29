@@ -1,0 +1,178 @@
+before you allow it to merge this into your production system, I would make five additional requirements.
+
+✅ What I agree with completely
+Inventory becomes the single source of truth for cell intake.
+GRN → Inspection → Inventory → Cell Processing is the correct manufacturing flow.
+Transfer document (TRF-xxxx) is the right approach.
+Material → Cell Master bridge is necessary.
+Partial transfers are required.
+Inventory ledger should remain append-only.
+Manual entry should not be available to normal operators.
+
+Those are all excellent decisions.
+
+My additional requirements
+1. One GRN line should support multiple transfers
+
+Example
+
+GRN
+
+1000 EVE 314Ah Cells
+
+Transfer 1
+
+300
+
+Transfer 2
+
+250
+
+Transfer 3
+
+450
+
+When balance reaches zero,
+
+the GRN line should disappear from the picker automatically.
+
+That prevents accidental duplicate transfers.
+
+2. Transfer should generate a document
+
+Instead of only recording a transaction,
+
+create
+
+TRF-20260701-000001
+
+which contains
+
+Transfer No
+GRN No
+Material
+Supplier
+Invoice
+Supplier Lot
+Quantity
+Operator
+Date
+Remarks
+
+This becomes the permanent manufacturing receipt.
+
+3. Cell Lot should reference Transfer—not GRN
+
+Instead of
+
+Cell Lot
+    ↓
+GRN
+
+make
+
+Cell Lot
+     ↓
+Transfer
+     ↓
+GRN
+
+Much cleaner.
+
+4. Lock quantity during transfer
+
+Two supervisors should never be able to transfer
+
+100
+
+and
+
+100
+
+simultaneously from
+
+Available = 100
+
+The log already mentions FOR UPDATE, which is the correct approach.
+
+I would explicitly verify this with concurrent-user testing before deployment.
+
+5. Transfer History screen
+
+After six months the production manager should be able to search
+
+TRF-20260701-000234
+
+and instantly know
+
+which GRN
+which supplier
+which invoice
+which operator
+which lot
+which production orders later consumed it.
+
+That makes troubleshooting and audits much easier.
+
+One thing I would ask Replit not to do
+
+The log says:
+
+Manual entry = Director only
+
+I would slightly change that.
+
+Instead of hiding it,
+
+show
+
+Historical Import / Emergency Recovery
+
+and require
+
+Director role
+Confirmation dialog
+Mandatory reason
+Audit entry
+
+That way, if you ever migrate old data or recover from an exceptional situation, the capability is available but tightly controlled.
+
+Commercial assessment
+
+This design brings your manufacturing flow much closer to an ERP-grade process:
+
+Supplier
+    ↓
+GRN
+    ↓
+Incoming Inspection
+    ↓
+Material Inventory
+    ↓
+Material Transfer
+    ↓
+Cell Lots
+    ↓
+Individual Cells
+    ↓
+Grading
+    ↓
+Matching
+    ↓
+Production
+    ↓
+QC
+    ↓
+Finished Product
+    ↓
+Packing
+    ↓
+Dispatch
+    ↓
+Dealer
+
+That is exactly the end-to-end traceability chain you want for a commercial battery manufacturing platform.
+
+My recommendation
+
+I would approve implementation, but I'd ask Replit to include these five enhancements as part of the build rather than adding them later. They fit naturally into the same feature and will save rework after deployment.

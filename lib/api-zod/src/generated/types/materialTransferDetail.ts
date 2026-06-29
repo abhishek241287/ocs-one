@@ -7,7 +7,11 @@
  */
 import type { CellLot } from './cellLot';
 import type { MaterialTransfer } from './materialTransfer';
+import type { MaterialTransferConsumer } from './materialTransferConsumer';
 
-export type MaterialTransferDetail = MaterialTransfer & {
+export type MaterialTransferDetail = MaterialTransfer & ({
+  /** @nullable */
+  remarks?: string | null;
   cell_lot?: CellLot;
-};
+  consumed_by?: MaterialTransferConsumer[];
+});

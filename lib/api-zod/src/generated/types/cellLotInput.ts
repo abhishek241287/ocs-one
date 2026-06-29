@@ -25,4 +25,9 @@ export interface CellLotInput {
   remarks?: string | null;
   /** @nullable */
   cellMasterId?: string | null;
+  /**
+     * Mandatory justification for a Historical Import / Emergency Recovery manual lot — recorded to the audit trail
+     * @minLength 1
+     */
+  reason: string;
 }

@@ -229,6 +229,7 @@ export * from './materialMasterUpdate';
 export * from './materialMasterUpdateUom';
 export * from './materialPostReceiptAction';
 export * from './materialTransfer';
+export * from './materialTransferConsumer';
 export * from './materialTransferDetail';
 export * from './materialTransferInput';
 export * from './materialWorkflow';

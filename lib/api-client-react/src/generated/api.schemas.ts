@@ -1063,6 +1063,11 @@ export interface CellLotInput {
   remarks?: string | null;
   /** @nullable */
   cellMasterId?: string | null;
+  /**
+     * Mandatory justification for a Historical Import / Emergency Recovery manual lot — recorded to the audit trail
+     * @minLength 1
+     */
+  reason: string;
 }
 
 export interface PatchCellLotBody {
@@ -2350,10 +2355,16 @@ export interface MaterialTransfer {
   supplier_id: string;
   /** @nullable */
   supplier_name?: string | null;
+  /** @nullable */
+  invoice_number?: string | null;
+  /** @nullable */
+  supplier_lot_number?: string | null;
   quantity: number;
   uom: InventoryUom;
   /** @nullable */
   transferred_by?: string | null;
+  /** @nullable */
+  operator_name?: string | null;
   created_at: string;
   /** @nullable */
   cell_lot_id?: string | null;
@@ -2361,9 +2372,23 @@ export interface MaterialTransfer {
   lot_number?: string | null;
 }
 
-export type MaterialTransferDetail = MaterialTransfer & {
+export interface MaterialTransferConsumer {
+  production_order_id: string;
+  /** @nullable */
+  order_number?: string | null;
+  /** @nullable */
+  battery_number?: string | null;
+  /** @nullable */
+  status?: string | null;
+  cells_consumed: number;
+}
+
+export type MaterialTransferDetail = MaterialTransfer & ({
+  /** @nullable */
+  remarks?: string | null;
   cell_lot?: CellLot;
-};
+  consumed_by?: MaterialTransferConsumer[];
+});
 
 export interface MaterialTransferInput {
   grn_line_id: string;

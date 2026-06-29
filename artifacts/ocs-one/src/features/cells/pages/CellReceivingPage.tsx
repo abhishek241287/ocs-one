@@ -182,6 +182,7 @@ const DEFAULT_FORM = {
   quantityReceived: "",
   receivedBy: "",
   remarks: "",
+  reason: "",
 };
 
 // ─── Transfer dialog defaults ────────────────────────────────────────────────
@@ -490,6 +491,7 @@ function CellLotsTab() {
 
   // Create dialog (Historical Import / Emergency Recovery — director only)
   const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [form, setForm] = useState(DEFAULT_FORM);
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit() });
@@ -526,6 +528,7 @@ function CellLotsTab() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/cells/lots"] });
+        setConfirmOpen(false);
         setOpen(false);
         setForm(DEFAULT_FORM);
         notify.success("Lot imported", { description: "Individual cell records generated." });
@@ -557,6 +560,17 @@ function CellLotsTab() {
       notify.error("Required fields missing", { description: missing.join(", ") });
       return;
     }
+    if (!form.reason.trim()) {
+      notify.error("Reason required", {
+        description: "A justification is mandatory for a manual historical import.",
+      });
+      return;
+    }
+    // Confirm before bypassing the inventory production path.
+    setConfirmOpen(true);
+  };
+
+  const doImport = () => {
     createLot.mutate({
       data: {
         supplier: form.supplier,
@@ -570,6 +584,7 @@ function CellLotsTab() {
         quantityReceived: parseInt(form.quantityReceived),
         receivedBy: form.receivedBy,
         remarks: form.remarks || null,
+        reason: form.reason,
       },
     });
   };
@@ -869,6 +884,17 @@ function CellLotsTab() {
               <Label>Remarks</Label>
               <Input value={form.remarks} onChange={set("remarks")} placeholder="Any additional notes..." />
             </div>
+            <div className="space-y-1.5">
+              <Label>Reason for Manual Import<Req /></Label>
+              <Input
+                value={form.reason}
+                onChange={set("reason")}
+                placeholder="Mandatory justification — recorded to the audit trail"
+              />
+              <p className="text-xs text-muted-foreground">
+                Why is this lot being entered manually instead of via Inventory? This is logged to the security audit.
+              </p>
+            </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={createLot.isPending}>
@@ -877,6 +903,33 @@ function CellLotsTab() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Historical Import confirmation ── */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Historical Import</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+              This creates <strong>{form.quantityReceived || 0}</strong> cell record(s) for lot{" "}
+              <strong className="font-mono">{form.lotNumber}</strong> <strong>outside</strong> the normal
+              Inventory → Material Transfer path. Inventory stock will <strong>not</strong> be netted.
+            </div>
+            <div className="text-muted-foreground">
+              <span className="font-medium text-foreground">Reason:</span> {form.reason}
+            </div>
+            <p className="text-muted-foreground">This action is recorded to the security audit trail. Proceed?</p>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+            <Button type="button" onClick={doImport} disabled={createLot.isPending}>
+              {createLot.isPending && <Loader2 size={14} className="mr-1 animate-spin" />}
+              Confirm Import
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

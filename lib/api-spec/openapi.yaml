@@ -4378,7 +4378,7 @@ components:
 
     CellLotInput:
       type: object
-      required: [supplier, manufacturer, cellModel, nominalCapacityAh, lotNumber, dateReceived, quantityReceived, receivedBy]
+      required: [supplier, manufacturer, cellModel, nominalCapacityAh, lotNumber, dateReceived, quantityReceived, receivedBy, reason]
       properties:
         supplier: { type: string }
         manufacturer: { type: string }
@@ -4393,6 +4393,10 @@ components:
         receivedBy: { type: string }
         remarks: { type: ["string", "null"] }
         cellMasterId: { type: ["string", "null"], format: uuid }
+        reason:
+          type: string
+          minLength: 1
+          description: "Mandatory justification for a Historical Import / Emergency Recovery manual lot — recorded to the audit trail"
 
     PatchCellLotBody:
       type: object
@@ -5501,19 +5505,36 @@ components:
         grn_line_id: { type: string, format: uuid }
         supplier_id: { type: string, format: uuid }
         supplier_name: { type: ["string", "null"] }
+        invoice_number: { type: ["string", "null"] }
+        supplier_lot_number: { type: ["string", "null"] }
         quantity: { type: number }
         uom: { $ref: "#/components/schemas/InventoryUom" }
         transferred_by: { type: ["string", "null"], format: uuid }
+        operator_name: { type: ["string", "null"] }
         created_at: { type: string, format: date-time }
         cell_lot_id: { type: ["string", "null"], format: uuid }
         lot_number: { type: ["string", "null"] }
+
+    MaterialTransferConsumer:
+      type: object
+      required: [production_order_id, cells_consumed]
+      properties:
+        production_order_id: { type: string, format: uuid }
+        order_number: { type: ["string", "null"] }
+        battery_number: { type: ["string", "null"] }
+        status: { type: ["string", "null"] }
+        cells_consumed: { type: integer }
 
     MaterialTransferDetail:
       allOf:
         - $ref: "#/components/schemas/MaterialTransfer"
         - type: object
           properties:
+            remarks: { type: ["string", "null"] }
             cell_lot: { $ref: "#/components/schemas/CellLot" }
+            consumed_by:
+              type: array
+              items: { $ref: "#/components/schemas/MaterialTransferConsumer" }
 
     MaterialTransferInput:
       type: object

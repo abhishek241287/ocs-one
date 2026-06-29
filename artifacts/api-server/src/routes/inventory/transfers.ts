@@ -13,6 +13,8 @@ import {
   cellLotsTable,
   cellsTable,
   cellLotEventsTable,
+  usersTable,
+  mfgProductionOrdersTable,
 } from "@workspace/db";
 import { CreateMaterialTransferBody } from "@workspace/api-zod";
 import { requireWriteRole } from "../../middleware/auth";
@@ -66,15 +68,22 @@ interface TransferJoinRow {
   grnLineId: string;
   supplierId: string;
   supplierName: string | null;
+  invoiceNumber: string | null;
+  supplierLotNumber: string | null;
   quantity: string;
   uom: string;
   transferredBy: string | null;
+  operatorName: string | null;
   createdAt: Date;
   cellLotId: string | null;
   lotNumber: string | null;
 }
 
-function serializeTransfer(t: TransferJoinRow, cellLot?: Record<string, unknown>) {
+function serializeTransfer(
+  t: TransferJoinRow,
+  cellLot?: Record<string, unknown>,
+  consumedBy?: unknown[],
+) {
   const base = {
     id: t.id,
     transfer_number: t.transferNumber,
@@ -88,16 +97,27 @@ function serializeTransfer(t: TransferJoinRow, cellLot?: Record<string, unknown>
     grn_line_id: t.grnLineId,
     supplier_id: t.supplierId,
     supplier_name: t.supplierName ?? null,
+    invoice_number: t.invoiceNumber ?? null,
+    supplier_lot_number: t.supplierLotNumber ?? null,
     quantity: numify(t.quantity),
     uom: t.uom,
     transferred_by: t.transferredBy,
+    operator_name: t.operatorName ?? null,
     created_at: t.createdAt,
     cell_lot_id: t.cellLotId ?? null,
     lot_number: t.lotNumber ?? null,
   };
   // The Cell Lot row is already camelCase (matches the generated CellLot type) and its
   // numeric columns are JS numbers (doublePrecision / integer), so it serializes as-is.
-  return cellLot ? { ...base, cell_lot: cellLot } : base;
+  // The detail shape additionally carries the lot remarks (the document's remarks) and
+  // the downstream consumers (production orders that later consumed these cells).
+  if (!cellLot) return base;
+  return {
+    ...base,
+    remarks: (cellLot.remarks as string | null) ?? null,
+    cell_lot: cellLot,
+    consumed_by: consumedBy ?? [],
+  };
 }
 
 // Shared SELECT projection for transfer list/detail (joined names + linked cell lot).
@@ -114,9 +134,12 @@ const transferSelect = {
   grnLineId: materialTransfersTable.grnLineId,
   supplierId: materialTransfersTable.supplierId,
   supplierName: suppliersTable.name,
+  invoiceNumber: grnHeadersTable.invoiceNumber,
+  supplierLotNumber: grnLineItemsTable.supplierLotNumber,
   quantity: materialTransfersTable.quantity,
   uom: materialTransfersTable.uom,
   transferredBy: materialTransfersTable.transferredBy,
+  operatorName: usersTable.name,
   createdAt: materialTransfersTable.createdAt,
   cellLotId: cellLotsTable.id,
   lotNumber: cellLotsTable.lotNumber,
@@ -255,6 +278,8 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     .innerJoin(materialsTable, eq(materialsTable.id, materialTransfersTable.materialId))
     .innerJoin(grnHeadersTable, eq(grnHeadersTable.id, materialTransfersTable.grnId))
     .innerJoin(suppliersTable, eq(suppliersTable.id, materialTransfersTable.supplierId))
+    .innerJoin(grnLineItemsTable, eq(grnLineItemsTable.id, materialTransfersTable.grnLineId))
+    .leftJoin(usersTable, eq(usersTable.id, materialTransfersTable.transferredBy))
     .leftJoin(cellLotsTable, eq(cellLotsTable.transferId, materialTransfersTable.id))
     .where(where)
     .limit(pageSize)
@@ -487,10 +512,13 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     materialName: outcome.ctx.materialName,
     grnNumber: outcome.ctx.grnNumber,
     supplierName: outcome.ctx.supplierName,
+    invoiceNumber: outcome.ctx.invoiceNumber ?? null,
+    supplierLotNumber: outcome.ctx.supplierLotNumber ?? null,
+    operatorName: req.user?.name ?? null,
     cellLotId: outcome.lot.id,
     lotNumber: outcome.lot.lotNumber,
   } as TransferJoinRow;
-  res.status(201).json(serializeTransfer(row, outcome.lot as Record<string, unknown>));
+  res.status(201).json(serializeTransfer(row, outcome.lot as Record<string, unknown>, []));
 });
 
 // ─── GET /inventory/transfers/:id — transfer document detail ──────────────────
@@ -501,6 +529,8 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     .innerJoin(materialsTable, eq(materialsTable.id, materialTransfersTable.materialId))
     .innerJoin(grnHeadersTable, eq(grnHeadersTable.id, materialTransfersTable.grnId))
     .innerJoin(suppliersTable, eq(suppliersTable.id, materialTransfersTable.supplierId))
+    .innerJoin(grnLineItemsTable, eq(grnLineItemsTable.id, materialTransfersTable.grnLineId))
+    .leftJoin(usersTable, eq(usersTable.id, materialTransfersTable.transferredBy))
     .leftJoin(cellLotsTable, eq(cellLotsTable.transferId, materialTransfersTable.id))
     .where(eq(materialTransfersTable.id, req.params.id as string))
     .limit(1);
@@ -511,6 +541,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
   }
 
   let cellLot: Record<string, unknown> | undefined;
+  let consumedBy: unknown[] = [];
   if (row.cellLotId) {
     const [lot] = await db
       .select()
@@ -518,9 +549,44 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       .where(eq(cellLotsTable.id, row.cellLotId))
       .limit(1);
     cellLot = lot as Record<string, unknown> | undefined;
+
+    // Downstream traceability — which production orders later consumed cells from
+    // this transfer's lot (a cell carries allocation_order_id once matched/allocated).
+    const consumers = await db
+      .select({
+        productionOrderId: cellsTable.allocationOrderId,
+        orderNumber: mfgProductionOrdersTable.orderNumber,
+        batteryNumber: mfgProductionOrdersTable.batteryNumber,
+        status: mfgProductionOrdersTable.status,
+        cellsConsumed: count(),
+      })
+      .from(cellsTable)
+      .leftJoin(
+        mfgProductionOrdersTable,
+        eq(mfgProductionOrdersTable.id, cellsTable.allocationOrderId),
+      )
+      .where(
+        and(
+          eq(cellsTable.lotId, row.cellLotId),
+          isNotNull(cellsTable.allocationOrderId),
+        ),
+      )
+      .groupBy(
+        cellsTable.allocationOrderId,
+        mfgProductionOrdersTable.orderNumber,
+        mfgProductionOrdersTable.batteryNumber,
+        mfgProductionOrdersTable.status,
+      );
+    consumedBy = consumers.map((c) => ({
+      production_order_id: c.productionOrderId,
+      order_number: c.orderNumber ?? null,
+      battery_number: c.batteryNumber ?? null,
+      status: c.status ?? null,
+      cells_consumed: Number(c.cellsConsumed),
+    }));
   }
 
-  res.json(serializeTransfer(row as TransferJoinRow, cellLot));
+  res.json(serializeTransfer(row as TransferJoinRow, cellLot, consumedBy));
 });
 
 export { cellStockRouter };

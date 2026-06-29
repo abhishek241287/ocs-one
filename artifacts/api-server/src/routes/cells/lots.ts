@@ -7,6 +7,7 @@ import {
   PatchCellLotBody,
 } from "@workspace/api-zod";
 import { requireRole } from "../../middleware/auth";
+import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
 
 const router: IRouter = Router({ mergeParams: true });
 
@@ -120,16 +121,18 @@ router.post(
 
       await tx.insert(cellsTable).values(cellRecords);
 
-      // Record lot received event
+      // Record lot received event — manual historical import carries the
+      // director's mandatory justification on the lot timeline.
       await tx.insert(cellLotEventsTable).values({
         lotId: lot.id,
         eventType: "lot_received",
         performedBy: req.user!.email,
-        reason: null,
+        reason: body.reason,
         changes: {
           lotNumber: lot.lotNumber,
           supplier: lot.supplier,
           quantityReceived: lot.quantityReceived,
+          source: "manual_historical_import",
         },
       });
 
@@ -138,7 +141,7 @@ router.post(
         lotId: lot.id,
         eventType: "cell_records_generated",
         performedBy: req.user!.email,
-        reason: null,
+        reason: body.reason,
         changes: {
           quantity: body.quantityReceived,
           range: `${firstCellId} → ${lastCellId}`,
@@ -146,6 +149,20 @@ router.post(
       });
 
       return lot;
+    });
+
+    // Persist a security audit event — a manual cell intake bypasses the normal
+    // Inventory → Material Transfer production path, so it is an authorization-
+    // sensitive action worth recording in the security trail with the reason.
+    void recordSecurityEvent({
+      eventType: "cell_lot.manual_import",
+      severity: "warning",
+      actorId: req.user?.userId ?? null,
+      actorEmail: req.user?.email ?? null,
+      actorRole: req.user?.role ?? null,
+      ...reqMeta(req),
+      statusCode: 201,
+      detail: `Historical import: lot ${result.lotNumber} (${body.quantityReceived} cells) — ${body.reason}`,
     });
 
     const stats = await db

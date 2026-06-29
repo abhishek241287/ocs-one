@@ -294,6 +294,7 @@ async function runTriggers(directorJar: CookieJar): Promise<{ viewerLoginRowId: 
       dateReceived: "2026-06-28",
       quantityReceived: 2,
       receivedBy: DIRECTOR_EMAIL,
+      reason: "SS-03 certification — throwaway audit-suite cert lot",
     }),
   });
   if (lotRes.status !== 201) throw new Error(`Cert lot creation failed: HTTP ${lotRes.status}`);

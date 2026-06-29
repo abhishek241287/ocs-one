@@ -3617,6 +3617,7 @@ export const ListCellLotsResponse = zod.object({
 export const createCellLotBodyCellChemistryDefault = `LiFePO4`;
 
 
+
 export const CreateCellLotBody = zod.object({
   "supplier": zod.string(),
   "manufacturer": zod.string(),
@@ -3630,7 +3631,8 @@ export const CreateCellLotBody = zod.object({
   "quantityReceived": zod.number().min(1),
   "receivedBy": zod.string(),
   "remarks": zod.string().nullish(),
-  "cellMasterId": zod.string().uuid().nullish()
+  "cellMasterId": zod.string().uuid().nullish(),
+  "reason": zod.string().min(1).describe('Mandatory justification for a Historical Import \/ Emergency Recovery manual lot — recorded to the audit trail')
 })
 
 export const CreateCellLotResponse = zod.object({
@@ -6843,9 +6845,12 @@ export const ListMaterialTransfersResponse = zod.object({
   "grn_line_id": zod.string().uuid(),
   "supplier_id": zod.string().uuid(),
   "supplier_name": zod.string().nullish(),
+  "invoice_number": zod.string().nullish(),
+  "supplier_lot_number": zod.string().nullish(),
   "quantity": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
   "transferred_by": zod.string().uuid().nullish(),
+  "operator_name": zod.string().nullish(),
   "created_at": zod.coerce.date(),
   "cell_lot_id": zod.string().uuid().nullish(),
   "lot_number": zod.string().nullish()
@@ -6886,13 +6891,17 @@ export const CreateMaterialTransferResponse = zod.object({
   "grn_line_id": zod.string().uuid(),
   "supplier_id": zod.string().uuid(),
   "supplier_name": zod.string().nullish(),
+  "invoice_number": zod.string().nullish(),
+  "supplier_lot_number": zod.string().nullish(),
   "quantity": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
   "transferred_by": zod.string().uuid().nullish(),
+  "operator_name": zod.string().nullish(),
   "created_at": zod.coerce.date(),
   "cell_lot_id": zod.string().uuid().nullish(),
   "lot_number": zod.string().nullish()
 }).and(zod.object({
+  "remarks": zod.string().nullish(),
   "cell_lot": zod.object({
   "id": zod.string().uuid(),
   "supplier": zod.string(),
@@ -6912,7 +6921,14 @@ export const CreateMaterialTransferResponse = zod.object({
   "transferId": zod.string().uuid().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
-}).optional()
+}).optional(),
+  "consumed_by": zod.array(zod.object({
+  "production_order_id": zod.string().uuid(),
+  "order_number": zod.string().nullish(),
+  "battery_number": zod.string().nullish(),
+  "status": zod.string().nullish(),
+  "cells_consumed": zod.number()
+})).optional()
 }))
 
 
@@ -6933,13 +6949,17 @@ export const GetMaterialTransferResponse = zod.object({
   "grn_line_id": zod.string().uuid(),
   "supplier_id": zod.string().uuid(),
   "supplier_name": zod.string().nullish(),
+  "invoice_number": zod.string().nullish(),
+  "supplier_lot_number": zod.string().nullish(),
   "quantity": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
   "transferred_by": zod.string().uuid().nullish(),
+  "operator_name": zod.string().nullish(),
   "created_at": zod.coerce.date(),
   "cell_lot_id": zod.string().uuid().nullish(),
   "lot_number": zod.string().nullish()
 }).and(zod.object({
+  "remarks": zod.string().nullish(),
   "cell_lot": zod.object({
   "id": zod.string().uuid(),
   "supplier": zod.string(),
@@ -6959,7 +6979,14 @@ export const GetMaterialTransferResponse = zod.object({
   "transferId": zod.string().uuid().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
-}).optional()
+}).optional(),
+  "consumed_by": zod.array(zod.object({
+  "production_order_id": zod.string().uuid(),
+  "order_number": zod.string().nullish(),
+  "battery_number": zod.string().nullish(),
+  "status": zod.string().nullish(),
+  "cells_consumed": zod.number()
+})).optional()
 }))
 
 

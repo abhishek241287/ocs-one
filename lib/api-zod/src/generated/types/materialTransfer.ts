@@ -24,10 +24,16 @@ export interface MaterialTransfer {
   supplier_id: string;
   /** @nullable */
   supplier_name?: string | null;
+  /** @nullable */
+  invoice_number?: string | null;
+  /** @nullable */
+  supplier_lot_number?: string | null;
   quantity: number;
   uom: InventoryUom;
   /** @nullable */
   transferred_by?: string | null;
+  /** @nullable */
+  operator_name?: string | null;
   created_at: Date;
   /** @nullable */
   cell_lot_id?: string | null;
