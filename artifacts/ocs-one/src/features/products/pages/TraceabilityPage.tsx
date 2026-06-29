@@ -108,7 +108,7 @@ export default function TraceabilityPage() {
         <div className="rounded-lg border bg-card p-5">
           <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
             <QrCode className="h-4 w-4 text-orange-600" />
-            Search by serial number
+            Search by serial or production order number
           </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -116,14 +116,14 @@ export default function TraceabilityPage() {
               ref={searchRef}
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Scan or type a product serial number…"
+              placeholder="Scan or type a serial or production order number…"
               className="pl-9 h-11 text-base font-mono"
               autoFocus
             />
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Enter an official product serial (OCS or manufacturer) to find the unit, then open it to see
-            component genealogy and its full event timeline.
+            Enter an official product serial (OCS or manufacturer) or a production order number to find the
+            unit, then open it to see component genealogy and its full event timeline.
           </p>
         </div>
 

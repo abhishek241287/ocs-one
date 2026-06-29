@@ -8,6 +8,7 @@ import {
   productCategoriesTable,
   masterProductsTable,
   logisticsDealersTable,
+  mfgProductionOrdersTable,
 } from "@workspace/db";
 import { UpdateProductStatusBody } from "@workspace/api-zod";
 import { requireRole } from "../../middleware/auth";
@@ -74,6 +75,7 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
         ilike(masterProductsTable.code, `%${query.search}%`),
         ilike(masterProductsTable.name, `%${query.search}%`),
         ilike(logisticsDealersTable.dealerName, `%${query.search}%`),
+        ilike(mfgProductionOrdersTable.orderNumber, `%${query.search}%`),
       ),
     );
   }
@@ -84,6 +86,7 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     .from(productsTable)
     .leftJoin(masterProductsTable, eq(productsTable.modelId, masterProductsTable.id))
     .leftJoin(logisticsDealersTable, eq(productsTable.dealerId, logisticsDealersTable.id))
+    .leftJoin(mfgProductionOrdersTable, eq(productsTable.sourceProductionOrderId, mfgProductionOrdersTable.id))
     .where(where);
 
   const items = await db
@@ -111,6 +114,7 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     .leftJoin(productCategoriesTable, eq(productsTable.categoryId, productCategoriesTable.id))
     .leftJoin(masterProductsTable, eq(productsTable.modelId, masterProductsTable.id))
     .leftJoin(logisticsDealersTable, eq(productsTable.dealerId, logisticsDealersTable.id))
+    .leftJoin(mfgProductionOrdersTable, eq(productsTable.sourceProductionOrderId, mfgProductionOrdersTable.id))
     .where(where)
     .limit(pageSize)
     .offset(offset)
