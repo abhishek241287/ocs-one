@@ -42,3 +42,9 @@ id = "jOJrjF0VYjbTZvM27csPO"
 uri = "file://CW-03_PHASE-0_FOUNDATION_REVIEW.md"
 type = "text"
 title = "CW-03 Phase 0 — Product Platform Foundation Review"
+
+[[outputs]]
+id = "fs41drMnH9Om_rwazu0iM"
+uri = "file://docs/commercial-readiness-report.md"
+type = "text"
+title = "OCS One — Commercial Readiness Report (Phase 1)"
