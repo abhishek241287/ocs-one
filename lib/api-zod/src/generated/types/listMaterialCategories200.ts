@@ -5,9 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { MasterCommon } from './masterCommon';
 import type { MasterListResponse } from './masterListResponse';
+import type { MaterialCategory } from './materialCategory';
 
 export type ListMaterialCategories200 = MasterListResponse & {
-  items?: MasterCommon[];
+  items?: MaterialCategory[];
 };

@@ -7,4 +7,7 @@
  */
 import type { MasterCommonInput } from './masterCommonInput';
 
-export type MaterialCategoryInput = MasterCommonInput;
+export type MaterialCategoryInput = MasterCommonInput & ({
+  /** @nullable */
+  linked_master_type?: string | null;
+});

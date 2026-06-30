@@ -1,0 +1,116 @@
+Final CTO Instruction
+
+Build Mode Approved. Proceed with implementation.
+
+Before creating any schema, follow these principles:
+
+1. Material is the Procurement Item (Single Source of Truth)
+Material Master is the only place where linkage is maintained.
+GRN derives everything from Material automatically.
+Operators never manually choose component type during GRN.
+2. Component Masters are Engineering Masters
+
+Cell Master, BMS Master, Cable Master, Busbar Master, Connector Master, Charger Master, Cabinet Master are engineering definitions, not inventory masters.
+
+They should never contain stock quantities.
+
+Inventory always comes from the ledger.
+
+3. Inventory belongs only to Material
+
+Never create:
+
+Cell Qty
+BMS Qty
+Cable Qty
+
+inside the component masters.
+
+Inventory must always be calculated from:
+
+Inventory Ledger
+        ↓
+Material
+        ↓
+Linked Master
+
+This keeps one source of truth.
+
+4. Component Masters must become Read-only after linkage
+
+If a Component Master is linked to an Active Material and transactions exist:
+
+allow specification edits only if they do not affect inventory identity (description, notes, etc.)
+block changes that would change engineering identity (chemistry, capacity, connector type, etc.)
+
+This prevents historical GRNs from silently changing meaning.
+
+5. Material Revision
+
+Instead of editing linked masters after transactions:
+
+LF314K Rev-1
+        ↓
+Inactive
+
+LF314K Rev-2
+        ↓
+Active
+
+Historical GRNs stay linked to Rev-1.
+
+Future GRNs use Rev-2.
+
+6. Unified Inventory
+
+One page only.
+
+Inventory
+
+All
+Cells
+BMS
+Cable
+Busbar
+Connector
+Cabinet
+Charger
+Consumables
+Packaging
+
+Everything comes from the same ledger.
+
+7. Production Phase is OUT OF SCOPE
+
+Do not consume inventory from Production yet.
+
+Only make sure the architecture is ready.
+
+8. Commercial Priority
+
+If any implementation decision conflicts with:
+
+simplicity,
+operator usability,
+inventory accuracy,
+
+choose the simplest design that preserves a single source of truth.
+
+One more thing
+
+I would also tell Replit:
+
+Do not implement everything in one huge commit.
+
+Deliver in small verified milestones:
+
+Schema
+Backend validation
+Material Master UI
+GRN integration
+Inventory page
+End-to-end verification
+
+Freeze each milestone before starting the next.
+
+That incremental approach makes it much easier to test and catch issues early, especially for a core ERP module like procurement and inventory.

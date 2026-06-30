@@ -5634,26 +5634,28 @@ export const ListMaterialCategoriesResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "linked_master_type": zod.string().nullish()
+})))
 }))
-}))
 
 
-export const createMaterialCategoryBodyCodeMax = 64;
+export const createMaterialCategoryBodyOneCodeMax = 64;
 
-export const createMaterialCategoryBodyNameMax = 200;
+export const createMaterialCategoryBodyOneNameMax = 200;
 
-export const createMaterialCategoryBodyDescriptionMax = 2000;
+export const createMaterialCategoryBodyOneDescriptionMax = 2000;
 
-export const createMaterialCategoryBodyNotesMax = 2000;
+export const createMaterialCategoryBodyOneNotesMax = 2000;
 
 
 
 export const CreateMaterialCategoryBody = zod.object({
-  "code": zod.string().min(1).max(createMaterialCategoryBodyCodeMax),
-  "name": zod.string().min(1).max(createMaterialCategoryBodyNameMax),
-  "description": zod.string().max(createMaterialCategoryBodyDescriptionMax).nullish(),
+  "code": zod.string().min(1).max(createMaterialCategoryBodyOneCodeMax),
+  "name": zod.string().min(1).max(createMaterialCategoryBodyOneNameMax),
+  "description": zod.string().max(createMaterialCategoryBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().max(createMaterialCategoryBodyNotesMax).nullish(),
+  "notes": zod.string().max(createMaterialCategoryBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -5661,7 +5663,9 @@ export const CreateMaterialCategoryBody = zod.object({
   "fileType": zod.string(),
   "uploadedAt": zod.coerce.date()
 })).optional()
-})
+}).and(zod.object({
+  "linked_master_type": zod.string().nullish()
+}))
 
 export const CreateMaterialCategoryResponse = zod.object({
   "id": zod.string().uuid(),
@@ -5683,7 +5687,9 @@ export const CreateMaterialCategoryResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
-})
+}).and(zod.object({
+  "linked_master_type": zod.string().nullish()
+}))
 
 
 export const GetMaterialCategoryParams = zod.object({
@@ -5710,29 +5716,31 @@ export const GetMaterialCategoryResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
-})
+}).and(zod.object({
+  "linked_master_type": zod.string().nullish()
+}))
 
 
 export const UpdateMaterialCategoryParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
 
-export const updateMaterialCategoryBodyCodeMax = 64;
+export const updateMaterialCategoryBodyOneCodeMax = 64;
 
-export const updateMaterialCategoryBodyNameMax = 200;
+export const updateMaterialCategoryBodyOneNameMax = 200;
 
-export const updateMaterialCategoryBodyDescriptionMax = 2000;
+export const updateMaterialCategoryBodyOneDescriptionMax = 2000;
 
-export const updateMaterialCategoryBodyNotesMax = 2000;
+export const updateMaterialCategoryBodyOneNotesMax = 2000;
 
 
 
 export const UpdateMaterialCategoryBody = zod.object({
-  "code": zod.string().min(1).max(updateMaterialCategoryBodyCodeMax).optional(),
-  "name": zod.string().min(1).max(updateMaterialCategoryBodyNameMax).optional(),
-  "description": zod.string().max(updateMaterialCategoryBodyDescriptionMax).nullish(),
+  "code": zod.string().min(1).max(updateMaterialCategoryBodyOneCodeMax).optional(),
+  "name": zod.string().min(1).max(updateMaterialCategoryBodyOneNameMax).optional(),
+  "description": zod.string().max(updateMaterialCategoryBodyOneDescriptionMax).nullish(),
   "effective_date": zod.string().nullish(),
-  "notes": zod.string().max(updateMaterialCategoryBodyNotesMax).nullish(),
+  "notes": zod.string().max(updateMaterialCategoryBodyOneNotesMax).nullish(),
   "attachments": zod.array(zod.object({
   "id": zod.string().uuid(),
   "name": zod.string(),
@@ -5740,7 +5748,9 @@ export const UpdateMaterialCategoryBody = zod.object({
   "fileType": zod.string(),
   "uploadedAt": zod.coerce.date()
 })).optional()
-})
+}).and(zod.object({
+  "linked_master_type": zod.string().nullish()
+}))
 
 export const UpdateMaterialCategoryResponse = zod.object({
   "id": zod.string().uuid(),
@@ -5762,7 +5772,9 @@ export const UpdateMaterialCategoryResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
-})
+}).and(zod.object({
+  "linked_master_type": zod.string().nullish()
+}))
 
 
 export const ToggleMaterialCategoryStatusParams = zod.object({
@@ -5793,7 +5805,9 @@ export const ToggleMaterialCategoryStatusResponse = zod.object({
   "created_at": zod.coerce.date(),
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
-})
+}).and(zod.object({
+  "linked_master_type": zod.string().nullish()
+}))
 
 
 export const listMaterialMastersQueryPageDefault = 1;
@@ -5838,6 +5852,15 @@ export const ListMaterialMastersResponse = zod.object({
   "category_id": zod.string().uuid().optional(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']).optional(),
   "manufacturer": zod.string().nullish(),
+  "usage_type": zod.enum(['INVENTORY_COMPONENT', 'CONSUMABLE', 'PACKAGING', 'SERVICE_ITEM']).optional(),
+  "linked_master_type": zod.string().nullish(),
+  "linked_master_id": zod.string().uuid().nullish(),
+  "linked_master": zod.object({
+  "type": zod.enum(['CELL', 'BMS', 'CABLE', 'BUSBAR', 'CONNECTOR', 'CHARGER', 'CABINET']),
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string()
+}).nullish(),
   "cell_master_id": zod.string().uuid().nullish()
 })))
 }))
@@ -5870,7 +5893,9 @@ export const CreateMaterialMasterBody = zod.object({
   "category_id": zod.string().uuid(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
   "manufacturer": zod.string().nullish(),
-  "cell_master_id": zod.string().uuid().nullish()
+  "usage_type": zod.enum(['INVENTORY_COMPONENT', 'CONSUMABLE', 'PACKAGING', 'SERVICE_ITEM']).optional(),
+  "linked_master_type": zod.string().nullish(),
+  "linked_master_id": zod.string().uuid().nullish()
 }))
 
 export const CreateMaterialMasterResponse = zod.object({
@@ -5897,6 +5922,15 @@ export const CreateMaterialMasterResponse = zod.object({
   "category_id": zod.string().uuid().optional(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']).optional(),
   "manufacturer": zod.string().nullish(),
+  "usage_type": zod.enum(['INVENTORY_COMPONENT', 'CONSUMABLE', 'PACKAGING', 'SERVICE_ITEM']).optional(),
+  "linked_master_type": zod.string().nullish(),
+  "linked_master_id": zod.string().uuid().nullish(),
+  "linked_master": zod.object({
+  "type": zod.enum(['CELL', 'BMS', 'CABLE', 'BUSBAR', 'CONNECTOR', 'CHARGER', 'CABINET']),
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string()
+}).nullish(),
   "cell_master_id": zod.string().uuid().nullish()
 }))
 
@@ -5929,6 +5963,15 @@ export const GetMaterialMasterResponse = zod.object({
   "category_id": zod.string().uuid().optional(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']).optional(),
   "manufacturer": zod.string().nullish(),
+  "usage_type": zod.enum(['INVENTORY_COMPONENT', 'CONSUMABLE', 'PACKAGING', 'SERVICE_ITEM']).optional(),
+  "linked_master_type": zod.string().nullish(),
+  "linked_master_id": zod.string().uuid().nullish(),
+  "linked_master": zod.object({
+  "type": zod.enum(['CELL', 'BMS', 'CABLE', 'BUSBAR', 'CONNECTOR', 'CHARGER', 'CABINET']),
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string()
+}).nullish(),
   "cell_master_id": zod.string().uuid().nullish()
 }))
 
@@ -5964,7 +6007,9 @@ export const UpdateMaterialMasterBody = zod.object({
   "category_id": zod.string().uuid().optional(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']).optional(),
   "manufacturer": zod.string().nullish(),
-  "cell_master_id": zod.string().uuid().nullish()
+  "usage_type": zod.enum(['INVENTORY_COMPONENT', 'CONSUMABLE', 'PACKAGING', 'SERVICE_ITEM']).optional(),
+  "linked_master_type": zod.string().nullish(),
+  "linked_master_id": zod.string().uuid().nullish()
 }))
 
 export const UpdateMaterialMasterResponse = zod.object({
@@ -5991,6 +6036,15 @@ export const UpdateMaterialMasterResponse = zod.object({
   "category_id": zod.string().uuid().optional(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']).optional(),
   "manufacturer": zod.string().nullish(),
+  "usage_type": zod.enum(['INVENTORY_COMPONENT', 'CONSUMABLE', 'PACKAGING', 'SERVICE_ITEM']).optional(),
+  "linked_master_type": zod.string().nullish(),
+  "linked_master_id": zod.string().uuid().nullish(),
+  "linked_master": zod.object({
+  "type": zod.enum(['CELL', 'BMS', 'CABLE', 'BUSBAR', 'CONNECTOR', 'CHARGER', 'CABINET']),
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string()
+}).nullish(),
   "cell_master_id": zod.string().uuid().nullish()
 }))
 
@@ -6027,6 +6081,15 @@ export const ToggleMaterialMasterStatusResponse = zod.object({
   "category_id": zod.string().uuid().optional(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']).optional(),
   "manufacturer": zod.string().nullish(),
+  "usage_type": zod.enum(['INVENTORY_COMPONENT', 'CONSUMABLE', 'PACKAGING', 'SERVICE_ITEM']).optional(),
+  "linked_master_type": zod.string().nullish(),
+  "linked_master_id": zod.string().uuid().nullish(),
+  "linked_master": zod.object({
+  "type": zod.enum(['CELL', 'BMS', 'CABLE', 'BUSBAR', 'CONNECTOR', 'CHARGER', 'CABINET']),
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string()
+}).nullish(),
   "cell_master_id": zod.string().uuid().nullish()
 }))
 

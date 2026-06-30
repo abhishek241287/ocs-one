@@ -2103,11 +2103,53 @@ export type ProductWorkflowUpdate = MasterCommonUpdate & {
   stage_sequence?: string[];
 };
 
-export type MaterialCategory = MasterCommon;
+export type LinkedMasterType = typeof LinkedMasterType[keyof typeof LinkedMasterType];
 
-export type MaterialCategoryInput = MasterCommonInput;
 
-export type MaterialCategoryUpdate = MasterCommonUpdate;
+export const LinkedMasterType = {
+  CELL: 'CELL',
+  BMS: 'BMS',
+  CABLE: 'CABLE',
+  BUSBAR: 'BUSBAR',
+  CONNECTOR: 'CONNECTOR',
+  CHARGER: 'CHARGER',
+  CABINET: 'CABINET',
+} as const;
+
+export type MaterialUsageType = typeof MaterialUsageType[keyof typeof MaterialUsageType];
+
+
+export const MaterialUsageType = {
+  INVENTORY_COMPONENT: 'INVENTORY_COMPONENT',
+  CONSUMABLE: 'CONSUMABLE',
+  PACKAGING: 'PACKAGING',
+  SERVICE_ITEM: 'SERVICE_ITEM',
+} as const;
+
+/**
+ * @nullable
+ */
+export type LinkedMasterSummary = {
+  type: LinkedMasterType;
+  id: string;
+  code: string;
+  name: string;
+} | null;
+
+export type MaterialCategory = MasterCommon & ({
+  /** @nullable */
+  linked_master_type?: string | null;
+});
+
+export type MaterialCategoryInput = MasterCommonInput & ({
+  /** @nullable */
+  linked_master_type?: string | null;
+});
+
+export type MaterialCategoryUpdate = MasterCommonUpdate & ({
+  /** @nullable */
+  linked_master_type?: string | null;
+});
 
 export type MaterialMasterUom = typeof MaterialMasterUom[keyof typeof MaterialMasterUom];
 
@@ -2126,6 +2168,12 @@ export type MaterialMaster = MasterCommon & ({
   uom?: MaterialMasterUom;
   /** @nullable */
   manufacturer?: string | null;
+  usage_type?: MaterialUsageType;
+  /** @nullable */
+  linked_master_type?: string | null;
+  /** @nullable */
+  linked_master_id?: string | null;
+  linked_master?: LinkedMasterSummary | null;
   /** @nullable */
   cell_master_id?: string | null;
 });
@@ -2147,8 +2195,11 @@ export type MaterialMasterInput = MasterCommonInput & ({
   uom: MaterialMasterInputUom;
   /** @nullable */
   manufacturer?: string | null;
+  usage_type?: MaterialUsageType;
   /** @nullable */
-  cell_master_id?: string | null;
+  linked_master_type?: string | null;
+  /** @nullable */
+  linked_master_id?: string | null;
 });
 
 export type MaterialMasterUpdateUom = typeof MaterialMasterUpdateUom[keyof typeof MaterialMasterUpdateUom];
@@ -2168,8 +2219,11 @@ export type MaterialMasterUpdate = MasterCommonUpdate & ({
   uom?: MaterialMasterUpdateUom;
   /** @nullable */
   manufacturer?: string | null;
+  usage_type?: MaterialUsageType;
   /** @nullable */
-  cell_master_id?: string | null;
+  linked_master_type?: string | null;
+  /** @nullable */
+  linked_master_id?: string | null;
 });
 
 export type Supplier = MasterCommon;
@@ -2952,7 +3006,7 @@ pageSize?: PageSizeParamParameter;
 };
 
 export type ListMaterialCategories200 = MasterListResponse & {
-  items?: MasterCommon[];
+  items?: MaterialCategory[];
 };
 
 export type ListMaterialMastersParams = {

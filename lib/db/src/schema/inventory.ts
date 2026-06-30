@@ -9,7 +9,9 @@ import {
   timestamp,
   date,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { createMasterCommonColumns } from "./master-common";
@@ -22,11 +24,51 @@ import { masterCellsTable } from "./master-cells";
 // of it is in stock. Built FIRST (CTO direction) so receiving/inspection/inventory
 // can be layered on top. Reuses the existing masters framework unchanged.
 
+// Linked Master Type — the component FAMILY a material represents; the discriminator of
+// the GENERIC material→master bridge (CTO 2026-06-30). A CLOSED enum: each value maps to
+// exactly one existing component master table (resolved in app code). Adding a new family
+// (FUSE, RELAY, …) introduces both the new master table AND its enum value together — the
+// linkage COLUMNS never change, so scaling to new component types never re-shapes
+// master_materials (the point of a generic linked_master_type + linked_master_id over
+// per-type FK columns or a Component Registry).
+export const linkedMasterTypeEnum = pgEnum("linked_master_type", [
+  "CELL",
+  "BMS",
+  "CABLE",
+  "BUSBAR",
+  "CONNECTOR",
+  "CHARGER",
+  "CABINET",
+]);
+
+// Material Usage Type — what a material IS for, independent of which master it links to.
+//   INVENTORY_COMPONENT → a serialized/stockable component that links to a component
+//                         master (Cell/BMS/Cable/…) and stocks inventory.
+//   CONSUMABLE          → stocks inventory but has no component master (glue, paste).
+//   PACKAGING           → stocks inventory, no master (carton, sticker).
+//   SERVICE_ITEM        → exists in the ERP but NEVER stocks inventory (freight, labour,
+//                         calibration, installation, warranty replacement) — added now so
+//                         future non-inventory cost lines need no migration.
+// CLOSED enum (SS-01). Like the linked master, a material's usage_type is IMMUTABLE once
+// any GRN line / inventory transaction references it (enforced in the route).
+export const materialUsageTypeEnum = pgEnum("material_usage_type", [
+  "INVENTORY_COMPONENT",
+  "CONSUMABLE",
+  "PACKAGING",
+  "SERVICE_ITEM",
+]);
+
 // Material Category master — an extensible lookup kept as DATA (a real row table),
 // NOT a pgEnum, so a director can add a new material type live without a code change
 // or migration. Mirrors the Product Category master pattern.
+//
+// `linkedMasterType` declares the component FAMILY every INVENTORY_COMPONENT material in
+// this category links to (e.g. the "LiFePO4 Cell" category → CELL). It DRIVES the material
+// picker (only masters of this family are offered) and write-time validation (a material's
+// linked_master_type must equal its category's). NULL = a non-component category.
 export const materialCategoriesTable = pgTable("master_material_categories", {
   ...createMasterCommonColumns("master_material_categories"),
+  linkedMasterType: linkedMasterTypeEnum("linked_master_type"),
 });
 
 // Unit of Measure — the physical unit a material is counted/stocked in. A small,
@@ -44,22 +86,47 @@ export const materialUomEnum = pgEnum("material_uom", [
 // Material Master — deliberately minimal v1.0: Code + Name (from master-common),
 // Category (FK), UOM, optional Manufacturer, Active/Inactive (status, from
 // master-common). Resist adding fields here until a downstream module needs them.
-export const materialsTable = pgTable("master_materials", {
-  ...createMasterCommonColumns("master_materials"),
-  // Required reference to the Material Category lookup. uuid FK (not free text) so
-  // categories cannot be duplicated/mistyped and stay centrally managed.
-  categoryId: uuid("category_id")
-    .notNull()
-    .references(() => materialCategoriesTable.id),
-  uom: materialUomEnum("uom").notNull(),
-  // Optional — many raw/packing materials are generic and have no single maker.
-  manufacturer: text("manufacturer"),
-  // D3 — Material → Cell Master bridge. For materials in the LiFePO4 Cell category this
-  // links the procurement material to its grading spec (master_cells), so cell
-  // chemistry / capacity / nominal voltage / model flow automatically into Cell
-  // Processing — the operator never re-enters them. Nullable: only cell materials map.
-  cellMasterId: uuid("cell_master_id").references(() => masterCellsTable.id),
-});
+export const materialsTable = pgTable(
+  "master_materials",
+  {
+    ...createMasterCommonColumns("master_materials"),
+    // Required reference to the Material Category lookup. uuid FK (not free text) so
+    // categories cannot be duplicated/mistyped and stay centrally managed.
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => materialCategoriesTable.id),
+    uom: materialUomEnum("uom").notNull(),
+    // Optional — many raw/packing materials are generic and have no single maker.
+    manufacturer: text("manufacturer"),
+    // What this material IS for (stockable component / consumable / packaging / non-stock
+    // service). Drives validation + the Inventory tabs. Default keeps existing rows valid.
+    usageType: materialUsageTypeEnum("usage_type")
+      .notNull()
+      .default("INVENTORY_COMPONENT"),
+    // GENERIC material→component-master bridge (replaces the cell-only one, conceptually).
+    // `linkedMasterType` says WHICH master family; `linkedMasterId` is the row in that
+    // family's table. Intentionally NO DB FK — a single column cannot reference 7 different
+    // tables; integrity is enforced in app code (validateLinkedMaster) and a config-integrity
+    // probe, and masters are never hard-deleted so the link cannot dangle. Both NULL for
+    // CONSUMABLE / PACKAGING / SERVICE_ITEM materials.
+    linkedMasterType: linkedMasterTypeEnum("linked_master_type"),
+    linkedMasterId: uuid("linked_master_id"),
+    // D3 — Material → Cell Master bridge. KEPT (not removed) and kept in sync with the
+    // generic link when linkedMasterType='CELL': the FROZEN Receive-From-Inventory /
+    // material_transfers cell flow reads this column, so dropping it would break that flow.
+    // For non-cell materials it stays NULL.
+    cellMasterId: uuid("cell_master_id").references(() => masterCellsTable.id),
+  },
+  (t) => [
+    // "One ACTIVE Material = one component master" (CTO refinement): at most one ACTIVE
+    // material may link to a given (type,id). An old material set inactive keeps its link
+    // for historical GRNs; a Rev-2 active material takes over procurement. Partial so
+    // inactive duplicates and NULL links (consumables/packaging/service) are allowed.
+    uniqueIndex("material_active_linked_master_unique")
+      .on(t.linkedMasterType, t.linkedMasterId)
+      .where(sql`${t.status} = 'active' AND ${t.linkedMasterId} IS NOT NULL`),
+  ]
+);
 
 export const insertMaterialCategorySchema = createInsertSchema(materialCategoriesTable).omit({
   id: true,

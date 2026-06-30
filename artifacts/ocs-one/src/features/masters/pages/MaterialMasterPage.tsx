@@ -6,11 +6,22 @@ import {
   useToggleMaterialMasterStatus,
   useListMaterialCategories,
   useListCellMasters,
+  useListBmsMasters,
+  useListCableMasters,
+  useListBusbarMasters,
+  useListConnectorMasters,
+  useListChargerMasters,
+  useListCabinetMasters,
   getListMaterialMastersQueryKey,
 } from "@workspace/api-client-react";
 import { MaterialMaster } from "@workspace/api-client-react";
 import { MasterPage } from "../components/MasterPage";
-import { MasterConfig } from "../types/master.types";
+import { MasterConfig, FormState } from "../types/master.types";
+import {
+  FAMILY_LABELS,
+  USAGE_LABELS,
+  USAGE_TYPE_OPTIONS,
+} from "../constants/linkedMaster";
 import { ColumnDef } from "@tanstack/react-table";
 
 const UOM_OPTIONS = [
@@ -22,13 +33,22 @@ const UOM_OPTIONS = [
   { label: "Roll (ROLL)", value: "ROLL" },
 ];
 
+type Opt = { label: string; value: string };
+
 export default function MaterialMasterPage() {
-  // Active categories drive both the create/edit select and the id→name display.
+  // Active categories drive the category select, the id→name display, AND the
+  // declared component family that scopes the "Link To" picker.
   const categoriesQuery = useListMaterialCategories();
 
-  // Cell masters drive the optional bridge — a material can map to a cell master
-  // so its chemistry / capacity / voltage / model auto-flow into a transfer.
-  const cellMastersQuery = useListCellMasters({ pageSize: 500 } as any);
+  // All seven component-master families. Each material in an INVENTORY_COMPONENT
+  // category links to exactly one master of its category's declared family.
+  const cellQ = useListCellMasters({ pageSize: 500 } as any);
+  const bmsQ = useListBmsMasters({ pageSize: 500 } as any);
+  const cableQ = useListCableMasters({ pageSize: 500 } as any);
+  const busbarQ = useListBusbarMasters({ pageSize: 500 } as any);
+  const connectorQ = useListConnectorMasters({ pageSize: 500 } as any);
+  const chargerQ = useListChargerMasters({ pageSize: 500 } as any);
+  const cabinetQ = useListCabinetMasters({ pageSize: 500 } as any);
 
   const categoryOptions = useMemo(
     () =>
@@ -38,21 +58,41 @@ export default function MaterialMasterPage() {
     [categoriesQuery.data]
   );
 
-  const cellMasterOptions = useMemo(
-    () =>
-      (cellMastersQuery.data?.items ?? [])
-        .filter((c: any) => c.status === "active")
-        .map((c: any) => ({ label: `${c.name} (${c.code})` as string, value: c.id as string })),
-    [cellMastersQuery.data]
-  );
-
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>();
-    for (const c of categoriesQuery.data?.items ?? []) {
-      map.set((c as any).id, (c as any).name);
-    }
+    for (const c of categoriesQuery.data?.items ?? []) map.set((c as any).id, (c as any).name);
     return map;
   }, [categoriesQuery.data]);
+
+  // category id → declared component family (null for consumable/packaging cats).
+  const categoryFamilyById = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const c of categoriesQuery.data?.items ?? [])
+      map.set((c as any).id, ((c as any).linked_master_type as string) || null);
+    return map;
+  }, [categoriesQuery.data]);
+
+  // family → active master options.
+  const familyOptions = useMemo(() => {
+    const toOpts = (q: any): Opt[] =>
+      (q.data?.items ?? [])
+        .filter((m: any) => m.status === "active")
+        .map((m: any) => ({ label: `${m.name} (${m.code})`, value: m.id as string }));
+    return {
+      CELL: toOpts(cellQ),
+      BMS: toOpts(bmsQ),
+      CABLE: toOpts(cableQ),
+      BUSBAR: toOpts(busbarQ),
+      CONNECTOR: toOpts(connectorQ),
+      CHARGER: toOpts(chargerQ),
+      CABINET: toOpts(cabinetQ),
+    } as Record<string, Opt[]>;
+  }, [cellQ.data, bmsQ.data, cableQ.data, busbarQ.data, connectorQ.data, chargerQ.data, cabinetQ.data]);
+
+  const familyOf = (form: FormState): string | null =>
+    categoryFamilyById.get(form.category_id as string) ?? null;
+  const isComponent = (form: FormState) =>
+    (form.usage_type ?? "INVENTORY_COMPONENT") === "INVENTORY_COMPONENT";
 
   const config: MasterConfig<MaterialMaster> = useMemo(() => {
     const columns: ColumnDef<MaterialMaster>[] = [
@@ -64,12 +104,20 @@ export default function MaterialMasterPage() {
         accessorFn: (row: any) =>
           categoryNameById.get(row.category_id) ?? row.category_id ?? "—",
       },
-      { accessorKey: "uom", header: "UOM" },
       {
-        id: "manufacturer",
-        header: "Manufacturer",
-        accessorFn: (row: any) => row.manufacturer || "—",
+        id: "usage",
+        header: "Usage",
+        accessorFn: (row: any) => USAGE_LABELS[row.usage_type] ?? row.usage_type ?? "—",
       },
+      {
+        id: "linked_master",
+        header: "Linked Master",
+        accessorFn: (row: any) =>
+          row.linked_master
+            ? `${FAMILY_LABELS[row.linked_master.type] ?? row.linked_master.type}: ${row.linked_master.name} (${row.linked_master.code})`
+            : "—",
+      },
+      { accessorKey: "uom", header: "UOM" },
     ];
 
     const fields = [
@@ -83,14 +131,32 @@ export default function MaterialMasterPage() {
         placeholder: "Select a category",
         options: categoryOptions,
       },
+      {
+        name: "usage_type",
+        label: "Usage Type",
+        type: "select",
+        required: true,
+        placeholder: "Select a usage type",
+        options: USAGE_TYPE_OPTIONS,
+        helpText:
+          "Inventory Component links to a component master and stocks. Consumable/Packaging stock without a link. Service Item never stocks.",
+      },
       { name: "uom", label: "Unit of Measure", type: "select", required: true, placeholder: "Select a UOM", options: UOM_OPTIONS },
       { name: "manufacturer", label: "Manufacturer", type: "text", placeholder: "Optional — e.g. EVE Energy" },
       {
-        name: "cell_master_id",
-        label: "Cell Master (for cells)",
+        name: "linked_master_id",
+        label: "Link To Component Master",
         type: "select",
-        placeholder: "Map to a cell master — required to transfer into Cell Processing",
-        options: cellMasterOptions,
+        required: true,
+        placeholder: "Select the component master this material represents",
+        // Scope to the selected category's declared family.
+        optionsFn: (form: FormState) => familyOptions[familyOf(form) ?? ""] ?? [],
+        // Shown for every INVENTORY_COMPONENT material so the link requirement is
+        // explicit. When the picked category declares no family the option list is
+        // empty and Save stays disabled with the guidance below — never a silent 422.
+        visibleWhen: (form: FormState) => isComponent(form),
+        helpText:
+          "Inventory Components must link to one component master. If this list is empty, the selected category has no component family — pick an inventory-component category (or change the Usage Type). Linking is immutable once the material is received; to change it, create a new material revision.",
       },
     ];
 
@@ -102,8 +168,34 @@ export default function MaterialMasterPage() {
       certification: "certified",
       columns,
       fields: fields as any,
+      onFieldChange: (name: string, _value: unknown, form: FormState) => {
+        // Changing the category (and thus its component family) or leaving the
+        // component usage invalidates any prior link selection — clear it so the
+        // operator re-picks within the new family instead of submitting a stale,
+        // cross-family id that the backend would reject.
+        if (name === "category_id") return { ...form, linked_master_id: undefined };
+        if (name === "usage_type" && form.usage_type !== "INVENTORY_COMPONENT")
+          return { ...form, linked_master_id: undefined };
+        return form;
+      },
+      transformSubmit: (data: FormState) => {
+        const family = familyOf(data);
+        const usage = (data.usage_type as string) || "INVENTORY_COMPONENT";
+        const next: FormState = { ...data, usage_type: usage };
+        // cell_master_id is derived server-side from a CELL link — never send it.
+        delete next.cell_master_id;
+        delete next.linked_master; // response-only summary
+        if (usage === "INVENTORY_COMPONENT" && family) {
+          next.linked_master_type = family;
+          next.linked_master_id = (data.linked_master_id as string) || null;
+        } else {
+          next.linked_master_type = null;
+          next.linked_master_id = null;
+        }
+        return next;
+      },
     };
-  }, [categoryOptions, categoryNameById, cellMasterOptions]);
+  }, [categoryOptions, categoryNameById, categoryFamilyById, familyOptions]);
 
   return (
     <MasterPage

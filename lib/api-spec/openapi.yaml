@@ -5283,15 +5283,51 @@ components:
               type: array
               items: { type: string }
 
+    # ─── Inventory Platform — Generic material→component-master linkage ─────────
+    # The component FAMILY a material links to. CLOSED set mirroring the DB pgEnum.
+    LinkedMasterType:
+      type: string
+      enum: [CELL, BMS, CABLE, BUSBAR, CONNECTOR, CHARGER, CABINET]
+
+    # What a material IS for (drives validation + the Inventory tabs).
+    MaterialUsageType:
+      type: string
+      enum: [INVENTORY_COMPONENT, CONSUMABLE, PACKAGING, SERVICE_ITEM]
+
+    # Resolved summary of the component master a material links to (read-only,
+    # derived server-side). Null when the material links to no master.
+    LinkedMasterSummary:
+      type: ["object", "null"]
+      required: [type, id, code, name]
+      properties:
+        type: { $ref: "#/components/schemas/LinkedMasterType" }
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+
     # ─── Inventory Platform — Material Category master (lookup) ─────────────────
     MaterialCategory:
-      $ref: "#/components/schemas/MasterCommon"
+      allOf:
+        - $ref: "#/components/schemas/MasterCommon"
+        - type: object
+          properties:
+            # Declared component family for INVENTORY_COMPONENT materials in this
+            # category; drives the picker + validation. Null = non-component category.
+            linked_master_type: { type: ["string", "null"] }
 
     MaterialCategoryInput:
-      $ref: "#/components/schemas/MasterCommonInput"
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonInput"
+        - type: object
+          properties:
+            linked_master_type: { type: ["string", "null"] }
 
     MaterialCategoryUpdate:
-      $ref: "#/components/schemas/MasterCommonUpdate"
+      allOf:
+        - $ref: "#/components/schemas/MasterCommonUpdate"
+        - type: object
+          properties:
+            linked_master_type: { type: ["string", "null"] }
 
     # ─── Inventory Platform — Material Master ──────────────────────────────────
     MaterialMaster:
@@ -5302,6 +5338,11 @@ components:
             category_id: { type: string, format: uuid }
             uom: { type: string, enum: [PCS, KG, M, L, SET, ROLL] }
             manufacturer: { type: ["string", "null"] }
+            usage_type: { $ref: "#/components/schemas/MaterialUsageType" }
+            linked_master_type: { type: ["string", "null"] }
+            linked_master_id: { type: ["string", "null"], format: uuid }
+            # Read-only derived summary of the linked component master.
+            linked_master: { $ref: "#/components/schemas/LinkedMasterSummary" }
             cell_master_id: { type: ["string", "null"], format: uuid }
 
     MaterialMasterInput:
@@ -5313,7 +5354,9 @@ components:
             category_id: { type: string, format: uuid }
             uom: { type: string, enum: [PCS, KG, M, L, SET, ROLL] }
             manufacturer: { type: ["string", "null"] }
-            cell_master_id: { type: ["string", "null"], format: uuid }
+            usage_type: { $ref: "#/components/schemas/MaterialUsageType" }
+            linked_master_type: { type: ["string", "null"] }
+            linked_master_id: { type: ["string", "null"], format: uuid }
 
     MaterialMasterUpdate:
       allOf:
@@ -5323,7 +5366,9 @@ components:
             category_id: { type: string, format: uuid }
             uom: { type: string, enum: [PCS, KG, M, L, SET, ROLL] }
             manufacturer: { type: ["string", "null"] }
-            cell_master_id: { type: ["string", "null"], format: uuid }
+            usage_type: { $ref: "#/components/schemas/MaterialUsageType" }
+            linked_master_type: { type: ["string", "null"] }
+            linked_master_id: { type: ["string", "null"], format: uuid }
 
     # ─── Inventory Platform — Supplier Master ──────────────────────────────────
     Supplier:

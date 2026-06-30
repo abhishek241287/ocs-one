@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
 import { AlertCircle } from "lucide-react";
 import { FieldConfig } from "../types/master.types";
@@ -17,6 +17,8 @@ interface MasterEditDrawerProps {
   initialData?: Record<string, unknown> | null;
   fields: FieldConfig[];
   title: string;
+  /** Optional reconciler: derive/clear dependent fields after a field change. */
+  reconcile?: (name: string, value: unknown, form: Record<string, unknown>) => Record<string, unknown>;
 }
 
 function isValueEmpty(field: FieldConfig, value: unknown): boolean {
@@ -31,11 +33,26 @@ function validateField(field: FieldConfig, value: unknown): string {
 }
 
 function friendlyApiError(err: unknown): string {
-  const msg = String((err as { message?: string })?.message || err || "");
-  if (msg.toLowerCase().includes("already exists") || msg.includes("409"))
-    return "A record with this code already exists. Please use a unique code.";
-  if (msg.toLowerCase().includes("network") || msg.toLowerCase().includes("fetch"))
+  // Prefer the structured server message (problem+json body) when present.
+  const data = (err as { data?: unknown })?.data;
+  const serverMsg =
+    (data && typeof data === "object"
+      ? ((data as Record<string, unknown>).message as string) ||
+        ((data as Record<string, unknown>).detail as string) ||
+        ((data as Record<string, unknown>).error as string)
+      : undefined) || "";
+
+  const rawMsg = String((err as { message?: string })?.message || err || "");
+  // ApiError messages look like "HTTP 409 Conflict: <server message>" — strip the prefix.
+  const stripped = rawMsg.replace(/^HTTP\s+\d+\s+[^:]*:\s*/i, "").trim();
+  const msg = (serverMsg || stripped || rawMsg).trim();
+  const lower = msg.toLowerCase();
+
+  if (lower.includes("network") || lower.includes("failed to fetch"))
     return "Network error. Please check your connection and try again.";
+  // Surface meaningful server messages verbatim (link locked, wrong family,
+  // already linked to an active material, mandatory reason, etc.).
+  if (msg && !/^http\s+\d+/i.test(msg)) return msg;
   return "Failed to save. Please try again.";
 }
 
@@ -46,6 +63,7 @@ export function MasterEditDrawer({
   initialData,
   fields,
   title,
+  reconcile,
 }: MasterEditDrawerProps) {
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -69,7 +87,10 @@ export function MasterEditDrawer({
   }, [initialData, isOpen]);
 
   const handleChange = (name: string, value: unknown) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value };
+      return reconcile ? reconcile(name, value, next) : next;
+    });
     if (touched[name] || submitAttempted) {
       const field = fields.find((f) => f.name === name);
       if (field) setErrors((prev) => ({ ...prev, [name]: validateField(field, value) }));
@@ -84,9 +105,13 @@ export function MasterEditDrawer({
     }));
   };
 
+  const isFieldVisible = (field: FieldConfig) =>
+    !field.visibleWhen || field.visibleWhen(formData);
+  const visibleFields = fields.filter(isFieldVisible);
+
   const validateAll = (): Record<string, string> => {
     const next: Record<string, string> = {};
-    fields.forEach((field) => {
+    visibleFields.forEach((field) => {
       const err = validateField(field, formData[field.name]);
       if (err) next[field.name] = err;
     });
@@ -116,18 +141,17 @@ export function MasterEditDrawer({
     }
   };
 
-  const requiredFields = fields.filter((f) => f.required);
+  const requiredFields = visibleFields.filter((f) => f.required);
   const isSaveDisabled =
     isSaving || requiredFields.some((f) => isValueEmpty(f, formData[f.name]));
 
-  const errorSummaryFields = submitAttempted ? fields.filter((f) => errors[f.name]) : [];
+  const errorSummaryFields = submitAttempted ? visibleFields.filter((f) => errors[f.name]) : [];
   const hasErrors = errorSummaryFields.length > 0;
 
   const renderField = (field: FieldConfig) => {
     const showError = touched[field.name] || submitAttempted;
     const error = showError ? (errors[field.name] ?? "") : "";
     const common = {
-      key: field.name,
       label: field.label,
       name: field.name,
       value: formData[field.name] as never,
@@ -137,34 +161,46 @@ export function MasterEditDrawer({
       placeholder: field.placeholder,
       error,
     };
+    let inner: ReactNode;
     switch (field.type) {
       case "number":
-        return <NumberField {...common} onChange={(v) => handleChange(field.name, v)} />;
+        inner = <NumberField {...common} onChange={(v) => handleChange(field.name, v)} />;
+        break;
       case "date":
-        return <DateField {...common} onChange={(v) => handleChange(field.name, v)} />;
+        inner = <DateField {...common} onChange={(v) => handleChange(field.name, v)} />;
+        break;
       case "select":
-        return (
+        inner = (
           <SelectField
             {...common}
             onChange={(v) => handleChange(field.name, v)}
-            options={field.options ?? []}
+            options={field.optionsFn ? field.optionsFn(formData) : (field.options ?? [])}
           />
         );
+        break;
       case "boolean":
-        return (
+        inner = (
           <BooleanField
-            key={field.name}
             label={field.label}
             name={field.name}
             value={formData[field.name] as boolean}
             onChange={(v) => handleChange(field.name, v)}
           />
         );
+        break;
       case "textarea":
-        return <TextareaField {...common} onChange={(v) => handleChange(field.name, v)} />;
+        inner = <TextareaField {...common} onChange={(v) => handleChange(field.name, v)} />;
+        break;
       default:
-        return <TextField {...common} onChange={(v) => handleChange(field.name, v)} />;
+        inner = <TextField {...common} onChange={(v) => handleChange(field.name, v)} />;
     }
+    if (!field.helpText) return <div key={field.name}>{inner}</div>;
+    return (
+      <div key={field.name} className="space-y-1">
+        {inner}
+        <p className="text-xs text-muted-foreground">{field.helpText}</p>
+      </div>
+    );
   };
 
   return (
@@ -203,7 +239,7 @@ export function MasterEditDrawer({
               )}
             </div>
           )}
-          {fields.map(renderField)}
+          {visibleFields.map(renderField)}
         </div>
       </form>
     </OdsDrawer>

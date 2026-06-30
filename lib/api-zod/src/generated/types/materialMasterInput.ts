@@ -7,12 +7,16 @@
  */
 import type { MasterCommonInput } from './masterCommonInput';
 import type { MaterialMasterInputUom } from './materialMasterInputUom';
+import type { MaterialUsageType } from './materialUsageType';
 
 export type MaterialMasterInput = MasterCommonInput & ({
   category_id: string;
   uom: MaterialMasterInputUom;
   /** @nullable */
   manufacturer?: string | null;
+  usage_type?: MaterialUsageType;
   /** @nullable */
-  cell_master_id?: string | null;
+  linked_master_type?: string | null;
+  /** @nullable */
+  linked_master_id?: string | null;
 });

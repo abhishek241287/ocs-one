@@ -40,10 +40,11 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
   });
 
   const handleSave = async (data: any) => {
+    const payload = config.transformSubmit ? config.transformSubmit(data) : data;
     if (editingItem) {
-      await handleUpdate(editingItem.id, data);
+      await handleUpdate(editingItem.id, payload);
     } else {
-      await handleCreate(data);
+      await handleCreate(payload);
     }
   };
 
@@ -155,6 +156,7 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
           initialData={editingItem}
           fields={config.fields}
           title={config.title}
+          reconcile={config.onFieldChange}
         />
 
         <OdsDialog

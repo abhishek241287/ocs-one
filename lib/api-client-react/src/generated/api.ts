@@ -157,6 +157,9 @@ import type {
   MasterCommonInput,
   MasterCommonUpdate,
   MasterStatusToggle,
+  MaterialCategory,
+  MaterialCategoryInput,
+  MaterialCategoryUpdate,
   MaterialMaster,
   MaterialMasterInput,
   MaterialMasterUpdate,
@@ -10639,14 +10642,14 @@ export const getCreateMaterialCategoryUrl = () => {
   return `/api/masters/material-categories`
 }
 
-export const createMaterialCategory = async (masterCommonInput: MasterCommonInput, options?: RequestInit): Promise<MasterCommon> => {
+export const createMaterialCategory = async (materialCategoryInput: MaterialCategoryInput, options?: RequestInit): Promise<MaterialCategory> => {
 
-  return customFetch<MasterCommon>(getCreateMaterialCategoryUrl(),
+  return customFetch<MaterialCategory>(getCreateMaterialCategoryUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(masterCommonInput)
+    body: JSON.stringify(materialCategoryInput)
   }
 );}
 
@@ -10654,8 +10657,8 @@ export const createMaterialCategory = async (masterCommonInput: MasterCommonInpu
 
 
 export const getCreateMaterialCategoryMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMaterialCategory>>, TError,{data: BodyType<MasterCommonInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createMaterialCategory>>, TError,{data: BodyType<MasterCommonInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMaterialCategory>>, TError,{data: BodyType<MaterialCategoryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMaterialCategory>>, TError,{data: BodyType<MaterialCategoryInput>}, TContext> => {
 
 const mutationKey = ['createMaterialCategory'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -10667,7 +10670,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMaterialCategory>>, {data: BodyType<MasterCommonInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMaterialCategory>>, {data: BodyType<MaterialCategoryInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  createMaterialCategory(data,requestOptions)
@@ -10681,15 +10684,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreateMaterialCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof createMaterialCategory>>>
-    export type CreateMaterialCategoryMutationBody = BodyType<MasterCommonInput>
+    export type CreateMaterialCategoryMutationBody = BodyType<MaterialCategoryInput>
     export type CreateMaterialCategoryMutationError = ErrorType<unknown>
 
     export const useCreateMaterialCategory = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMaterialCategory>>, TError,{data: BodyType<MasterCommonInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMaterialCategory>>, TError,{data: BodyType<MaterialCategoryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createMaterialCategory>>,
         TError,
-        {data: BodyType<MasterCommonInput>},
+        {data: BodyType<MaterialCategoryInput>},
         TContext
       > => {
       return useMutation(getCreateMaterialCategoryMutationOptions(options));
@@ -10703,9 +10706,9 @@ export const getGetMaterialCategoryUrl = (id: string,) => {
   return `/api/masters/material-categories/${id}`
 }
 
-export const getMaterialCategory = async (id: string, options?: RequestInit): Promise<MasterCommon> => {
+export const getMaterialCategory = async (id: string, options?: RequestInit): Promise<MaterialCategory> => {
 
-  return customFetch<MasterCommon>(getGetMaterialCategoryUrl(id),
+  return customFetch<MaterialCategory>(getGetMaterialCategoryUrl(id),
   {
     ...options,
     method: 'GET'
@@ -10775,14 +10778,14 @@ export const getUpdateMaterialCategoryUrl = (id: string,) => {
 }
 
 export const updateMaterialCategory = async (id: string,
-    masterCommonUpdate: MasterCommonUpdate, options?: RequestInit): Promise<MasterCommon> => {
+    materialCategoryUpdate: MaterialCategoryUpdate, options?: RequestInit): Promise<MaterialCategory> => {
 
-  return customFetch<MasterCommon>(getUpdateMaterialCategoryUrl(id),
+  return customFetch<MaterialCategory>(getUpdateMaterialCategoryUrl(id),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(masterCommonUpdate)
+    body: JSON.stringify(materialCategoryUpdate)
   }
 );}
 
@@ -10790,8 +10793,8 @@ export const updateMaterialCategory = async (id: string,
 
 
 export const getUpdateMaterialCategoryMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMaterialCategory>>, TError,{id: string;data: BodyType<MasterCommonUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateMaterialCategory>>, TError,{id: string;data: BodyType<MasterCommonUpdate>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMaterialCategory>>, TError,{id: string;data: BodyType<MaterialCategoryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMaterialCategory>>, TError,{id: string;data: BodyType<MaterialCategoryUpdate>}, TContext> => {
 
 const mutationKey = ['updateMaterialCategory'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -10803,7 +10806,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMaterialCategory>>, {id: string;data: BodyType<MasterCommonUpdate>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMaterialCategory>>, {id: string;data: BodyType<MaterialCategoryUpdate>}> = (props) => {
           const {id,data} = props ?? {};
 
           return  updateMaterialCategory(id,data,requestOptions)
@@ -10817,15 +10820,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UpdateMaterialCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof updateMaterialCategory>>>
-    export type UpdateMaterialCategoryMutationBody = BodyType<MasterCommonUpdate>
+    export type UpdateMaterialCategoryMutationBody = BodyType<MaterialCategoryUpdate>
     export type UpdateMaterialCategoryMutationError = ErrorType<unknown>
 
     export const useUpdateMaterialCategory = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMaterialCategory>>, TError,{id: string;data: BodyType<MasterCommonUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMaterialCategory>>, TError,{id: string;data: BodyType<MaterialCategoryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateMaterialCategory>>,
         TError,
-        {id: string;data: BodyType<MasterCommonUpdate>},
+        {id: string;data: BodyType<MaterialCategoryUpdate>},
         TContext
       > => {
       return useMutation(getUpdateMaterialCategoryMutationOptions(options));
@@ -10840,9 +10843,9 @@ export const getToggleMaterialCategoryStatusUrl = (id: string,) => {
 }
 
 export const toggleMaterialCategoryStatus = async (id: string,
-    masterStatusToggle: MasterStatusToggle, options?: RequestInit): Promise<MasterCommon> => {
+    masterStatusToggle: MasterStatusToggle, options?: RequestInit): Promise<MaterialCategory> => {
 
-  return customFetch<MasterCommon>(getToggleMaterialCategoryStatusUrl(id),
+  return customFetch<MaterialCategory>(getToggleMaterialCategoryStatusUrl(id),
   {
     ...options,
     method: 'PATCH',

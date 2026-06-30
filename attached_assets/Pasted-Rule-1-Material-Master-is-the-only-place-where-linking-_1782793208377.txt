@@ -1,0 +1,127 @@
+Rule 1
+
+Material Master is the only place where linking happens.
+
+Never allow GRN to edit it.
+
+Material Master
+      ↓
+Linked Type
+Linked Master
+      ↓
+GRN shows it read-only
+Rule 2
+
+GRN never asks again.
+
+Operator should simply choose
+
+Material
+
+Everything else should populate automatically.
+
+Rule 3
+
+Validation must be centralized.
+
+One shared function.
+
+validateLinkedMaster()
+
+✓ exists
+
+✓ active
+
+✓ belongs to correct family
+
+✓ not duplicated
+
+✓ category matches
+
+No route should duplicate this logic.
+
+Rule 4
+
+Never allow changing the linked type after transactions exist.
+
+If
+
+Material A
+
+→ linked to Cell Master
+
+and GRNs already exist,
+
+don't allow someone to change it to
+
+BMS
+
+That should either:
+
+be blocked, or
+require creating a new Material.
+
+This is the one guard I would add that wasn't mentioned.
+
+Rule 5
+
+Inventory stays generic.
+
+Exactly one ledger.
+
+Exactly one stock table.
+
+Exactly one inventory page.
+
+Just filters.
+
+All
+
+Cells
+
+BMS
+
+Cable
+
+Busbar
+
+Connector
+
+Cabinet
+
+Charger
+
+Perfect.
+
+One more thing I would ask Replit to add
+
+I would ask for a Material Usage Type.
+
+Not every material becomes serialized inventory.
+
+Example:
+
+Material	Usage
+LF314K Cell	Inventory Component
+Daly BMS	Inventory Component
+XT90	Inventory Component
+Glue	Consumable
+Thermal Paste	Consumable
+Carton Box	Packaging
+Sticker	Packaging
+
+Later BOM becomes much easier.
+
+My final instruction to Replit would be
+
+Approved.
+
+Proceed with the polymorphic linked_master_type + linked_master_id architecture.
+
+Do not build a Component Registry for this release.
+
+Add one additional guard: once a Material has participated in any GRN or inventory transaction, its linked master/type cannot be changed. Require creation of a new Material instead.
+
+Keep GRN read-only with respect to the linkage, maintain a single inventory ledger with filtered views, centralize validation in one shared helper, and keep the design ready for future BOM-driven production consumption.
+
+I think this is the right balance between commercial readiness, simplicity, and future scalability. It avoids over-engineering while keeping the path open for a more generalized registry if you ever truly need one.

@@ -7,4 +7,7 @@
  */
 import type { MasterCommonUpdate } from './masterCommonUpdate';
 
-export type MaterialCategoryUpdate = MasterCommonUpdate;
+export type MaterialCategoryUpdate = MasterCommonUpdate & ({
+  /** @nullable */
+  linked_master_type?: string | null;
+});

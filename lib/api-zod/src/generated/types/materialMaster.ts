@@ -5,14 +5,22 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { LinkedMasterSummary } from './linkedMasterSummary';
 import type { MasterCommon } from './masterCommon';
 import type { MaterialMasterUom } from './materialMasterUom';
+import type { MaterialUsageType } from './materialUsageType';
 
 export type MaterialMaster = MasterCommon & ({
   category_id?: string;
   uom?: MaterialMasterUom;
   /** @nullable */
   manufacturer?: string | null;
+  usage_type?: MaterialUsageType;
+  /** @nullable */
+  linked_master_type?: string | null;
+  /** @nullable */
+  linked_master_id?: string | null;
+  linked_master?: LinkedMasterSummary | null;
   /** @nullable */
   cell_master_id?: string | null;
 });

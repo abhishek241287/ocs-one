@@ -74,6 +74,33 @@ function handlePgWriteError(err: any, res: Response, resourceName: string): bool
   return false;
 }
 
+// Optional write hook: runs after validation + snake→camel mapping, BEFORE the
+// insert/update. Mutating `values` in place feeds the change into the write (e.g.
+// Material Master syncs cell_master_id). Returning {status,error} aborts with that
+// response. Generic so every master can opt into custom validation / derived fields.
+export type MasterWriteHook = (
+  ctx: {
+    mode: "create" | "update";
+    id?: string;
+    existing?: Record<string, unknown>;
+    req: Request;
+    /**
+     * On update, the transaction the row was locked in (SELECT … FOR UPDATE). Hooks
+     * MUST run their integrity reads (link locks, duplicate checks) on this handle so
+     * the check + write are atomic — closes the Rule 4/5 TOCTOU. Undefined on create.
+     */
+    tx?: any;
+  },
+  values: Record<string, unknown>,
+) => Promise<{ status: number; error: string } | void>;
+
+// Optional row enricher: adds DERIVED, read-only fields to every serialized row
+// (list/get/create/update). Used by Material Master to attach the linked-master
+// summary without denormalizing it into the table.
+export type MasterRowEnricher = (
+  row: Record<string, unknown>,
+) => Promise<Record<string, unknown>>;
+
 export function createMasterRouter<
   TTable extends PgTableWithColumns<any>,
   _TEntity,
@@ -91,6 +118,10 @@ export function createMasterRouter<
    * Product Category / Workflow masters narrow this to director-only.
    */
   writeRoles?: Parameters<typeof requireWriteRole>;
+  /** Custom write validation / value derivation (see MasterWriteHook). */
+  beforeWrite?: MasterWriteHook;
+  /** Derived read-only fields for every serialized row (see MasterRowEnricher). */
+  enrichRow?: MasterRowEnricher;
 }) {
   const router: IRouter = Router();
   const { table, inputSchema, updateSchema, resourceName } = options;
@@ -140,8 +171,13 @@ export function createMasterRouter<
     const total = Number((totalResult as any)?.count ?? 0);
     const totalPages = Math.ceil(total / pageSize);
 
+    const serialized = (items as any[]).map(item => serializeRow(item as Record<string, unknown>));
+    const out = options.enrichRow
+      ? await Promise.all(serialized.map(async r => ({ ...r, ...(await options.enrichRow!(r)) })))
+      : serialized;
+
     res.json({
-      items: (items as any[]).map(item => serializeRow(item as Record<string, unknown>)),
+      items: out,
       meta: { total, page, pageSize, totalPages },
     });
   });
@@ -157,6 +193,13 @@ export function createMasterRouter<
 
     try {
       const camelData = bodyToCamel(parsed.data as Record<string, unknown>);
+      if (options.beforeWrite) {
+        const hook = await options.beforeWrite({ mode: "create", req }, camelData);
+        if (hook) {
+          res.status(hook.status).json({ error: hook.error });
+          return;
+        }
+      }
       const [item] = await db.insert(table).values(camelData as any).returning();
       const row = item as Record<string, any>;
       // INV-001: master-data audit trail (platform fix — every master benefits).
@@ -169,7 +212,10 @@ export function createMasterRouter<
         statusCode: 201,
         detail: `${resourceName} created: ${row.code ?? row.id} (id=${row.id})`,
       });
-      res.status(201).json(serializeRow(item as Record<string, unknown>));
+      const serialized = serializeRow(item as Record<string, unknown>);
+      res
+        .status(201)
+        .json(options.enrichRow ? { ...serialized, ...(await options.enrichRow(serialized)) } : serialized);
     } catch (err: any) {
       if (handlePgWriteError(err, res, resourceName)) return;
       throw err;
@@ -189,7 +235,8 @@ export function createMasterRouter<
       return;
     }
 
-    res.json(serializeRow(item as Record<string, unknown>));
+    const serializedGet = serializeRow(item as Record<string, unknown>);
+    res.json(options.enrichRow ? { ...serializedGet, ...(await options.enrichRow(serializedGet)) } : serializedGet);
   });
 
   // Update
@@ -204,8 +251,31 @@ export function createMasterRouter<
 
     const camelData = bodyToCamel(parsed.data as Record<string, unknown>);
 
-    try {
-      const [item] = (await db
+    type Outcome =
+      | { kind: "ok"; item: any }
+      | { kind: "notfound" }
+      | { kind: "hook"; status: number; error: string };
+
+    // When a hook enforces immutability / identity rules (Rule 4/5), the lock-check
+    // and the write MUST be atomic: lock the target row FOR UPDATE, run the hook's
+    // integrity reads on the SAME tx, then write — so no concurrent edit can slip
+    // between the check and the update (closes the TOCTOU). Plain masters (no hook)
+    // skip the transaction.
+    const runWrite = async (dbx: any): Promise<Outcome> => {
+      if (options.beforeWrite) {
+        const [cur] = (await dbx
+          .select()
+          .from(table as any)
+          .where(eq((table as any).id, id))
+          .for("update")) as any[];
+        if (!cur) return { kind: "notfound" };
+        const hook = await options.beforeWrite(
+          { mode: "update", id, existing: cur as Record<string, unknown>, req, tx: dbx },
+          camelData,
+        );
+        if (hook) return { kind: "hook", status: hook.status, error: hook.error };
+      }
+      const [item] = (await dbx
         .update(table as any)
         .set({
           ...camelData,
@@ -214,12 +284,23 @@ export function createMasterRouter<
         })
         .where(eq((table as any).id, id))
         .returning()) as any[];
+      if (!item) return { kind: "notfound" };
+      return { kind: "ok", item };
+    };
 
-      if (!item) {
+    try {
+      const outcome = options.beforeWrite ? await db.transaction(runWrite) : await runWrite(db);
+
+      if (outcome.kind === "notfound") {
         res.status(404).json({ error: `${resourceName} not found` });
         return;
       }
+      if (outcome.kind === "hook") {
+        res.status(outcome.status).json({ error: outcome.error });
+        return;
+      }
 
+      const item = outcome.item;
       const row = item as Record<string, any>;
       // INV-001: master-data audit trail — record which fields changed.
       void recordSecurityEvent({
@@ -231,7 +312,8 @@ export function createMasterRouter<
         statusCode: 200,
         detail: `${resourceName} updated: ${row.code ?? row.id} (id=${row.id}); fields: ${Object.keys(parsed.data as Record<string, unknown>).join(", ") || "—"}`,
       });
-      res.json(serializeRow(item as Record<string, unknown>));
+      const serializedUpd = serializeRow(item as Record<string, unknown>);
+      res.json(options.enrichRow ? { ...serializedUpd, ...(await options.enrichRow(serializedUpd)) } : serializedUpd);
     } catch (err: any) {
       if (handlePgWriteError(err, res, resourceName)) return;
       throw err;
@@ -247,33 +329,40 @@ export function createMasterRouter<
       return;
     }
 
-    const [item] = (await db
-      .update(table as any)
-      .set({
-        status: (parsed.data as any).status,
-        updatedAt: new Date(),
-      })
-      .where(eq((table as any).id, id))
-      .returning()) as any[];
+    try {
+      const [item] = (await db
+        .update(table as any)
+        .set({
+          status: (parsed.data as any).status,
+          updatedAt: new Date(),
+        })
+        .where(eq((table as any).id, id))
+        .returning()) as any[];
 
-    if (!item) {
-      res.status(404).json({ error: `${resourceName} not found` });
-      return;
+      if (!item) {
+        res.status(404).json({ error: `${resourceName} not found` });
+        return;
+      }
+
+      const row = item as Record<string, any>;
+      // INV-001: master-data audit trail — activation / deactivation.
+      void recordSecurityEvent({
+        eventType: "master.status_changed",
+        severity: "warning",
+        actorId: req.user?.userId ?? null,
+        actorEmail: req.user?.email ?? null,
+        actorRole: req.user?.role ?? null,
+        ...reqMeta(req),
+        statusCode: 200,
+        detail: `${resourceName} status → ${(parsed.data as any).status}: ${row.code ?? row.id} (id=${row.id})`,
+      });
+      res.json(serializeRow(item as Record<string, unknown>));
+    } catch (err: any) {
+      // Re-activating a master can collide with a partial UNIQUE index (e.g. the
+      // "one ACTIVE material per linked master" rule) → 23505 → controlled 409.
+      if (handlePgWriteError(err, res, resourceName)) return;
+      throw err;
     }
-
-    const row = item as Record<string, any>;
-    // INV-001: master-data audit trail — activation / deactivation.
-    void recordSecurityEvent({
-      eventType: "master.status_changed",
-      severity: "warning",
-      actorId: req.user?.userId ?? null,
-      actorEmail: req.user?.email ?? null,
-      actorRole: req.user?.role ?? null,
-      ...reqMeta(req),
-      statusCode: 200,
-      detail: `${resourceName} status → ${(parsed.data as any).status}: ${row.code ?? row.id} (id=${row.id})`,
-    });
-    res.json(serializeRow(item as Record<string, unknown>));
   });
 
   return router;

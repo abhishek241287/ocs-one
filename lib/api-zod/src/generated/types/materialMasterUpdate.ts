@@ -7,12 +7,16 @@
  */
 import type { MasterCommonUpdate } from './masterCommonUpdate';
 import type { MaterialMasterUpdateUom } from './materialMasterUpdateUom';
+import type { MaterialUsageType } from './materialUsageType';
 
 export type MaterialMasterUpdate = MasterCommonUpdate & ({
   category_id?: string;
   uom?: MaterialMasterUpdateUom;
   /** @nullable */
   manufacturer?: string | null;
+  usage_type?: MaterialUsageType;
   /** @nullable */
-  cell_master_id?: string | null;
+  linked_master_type?: string | null;
+  /** @nullable */
+  linked_master_id?: string | null;
 });
