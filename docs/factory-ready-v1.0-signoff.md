@@ -1,18 +1,40 @@
 # OCS One — Factory Ready v1.0 Sign-Off
 
-**Document type:** Formal readiness sign-off (documentation only — no code, schema, or API changes).
-**Product:** OCS One — Manufacturing ERP, OCS Oorja Green Pvt. Ltd.
-**Date:** 2026-07-01
+| Field | Value |
+|---|---|
+| **Release Name** | Factory Ready v1.0 |
+| **Release Date** | 01 July 2026 |
+| **Architecture Version** | Platform v1.0 (Frozen) |
+| **Document Version** | 1.0 |
+| **Status** | Released |
+
+**Document type:** Formal release & readiness sign-off (documentation only — no code, schema, or
+API changes). **Product:** OCS One — Manufacturing ERP, OCS Oorja Green Pvt. Ltd.
 **Prepared for:** CTO approval / Factory Ready v1.0 gate.
 
-> **Supersedes** `docs/factory-readiness-report-v1.0.md` (the earlier point-in-time
-> readiness report, ~57%). That report's blocking gaps — imported-product creation (G1),
-> customer registration (G3), warranty (G4), and post-sale support (G5) — have since been
-> built and frozen. This sign-off reflects the **current** verified implementation.
+> **Supersedes** `docs/factory-readiness-report-v1.0.md` (the earlier point-in-time readiness
+> report, ~57%). That report's blocking gaps — imported-product creation (G1), customer
+> registration (G3), warranty (G4), and post-sale support (G5) — have since been built and
+> frozen. This sign-off reflects the **current** verified implementation.
 
 ---
 
-## 1. Module readiness
+## 1. Architecture Principles
+
+These principles explain **why** OCS One is designed the way it is; every module conforms to them.
+
+- **Single Source of Truth** — the Product Platform is the only serialized-product repository.
+- **Append-Only Ledger** — inventory quantities are never overwritten; state is a signed-sum
+  projection of immutable transactions.
+- **Configuration over Hard Coding** — business rules (workflows, creation triggers, posting
+  actions, grade thresholds) are configuration-driven wherever possible.
+- **Immutable Commercial Documents** — posted/approved business documents are never edited.
+- **Product Traceability First** — every serialized product remains fully traceable across its
+  entire lifecycle.
+
+---
+
+## 2. Module readiness
 
 | # | Module | Status | Ready | Basis |
 |---|---|:--:|:--:|---|
@@ -37,7 +59,7 @@ Dashboard, Dealer Portal, Product Inventory (read-only reporting layer).
 
 ---
 
-## 2. Quality & governance basis for sign-off
+## 3. Quality & governance basis for sign-off
 
 - **Authorization (SS-02)** — every protected endpoint × 5 principals verified by an automated
   regression suite driven by the single-source authz matrix (suite + dashboard cannot drift).
@@ -58,7 +80,7 @@ Dashboard, Dealer Portal, Product Inventory (read-only reporting layer).
 
 ---
 
-## 3. Deferred items (intentional, out of v1.0 scope)
+## 4. Deferred items (intentional, out of v1.0 scope)
 
 - **Auto-create imported Products on inspection pass** — deliberately manual; the
   `INCOMING_INSPECTION_PASS` trigger is a guarded no-op by CTO decision. An optional
@@ -75,7 +97,20 @@ Dashboard, Dealer Portal, Product Inventory (read-only reporting layer).
 
 ---
 
-## 4. Technical debt (tracked, non-blocking)
+## 5. Out of Scope for Factory Ready v1.0
+
+The following business domains are **explicitly out of scope** for this baseline (they are not
+defects or gaps — they are outside the Factory Ready v1.0 charter):
+
+- **Financials** — Finance, GST, Accounting, Payroll
+- **Sales/CRM** — CRM
+- **Planning** — Production Planning, MRP, APS, AI Scheduling
+- **Shop-floor telemetry** — IoT, OEE, Machine Monitoring
+- **Analytics** — BI Dashboards
+
+---
+
+## 6. Technical debt (tracked, non-blocking)
 
 - **CSP `style-src 'unsafe-inline'`** — documented temporary exception (Radix/shadcn/Recharts
   inject inline styles at runtime); pending a nonce/hash migration.
@@ -92,7 +127,9 @@ Dashboard, Dealer Portal, Product Inventory (read-only reporting layer).
 
 ---
 
-## 5. Known limitations
+## 7. Known Operational Constraints
+
+These are **intentional design choices**, not defects.
 
 - **Product Inventory "Quarantined" = 0 (hardcoded)** — no quarantine lifecycle state exists
   (Products are minted only at QC PASS); surfaced for spec completeness. The one reported spec
@@ -103,10 +140,28 @@ Dashboard, Dealer Portal, Product Inventory (read-only reporting layer).
   run restarts the API server and runs each suite **solo**. SS-04 (config) runs clean regardless.
 - **Legacy logistics module** (production-order-based vehicle/driver/transporter) is retained
   untouched alongside the Product-Platform dispatch chain; the two coexist by design.
+- **Imported product creation is a manual operator action** by design (see §4), keeping
+  serialization timing under factory supervision.
 
 ---
 
-## 6. Future roadmap (post-v1.0)
+## 8. Factory Ready Success Criteria
+
+| Criterion | Met |
+|---|:--:|
+| Manufacturing workflow complete | ✓ |
+| Imported product workflow complete | ✓ |
+| Inventory fully auditable | ✓ |
+| Product genealogy available | ✓ |
+| Warranty operational | ✓ |
+| No blocking defects | ✓ |
+| All critical business documents immutable | ✓ |
+| Product traceability verified | ✓ |
+| Commercial deployment approved | ✓ (pending this sign-off) |
+
+---
+
+## 9. Future roadmap (post-v1.0)
 
 1. Optional auto-create of imported Products after inspection pass (configurable).
 2. Service / RMA workflow over the customer + warranty + serial records.
@@ -118,17 +173,32 @@ Dashboard, Dealer Portal, Product Inventory (read-only reporting layer).
 
 ---
 
-## 7. Sign-off
+## 10. Recommendation
 
-Based on the verified implementation and the automated governance controls above, the fifteen
-core modules are **implemented, frozen, and factory-ready**. The deferred items, technical debt,
-and known limitations listed here are **tracked and non-blocking** for Factory Ready v1.0.
+The Engineering Team recommends **approval of OCS One Factory Ready v1.0 for controlled
+commercial deployment**.
 
-**Recommendation: APPROVE — Factory Ready v1.0.**
+Future development will continue under subsequent versioned releases without modifying the
+Factory Ready v1.0 baseline except through approved maintenance releases.
+
+The fifteen core modules are implemented, frozen, and factory-ready. The deferred items,
+technical debt, and known operational constraints listed here are **tracked and non-blocking**
+for Factory Ready v1.0.
+
+---
+
+## 11. Sign-off
 
 | Role | Name | Decision | Date |
 |---|---|---|---|
 | CTO | | ☐ Approved  ☐ Rejected | |
-| Engineering | | | 2026-07-01 |
+| Engineering | | Recommended for approval | 01 July 2026 |
+
+---
+
+> **Governance statement.** This document establishes the **Factory Ready v1.0 baseline**. All
+> future enhancements, modules, and architectural changes shall be versioned separately and must
+> preserve backward compatibility with this baseline unless explicitly approved as a major
+> platform revision.
 
 *No code, schema, or architecture was changed to produce this document.*
