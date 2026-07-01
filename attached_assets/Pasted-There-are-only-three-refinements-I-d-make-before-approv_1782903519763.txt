@@ -1,0 +1,226 @@
+There are only three refinements I'd make before approving implementation.
+
+1. Material Issue Note (MIN) should be immutable ⭐⭐⭐⭐⭐
+
+After a MIN is posted, it should never be edited.
+
+If someone makes a mistake:
+
+❌ Don't edit the MIN.
+
+✅ Create a reversal document.
+
+Just like accounting journals.
+
+Example:
+
+MIN-00015
+↓
+
+MIN Reversal
+↓
+
+MIN-00016
+
+That preserves a complete audit trail.
+
+I'd add:
+
+Once a Material Issue Note is posted, it becomes read-only. Any correction must be performed through a reversal transaction. Posted MINs must never be edited or deleted.
+
+2. Product Genealogy should include QC ⭐⭐⭐⭐⭐
+
+Current genealogy is:
+
+Product
+↓
+
+Production Order
+
+↓
+
+MIN
+
+↓
+
+Material
+
+↓
+
+Supplier Batch
+
+↓
+
+GRN
+
+↓
+
+Supplier
+
+I'd extend it slightly:
+
+Product
+
+↓
+
+Production Order
+
+↓
+
+MIN
+
+↓
+
+QC Result
+
+↓
+
+Packing
+
+↓
+
+Dispatch
+
+↓
+
+Customer
+
+↓
+
+Warranty
+
+Because later, when servicing a product, you'll often ask:
+
+"Did this unit actually pass QC?"
+
+That should be part of its permanent history.
+
+3. Future-proof the MIN
+
+Don't think of MIN as "only for production."
+
+Think of it as the factory's standard material issue document.
+
+Later it can also support:
+
+Production
+R&D
+Rework
+Service
+Scrap
+Demo Units
+
+Instead of only:
+
+Production Order
+
+I recommend the MIN header stores:
+
+Source Type
+
+Production Order
+
+Rework Order
+
+Service Order
+
+R&D
+
+etc.
+
+Even if only "Production Order" is used in v1.
+
+That avoids redesign later.
+
+One thing I especially like
+
+This sentence:
+
+"The existing production order IS the work order."
+
+That's the correct decision.
+
+Many ERP implementations create:
+
+Production Order
+
+↓
+
+Work Order
+
+↓
+
+Shop Order
+
+↓
+
+Execution Order
+
+...and end up with four documents representing the same work.
+
+For your current factory, keeping one production document is simpler and easier to operate.
+
+What you've now achieved
+
+You have a very clean manufacturing architecture:
+
+Purchase
+        │
+        ▼
+GRN
+        │
+        ▼
+Inventory
+        │
+        ▼
+Approved BOM
+        │
+        ▼
+Production Order
+        │
+        ▼
+Material Issue Note (MIN)
+        │
+        ▼
+Inventory Consumption
+        │
+        ▼
+Production
+        │
+        ▼
+QC PASS
+        │
+        ▼
+Serialized Product Created
+        │
+        ▼
+Packing
+        │
+        ▼
+Dispatch
+        │
+        ▼
+Customer Registration
+        │
+        ▼
+Warranty
+
+Every inventory movement has a document.
+
+Every manufactured product has a genealogy.
+
+Every document has an audit trail.
+
+That is exactly what a manufacturing ERP should provide.
+
+Final approval
+
+After adding these three refinements:
+
+MIN is immutable after posting (reversal only).
+Include QC, Packing, Dispatch, Customer, and Warranty in the Product Genealogy timeline.
+Design the MIN header with a generic "Source Type" field so it can support future use cases beyond production.
+
+I would tell Replit:
+
+Approved. Proceed with implementation. Do not change the existing production engine, product creation gate, or Sprint 1 workflows. Extend the current architecture exactly as planned.
