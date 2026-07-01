@@ -41,6 +41,7 @@
 - [Cert-suite contract coupling](cert-suite-contract-coupling.md) — cert suites create fixtures via real endpoints; tightening a contract (new required field/role) breaks them — update cert/*.ts in lockstep.
 - [OdsDrawer focus-loss anti-pattern](ods-drawer-focus-loss.md) — inline ref callback re-running autofocus every render steals focus after 1 keystroke; use useRef + useEffect([open]) once; fix the shared surface, not the leaf form.
 - [Manufacturing stage audit events](stage-audit-events.md) — timeline event_type is free-text; use generic stage_* events (never hardcode charging_*); TimelineView must map every type.
+- [Two category namespaces](dual-category-namespaces.md) — Material Category (inventory/GRN) ≠ Product Category (serialized product); same display name, different tables; resolve by immutable code, never name.
 - [Mfg genealogy double-count](mfg-genealogy-double-count.md) — stage cards already write mfg_battery_genealogy; new component consumers (e.g. MIN) must project read-time, not write genealogy rows, or parts double-count.
 - [Radix Select must be controlled](radix-select-controlled.md) — shared SelectField must pass value ?? "" not undefined; uncontrolled→controlled flip warns + intermittently drops the picked value.
 - [Frontend API error shape](api-error-shape.md) — thrown ApiError puts the JSON body on `e.data` (use `e?.data?.error`); the common `e?.response?.data?.error` in existing pages is always undefined.
