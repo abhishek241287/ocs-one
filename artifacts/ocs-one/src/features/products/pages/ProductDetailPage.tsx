@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  ArrowLeft, Loader2, Package, GitBranch, Info, ArrowRight, Activity,
+  ArrowLeft, Loader2, Package, GitBranch, Info, ArrowRight, Activity, Route,
 } from "lucide-react";
 import {
   useGetProduct,
@@ -20,6 +20,7 @@ import { useOdsNotify } from "@/hooks/use-ods-notify";
 import { OdsDialog } from "@/components/ods";
 import ProductGenealogyView from "../components/ProductGenealogyView";
 import ProductEventsView from "../components/ProductEventsView";
+import ProductTraceabilityView from "../components/ProductTraceabilityView";
 
 const STATUS_COLORS: Record<string, string> = {
   manufacturing: "bg-gray-100 text-gray-700",
@@ -165,8 +166,12 @@ export default function ProductDetailPage() {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="genealogy">
+        <Tabs defaultValue="traceability">
           <TabsList>
+            <TabsTrigger value="traceability" className="flex items-center gap-1.5">
+              <Route className="h-3.5 w-3.5" />
+              360° Traceability
+            </TabsTrigger>
             <TabsTrigger value="genealogy" className="flex items-center gap-1.5">
               <GitBranch className="h-3.5 w-3.5" />
               Genealogy
@@ -180,6 +185,10 @@ export default function ProductDetailPage() {
               Details
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="traceability" className="mt-4">
+            <ProductTraceabilityView productId={productId} />
+          </TabsContent>
 
           <TabsContent value="genealogy" className="mt-4">
             <ProductGenealogyView productId={productId} />

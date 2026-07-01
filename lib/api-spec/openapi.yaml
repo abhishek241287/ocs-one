@@ -2461,6 +2461,22 @@ paths:
         "404":
           description: Product not found
 
+  /products/{id}/traceability:
+    get:
+      operationId: getProductTraceability
+      tags: [products]
+      summary: Get a product's full 360° lifecycle traceability (read-only aggregation)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Complete cradle-to-grave lineage for the serialized product
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductTraceability" }
+        "404":
+          description: Product not found
+
   /products/{id}/status:
     post:
       operationId: updateProductStatus
@@ -5586,6 +5602,52 @@ components:
         items:
           type: array
           items: { $ref: "#/components/schemas/ProductEvent" }
+
+    ProductTraceabilityTimelineEntry:
+      type: object
+      required: [source, event_type, actor, description]
+      properties:
+        source: { type: string, enum: [product, manufacturing] }
+        event_type: { type: string }
+        actor: { type: string }
+        description: { type: string }
+        timestamp: { type: string, format: date-time, nullable: true }
+        metadata: { type: object, additionalProperties: true, nullable: true }
+
+    ProductTraceability:
+      type: object
+      required: [product, is_imported, fulfillment, timeline]
+      properties:
+        product: { $ref: "#/components/schemas/Product" }
+        is_imported: { type: boolean }
+        manufacturing:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: >-
+            Present for manufactured products (production order, material issue
+            notes, BOM versions, materials consumed, GRN links, QC + test
+            results). Null for imported products.
+        imported:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: >-
+            Present for imported products (source GRN, OEM/OCS serial provenance,
+            category). Null for manufactured products.
+        fulfillment:
+          type: object
+          required: [dispatches]
+          properties:
+            packing: { type: object, additionalProperties: true, nullable: true }
+            dispatches:
+              type: array
+              items: { type: object, additionalProperties: true }
+        customer: { type: object, additionalProperties: true, nullable: true }
+        warranty: { type: object, additionalProperties: true, nullable: true }
+        timeline:
+          type: array
+          items: { $ref: "#/components/schemas/ProductTraceabilityTimelineEntry" }
 
     ProductStatusUpdate:
       type: object

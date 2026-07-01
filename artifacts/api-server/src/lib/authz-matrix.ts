@@ -524,6 +524,15 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     expected: all(P),
   },
   {
+    id: "products.traceability",
+    method: "GET",
+    path: `/api/products/${DUMMY_ID}/traceability`,
+    group: "Products",
+    description: "Get a product's full 360° lifecycle traceability (read)",
+    guard: "requireAuth (read open to all authed)",
+    expected: all(P),
+  },
+  {
     id: "products.status",
     method: "POST",
     path: `/api/products/${DUMMY_ID}/status`,

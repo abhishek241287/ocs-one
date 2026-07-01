@@ -13,11 +13,12 @@ import {
 import { UpdateProductStatusBody, CreateImportedProductBody } from "@workspace/api-zod";
 import { requireRole } from "../../middleware/auth";
 import { createImportedProducts } from "./imported-product-creation";
+import { getProductTraceability } from "./traceability";
 
 const router: IRouter = Router();
 
 // Postgres numeric/decimal strings → JS numbers; keep everything else as-is.
-function numify<T extends Record<string, unknown>>(row: T): T {
+export function numify<T extends Record<string, unknown>>(row: T): T {
   return Object.fromEntries(
     Object.entries(row).map(([k, v]) => [
       k,
@@ -201,7 +202,7 @@ router.get("/inventory-summary", async (_req: Request, res: Response): Promise<v
 // Used by GET /:id AND the status transition so every Product response — read
 // or write — returns the identical declared `Product` shape (never raw camelCase
 // DB rows from `.returning()`).
-async function selectProductView(id: string) {
+export async function selectProductView(id: string) {
   const [item] = await db
     .select({
       id: productsTable.id,
@@ -302,6 +303,20 @@ router.get("/:id/events", async (req: Request, res: Response): Promise<void> => 
     .orderBy(desc(productEventsTable.createdAt));
 
   res.json({ items: items.map((e) => numify(e as Record<string, unknown>)) });
+});
+
+// GET /products/:id/traceability — read-only 360° lineage aggregation.
+// Assembles the complete cradle-to-grave lineage (manufacturing OR imported
+// provenance + fulfillment + customer + warranty + a merged chronological
+// timeline) for one serialized Product. Read open to all authed users; writes
+// nothing (single small read-only endpoint permitted by the traceability task).
+router.get("/:id/traceability", async (req: Request, res: Response): Promise<void> => {
+  const result = await getProductTraceability(req.params.id as string);
+  if (!result) {
+    res.status(404).json({ error: "Product not found" });
+    return;
+  }
+  res.json(result);
 });
 
 // POST /products/:id/status — guarded forward-only lifecycle transition.

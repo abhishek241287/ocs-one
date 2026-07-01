@@ -201,6 +201,7 @@ import type {
   ProductMasterInput,
   ProductMasterUpdate,
   ProductStatusUpdate,
+  ProductTraceability,
   ProductWorkflow,
   ProductWorkflowInput,
   ProductWorkflowUpdate,
@@ -9282,6 +9283,83 @@ export function useGetProductEvents<TData = Awaited<ReturnType<typeof getProduct
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetProductEventsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetProductTraceabilityUrl = (id: string,) => {
+
+
+
+
+  return `/api/products/${id}/traceability`
+}
+
+/**
+ * @summary Get a product's full 360° lifecycle traceability (read-only aggregation)
+ */
+export const getProductTraceability = async (id: string, options?: RequestInit): Promise<ProductTraceability> => {
+
+  return customFetch<ProductTraceability>(getGetProductTraceabilityUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProductTraceabilityQueryKey = (id: string,) => {
+    return [
+    `/api/products/${id}/traceability`
+    ] as const;
+    }
+
+
+export const getGetProductTraceabilityQueryOptions = <TData = Awaited<ReturnType<typeof getProductTraceability>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductTraceability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProductTraceabilityQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProductTraceability>>> = ({ signal }) => getProductTraceability(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProductTraceability>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProductTraceabilityQueryResult = NonNullable<Awaited<ReturnType<typeof getProductTraceability>>>
+export type GetProductTraceabilityQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a product's full 360° lifecycle traceability (read-only aggregation)
+ */
+
+export function useGetProductTraceability<TData = Awaited<ReturnType<typeof getProductTraceability>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductTraceability>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProductTraceabilityQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

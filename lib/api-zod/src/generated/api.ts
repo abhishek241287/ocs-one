@@ -4882,6 +4882,54 @@ export const GetProductEventsResponse = zod.object({
 
 
 /**
+ * @summary Get a product's full 360° lifecycle traceability (read-only aggregation)
+ */
+export const GetProductTraceabilityParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetProductTraceabilityResponse = zod.object({
+  "product": zod.object({
+  "id": zod.string().uuid(),
+  "category_id": zod.string().uuid(),
+  "model_id": zod.string().uuid(),
+  "workflow_code": zod.string(),
+  "source_production_order_id": zod.string().uuid().nullish(),
+  "official_product_serial": zod.string(),
+  "serial_source": zod.enum(['OCS', 'MANUFACTURER']),
+  "qc_status": zod.string().nullish(),
+  "product_status": zod.enum(['manufacturing', 'qc_passed', 'ready_for_packing', 'packed', 'dispatched', 'delivered_to_dealer']),
+  "current_location": zod.string().nullish(),
+  "dealer_id": zod.string().uuid().nullish(),
+  "manufacturing_completed_at": zod.coerce.date(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "category_name": zod.string().nullish(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "dealer_name": zod.string().nullish()
+}),
+  "is_imported": zod.boolean(),
+  "manufacturing": zod.record(zod.string(), zod.unknown()).nullish().describe('Present for manufactured products (production order, material issue notes, BOM versions, materials consumed, GRN links, QC + test results). Null for imported products.'),
+  "imported": zod.record(zod.string(), zod.unknown()).nullish().describe('Present for imported products (source GRN, OEM\/OCS serial provenance, category). Null for manufactured products.'),
+  "fulfillment": zod.object({
+  "packing": zod.record(zod.string(), zod.unknown()).nullish(),
+  "dispatches": zod.array(zod.record(zod.string(), zod.unknown()))
+}),
+  "customer": zod.record(zod.string(), zod.unknown()).nullish(),
+  "warranty": zod.record(zod.string(), zod.unknown()).nullish(),
+  "timeline": zod.array(zod.object({
+  "source": zod.enum(['product', 'manufacturing']),
+  "event_type": zod.string(),
+  "actor": zod.string(),
+  "description": zod.string(),
+  "timestamp": zod.coerce.date().nullish(),
+  "metadata": zod.record(zod.string(), zod.unknown()).nullish()
+}))
+})
+
+
+/**
  * @summary Transition a product's lifecycle status (guarded)
  */
 export const UpdateProductStatusParams = zod.object({

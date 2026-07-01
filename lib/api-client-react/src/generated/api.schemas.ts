@@ -2012,6 +2012,61 @@ export interface ProductEventsResponse {
   items: ProductEvent[];
 }
 
+export type ProductTraceabilityTimelineEntrySource = typeof ProductTraceabilityTimelineEntrySource[keyof typeof ProductTraceabilityTimelineEntrySource];
+
+
+export const ProductTraceabilityTimelineEntrySource = {
+  product: 'product',
+  manufacturing: 'manufacturing',
+} as const;
+
+export type ProductTraceabilityTimelineEntryMetadata = { [key: string]: unknown } | null;
+
+export interface ProductTraceabilityTimelineEntry {
+  source: ProductTraceabilityTimelineEntrySource;
+  event_type: string;
+  actor: string;
+  description: string;
+  timestamp?: string | null;
+  metadata?: ProductTraceabilityTimelineEntryMetadata;
+}
+
+/**
+ * Present for manufactured products (production order, material issue notes, BOM versions, materials consumed, GRN links, QC + test results). Null for imported products.
+ */
+export type ProductTraceabilityManufacturing = { [key: string]: unknown } | null;
+
+/**
+ * Present for imported products (source GRN, OEM/OCS serial provenance, category). Null for manufactured products.
+ */
+export type ProductTraceabilityImported = { [key: string]: unknown } | null;
+
+export type ProductTraceabilityFulfillmentPacking = { [key: string]: unknown } | null;
+
+export type ProductTraceabilityFulfillmentDispatchesItem = { [key: string]: unknown };
+
+export type ProductTraceabilityFulfillment = {
+  packing?: ProductTraceabilityFulfillmentPacking;
+  dispatches: ProductTraceabilityFulfillmentDispatchesItem[];
+};
+
+export type ProductTraceabilityCustomer = { [key: string]: unknown } | null;
+
+export type ProductTraceabilityWarranty = { [key: string]: unknown } | null;
+
+export interface ProductTraceability {
+  product: Product;
+  is_imported: boolean;
+  /** Present for manufactured products (production order, material issue notes, BOM versions, materials consumed, GRN links, QC + test results). Null for imported products. */
+  manufacturing?: ProductTraceabilityManufacturing;
+  /** Present for imported products (source GRN, OEM/OCS serial provenance, category). Null for manufactured products. */
+  imported?: ProductTraceabilityImported;
+  fulfillment: ProductTraceabilityFulfillment;
+  customer?: ProductTraceabilityCustomer;
+  warranty?: ProductTraceabilityWarranty;
+  timeline: ProductTraceabilityTimelineEntry[];
+}
+
 export interface ProductStatusUpdate {
   status: ProductStatus;
   reason?: string;
