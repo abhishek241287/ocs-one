@@ -54,3 +54,9 @@ id = "XNH4TC2GQQnr-kRKXIf5l"
 uri = "file://docs/inventory-commercial-readiness-report.md"
 type = "text"
 title = "Inventory Commercial Readiness Report"
+
+[[outputs]]
+id = "gM4mPk9oTIOP6zsyB2TC-"
+uri = "file://docs/factory-ready-v1.0-signoff.md"
+type = "text"
+title = "OCS One — Factory Ready v1.0 Sign-Off"
