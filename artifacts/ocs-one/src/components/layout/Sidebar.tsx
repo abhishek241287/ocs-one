@@ -75,7 +75,7 @@ const navSections: NavSection[] = [
         label: "Finished Goods",
         items: [
           { label: "Product Inventory", href: "/product-inventory", icon: Boxes },
-          { label: "Imported Products", href: "/products/imported", icon: PackagePlus },
+          { label: "Imported Product Registration", href: "/products/imported", icon: PackagePlus },
         ],
       },
     ],

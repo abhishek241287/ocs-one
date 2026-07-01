@@ -2484,12 +2484,12 @@ paths:
         "404":
           description: Product not found
 
-  # ─── Imported Product creation (G1) ──────────────────────────────────────────
+  # ─── Imported Product Registration (G1) ──────────────────────────────────────
   /products/imported:
     post:
       operationId: createImportedProduct
       tags: [products]
-      summary: Create finished Product(s) for imported goods (inverters) — no order, no BOM
+      summary: Register inspected imported inventory as serialized Product(s) — no order, no BOM
       requestBody:
         required: true
         content:
@@ -2497,7 +2497,7 @@ paths:
             schema: { $ref: "#/components/schemas/ImportedProductInput" }
       responses:
         "201":
-          description: Imported product(s) created
+          description: Imported product(s) registered
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ImportedProductResult" }
@@ -5594,7 +5594,7 @@ components:
         status: { $ref: "#/components/schemas/ProductStatus" }
         reason: { type: string }
 
-    # ─── Imported Product creation (G1) ───────────────────────────────────────
+    # ─── Imported Product Registration (G1) ───────────────────────────────────
     ImportedProductInput:
       type: object
       required: [model_id]

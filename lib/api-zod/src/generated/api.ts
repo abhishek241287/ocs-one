@@ -4916,7 +4916,7 @@ export const UpdateProductStatusResponse = zod.object({
 
 
 /**
- * @summary Create finished Product(s) for imported goods (inverters) — no order, no BOM
+ * @summary Register inspected imported inventory as serialized Product(s) — no order, no BOM
  */
 
 

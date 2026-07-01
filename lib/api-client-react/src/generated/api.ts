@@ -9374,7 +9374,7 @@ export const getCreateImportedProductUrl = () => {
 }
 
 /**
- * @summary Create finished Product(s) for imported goods (inverters) — no order, no BOM
+ * @summary Register inspected imported inventory as serialized Product(s) — no order, no BOM
  */
 export const createImportedProduct = async (importedProductInput: ImportedProductInput, options?: RequestInit): Promise<ImportedProductResult> => {
 
@@ -9422,7 +9422,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreateImportedProductMutationError = ErrorType<void>
 
     /**
- * @summary Create finished Product(s) for imported goods (inverters) — no order, no BOM
+ * @summary Register inspected imported inventory as serialized Product(s) — no order, no BOM
  */
 export const useCreateImportedProduct = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createImportedProduct>>, TError,{data: BodyType<ImportedProductInput>}, TContext>, request?: SecondParameter<typeof customFetch>}

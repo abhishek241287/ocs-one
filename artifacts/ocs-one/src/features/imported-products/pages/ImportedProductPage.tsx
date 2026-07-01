@@ -114,13 +114,13 @@ export default function ImportedProductPage() {
 
     try {
       const result = await createImported.mutateAsync({ data: payload });
-      notify.success(`Created ${result.created} imported product(s)`, {
+      notify.success(`Registered ${result.created} imported product(s)`, {
         description: result.items.map((p) => p.official_product_serial).join(", "),
       });
       reset();
       qc.invalidateQueries({ queryKey: getListProductsQueryKey() });
     } catch (e: any) {
-      notify.error(e?.data?.error ?? e?.message ?? "Failed to create imported products");
+      notify.error(e?.data?.error ?? e?.message ?? "Failed to register imported products");
     }
   };
 
@@ -129,8 +129,8 @@ export default function ImportedProductPage() {
       <div className="p-6 space-y-5">
         <ModuleHeader
           icon="📥"
-          title="Imported Product Creation"
-          description="Create serialized Products for imported finished goods (Inbuilt Lithium & Hybrid inverters). No production order, BOM, or inventory consumption — units enter the platform ready for packing."
+          title="Imported Product Registration"
+          description="Register inspected imported inventory as individually serialized saleable products. Hybrid Inverters retain manufacturer serial numbers, while Inbuilt Lithium Inverters receive OCS-generated serial numbers."
           certification="certified"
         />
 
@@ -229,7 +229,7 @@ export default function ImportedProductPage() {
                 ) : (
                   <PackagePlus className="h-4 w-4" />
                 )}
-                Create Imported Product(s)
+                Register Imported Product(s)
               </Button>
             </CardContent>
           </Card>
