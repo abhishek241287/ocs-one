@@ -1,0 +1,223 @@
+CTO Prompt – Factory Readiness Stabilization Sprint (No New Features)
+
+Sprint Objective
+
+The core manufacturing workflow is now complete and Factory Ready v1.
+
+This sprint is not for adding new modules or new business features.
+
+The objective is to stabilize, harden, and polish the existing platform before expanding functionality.
+
+Scope
+
+Review every existing module and identify:
+
+UI inconsistencies
+Broken navigation
+Validation gaps
+Permission inconsistencies
+Missing loading states
+Missing empty states
+Error message improvements
+Performance improvements
+Duplicate code
+Minor UX improvements
+
+without changing business logic.
+
+Focus Areas
+1. Material Master
+
+Verify:
+
+Validation
+Component linking
+Engineering Master Required behavior
+Search
+Edit
+Delete restrictions
+2. Procurement
+
+Verify:
+
+Purchase Orders
+GRN
+Incoming Inspection
+Material Receipt
+
+Check every transition.
+
+3. Inventory
+
+Verify:
+
+Inventory Ledger
+Stock calculations
+Filters
+Search
+Batch display
+Traceability links
+4. Manufacturing
+
+Verify:
+
+Production Orders
+Material Issue Note
+QC
+Product Creation
+Product Traceability
+5. Imported Product Registration
+
+Verify:
+
+Hybrid workflow
+Lithium workflow
+OEM Serial
+OCS Serial
+Validation
+Duplicate serial handling
+6. Packing
+
+Verify:
+
+Packing queue
+Status changes
+Duplicate prevention
+7. Dispatch
+
+Verify:
+
+Dispatch flow
+Validation
+Product status updates
+8. Warranty
+
+Verify:
+
+Customer Registration
+Warranty Activation
+Warranty Timeline
+Product Detail Page
+
+Review the new Product 360° Traceability page.
+
+Verify:
+
+Timeline accuracy
+Performance
+Missing document links
+Missing information
+Mobile responsiveness
+
+Do not redesign.
+
+Only improve.
+
+UI Consistency
+
+Check the entire application for:
+
+Consistent button styles
+Consistent spacing
+Consistent terminology
+Consistent dialogs
+Consistent tables
+Consistent colors
+Consistent icons
+Error Handling
+
+Replace generic errors with meaningful business messages.
+
+Examples:
+
+Instead of:
+
+Something went wrong
+
+Use:
+
+Insufficient inventory for Material Issue.
+
+or
+
+Product has already been dispatched.
+Performance
+
+Review:
+
+Duplicate API calls
+Slow queries
+N+1 queries
+Unnecessary re-renders
+Missing indexes
+
+Optimize only where beneficial.
+
+Code Quality
+
+Review:
+
+Duplicate code
+Dead code
+Unused components
+Unused APIs
+Naming consistency
+
+Do not refactor architecture unnecessarily.
+
+Out of Scope
+
+Do not add:
+
+New modules
+New workflows
+Finance
+HR
+CRM
+MRP
+AI
+IoT
+Dashboards
+Reports
+Deliverables
+
+Provide a categorized report:
+
+Critical
+
+Must fix before commercial deployment.
+
+High
+
+Should fix before deployment.
+
+Medium
+
+Can be scheduled.
+
+Low
+
+Cosmetic improvements.
+
+Technical Debt
+
+Future engineering improvements.
+
+For each issue include:
+
+Module
+Problem
+Impact
+Recommendation
+Whether it can be fixed without changing business logic.
+Implementation Rule
+
+Do not start fixing immediately.
+
+First perform a complete Factory Readiness Review.
+
+Present the findings.
+
+Wait for my approval before making any code changes.
+
+I actually think this is the most valuable sprint you can do right now. OCS One has reached the point where quality, consistency, and reliability will have a bigger impact than adding another major feature. A thorough stabilization pass will make the system much more confidence-inspiring for real factory users before you expand into planning, MRP, or advanced manufacturing.
