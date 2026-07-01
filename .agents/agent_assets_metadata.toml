@@ -60,3 +60,15 @@ id = "gM4mPk9oTIOP6zsyB2TC-"
 uri = "file://docs/factory-ready-v1.0-signoff.md"
 type = "text"
 title = "OCS One — Factory Ready v1.0 Sign-Off"
+
+[[outputs]]
+id = "SNw0ByYRTDNdeDGHgwxzg"
+uri = "file://docs/factory-acceptance-testing-manual-v1.0.md"
+type = "text"
+title = "OCS One — Factory Acceptance Testing (FAT) Manual v1.0"
+
+[[outputs]]
+id = "zGqxOFOTps9xWMuIntB5o"
+uri = "file://docs/operator-user-manual-v1.0.md"
+type = "text"
+title = "OCS One — Operator User Manual v1.0"
