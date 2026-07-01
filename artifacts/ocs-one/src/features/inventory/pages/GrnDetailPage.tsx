@@ -100,7 +100,7 @@ export default function GrnDetailPage() {
       qc.invalidateQueries({ queryKey: getListGrnTransactionsQueryKey(grnId) });
       qc.invalidateQueries({ queryKey: getListGrnsQueryKey() });
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to post GRN");
+      notify.error(e?.data?.error ?? "Failed to post GRN");
     }
   };
 
@@ -111,7 +111,7 @@ export default function GrnDetailPage() {
       qc.invalidateQueries({ queryKey: getListGrnsQueryKey() });
       navigate("/inventory/grns");
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to delete GRN");
+      notify.error(e?.data?.error ?? "Failed to delete GRN");
     }
   };
 

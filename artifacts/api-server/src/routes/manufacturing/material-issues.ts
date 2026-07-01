@@ -310,6 +310,13 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       case "insufficient":
         res.status(422).json({ error: "Insufficient stock", shortfalls: o.shortfalls });
         return;
+      case "quantity_mismatch":
+        res.status(422).json({
+          error:
+            "Issued quantity must exactly equal the approved BOM quantity — partial or short issue is not supported",
+          mismatches: o.mismatches,
+        });
+        return;
       case "missing_traceability":
         res
           .status(422)

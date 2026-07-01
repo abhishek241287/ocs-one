@@ -55,7 +55,7 @@ export default function BomDetailPage() {
       setShowApprove(false);
       invalidate();
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to approve BOM");
+      notify.error(e?.data?.error ?? "Failed to approve BOM");
     }
   };
 
@@ -66,7 +66,7 @@ export default function BomDetailPage() {
       setShowObsolete(false);
       invalidate();
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to obsolete BOM");
+      notify.error(e?.data?.error ?? "Failed to obsolete BOM");
     }
   };
 
@@ -77,7 +77,7 @@ export default function BomDetailPage() {
       qc.invalidateQueries({ queryKey: getListBomsQueryKey() });
       navigate("/masters/boms");
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to delete BOM");
+      notify.error(e?.data?.error ?? "Failed to delete BOM");
     }
   };
 

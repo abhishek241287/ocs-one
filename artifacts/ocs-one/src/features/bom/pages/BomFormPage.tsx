@@ -165,7 +165,7 @@ export default function BomFormPage() {
         navigate(`/masters/boms/${created.id}`);
       }
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to save BOM");
+      notify.error(e?.data?.error ?? "Failed to save BOM");
     }
   };
 

@@ -126,7 +126,7 @@ function GenericStageCard({ orderId, stage, onRefresh }: Props) {
       notify.success("Stage started");
       onRefresh();
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to start stage");
+      notify.error(e?.data?.error ?? "Failed to start stage");
     }
   };
 
@@ -137,7 +137,7 @@ function GenericStageCard({ orderId, stage, onRefresh }: Props) {
       notify.success("Stage completed — awaiting supervisor approval");
       onRefresh();
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to complete stage");
+      notify.error(e?.data?.error ?? "Failed to complete stage");
     }
   };
 
@@ -148,7 +148,7 @@ function GenericStageCard({ orderId, stage, onRefresh }: Props) {
       notify.success("Stage approved");
       onRefresh();
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to approve stage");
+      notify.error(e?.data?.error ?? "Failed to approve stage");
     }
   };
 
@@ -160,7 +160,7 @@ function GenericStageCard({ orderId, stage, onRefresh }: Props) {
       setShowReject(false);
       onRefresh();
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to reject stage");
+      notify.error(e?.data?.error ?? "Failed to reject stage");
     }
   };
 

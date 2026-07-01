@@ -291,6 +291,7 @@ export type IssueOutcome =
   | { status: "no_requirements" }
   | { status: "already_issued"; minNumber: string }
   | { status: "insufficient"; shortfalls: { materialName: string | null; required: number; available: number }[] }
+  | { status: "quantity_mismatch"; mismatches: { materialName: string | null; required: number; issued: number }[] }
   | { status: "missing_traceability"; materials: (string | null)[] };
 
 export interface IssueMaterialsArgs {
@@ -353,6 +354,19 @@ export async function issueMaterials(args: IssueMaterialsArgs): Promise<IssueOut
         : suggestion?.supplierLotNumber ?? null;
     return { req: r, issuedQty, grnId, grnLineId, supplierLotNumber };
   });
+
+  // Exact-match invariant (Factory Ready v1): issued quantity MUST equal the
+  // approved BOM requirement for every line — no partial/short/over issue.
+  // Partial issue (true WIP) is intentionally unsupported; a Work Order cannot
+  // proceed unless the full BOM is consumed.
+  const mismatches = resolved
+    .filter((l) => round3(l.issuedQty) !== round3(l.req.requiredQty))
+    .map((l) => ({
+      materialName: l.req.materialName,
+      required: round3(l.req.requiredQty),
+      issued: round3(l.issuedQty),
+    }));
+  if (mismatches.length) return { status: "quantity_mismatch", mismatches };
 
   // Availability (material-level) — aggregate across duplicate material lines.
   const demand = new Map<string, number>();

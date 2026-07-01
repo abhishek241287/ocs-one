@@ -96,7 +96,7 @@ export default function MaterialIssuePanel({ orderId, onRefresh }: Props) {
       setNotes("");
       invalidate();
     } catch (e) {
-      notify.error(e instanceof Error ? e.message : "Failed to issue materials");
+      notify.error((e as any)?.data?.error ?? (e instanceof Error ? e.message : "Failed to issue materials"));
     }
   };
 
@@ -110,7 +110,7 @@ export default function MaterialIssuePanel({ orderId, onRefresh }: Props) {
       setShowReverse(false);
       invalidate();
     } catch (e) {
-      notify.error(e instanceof Error ? e.message : "Failed to reverse");
+      notify.error((e as any)?.data?.error ?? (e instanceof Error ? e.message : "Failed to reverse"));
     }
   };
 

@@ -71,7 +71,7 @@ export default function QualityControlCard({ orderId, stage, onRefresh }: Props)
       notify.success("QC stage started");
       onRefresh();
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to start QC");
+      notify.error(e?.data?.error ?? "Failed to start QC");
     }
   };
 
@@ -97,7 +97,7 @@ export default function QualityControlCard({ orderId, stage, onRefresh }: Props)
       notify.success(decision === "approved" ? "✓ Battery QC Approved!" : "Battery sent to rework queue");
       onRefresh();
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to submit QC");
+      notify.error(e?.data?.error ?? "Failed to submit QC");
     }
   };
 
