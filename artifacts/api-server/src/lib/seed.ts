@@ -34,6 +34,12 @@ export async function seedDatabase(): Promise<void> {
     CREATE SEQUENCE IF NOT EXISTS material_transfer_seq START 1 INCREMENT 1;
     -- MES: race-safe BOM number generation (BOM-YYYYMMDD-NNNNNN).
     CREATE SEQUENCE IF NOT EXISTS bom_seq START 1 INCREMENT 1;
+    -- Imported Products: race-safe OCS inverter serial (LIV-YYYYMMDD-NNNNNN).
+    CREATE SEQUENCE IF NOT EXISTS product_import_seq START 1 INCREMENT 1;
+    -- Customer Registration: race-safe registration number (CUST-YYYYMMDD-NNNNNN).
+    CREATE SEQUENCE IF NOT EXISTS customer_registration_seq START 1 INCREMENT 1;
+    -- Warranty: race-safe warranty number (WRN-YYYYMMDD-NNNNNN).
+    CREATE SEQUENCE IF NOT EXISTS warranty_seq START 1 INCREMENT 1;
   `);
 
   // Forward-only resync of each id sequence to the max value already persisted in
@@ -98,6 +104,26 @@ export async function seedDatabase(): Promise<void> {
       IF m > 0 THEN
         PERFORM setval('bom_seq', GREATEST((SELECT last_value FROM bom_seq), m), true);
       END IF;
+
+      -- Imported OCS inverter serials only (LIV-…); other product serials (BAT-/OEM)
+      -- come from different sequences/sources and must NOT advance this counter.
+      SELECT COALESCE(MAX(split_part(official_product_serial, '-', 3)::bigint), 0) INTO m
+        FROM products WHERE official_product_serial ~ '^LIV-[0-9]{8}-[0-9]+$';
+      IF m > 0 THEN
+        PERFORM setval('product_import_seq', GREATEST((SELECT last_value FROM product_import_seq), m), true);
+      END IF;
+
+      SELECT COALESCE(MAX(split_part(registration_number, '-', 3)::bigint), 0) INTO m
+        FROM customer_registrations WHERE registration_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
+      IF m > 0 THEN
+        PERFORM setval('customer_registration_seq', GREATEST((SELECT last_value FROM customer_registration_seq), m), true);
+      END IF;
+
+      SELECT COALESCE(MAX(split_part(warranty_number, '-', 3)::bigint), 0) INTO m
+        FROM warranties WHERE warranty_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
+      IF m > 0 THEN
+        PERFORM setval('warranty_seq', GREATEST((SELECT last_value FROM warranty_seq), m), true);
+      END IF;
     END $$;
   `);
 
@@ -109,16 +135,21 @@ export async function seedDatabase(): Promise<void> {
     .onConflictDoNothing({ target: cellGradeConfigTable.id });
 
   // ── Unified Product Platform masters (idempotent) ──────────────────────────
-  // Category master: all three categories are seeded as data; only Battery Pack
-  // is exercised in CW-03 (Inbuilt Lithium / Hybrid are reserved for later waves).
+  // Category master: all three product categories are ACTIVE. Factory-Ready Sprint 1
+  // enables imported inverters (Inbuilt Lithium + Hybrid) as first-class Products, so
+  // both inverter categories must be active. onConflictDoUpdate reasserts active so a
+  // DB seeded before this sprint (which left them inactive) self-corrects on restart.
   await db
     .insert(productCategoriesTable)
     .values([
       { code: "BATTERY_PACK", name: "Battery Pack", status: "active" },
-      { code: "INBUILT_LITHIUM_INVERTER", name: "Inbuilt Lithium Inverter", status: "inactive" },
-      { code: "HYBRID_INVERTER", name: "Hybrid Inverter", status: "inactive" },
+      { code: "INBUILT_LITHIUM_INVERTER", name: "Inbuilt Lithium Inverter", status: "active" },
+      { code: "HYBRID_INVERTER", name: "Hybrid Inverter", status: "active" },
     ])
-    .onConflictDoNothing({ target: productCategoriesTable.code });
+    .onConflictDoUpdate({
+      target: productCategoriesTable.code,
+      set: { status: sql`excluded.status` },
+    });
 
   // Workflow master: BATTERY is active and carries the canonical 9-stage sequence
   // (DATA, not wired to any engine in CW-03 — the workflow-driven stage engine is
@@ -225,6 +256,39 @@ export async function seedDatabase(): Promise<void> {
     JOIN master_material_categories c ON c.code = m.cat_code
     JOIN material_workflows w ON w.code = m.wf_code
     ON CONFLICT (category_id) DO NOTHING;
+  `);
+
+  // ── Factory-Ready Sprint 1: imported inverter models + a default dealer ─────
+  // Two Product Model/SKU masters (one per imported inverter category) so imported
+  // Product creation (G1) and warranty period (G4) have a model to key off. The
+  // warranty_period_months here is the term snapshotted onto each issued warranty.
+  // Battery-specific NOT NULL columns are filled with representative values (these
+  // are inverter finished goods, not cell-built packs). Idempotent by unique code.
+  await pool.query(`
+    INSERT INTO master_products
+      (code, name, chemistry, category, category_id, nominal_voltage_v, capacity_ah,
+       energy_kwh, configuration, cell_count, warranty_period_months, status)
+    SELECT v.code, v.name, v.chemistry, v.category, c.id, v.nv::numeric, v.cap::numeric,
+           v.energy::numeric, v.config, v.cells, v.warranty, 'active'
+    FROM (VALUES
+      ('LIV-3KVA-48V', 'Inbuilt Lithium Inverter 3KVA/48V', 'LiFePO4',
+       'Inbuilt Lithium Inverter', 'INBUILT_LITHIUM_INVERTER', '48', '100', '5.12', '16S1P', 16, 60),
+      ('HYB-5KVA-48V', 'Hybrid Inverter 5KVA/48V', 'LiFePO4',
+       'Hybrid Inverter', 'HYBRID_INVERTER', '48', '0', '0', 'External', 0, 24)
+    ) AS v(code, name, chemistry, category, cat_code, nv, cap, energy, config, cells, warranty)
+    JOIN product_categories c ON c.code = v.cat_code
+    ON CONFLICT (code) DO NOTHING;
+  `);
+
+  // A default active dealer so the dispatch → customer-registration flow has a
+  // destination out of the box. Idempotent by unique dealer_code.
+  await pool.query(`
+    INSERT INTO logistics_dealers
+      (dealer_code, dealer_name, gst_number, address, contact_person, mobile, status)
+    VALUES
+      ('DLR-DEFAULT', 'OCS Default Dealer', '29ABCDE1234F1Z5',
+       'Plot 12, Industrial Area, Bengaluru, Karnataka 560058', 'Dealer Desk', '9000000000', 'active')
+    ON CONFLICT (dealer_code) DO NOTHING;
   `);
 
   // Seed default director account if no users exist

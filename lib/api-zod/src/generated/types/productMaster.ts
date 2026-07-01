@@ -10,6 +10,8 @@ import type { MasterCommon } from './masterCommon';
 export type ProductMaster = MasterCommon & ({
   chemistry?: string;
   category?: string;
+  /** @nullable */
+  category_id?: string | null;
   nominal_voltage_v?: number;
   capacity_ah?: number;
   energy_kwh?: number;

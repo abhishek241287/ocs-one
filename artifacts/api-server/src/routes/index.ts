@@ -22,6 +22,8 @@ import productsRouter from "./products/index";
 import packingRouter from "./packing/index";
 import dispatchRouter from "./dispatch/index";
 import dealersRouter from "./dealers/index";
+import customersRouter from "./customers/index";
+import warrantiesRouter from "./warranties/index";
 import bomRouter from "./bom/index";
 import manufacturingRouter from "./manufacturing/index";
 import cellsRouter from "./cells/index";
@@ -70,6 +72,12 @@ router.use("/dispatch", dispatchRouter);
 
 // Fulfillment — Dealer (read-only projection over the Product Platform)
 router.use("/dealers", dealersRouter);
+
+// Customer Registration (G3) — end-customer ownership of a dispatched Product
+router.use("/customers", customersRouter);
+
+// Warranty (G4) — common warranty engine (computed status) across all product types
+router.use("/warranties", warrantiesRouter);
 
 // MES — Bill of Materials (BOM Master)
 router.use("/boms", bomRouter);

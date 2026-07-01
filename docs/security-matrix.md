@@ -218,6 +218,53 @@ unless a minimum role is stated.
 > validated inside the transaction under a row lock (TOCTOU-safe). Per DP-3, product creation
 > writes no ECF baseline; `product_events` is the product timeline.
 
+### Imported Product Creation (`/api/products/imported`) — Factory Ready Sprint 1 (G1)
+
+| Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |
+|---|---|---|---|---|---|---|
+| `/api/products/imported` | POST | ✅ | **supervisor, director** | global | **yes** (`product.imported` on `product_events`) | ✅ (batch, atomic; Lithium Inverter → auto OCS serial `LIV-YYYYMMDD-NNNNNN` via `product_import_seq`; Hybrid Inverter → captured OEM serial `serial_source=MANUFACTURER`; products minted at `ready_for_packing`) |
+
+> **Note (Imported Product Creation):** Additive Sprint-1 module. Imported finished goods
+> (Inbuilt Lithium Inverter, Hybrid Inverter) enter the Product Platform directly as serialized
+> Products at `ready_for_packing` — NO production order, NO BOM, NO inventory consumption. The
+> model's Product Category decides serialization: OCS-serialized categories mint `quantity` units
+> with `LIV-YYYYMMDD-NNNNNN` (from `product_import_seq`, `serial_source=OCS`); OEM-serialized
+> categories capture one unit per supplied `oem_serials[]` (`serial_source=MANUFACTURER`). A model
+> whose category is not import-eligible is rejected (422). Input validation is Zod
+> (`CreateImportedProductBody`); write is gated `requireRole(supervisor, director)`. Each unit
+> appends an immutable `product.imported` event.
+
+### Customer Registration (`/api/customers/registrations`) — Factory Ready Sprint 1 (G3)
+
+| Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |
+|---|---|---|---|---|---|---|
+| `/api/customers/registrations` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (list; search + pagination) |
+| `/api/customers/registrations/{id}` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (registration + warranty detail) |
+| `/api/customers/registrations` | POST | ✅ | **supervisor, director** | global | **yes** (`customer.registered` on `product_events`) | ✅ (atomic; product must be dispatched/delivered else 422; one registration per product serial else 409; auto-creates warranty) |
+
+> **Note (Customer Registration):** Registers an end customer (name, mobile, address, dealer,
+> product serial, installation date) against a serialized Product that has already been dispatched
+> (`dispatched` or `delivered_to_dealer`, else 422). One registration per product serial (unique,
+> 409 on duplicate). On success it atomically mints the product's warranty (see G4) from the
+> installation date. Input validation is Zod (`CreateCustomerRegistrationBody`); write gated
+> `requireRole(supervisor, director)`; reads open to any authed user. Applies to all three product
+> types (battery pack, inbuilt lithium inverter, hybrid inverter).
+
+### Warranty (`/api/warranties`) — Factory Ready Sprint 1 (G4)
+
+| Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |
+|---|---|---|---|---|---|---|
+| `/api/warranties` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (list; computed status filter; search + pagination) |
+| `/api/warranties/{id}` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (warranty detail; computed status) |
+| `/api/warranties/{id}/void` | POST | ✅ | **supervisor, director** | global | **yes** (`warranty.voided` on `product_events`) | ✅ (mandatory reason else 400; one void per warranty else 409; FOR UPDATE re-check) |
+
+> **Note (Warranty):** Common warranty engine across all three product types. Status is **computed**,
+> never stored as the source of truth: `void` if voided, else `expired` if today > end date, else
+> `active`. End date = installation date + the model's warranty period (months). Voiding persists
+> `voided_at` / `void_reason` / `voided_by` (mandatory reason, 400 if empty) and is one-per-warranty
+> (409 if already void), re-checked under `SELECT … FOR UPDATE` (TOCTOU-safe). Reads open to any
+> authed user; void gated `requireRole(supervisor, director)`.
+
 ### Fulfillment (`/api/packing`, `/api/dispatch`) — Product-Platform-driven
 
 | Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |

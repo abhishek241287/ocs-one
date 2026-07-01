@@ -67,6 +67,9 @@ import type {
   ConnectorMaster,
   ConnectorMasterInput,
   ConnectorMasterUpdate,
+  CustomerRegistrationDetail,
+  CustomerRegistrationInput,
+  CustomerRegistrationListResponse,
   Dealer,
   DealerDispatchHistoryResponse,
   DealerInput,
@@ -90,6 +93,8 @@ import type {
   GrnDetail,
   GrnInput,
   HealthStatus,
+  ImportedProductInput,
+  ImportedProductResult,
   IncomingInspectionDetail,
   IncomingInspectionInput,
   ListBmsMasters200,
@@ -117,6 +122,7 @@ import type {
   ListChargerUnitsParams,
   ListConnectorMasters200,
   ListConnectorMastersParams,
+  ListCustomerRegistrationsParams,
   ListDealers200,
   ListDealersParams,
   ListDispatchOrders200,
@@ -155,6 +161,7 @@ import type {
   ListSuppliersParams,
   ListTestEquipmentMasters200,
   ListTestEquipmentMastersParams,
+  ListWarrantiesParams,
   LoginRequest,
   LoginResponse,
   ManufacturingDashboard,
@@ -214,7 +221,10 @@ import type {
   TestEquipmentMasterUpdate,
   TestResult,
   TestResultInput,
-  TestingDashboard
+  TestingDashboard,
+  VoidWarrantyInput,
+  Warranty,
+  WarrantyListResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -9350,6 +9360,76 @@ export const useUpdateProductStatus = <TError = ErrorType<void>,
       return useMutation(getUpdateProductStatusMutationOptions(options));
     }
 
+export const getCreateImportedProductUrl = () => {
+
+
+
+
+  return `/api/products/imported`
+}
+
+/**
+ * @summary Create finished Product(s) for imported goods (inverters) — no order, no BOM
+ */
+export const createImportedProduct = async (importedProductInput: ImportedProductInput, options?: RequestInit): Promise<ImportedProductResult> => {
+
+  return customFetch<ImportedProductResult>(getCreateImportedProductUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(importedProductInput)
+  }
+);}
+
+
+
+
+export const getCreateImportedProductMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createImportedProduct>>, TError,{data: BodyType<ImportedProductInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createImportedProduct>>, TError,{data: BodyType<ImportedProductInput>}, TContext> => {
+
+const mutationKey = ['createImportedProduct'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createImportedProduct>>, {data: BodyType<ImportedProductInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createImportedProduct(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateImportedProductMutationResult = NonNullable<Awaited<ReturnType<typeof createImportedProduct>>>
+    export type CreateImportedProductMutationBody = BodyType<ImportedProductInput>
+    export type CreateImportedProductMutationError = ErrorType<void>
+
+    /**
+ * @summary Create finished Product(s) for imported goods (inverters) — no order, no BOM
+ */
+export const useCreateImportedProduct = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createImportedProduct>>, TError,{data: BodyType<ImportedProductInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createImportedProduct>>,
+        TError,
+        {data: BodyType<ImportedProductInput>},
+        TContext
+      > => {
+      return useMutation(getCreateImportedProductMutationOptions(options));
+    }
+
 export const getPackProductsUrl = () => {
 
 
@@ -9875,6 +9955,469 @@ export function useDealerDispatchHistory<TData = Awaited<ReturnType<typeof deale
 
 
 
+
+export const getListCustomerRegistrationsUrl = (params?: ListCustomerRegistrationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/customers/registrations?${stringifiedParams}` : `/api/customers/registrations`
+}
+
+/**
+ * @summary List customer registrations (search + pagination)
+ */
+export const listCustomerRegistrations = async (params?: ListCustomerRegistrationsParams, options?: RequestInit): Promise<CustomerRegistrationListResponse> => {
+
+  return customFetch<CustomerRegistrationListResponse>(getListCustomerRegistrationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCustomerRegistrationsQueryKey = (params?: ListCustomerRegistrationsParams,) => {
+    return [
+    `/api/customers/registrations`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCustomerRegistrationsQueryOptions = <TData = Awaited<ReturnType<typeof listCustomerRegistrations>>, TError = ErrorType<unknown>>(params?: ListCustomerRegistrationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCustomerRegistrations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCustomerRegistrationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCustomerRegistrations>>> = ({ signal }) => listCustomerRegistrations(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCustomerRegistrations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCustomerRegistrationsQueryResult = NonNullable<Awaited<ReturnType<typeof listCustomerRegistrations>>>
+export type ListCustomerRegistrationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List customer registrations (search + pagination)
+ */
+
+export function useListCustomerRegistrations<TData = Awaited<ReturnType<typeof listCustomerRegistrations>>, TError = ErrorType<unknown>>(
+ params?: ListCustomerRegistrationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCustomerRegistrations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCustomerRegistrationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCustomerRegistrationUrl = () => {
+
+
+
+
+  return `/api/customers/registrations`
+}
+
+/**
+ * @summary Register an end customer for a dispatched product (auto-creates warranty)
+ */
+export const createCustomerRegistration = async (customerRegistrationInput: CustomerRegistrationInput, options?: RequestInit): Promise<CustomerRegistrationDetail> => {
+
+  return customFetch<CustomerRegistrationDetail>(getCreateCustomerRegistrationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(customerRegistrationInput)
+  }
+);}
+
+
+
+
+export const getCreateCustomerRegistrationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCustomerRegistration>>, TError,{data: BodyType<CustomerRegistrationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCustomerRegistration>>, TError,{data: BodyType<CustomerRegistrationInput>}, TContext> => {
+
+const mutationKey = ['createCustomerRegistration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCustomerRegistration>>, {data: BodyType<CustomerRegistrationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCustomerRegistration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCustomerRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof createCustomerRegistration>>>
+    export type CreateCustomerRegistrationMutationBody = BodyType<CustomerRegistrationInput>
+    export type CreateCustomerRegistrationMutationError = ErrorType<void>
+
+    /**
+ * @summary Register an end customer for a dispatched product (auto-creates warranty)
+ */
+export const useCreateCustomerRegistration = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCustomerRegistration>>, TError,{data: BodyType<CustomerRegistrationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCustomerRegistration>>,
+        TError,
+        {data: BodyType<CustomerRegistrationInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCustomerRegistrationMutationOptions(options));
+    }
+
+export const getGetCustomerRegistrationUrl = (id: string,) => {
+
+
+
+
+  return `/api/customers/registrations/${id}`
+}
+
+/**
+ * @summary Get a customer registration (with product + warranty)
+ */
+export const getCustomerRegistration = async (id: string, options?: RequestInit): Promise<CustomerRegistrationDetail> => {
+
+  return customFetch<CustomerRegistrationDetail>(getGetCustomerRegistrationUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCustomerRegistrationQueryKey = (id: string,) => {
+    return [
+    `/api/customers/registrations/${id}`
+    ] as const;
+    }
+
+
+export const getGetCustomerRegistrationQueryOptions = <TData = Awaited<ReturnType<typeof getCustomerRegistration>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomerRegistration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCustomerRegistrationQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCustomerRegistration>>> = ({ signal }) => getCustomerRegistration(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCustomerRegistration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCustomerRegistrationQueryResult = NonNullable<Awaited<ReturnType<typeof getCustomerRegistration>>>
+export type GetCustomerRegistrationQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a customer registration (with product + warranty)
+ */
+
+export function useGetCustomerRegistration<TData = Awaited<ReturnType<typeof getCustomerRegistration>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomerRegistration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCustomerRegistrationQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListWarrantiesUrl = (params?: ListWarrantiesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/warranties?${stringifiedParams}` : `/api/warranties`
+}
+
+/**
+ * @summary List warranties (computed status, search + pagination)
+ */
+export const listWarranties = async (params?: ListWarrantiesParams, options?: RequestInit): Promise<WarrantyListResponse> => {
+
+  return customFetch<WarrantyListResponse>(getListWarrantiesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWarrantiesQueryKey = (params?: ListWarrantiesParams,) => {
+    return [
+    `/api/warranties`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListWarrantiesQueryOptions = <TData = Awaited<ReturnType<typeof listWarranties>>, TError = ErrorType<unknown>>(params?: ListWarrantiesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWarranties>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWarrantiesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWarranties>>> = ({ signal }) => listWarranties(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWarranties>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWarrantiesQueryResult = NonNullable<Awaited<ReturnType<typeof listWarranties>>>
+export type ListWarrantiesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List warranties (computed status, search + pagination)
+ */
+
+export function useListWarranties<TData = Awaited<ReturnType<typeof listWarranties>>, TError = ErrorType<unknown>>(
+ params?: ListWarrantiesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWarranties>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWarrantiesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWarrantyUrl = (id: string,) => {
+
+
+
+
+  return `/api/warranties/${id}`
+}
+
+/**
+ * @summary Get a warranty (computed status)
+ */
+export const getWarranty = async (id: string, options?: RequestInit): Promise<Warranty> => {
+
+  return customFetch<Warranty>(getGetWarrantyUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWarrantyQueryKey = (id: string,) => {
+    return [
+    `/api/warranties/${id}`
+    ] as const;
+    }
+
+
+export const getGetWarrantyQueryOptions = <TData = Awaited<ReturnType<typeof getWarranty>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWarranty>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWarrantyQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWarranty>>> = ({ signal }) => getWarranty(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWarranty>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWarrantyQueryResult = NonNullable<Awaited<ReturnType<typeof getWarranty>>>
+export type GetWarrantyQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a warranty (computed status)
+ */
+
+export function useGetWarranty<TData = Awaited<ReturnType<typeof getWarranty>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWarranty>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWarrantyQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getVoidWarrantyUrl = (id: string,) => {
+
+
+
+
+  return `/api/warranties/${id}/void`
+}
+
+/**
+ * @summary Void a warranty (mandatory reason)
+ */
+export const voidWarranty = async (id: string,
+    voidWarrantyInput: VoidWarrantyInput, options?: RequestInit): Promise<Warranty> => {
+
+  return customFetch<Warranty>(getVoidWarrantyUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(voidWarrantyInput)
+  }
+);}
+
+
+
+
+export const getVoidWarrantyMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voidWarranty>>, TError,{id: string;data: BodyType<VoidWarrantyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof voidWarranty>>, TError,{id: string;data: BodyType<VoidWarrantyInput>}, TContext> => {
+
+const mutationKey = ['voidWarranty'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof voidWarranty>>, {id: string;data: BodyType<VoidWarrantyInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  voidWarranty(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VoidWarrantyMutationResult = NonNullable<Awaited<ReturnType<typeof voidWarranty>>>
+    export type VoidWarrantyMutationBody = BodyType<VoidWarrantyInput>
+    export type VoidWarrantyMutationError = ErrorType<void>
+
+    /**
+ * @summary Void a warranty (mandatory reason)
+ */
+export const useVoidWarranty = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voidWarranty>>, TError,{id: string;data: BodyType<VoidWarrantyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof voidWarranty>>,
+        TError,
+        {id: string;data: BodyType<VoidWarrantyInput>},
+        TContext
+      > => {
+      return useMutation(getVoidWarrantyMutationOptions(options));
+    }
 
 export const getListProductCategoriesUrl = (params?: ListProductCategoriesParams,) => {
   const normalizedParams = new URLSearchParams();

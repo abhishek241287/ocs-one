@@ -58,6 +58,7 @@ export const ListProductMastersResponse = zod.object({
 }).and(zod.object({
   "chemistry": zod.string().optional(),
   "category": zod.string().optional(),
+  "category_id": zod.string().uuid().nullish(),
   "nominal_voltage_v": zod.number().optional(),
   "capacity_ah": zod.number().optional(),
   "energy_kwh": zod.number().optional(),
@@ -133,6 +134,7 @@ export const CreateProductMasterResponse = zod.object({
 }).and(zod.object({
   "chemistry": zod.string().optional(),
   "category": zod.string().optional(),
+  "category_id": zod.string().uuid().nullish(),
   "nominal_voltage_v": zod.number().optional(),
   "capacity_ah": zod.number().optional(),
   "energy_kwh": zod.number().optional(),
@@ -173,6 +175,7 @@ export const GetProductMasterResponse = zod.object({
 }).and(zod.object({
   "chemistry": zod.string().optional(),
   "category": zod.string().optional(),
+  "category_id": zod.string().uuid().nullish(),
   "nominal_voltage_v": zod.number().optional(),
   "capacity_ah": zod.number().optional(),
   "energy_kwh": zod.number().optional(),
@@ -251,6 +254,7 @@ export const UpdateProductMasterResponse = zod.object({
 }).and(zod.object({
   "chemistry": zod.string().optional(),
   "category": zod.string().optional(),
+  "category_id": zod.string().uuid().nullish(),
   "nominal_voltage_v": zod.number().optional(),
   "capacity_ah": zod.number().optional(),
   "energy_kwh": zod.number().optional(),
@@ -295,6 +299,7 @@ export const ToggleProductMasterStatusResponse = zod.object({
 }).and(zod.object({
   "chemistry": zod.string().optional(),
   "category": zod.string().optional(),
+  "category_id": zod.string().uuid().nullish(),
   "nominal_voltage_v": zod.number().optional(),
   "capacity_ah": zod.number().optional(),
   "energy_kwh": zod.number().optional(),
@@ -4911,6 +4916,46 @@ export const UpdateProductStatusResponse = zod.object({
 
 
 /**
+ * @summary Create finished Product(s) for imported goods (inverters) — no order, no BOM
+ */
+
+
+
+
+export const CreateImportedProductBody = zod.object({
+  "model_id": zod.string().uuid(),
+  "source_grn_id": zod.string().uuid().nullish(),
+  "quantity": zod.number().min(1).optional(),
+  "oem_serials": zod.array(zod.string().min(1)).optional(),
+  "notes": zod.string().optional()
+})
+
+export const CreateImportedProductResponse = zod.object({
+  "created": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "category_id": zod.string().uuid(),
+  "model_id": zod.string().uuid(),
+  "workflow_code": zod.string(),
+  "source_production_order_id": zod.string().uuid().nullish(),
+  "official_product_serial": zod.string(),
+  "serial_source": zod.enum(['OCS', 'MANUFACTURER']),
+  "qc_status": zod.string().nullish(),
+  "product_status": zod.enum(['manufacturing', 'qc_passed', 'ready_for_packing', 'packed', 'dispatched', 'delivered_to_dealer']),
+  "current_location": zod.string().nullish(),
+  "dealer_id": zod.string().uuid().nullish(),
+  "manufacturing_completed_at": zod.coerce.date(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "category_name": zod.string().nullish(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "dealer_name": zod.string().nullish()
+}))
+})
+
+
+/**
  * @summary Pack ready-for-packing products (batch, atomic)
  */
 
@@ -5179,6 +5224,256 @@ export const DealerDispatchHistoryResponse = zod.object({
   "dispatched_at": zod.coerce.date(),
   "actor": zod.string()
 }))
+})
+
+
+/**
+ * @summary List customer registrations (search + pagination)
+ */
+export const listCustomerRegistrationsQueryPageDefault = 1;
+export const listCustomerRegistrationsQueryPageSizeDefault = 50;
+
+export const ListCustomerRegistrationsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "page": zod.coerce.number().default(listCustomerRegistrationsQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listCustomerRegistrationsQueryPageSizeDefault)
+})
+
+export const ListCustomerRegistrationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "registration_number": zod.string(),
+  "product_id": zod.string().uuid(),
+  "dealer_id": zod.string().uuid(),
+  "customer_name": zod.string(),
+  "mobile": zod.string(),
+  "address": zod.string(),
+  "installation_date": zod.coerce.date(),
+  "registered_by": zod.string(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "product_serial": zod.string().nullish(),
+  "product_status": zod.string().nullish(),
+  "category_name": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "dealer_name": zod.string().nullish()
+})),
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+})
+
+
+/**
+ * @summary Register an end customer for a dispatched product (auto-creates warranty)
+ */
+
+
+
+
+
+
+export const CreateCustomerRegistrationBody = zod.object({
+  "product_serial": zod.string().min(1),
+  "customer_name": zod.string().min(1),
+  "mobile": zod.string().min(1),
+  "address": zod.string().min(1),
+  "installation_date": zod.coerce.date(),
+  "dealer_id": zod.string().uuid().optional()
+})
+
+export const CreateCustomerRegistrationResponse = zod.object({
+  "id": zod.string().uuid(),
+  "registration_number": zod.string(),
+  "product_id": zod.string().uuid(),
+  "dealer_id": zod.string().uuid(),
+  "customer_name": zod.string(),
+  "mobile": zod.string(),
+  "address": zod.string(),
+  "installation_date": zod.coerce.date(),
+  "registered_by": zod.string(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "product_serial": zod.string().nullish(),
+  "product_status": zod.string().nullish(),
+  "category_name": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "dealer_name": zod.string().nullish()
+}).and(zod.object({
+  "warranty": zod.object({
+  "id": zod.string().uuid(),
+  "warranty_number": zod.string(),
+  "product_id": zod.string().uuid(),
+  "registration_id": zod.string().uuid(),
+  "start_date": zod.coerce.date(),
+  "period_months": zod.number(),
+  "end_date": zod.coerce.date(),
+  "status": zod.enum(['active', 'expired', 'void']),
+  "voided_at": zod.coerce.date().nullish(),
+  "void_reason": zod.string().nullish(),
+  "voided_by": zod.string().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "product_serial": zod.string().nullish(),
+  "customer_name": zod.string().nullish(),
+  "category_name": zod.string().nullish(),
+  "model_name": zod.string().nullish()
+})
+}))
+
+
+/**
+ * @summary Get a customer registration (with product + warranty)
+ */
+export const GetCustomerRegistrationParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetCustomerRegistrationResponse = zod.object({
+  "id": zod.string().uuid(),
+  "registration_number": zod.string(),
+  "product_id": zod.string().uuid(),
+  "dealer_id": zod.string().uuid(),
+  "customer_name": zod.string(),
+  "mobile": zod.string(),
+  "address": zod.string(),
+  "installation_date": zod.coerce.date(),
+  "registered_by": zod.string(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "product_serial": zod.string().nullish(),
+  "product_status": zod.string().nullish(),
+  "category_name": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "dealer_name": zod.string().nullish()
+}).and(zod.object({
+  "warranty": zod.object({
+  "id": zod.string().uuid(),
+  "warranty_number": zod.string(),
+  "product_id": zod.string().uuid(),
+  "registration_id": zod.string().uuid(),
+  "start_date": zod.coerce.date(),
+  "period_months": zod.number(),
+  "end_date": zod.coerce.date(),
+  "status": zod.enum(['active', 'expired', 'void']),
+  "voided_at": zod.coerce.date().nullish(),
+  "void_reason": zod.string().nullish(),
+  "voided_by": zod.string().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "product_serial": zod.string().nullish(),
+  "customer_name": zod.string().nullish(),
+  "category_name": zod.string().nullish(),
+  "model_name": zod.string().nullish()
+})
+}))
+
+
+/**
+ * @summary List warranties (computed status, search + pagination)
+ */
+export const listWarrantiesQueryPageDefault = 1;
+export const listWarrantiesQueryPageSizeDefault = 50;
+
+export const ListWarrantiesQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.enum(['active', 'expired', 'void']).optional(),
+  "page": zod.coerce.number().default(listWarrantiesQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listWarrantiesQueryPageSizeDefault)
+})
+
+export const ListWarrantiesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "warranty_number": zod.string(),
+  "product_id": zod.string().uuid(),
+  "registration_id": zod.string().uuid(),
+  "start_date": zod.coerce.date(),
+  "period_months": zod.number(),
+  "end_date": zod.coerce.date(),
+  "status": zod.enum(['active', 'expired', 'void']),
+  "voided_at": zod.coerce.date().nullish(),
+  "void_reason": zod.string().nullish(),
+  "voided_by": zod.string().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "product_serial": zod.string().nullish(),
+  "customer_name": zod.string().nullish(),
+  "category_name": zod.string().nullish(),
+  "model_name": zod.string().nullish()
+})),
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+})
+
+
+/**
+ * @summary Get a warranty (computed status)
+ */
+export const GetWarrantyParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetWarrantyResponse = zod.object({
+  "id": zod.string().uuid(),
+  "warranty_number": zod.string(),
+  "product_id": zod.string().uuid(),
+  "registration_id": zod.string().uuid(),
+  "start_date": zod.coerce.date(),
+  "period_months": zod.number(),
+  "end_date": zod.coerce.date(),
+  "status": zod.enum(['active', 'expired', 'void']),
+  "voided_at": zod.coerce.date().nullish(),
+  "void_reason": zod.string().nullish(),
+  "voided_by": zod.string().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "product_serial": zod.string().nullish(),
+  "customer_name": zod.string().nullish(),
+  "category_name": zod.string().nullish(),
+  "model_name": zod.string().nullish()
+})
+
+
+/**
+ * @summary Void a warranty (mandatory reason)
+ */
+export const VoidWarrantyParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+export const VoidWarrantyBody = zod.object({
+  "reason": zod.string().min(1)
+})
+
+export const VoidWarrantyResponse = zod.object({
+  "id": zod.string().uuid(),
+  "warranty_number": zod.string(),
+  "product_id": zod.string().uuid(),
+  "registration_id": zod.string().uuid(),
+  "start_date": zod.coerce.date(),
+  "period_months": zod.number(),
+  "end_date": zod.coerce.date(),
+  "status": zod.enum(['active', 'expired', 'void']),
+  "voided_at": zod.coerce.date().nullish(),
+  "void_reason": zod.string().nullish(),
+  "voided_by": zod.string().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "product_serial": zod.string().nullish(),
+  "customer_name": zod.string().nullish(),
+  "category_name": zod.string().nullish(),
+  "model_name": zod.string().nullish()
 })
 
 

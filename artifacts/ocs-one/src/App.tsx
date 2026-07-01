@@ -38,6 +38,9 @@ import ProductDetailPage from "@/features/products/pages/ProductDetailPage";
 import TraceabilityPage from "@/features/products/pages/TraceabilityPage";
 import ProductInventoryDashboardPage from "@/features/product-inventory/pages/ProductInventoryDashboardPage";
 import ProductInventoryListPage from "@/features/product-inventory/pages/ProductInventoryListPage";
+import ImportedProductPage from "@/features/imported-products/pages/ImportedProductPage";
+import CustomerRegistrationPage from "@/features/customers/pages/CustomerRegistrationPage";
+import WarrantyPage from "@/features/warranty/pages/WarrantyPage";
 import CellMasterPage from "@/features/masters/pages/CellMasterPage";
 import BmsMasterPage from "@/features/masters/pages/BmsMasterPage";
 import CabinetMasterPage from "@/features/masters/pages/CabinetMasterPage";
@@ -99,6 +102,7 @@ function Router() {
       {/* Products */}
       <Route path="/product-inventory" component={ProductInventoryDashboardPage} />
       <Route path="/product-inventory/list" component={ProductInventoryListPage} />
+      <Route path="/products/imported" component={ImportedProductPage} />
       <Route path="/traceability" component={TraceabilityPage} />
       <Route path="/products" component={ProductsListPage} />
       <Route path="/products/:id" component={ProductDetailPage} />
@@ -162,6 +166,10 @@ function Router() {
       <Route path="/fulfillment/dispatch/list" component={DispatchListPage} />
       <Route path="/fulfillment/dispatch/:id" component={DispatchDetailPage} />
       <Route path="/fulfillment/dealers" component={DealerPortalPage} />
+
+      {/* After-Sales */}
+      <Route path="/after-sales/registrations" component={CustomerRegistrationPage} />
+      <Route path="/after-sales/warranties" component={WarrantyPage} />
 
       {/* Logistics */}
       <Route path="/logistics">

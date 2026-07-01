@@ -1034,6 +1034,78 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     body: {},
     expected: roles(P, P, F, F),
   },
+
+  // ─── Imported Product Creation (G1) — write supervisor+director ────────────────
+  {
+    id: "products.imported.create",
+    method: "POST",
+    path: "/api/products/imported",
+    group: "Products",
+    description: "Create serialized Product(s) for imported goods (write)",
+    guard: "requireRole(supervisor,director)",
+    body: {},
+    expected: roles(P, P, F, F),
+  },
+
+  // ─── Customer Registration (G3) — read all; write supervisor+director ──────────
+  {
+    id: "customers.registrations.list",
+    method: "GET",
+    path: "/api/customers/registrations",
+    group: "Customers",
+    description: "List customer registrations (read)",
+    guard: "requireAuth (read open to all authed)",
+    expected: all(P),
+  },
+  {
+    id: "customers.registrations.get",
+    method: "GET",
+    path: `/api/customers/registrations/${DUMMY_ID}`,
+    group: "Customers",
+    description: "Get a customer registration with warranty (read)",
+    guard: "requireAuth (read open to all authed)",
+    expected: all(P),
+  },
+  {
+    id: "customers.registrations.create",
+    method: "POST",
+    path: "/api/customers/registrations",
+    group: "Customers",
+    description: "Register an end customer for a dispatched product (write)",
+    guard: "requireRole(supervisor,director)",
+    body: {},
+    expected: roles(P, P, F, F),
+  },
+
+  // ─── Warranty (G4) — read all; void supervisor+director ───────────────────────
+  {
+    id: "warranties.list",
+    method: "GET",
+    path: "/api/warranties",
+    group: "Warranties",
+    description: "List warranties with computed status (read)",
+    guard: "requireAuth (read open to all authed)",
+    expected: all(P),
+  },
+  {
+    id: "warranties.get",
+    method: "GET",
+    path: `/api/warranties/${DUMMY_ID}`,
+    group: "Warranties",
+    description: "Get a warranty with computed status (read)",
+    guard: "requireAuth (read open to all authed)",
+    expected: all(P),
+  },
+  {
+    id: "warranties.void",
+    method: "POST",
+    path: `/api/warranties/${DUMMY_ID}/void`,
+    group: "Warranties",
+    description: "Void a warranty (mandatory reason; write)",
+    guard: "requireRole(supervisor,director)",
+    body: {},
+    expected: roles(P, P, F, F),
+  },
 ];
 
 /** Counts for quick reporting. */

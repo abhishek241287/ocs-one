@@ -10,8 +10,9 @@ import {
   logisticsDealersTable,
   mfgProductionOrdersTable,
 } from "@workspace/db";
-import { UpdateProductStatusBody } from "@workspace/api-zod";
+import { UpdateProductStatusBody, CreateImportedProductBody } from "@workspace/api-zod";
 import { requireRole } from "../../middleware/auth";
+import { createImportedProducts } from "./imported-product-creation";
 
 const router: IRouter = Router();
 
@@ -370,6 +371,80 @@ router.post(
       return;
     }
     res.json(view);
+  },
+);
+
+// POST /products/imported — create finished Product(s) for imported goods (G1).
+// Inverters that OCS imports (never manufactures): no production order, no BOM, no
+// inventory consumption. Inbuilt Lithium → OCS mints the serial (needs `quantity`);
+// Hybrid → capture the OEM serials (`oem_serials`). Both created ready_for_packing.
+router.post(
+  "/imported",
+  requireRole("supervisor", "director"),
+  async (req: Request, res: Response): Promise<void> => {
+    const parsed = CreateImportedProductBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const actor = req.user?.email ?? "unknown";
+
+    let result;
+    try {
+      result = await createImportedProducts(
+        {
+          modelId: parsed.data.model_id,
+          sourceGrnId: parsed.data.source_grn_id ?? null,
+          quantity: parsed.data.quantity ?? undefined,
+          oemSerials: parsed.data.oem_serials ?? undefined,
+          notes: parsed.data.notes ?? undefined,
+        },
+        actor,
+      );
+    } catch (err) {
+      // A duplicate official/OEM serial hits the UNIQUE constraint on products.
+      const e = err as { code?: string; cause?: { code?: string } } | null;
+      if (e?.code === "23505" || e?.cause?.code === "23505") {
+        res.status(409).json({ error: "One or more product serials already exist" });
+        return;
+      }
+      throw err;
+    }
+
+    switch (result.kind) {
+      case "model_not_found":
+        res.status(404).json({ error: "Model not found" });
+        return;
+      case "grn_not_found":
+        res.status(404).json({ error: "Source GRN not found" });
+        return;
+      case "model_no_category":
+        res.status(422).json({ error: "Model has no product category assigned" });
+        return;
+      case "not_importable":
+        res.status(422).json({
+          error: `Category ${result.categoryCode} is not an importable product type (only Inbuilt Lithium / Hybrid inverters)`,
+        });
+        return;
+      case "missing_quantity":
+        res.status(422).json({ error: "quantity (≥1) is required for OCS-serialized imported products" });
+        return;
+      case "missing_oem_serials":
+        res.status(422).json({ error: "oem_serials is required for manufacturer-serialized (Hybrid) products" });
+        return;
+      case "duplicate_oem_in_request":
+        res.status(409).json({
+          error: `Duplicate OEM serial(s) in request: ${result.serials.join(", ")}`,
+        });
+        return;
+      case "ok": {
+        const items = (await Promise.all(result.ids.map((id) => selectProductView(id)))).filter(
+          (v): v is NonNullable<typeof v> => Boolean(v),
+        );
+        res.status(201).json({ created: items.length, items });
+        return;
+      }
+    }
   },
 );
 

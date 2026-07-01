@@ -24,6 +24,10 @@ tags:
     description: Inventory Platform operations — GRN receiving, workflow routing, stock ledger
   - name: bom
     description: MES — Bill of Materials (BOM Master) operations
+  - name: customers
+    description: Customer registration operations (product ownership)
+  - name: warranties
+    description: Warranty operations (common engine across all product types)
 paths:
   /healthz:
     get:
@@ -2478,6 +2482,32 @@ paths:
         "404":
           description: Product not found
 
+  # ─── Imported Product creation (G1) ──────────────────────────────────────────
+  /products/imported:
+    post:
+      operationId: createImportedProduct
+      tags: [products]
+      summary: Create finished Product(s) for imported goods (inverters) — no order, no BOM
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ImportedProductInput" }
+      responses:
+        "201":
+          description: Imported product(s) created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportedProductResult" }
+        "400":
+          description: Invalid request body
+        "404":
+          description: Model or source GRN not found
+        "409":
+          description: Duplicate OEM serial
+        "422":
+          description: Model category not importable, or missing OEM serials / quantity
+
   # ─── Packing module (Product-Platform-driven fulfillment) ────────────────────
   /packing:
     post:
@@ -2621,6 +2651,124 @@ paths:
               schema: { $ref: "#/components/schemas/DealerDispatchHistoryResponse" }
         "404":
           description: Dealer not found
+
+  # ─── Customer Registration (G3) ──────────────────────────────────────────────
+  /customers/registrations:
+    get:
+      operationId: listCustomerRegistrations
+      tags: [customers]
+      summary: List customer registrations (search + pagination)
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - { name: page, in: query, required: false, schema: { type: integer, default: 1 } }
+        - { name: pageSize, in: query, required: false, schema: { type: integer, default: 50 } }
+      responses:
+        "200":
+          description: Customer registrations
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerRegistrationListResponse" }
+    post:
+      operationId: createCustomerRegistration
+      tags: [customers]
+      summary: Register an end customer for a dispatched product (auto-creates warranty)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CustomerRegistrationInput" }
+      responses:
+        "201":
+          description: Registration created (with warranty)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerRegistrationDetail" }
+        "400":
+          description: Invalid request body
+        "404":
+          description: Product or dealer not found
+        "409":
+          description: Product already registered
+        "422":
+          description: Product not dispatched, or dealer inactive
+
+  /customers/registrations/{id}:
+    get:
+      operationId: getCustomerRegistration
+      tags: [customers]
+      summary: Get a customer registration (with product + warranty)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Registration detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerRegistrationDetail" }
+        "404":
+          description: Registration not found
+
+  # ─── Warranty (G4) ───────────────────────────────────────────────────────────
+  /warranties:
+    get:
+      operationId: listWarranties
+      tags: [warranties]
+      summary: List warranties (computed status, search + pagination)
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/WarrantyStatus" }
+        - { name: page, in: query, required: false, schema: { type: integer, default: 1 } }
+        - { name: pageSize, in: query, required: false, schema: { type: integer, default: 50 } }
+      responses:
+        "200":
+          description: Warranties
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WarrantyListResponse" }
+
+  /warranties/{id}:
+    get:
+      operationId: getWarranty
+      tags: [warranties]
+      summary: Get a warranty (computed status)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Warranty detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Warranty" }
+        "404":
+          description: Warranty not found
+
+  /warranties/{id}/void:
+    post:
+      operationId: voidWarranty
+      tags: [warranties]
+      summary: Void a warranty (mandatory reason)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VoidWarrantyInput" }
+      responses:
+        "200":
+          description: Warranty voided
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Warranty" }
+        "400":
+          description: Invalid request body
+        "404":
+          description: Warranty not found
+        "409":
+          description: Warranty already void
 
   # ─── Product Category master (A) ─────────────────────────────────────────────
   /masters/product-categories:
@@ -3864,6 +4012,7 @@ components:
           properties:
             chemistry: { type: string }
             category: { type: string }
+            category_id: { type: ["string", "null"], format: uuid }
             nominal_voltage_v: { type: number }
             capacity_ah: { type: number }
             energy_kwh: { type: number }
@@ -5341,6 +5490,129 @@ components:
       properties:
         status: { $ref: "#/components/schemas/ProductStatus" }
         reason: { type: string }
+
+    # ─── Imported Product creation (G1) ───────────────────────────────────────
+    ImportedProductInput:
+      type: object
+      required: [model_id]
+      properties:
+        model_id: { type: string, format: uuid }
+        # Optional traceability link to the posted+inspected GRN the goods arrived on.
+        source_grn_id: { type: ["string", "null"], format: uuid }
+        # OCS-serialized categories (Lithium Inverter): how many units to mint.
+        quantity: { type: integer, minimum: 1 }
+        # Manufacturer-serialized categories (Hybrid Inverter): capture the OEM serials.
+        oem_serials:
+          type: array
+          items: { type: string, minLength: 1 }
+        notes: { type: string }
+
+    ImportedProductResult:
+      type: object
+      required: [created, items]
+      properties:
+        created: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+
+    # ─── Customer Registration (G3) ────────────────────────────────────────────
+    CustomerRegistration:
+      type: object
+      required:
+        [id, registration_number, product_id, dealer_id, customer_name, mobile, address, installation_date, registered_by, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        registration_number: { type: string }
+        product_id: { type: string, format: uuid }
+        dealer_id: { type: string, format: uuid }
+        customer_name: { type: string }
+        mobile: { type: string }
+        address: { type: string }
+        installation_date: { type: string, format: date }
+        registered_by: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        # Enriched (read-only) display fields joined for the UI.
+        product_serial: { type: ["string", "null"] }
+        product_status: { type: ["string", "null"] }
+        category_name: { type: ["string", "null"] }
+        model_name: { type: ["string", "null"] }
+        dealer_name: { type: ["string", "null"] }
+
+    CustomerRegistrationDetail:
+      allOf:
+        - $ref: "#/components/schemas/CustomerRegistration"
+        - type: object
+          required: [warranty]
+          properties:
+            warranty: { $ref: "#/components/schemas/Warranty" }
+
+    CustomerRegistrationListResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/CustomerRegistration" }
+        meta: { $ref: "#/components/schemas/MasterListMeta" }
+
+    CustomerRegistrationInput:
+      type: object
+      required: [product_serial, customer_name, mobile, address, installation_date]
+      properties:
+        product_serial: { type: string, minLength: 1 }
+        customer_name: { type: string, minLength: 1 }
+        mobile: { type: string, minLength: 1 }
+        address: { type: string, minLength: 1 }
+        installation_date: { type: string, format: date }
+        # Optional; defaults to the product's assigned dealer when omitted.
+        dealer_id: { type: string, format: uuid }
+
+    # ─── Warranty (G4) ─────────────────────────────────────────────────────────
+    WarrantyStatus:
+      type: string
+      enum: [active, expired, void]
+
+    Warranty:
+      type: object
+      required:
+        [id, warranty_number, product_id, registration_id, start_date, period_months, end_date, status, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        warranty_number: { type: string }
+        product_id: { type: string, format: uuid }
+        registration_id: { type: string, format: uuid }
+        start_date: { type: string, format: date }
+        period_months: { type: integer }
+        end_date: { type: string, format: date }
+        # Computed effective status (void → expired → active), never a stored column.
+        status: { $ref: "#/components/schemas/WarrantyStatus" }
+        voided_at: { type: ["string", "null"], format: date-time }
+        void_reason: { type: ["string", "null"] }
+        voided_by: { type: ["string", "null"] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        # Enriched (read-only) display fields joined for the UI.
+        product_serial: { type: ["string", "null"] }
+        customer_name: { type: ["string", "null"] }
+        category_name: { type: ["string", "null"] }
+        model_name: { type: ["string", "null"] }
+
+    WarrantyListResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Warranty" }
+        meta: { $ref: "#/components/schemas/MasterListMeta" }
+
+    VoidWarrantyInput:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1 }
 
     # ─── Packing module (Product-Platform-driven fulfillment) ──────────────────
     PackProductsInput:

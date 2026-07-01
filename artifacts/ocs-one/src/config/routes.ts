@@ -20,6 +20,7 @@ export const ROUTES = {
 
   // Products
   products: "/products",
+  productsImported: "/products/imported",
   productInventory: "/product-inventory",
   productInventoryList: "/product-inventory/list",
 
@@ -34,7 +35,8 @@ export const ROUTES = {
   dispatch: "/dispatch",
 
   // After-Sales
-  warranty: "/warranty",
+  customerRegistrations: "/after-sales/registrations",
+  warranty: "/after-sales/warranties",
   service: "/service",
 
   // Masters

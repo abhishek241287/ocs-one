@@ -210,6 +210,8 @@ export interface MasterListResponse {
 export type ProductMaster = MasterCommon & ({
   chemistry?: string;
   category?: string;
+  /** @nullable */
+  category_id?: string | null;
   nominal_voltage_v?: number;
   capacity_ah?: number;
   energy_kwh?: number;
@@ -2015,6 +2017,114 @@ export interface ProductStatusUpdate {
   reason?: string;
 }
 
+export interface ImportedProductInput {
+  model_id: string;
+  /** @nullable */
+  source_grn_id?: string | null;
+  /** @minimum 1 */
+  quantity?: number;
+  /** @items.minLength 1 */
+  oem_serials?: string[];
+  notes?: string;
+}
+
+export interface ImportedProductResult {
+  created: number;
+  items: Product[];
+}
+
+export interface CustomerRegistration {
+  id: string;
+  registration_number: string;
+  product_id: string;
+  dealer_id: string;
+  customer_name: string;
+  mobile: string;
+  address: string;
+  installation_date: string;
+  registered_by: string;
+  created_at: string;
+  updated_at: string;
+  /** @nullable */
+  product_serial?: string | null;
+  /** @nullable */
+  product_status?: string | null;
+  /** @nullable */
+  category_name?: string | null;
+  /** @nullable */
+  model_name?: string | null;
+  /** @nullable */
+  dealer_name?: string | null;
+}
+
+export type WarrantyStatus = typeof WarrantyStatus[keyof typeof WarrantyStatus];
+
+
+export const WarrantyStatus = {
+  active: 'active',
+  expired: 'expired',
+  void: 'void',
+} as const;
+
+export interface Warranty {
+  id: string;
+  warranty_number: string;
+  product_id: string;
+  registration_id: string;
+  start_date: string;
+  period_months: number;
+  end_date: string;
+  status: WarrantyStatus;
+  /** @nullable */
+  voided_at?: string | null;
+  /** @nullable */
+  void_reason?: string | null;
+  /** @nullable */
+  voided_by?: string | null;
+  created_at: string;
+  updated_at: string;
+  /** @nullable */
+  product_serial?: string | null;
+  /** @nullable */
+  customer_name?: string | null;
+  /** @nullable */
+  category_name?: string | null;
+  /** @nullable */
+  model_name?: string | null;
+}
+
+export type CustomerRegistrationDetail = CustomerRegistration & {
+  warranty: Warranty;
+};
+
+export interface CustomerRegistrationListResponse {
+  items: CustomerRegistration[];
+  meta: MasterListMeta;
+}
+
+export interface CustomerRegistrationInput {
+  /** @minLength 1 */
+  product_serial: string;
+  /** @minLength 1 */
+  customer_name: string;
+  /** @minLength 1 */
+  mobile: string;
+  /** @minLength 1 */
+  address: string;
+  installation_date: string;
+  dealer_id?: string;
+}
+
+export interface WarrantyListResponse {
+  items: Warranty[];
+  meta: MasterListMeta;
+}
+
+export interface VoidWarrantyInput {
+  /** @minLength 1 */
+  reason: string;
+}
+
 export interface PackProductsInput {
   /** @minItems 1 */
   product_ids: string[];
@@ -3119,6 +3229,19 @@ pageSize?: PageSizeParamParameter;
 
 export type ListDispatchesParams = {
 search?: string;
+page?: number;
+pageSize?: number;
+};
+
+export type ListCustomerRegistrationsParams = {
+search?: SearchParamParameter;
+page?: number;
+pageSize?: number;
+};
+
+export type ListWarrantiesParams = {
+search?: SearchParamParameter;
+status?: WarrantyStatus;
 page?: number;
 pageSize?: number;
 };

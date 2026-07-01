@@ -37,6 +37,9 @@ import {
   Tags,
   Boxes,
   PackageCheck,
+  PackagePlus,
+  UserPlus,
+  ShieldHalf,
   Store,
   ListChecks,
 } from "lucide-react";
@@ -70,7 +73,10 @@ const navSections: NavSection[] = [
       },
       {
         label: "Finished Goods",
-        items: [{ label: "Product Inventory", href: "/product-inventory", icon: Boxes }],
+        items: [
+          { label: "Product Inventory", href: "/product-inventory", icon: Boxes },
+          { label: "Imported Products", href: "/products/imported", icon: PackagePlus },
+        ],
       },
     ],
   },
@@ -113,6 +119,13 @@ const navSections: NavSection[] = [
       { label: "Dealer Portal", href: "/fulfillment/dealers", icon: Store },
       { label: "Packing Dashboard", href: "/logistics/packing-dashboard", icon: Package },
       { label: "Dispatch Orders", href: "/logistics/dispatch-orders", icon: Truck },
+    ],
+  },
+  {
+    title: "After-Sales",
+    items: [
+      { label: "Customer Registration", href: "/after-sales/registrations", icon: UserPlus },
+      { label: "Warranty", href: "/after-sales/warranties", icon: ShieldHalf },
     ],
   },
   {
