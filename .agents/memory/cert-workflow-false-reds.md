@@ -19,3 +19,10 @@ Authoritative greens observed: SS-02 280/280 · SS-03 12/12 + immutability · SS
 
 Do **not** chase the red by re-running repeatedly — each run re-trips the limiter. `config` (SS-04) is
 read-only and unaffected.
+
+**Stale cert-log gotcha:** `refresh_all_logs` (and `ls -t /tmp/logs/<suite>_*.log`) can keep returning
+the *previous* run's log after you restart a cert workflow — the new run's output isn't flushed to a
+`/tmp/logs` file until the workflow fully finishes and the next `refresh_all_logs`. Symptom: the log shows
+an endpoint/assertion count that predates code you just added (e.g. authz reporting 90/450 when the matrix
+file objectively has 97 endpoints). The source-of-truth matrix file (`AUTHZ_MATRIX.length`) wins; wait for
+the workflow status to flip to `finished`, then `refresh_all_logs` again to read the real result.

@@ -32,6 +32,8 @@ export async function seedDatabase(): Promise<void> {
     CREATE SEQUENCE IF NOT EXISTS dispatch_seq START 1 INCREMENT 1;
     -- Inventory: race-safe Material Transfer number (TRF-YYYYMMDD-NNNNNN).
     CREATE SEQUENCE IF NOT EXISTS material_transfer_seq START 1 INCREMENT 1;
+    -- MES: race-safe BOM number generation (BOM-YYYYMMDD-NNNNNN).
+    CREATE SEQUENCE IF NOT EXISTS bom_seq START 1 INCREMENT 1;
   `);
 
   // Forward-only resync of each id sequence to the max value already persisted in
@@ -89,6 +91,12 @@ export async function seedDatabase(): Promise<void> {
         FROM material_transfers WHERE transfer_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
       IF m > 0 THEN
         PERFORM setval('material_transfer_seq', GREATEST((SELECT last_value FROM material_transfer_seq), m), true);
+      END IF;
+
+      SELECT COALESCE(MAX(split_part(bom_number, '-', 3)::bigint), 0) INTO m
+        FROM bom_headers WHERE bom_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
+      IF m > 0 THEN
+        PERFORM setval('bom_seq', GREATEST((SELECT last_value FROM bom_seq), m), true);
       END IF;
     END $$;
   `);

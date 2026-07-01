@@ -22,6 +22,7 @@ import productsRouter from "./products/index";
 import packingRouter from "./packing/index";
 import dispatchRouter from "./dispatch/index";
 import dealersRouter from "./dealers/index";
+import bomRouter from "./bom/index";
 import manufacturingRouter from "./manufacturing/index";
 import cellsRouter from "./cells/index";
 import logisticsRouter from "./logistics/index";
@@ -69,6 +70,9 @@ router.use("/dispatch", dispatchRouter);
 
 // Fulfillment — Dealer (read-only projection over the Product Platform)
 router.use("/dealers", dealersRouter);
+
+// MES — Bill of Materials (BOM Master)
+router.use("/boms", bomRouter);
 
 // Manufacturing
 router.use("/manufacturing", manufacturingRouter);

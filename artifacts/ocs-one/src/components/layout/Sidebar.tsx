@@ -118,6 +118,7 @@ const navSections: NavSection[] = [
   {
     title: "Masters",
     items: [
+      { label: "Bill of Materials", href: "/masters/boms", icon: ListChecks },
       { label: "Material Master", href: "/masters/materials", icon: Package },
       { label: "Material Categories", href: "/masters/material-categories", icon: Tags },
       { label: "Supplier Master", href: "/masters/suppliers", icon: Factory },

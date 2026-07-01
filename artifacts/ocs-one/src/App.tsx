@@ -23,6 +23,9 @@ import MaterialCategoryPage from "@/features/masters/pages/MaterialCategoryPage"
 import SupplierMasterPage from "@/features/masters/pages/SupplierMasterPage";
 import MaterialWorkflowPage from "@/features/masters/pages/MaterialWorkflowPage";
 import MaterialWorkflowAssignmentPage from "@/features/inventory/pages/MaterialWorkflowAssignmentPage";
+import BomListPage from "@/features/bom/pages/BomListPage";
+import BomFormPage from "@/features/bom/pages/BomFormPage";
+import BomDetailPage from "@/features/bom/pages/BomDetailPage";
 import GrnListPage from "@/features/inventory/pages/GrnListPage";
 import GrnCreatePage from "@/features/inventory/pages/GrnCreatePage";
 import GrnDetailPage from "@/features/inventory/pages/GrnDetailPage";
@@ -116,6 +119,10 @@ function Router() {
       <Route path="/masters/busbars" component={BusbarMasterPage} />
       <Route path="/masters/chargers" component={ChargerMasterPage} />
       <Route path="/masters/test-equipment" component={TestEquipmentMasterPage} />
+      <Route path="/masters/boms/new" component={BomFormPage} />
+      <Route path="/masters/boms/:id/edit" component={BomFormPage} />
+      <Route path="/masters/boms/:id" component={BomDetailPage} />
+      <Route path="/masters/boms" component={BomListPage} />
 
       {/* Inventory */}
       <Route path="/inventory">

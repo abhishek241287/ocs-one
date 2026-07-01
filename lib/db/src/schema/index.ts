@@ -28,6 +28,7 @@ export * from "./master-busbars";
 export * from "./master-chargers";
 export * from "./master-test-equipment";
 export * from "./manufacturing";
+export * from "./bom";
 export * from "./cell-grading";
 export * from "./engineering-corrections";
 export * from "./product-masters";

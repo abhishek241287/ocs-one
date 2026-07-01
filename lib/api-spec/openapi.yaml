@@ -22,6 +22,8 @@ tags:
     description: Serialized Product (unit) operations — Unified Product Platform
   - name: inventory
     description: Inventory Platform operations — GRN receiving, workflow routing, stock ledger
+  - name: bom
+    description: MES — Bill of Materials (BOM Master) operations
 paths:
   /healthz:
     get:
@@ -3475,6 +3477,125 @@ paths:
         "404":
           description: Not found
 
+  # ─── MES — Bill of Materials (BOM Master) ───────────────────────────────────
+  /boms:
+    get:
+      operationId: listBoms
+      tags: [bom]
+      summary: List BOMs (search + pagination + filters)
+      parameters:
+        - { name: search, in: query, required: false, schema: { type: string } }
+        - { name: model_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: status, in: query, required: false, schema: { $ref: "#/components/schemas/BomStatus" } }
+        - { name: page, in: query, required: false, schema: { type: integer, default: 1 } }
+        - { name: pageSize, in: query, required: false, schema: { type: integer, default: 50 } }
+      responses:
+        "200":
+          description: BOMs
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BomListResponse" }
+    post:
+      operationId: createBom
+      tags: [bom]
+      summary: Create a draft BOM (auto-assigns the next revision for the model)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BomInput" }
+      responses:
+        "201":
+          description: BOM created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BomDetail" }
+        "400": { description: Invalid request body }
+        "403": { description: Insufficient role (supervisor/director only) }
+        "404": { description: Model or material not found }
+        "409": { description: Revision conflict }
+
+  /boms/{id}:
+    get:
+      operationId: getBom
+      tags: [bom]
+      summary: Get a BOM (header + lines)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: BOM detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BomDetail" }
+        "404": { description: BOM not found }
+    put:
+      operationId: updateBom
+      tags: [bom]
+      summary: Update a draft BOM (replaces header fields + lines; draft only)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BomUpdateInput" }
+      responses:
+        "200":
+          description: BOM updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BomDetail" }
+        "400": { description: Invalid request body }
+        "403": { description: Insufficient role (supervisor/director only) }
+        "404": { description: BOM or material not found }
+        "422": { description: BOM is not editable (only draft BOMs can be edited) }
+    delete:
+      operationId: deleteBom
+      tags: [bom]
+      summary: Delete a draft BOM (draft only)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204": { description: Deleted }
+        "403": { description: Insufficient role (supervisor/director only) }
+        "404": { description: BOM not found }
+        "422": { description: Only draft BOMs can be deleted }
+
+  /boms/{id}/approve:
+    post:
+      operationId: approveBom
+      tags: [bom]
+      summary: Approve a draft BOM (draft → approved)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: BOM approved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BomDetail" }
+        "403": { description: Insufficient role (supervisor/director only) }
+        "404": { description: BOM not found }
+        "422": { description: Only draft BOMs can be approved }
+
+  /boms/{id}/obsolete:
+    post:
+      operationId: obsoleteBom
+      tags: [bom]
+      summary: Mark an approved BOM obsolete (approved → obsolete)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: BOM obsoleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BomDetail" }
+        "403": { description: Insufficient role (supervisor/director only) }
+        "404": { description: BOM not found }
+        "422": { description: Only approved BOMs can be made obsolete }
+
 components:
   parameters:
     IdParam:
@@ -3520,6 +3641,132 @@ components:
         default: 25
 
   schemas:
+    # ─── MES — Bill of Materials (BOM Master) ─────────────────────────────────
+    BomStatus:
+      type: string
+      enum: [draft, approved, obsolete]
+    BomLineInput:
+      type: object
+      required: [material_id, quantity_per]
+      properties:
+        material_id: { type: string, format: uuid }
+        quantity_per: { type: number }
+        scrap_percent: { type: number, default: 0 }
+        is_critical_component: { type: boolean, default: false }
+        traceability_required: { type: boolean, default: false }
+        is_optional: { type: boolean, default: false }
+        position: { type: integer, default: 0 }
+        notes: { type: string, nullable: true }
+    BomInput:
+      type: object
+      required: [model_id, lines]
+      properties:
+        model_id: { type: string, format: uuid }
+        name: { type: string, nullable: true }
+        yield_percent: { type: number, default: 100 }
+        effective_from: { type: string, format: date, nullable: true }
+        effective_to: { type: string, format: date, nullable: true }
+        notes: { type: string, nullable: true }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/BomLineInput" }
+    BomUpdateInput:
+      type: object
+      required: [lines]
+      properties:
+        name: { type: string, nullable: true }
+        yield_percent: { type: number, default: 100 }
+        effective_from: { type: string, format: date, nullable: true }
+        effective_to: { type: string, format: date, nullable: true }
+        notes: { type: string, nullable: true }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/BomLineInput" }
+    BomLine:
+      type: object
+      required:
+        - id
+        - bom_id
+        - material_id
+        - position
+        - quantity_per
+        - uom
+        - scrap_percent
+        - is_critical_component
+        - traceability_required
+        - is_optional
+      properties:
+        id: { type: string, format: uuid }
+        bom_id: { type: string, format: uuid }
+        material_id: { type: string, format: uuid }
+        material_code: { type: string, nullable: true }
+        material_name: { type: string, nullable: true }
+        position: { type: integer }
+        quantity_per: { type: number }
+        uom: { type: string }
+        scrap_percent: { type: number }
+        is_critical_component: { type: boolean }
+        traceability_required: { type: boolean }
+        is_optional: { type: boolean }
+        alternate_of_line_id: { type: string, format: uuid, nullable: true }
+        notes: { type: string, nullable: true }
+    Bom:
+      type: object
+      required:
+        - id
+        - bom_number
+        - model_id
+        - revision
+        - status
+        - yield_percent
+        - line_count
+        - created_at
+        - updated_at
+      properties:
+        id: { type: string, format: uuid }
+        bom_number: { type: string }
+        model_id: { type: string, format: uuid }
+        model_code: { type: string, nullable: true }
+        model_name: { type: string, nullable: true }
+        revision: { type: integer }
+        status: { $ref: "#/components/schemas/BomStatus" }
+        name: { type: string, nullable: true }
+        yield_percent: { type: number }
+        effective_from: { type: string, format: date, nullable: true }
+        effective_to: { type: string, format: date, nullable: true }
+        notes: { type: string, nullable: true }
+        line_count: { type: integer }
+        created_by: { type: string, nullable: true }
+        approved_by: { type: string, nullable: true }
+        approved_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    BomDetail:
+      allOf:
+        - $ref: "#/components/schemas/Bom"
+        - type: object
+          required: [lines]
+          properties:
+            lines:
+              type: array
+              items: { $ref: "#/components/schemas/BomLine" }
+    BomListResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Bom" }
+        meta:
+          type: object
+          required: [total, page, pageSize]
+          properties:
+            total: { type: integer }
+            page: { type: integer }
+            pageSize: { type: integer }
+
     HealthStatus:
       type: object
       properties:

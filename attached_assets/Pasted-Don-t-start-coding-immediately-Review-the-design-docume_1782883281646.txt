@@ -1,0 +1,143 @@
+Don't start coding immediately.
+
+Review the design document first and challenge it as a CTO. In particular, verify it answers these questions:
+
+1. BOM ownership
+
+Ask whether the BOM belongs to:
+
+Product
+Product Model
+Production Workflow
+Battery Variant
+
+For your factory, I recommend:
+
+Product Model → BOM Revision
+
+because multiple production orders for the same model should reuse the same BOM.
+
+2. Inventory consumption
+
+Ensure the document clearly states:
+
+GRN
+↓
+
+Inspection
+↓
+
+Inventory Ledger (Available)
+
+↓
+
+Reserve
+
+↓
+
+Issue
+
+↓
+
+Consume
+
+↓
+
+Finished Product
+
+There should never be another inventory table.
+
+3. Reservation vs Consumption
+
+Many ERP systems get this wrong.
+
+The design should distinguish:
+
+Available
+Reserved
+Issued
+Consumed
+Returned
+
+Those are different business states.
+
+4. Genealogy
+
+Make sure genealogy is automatic.
+
+For every battery, you should know:
+
+Cell serials
+BMS serial
+Cable batch
+Busbar batch
+Connector batch
+Cabinet batch
+Charger batch
+Operator
+Shift
+QC
+Dispatch
+Dealer
+
+This is one of the biggest commercial strengths of OCS One.
+
+5. BOM Revision
+
+Never overwrite a BOM.
+
+It should always be:
+
+Battery 5.12kWh
+
+Revision 1
+
+Revision 2
+
+Revision 3
+
+Old production orders continue pointing to the revision they were built with.
+
+6. Material Consumption
+
+The design should explain:
+
+Reserve
+
+↓
+
+Issue
+
+↓
+
+Consume
+
+↓
+
+Return
+
+↓
+
+Scrap
+
+Each should create its own ledger entry.
+
+7. Costing
+
+Even if costing isn't being built now, the BOM should already carry the information needed later:
+
+Quantity
+UOM
+Scrap %
+Alternate part
+Effective dates
+
+That avoids redesign later.
+
+What I would ask Replit next
+
+Before allowing Build Mode, I'd ask for one more planning artifact:
+
+"Create an end-to-end MES process flow from Purchase Order → GRN → Incoming Inspection → Inventory → Material Reservation → Material Issue → Production → QC → Packing → Dispatch → Dealer, showing every table, API, ledger transaction, and status transition. Highlight every place where inventory changes. Do not write code. This will become the master architecture document for OCS One MES."
+
+That document becomes the blueprint your entire manufacturing system can follow without surprises during implementation.

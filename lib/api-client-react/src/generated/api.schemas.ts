@@ -5,6 +5,100 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type BomStatus = typeof BomStatus[keyof typeof BomStatus];
+
+
+export const BomStatus = {
+  draft: 'draft',
+  approved: 'approved',
+  obsolete: 'obsolete',
+} as const;
+
+export interface BomLineInput {
+  material_id: string;
+  quantity_per: number;
+  scrap_percent?: number;
+  is_critical_component?: boolean;
+  traceability_required?: boolean;
+  is_optional?: boolean;
+  position?: number;
+  notes?: string | null;
+}
+
+export interface BomInput {
+  model_id: string;
+  name?: string | null;
+  yield_percent?: number;
+  effective_from?: string | null;
+  effective_to?: string | null;
+  notes?: string | null;
+  /** @minItems 1 */
+  lines: BomLineInput[];
+}
+
+export interface BomUpdateInput {
+  name?: string | null;
+  yield_percent?: number;
+  effective_from?: string | null;
+  effective_to?: string | null;
+  notes?: string | null;
+  /** @minItems 1 */
+  lines: BomLineInput[];
+}
+
+export interface BomLine {
+  id: string;
+  bom_id: string;
+  material_id: string;
+  material_code?: string | null;
+  material_name?: string | null;
+  position: number;
+  quantity_per: number;
+  uom: string;
+  scrap_percent: number;
+  is_critical_component: boolean;
+  traceability_required: boolean;
+  is_optional: boolean;
+  alternate_of_line_id?: string | null;
+  notes?: string | null;
+}
+
+export interface Bom {
+  id: string;
+  bom_number: string;
+  model_id: string;
+  model_code?: string | null;
+  model_name?: string | null;
+  revision: number;
+  status: BomStatus;
+  name?: string | null;
+  yield_percent: number;
+  effective_from?: string | null;
+  effective_to?: string | null;
+  notes?: string | null;
+  line_count: number;
+  created_by?: string | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BomDetail = Bom & {
+  lines: BomLine[];
+};
+
+export type BomListResponseMeta = {
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export interface BomListResponse {
+  items: Bom[];
+  meta: BomListResponseMeta;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -3187,5 +3281,13 @@ pageSize?: PageSizeParamParameter;
 export type ListMaterialTransfers200 = {
   items: MaterialTransfer[];
   meta: MasterListMeta;
+};
+
+export type ListBomsParams = {
+search?: string;
+model_id?: string;
+status?: BomStatus;
+page?: number;
+pageSize?: number;
 };
 

@@ -27,6 +27,10 @@ import type {
   BmsMaster,
   BmsMasterInput,
   BmsMasterUpdate,
+  BomDetail,
+  BomInput,
+  BomListResponse,
+  BomUpdateInput,
   BusbarMaster,
   BusbarMasterInput,
   BusbarMasterUpdate,
@@ -90,6 +94,7 @@ import type {
   IncomingInspectionInput,
   ListBmsMasters200,
   ListBmsMastersParams,
+  ListBomsParams,
   ListBusbarMasters200,
   ListBusbarMastersParams,
   ListCabinetMasters200,
@@ -13217,4 +13222,516 @@ export function useGetMaterialTransfer<TData = Awaited<ReturnType<typeof getMate
 
 
 
+
+export const getListBomsUrl = (params?: ListBomsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/boms?${stringifiedParams}` : `/api/boms`
+}
+
+/**
+ * @summary List BOMs (search + pagination + filters)
+ */
+export const listBoms = async (params?: ListBomsParams, options?: RequestInit): Promise<BomListResponse> => {
+
+  return customFetch<BomListResponse>(getListBomsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBomsQueryKey = (params?: ListBomsParams,) => {
+    return [
+    `/api/boms`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListBomsQueryOptions = <TData = Awaited<ReturnType<typeof listBoms>>, TError = ErrorType<unknown>>(params?: ListBomsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBoms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBomsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBoms>>> = ({ signal }) => listBoms(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBoms>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBomsQueryResult = NonNullable<Awaited<ReturnType<typeof listBoms>>>
+export type ListBomsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List BOMs (search + pagination + filters)
+ */
+
+export function useListBoms<TData = Awaited<ReturnType<typeof listBoms>>, TError = ErrorType<unknown>>(
+ params?: ListBomsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBoms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBomsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateBomUrl = () => {
+
+
+
+
+  return `/api/boms`
+}
+
+/**
+ * @summary Create a draft BOM (auto-assigns the next revision for the model)
+ */
+export const createBom = async (bomInput: BomInput, options?: RequestInit): Promise<BomDetail> => {
+
+  return customFetch<BomDetail>(getCreateBomUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(bomInput)
+  }
+);}
+
+
+
+
+export const getCreateBomMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBom>>, TError,{data: BodyType<BomInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBom>>, TError,{data: BodyType<BomInput>}, TContext> => {
+
+const mutationKey = ['createBom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBom>>, {data: BodyType<BomInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createBom(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBomMutationResult = NonNullable<Awaited<ReturnType<typeof createBom>>>
+    export type CreateBomMutationBody = BodyType<BomInput>
+    export type CreateBomMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a draft BOM (auto-assigns the next revision for the model)
+ */
+export const useCreateBom = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBom>>, TError,{data: BodyType<BomInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createBom>>,
+        TError,
+        {data: BodyType<BomInput>},
+        TContext
+      > => {
+      return useMutation(getCreateBomMutationOptions(options));
+    }
+
+export const getGetBomUrl = (id: string,) => {
+
+
+
+
+  return `/api/boms/${id}`
+}
+
+/**
+ * @summary Get a BOM (header + lines)
+ */
+export const getBom = async (id: string, options?: RequestInit): Promise<BomDetail> => {
+
+  return customFetch<BomDetail>(getGetBomUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBomQueryKey = (id: string,) => {
+    return [
+    `/api/boms/${id}`
+    ] as const;
+    }
+
+
+export const getGetBomQueryOptions = <TData = Awaited<ReturnType<typeof getBom>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBom>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBomQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBom>>> = ({ signal }) => getBom(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBom>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBomQueryResult = NonNullable<Awaited<ReturnType<typeof getBom>>>
+export type GetBomQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a BOM (header + lines)
+ */
+
+export function useGetBom<TData = Awaited<ReturnType<typeof getBom>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBom>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBomQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateBomUrl = (id: string,) => {
+
+
+
+
+  return `/api/boms/${id}`
+}
+
+/**
+ * @summary Update a draft BOM (replaces header fields + lines; draft only)
+ */
+export const updateBom = async (id: string,
+    bomUpdateInput: BomUpdateInput, options?: RequestInit): Promise<BomDetail> => {
+
+  return customFetch<BomDetail>(getUpdateBomUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(bomUpdateInput)
+  }
+);}
+
+
+
+
+export const getUpdateBomMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBom>>, TError,{id: string;data: BodyType<BomUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateBom>>, TError,{id: string;data: BodyType<BomUpdateInput>}, TContext> => {
+
+const mutationKey = ['updateBom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBom>>, {id: string;data: BodyType<BomUpdateInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateBom(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateBomMutationResult = NonNullable<Awaited<ReturnType<typeof updateBom>>>
+    export type UpdateBomMutationBody = BodyType<BomUpdateInput>
+    export type UpdateBomMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a draft BOM (replaces header fields + lines; draft only)
+ */
+export const useUpdateBom = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBom>>, TError,{id: string;data: BodyType<BomUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateBom>>,
+        TError,
+        {id: string;data: BodyType<BomUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateBomMutationOptions(options));
+    }
+
+export const getDeleteBomUrl = (id: string,) => {
+
+
+
+
+  return `/api/boms/${id}`
+}
+
+/**
+ * @summary Delete a draft BOM (draft only)
+ */
+export const deleteBom = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteBomUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteBomMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteBom>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteBom>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteBom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteBom>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteBom(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteBomMutationResult = NonNullable<Awaited<ReturnType<typeof deleteBom>>>
+
+    export type DeleteBomMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a draft BOM (draft only)
+ */
+export const useDeleteBom = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteBom>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteBom>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteBomMutationOptions(options));
+    }
+
+export const getApproveBomUrl = (id: string,) => {
+
+
+
+
+  return `/api/boms/${id}/approve`
+}
+
+/**
+ * @summary Approve a draft BOM (draft → approved)
+ */
+export const approveBom = async (id: string, options?: RequestInit): Promise<BomDetail> => {
+
+  return customFetch<BomDetail>(getApproveBomUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getApproveBomMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveBom>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveBom>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['approveBom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveBom>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  approveBom(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveBomMutationResult = NonNullable<Awaited<ReturnType<typeof approveBom>>>
+
+    export type ApproveBomMutationError = ErrorType<void>
+
+    /**
+ * @summary Approve a draft BOM (draft → approved)
+ */
+export const useApproveBom = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveBom>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveBom>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getApproveBomMutationOptions(options));
+    }
+
+export const getObsoleteBomUrl = (id: string,) => {
+
+
+
+
+  return `/api/boms/${id}/obsolete`
+}
+
+/**
+ * @summary Mark an approved BOM obsolete (approved → obsolete)
+ */
+export const obsoleteBom = async (id: string, options?: RequestInit): Promise<BomDetail> => {
+
+  return customFetch<BomDetail>(getObsoleteBomUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getObsoleteBomMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof obsoleteBom>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof obsoleteBom>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['obsoleteBom'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof obsoleteBom>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  obsoleteBom(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ObsoleteBomMutationResult = NonNullable<Awaited<ReturnType<typeof obsoleteBom>>>
+
+    export type ObsoleteBomMutationError = ErrorType<void>
+
+    /**
+ * @summary Mark an approved BOM obsolete (approved → obsolete)
+ */
+export const useObsoleteBom = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof obsoleteBom>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof obsoleteBom>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getObsoleteBomMutationOptions(options));
+    }
 

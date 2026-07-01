@@ -7129,3 +7129,335 @@ export const GetMaterialTransferResponse = zod.object({
 }))
 
 
+/**
+ * @summary List BOMs (search + pagination + filters)
+ */
+export const listBomsQueryPageDefault = 1;
+export const listBomsQueryPageSizeDefault = 50;
+
+export const ListBomsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "model_id": zod.coerce.string().uuid().optional(),
+  "status": zod.enum(['draft', 'approved', 'obsolete']).optional(),
+  "page": zod.coerce.number().default(listBomsQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listBomsQueryPageSizeDefault)
+})
+
+export const ListBomsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "bom_number": zod.string(),
+  "model_id": zod.string().uuid(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "revision": zod.number(),
+  "status": zod.enum(['draft', 'approved', 'obsolete']),
+  "name": zod.string().nullish(),
+  "yield_percent": zod.number(),
+  "effective_from": zod.coerce.date().nullish(),
+  "effective_to": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "line_count": zod.number(),
+  "created_by": zod.string().nullish(),
+  "approved_by": zod.string().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+})
+
+
+/**
+ * @summary Create a draft BOM (auto-assigns the next revision for the model)
+ */
+export const createBomBodyYieldPercentDefault = 100;
+export const createBomBodyLinesItemScrapPercentDefault = 0;
+export const createBomBodyLinesItemIsCriticalComponentDefault = false;
+export const createBomBodyLinesItemTraceabilityRequiredDefault = false;
+export const createBomBodyLinesItemIsOptionalDefault = false;
+export const createBomBodyLinesItemPositionDefault = 0;
+
+
+export const CreateBomBody = zod.object({
+  "model_id": zod.string().uuid(),
+  "name": zod.string().nullish(),
+  "yield_percent": zod.number().default(createBomBodyYieldPercentDefault),
+  "effective_from": zod.coerce.date().nullish(),
+  "effective_to": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "lines": zod.array(zod.object({
+  "material_id": zod.string().uuid(),
+  "quantity_per": zod.number(),
+  "scrap_percent": zod.number().default(createBomBodyLinesItemScrapPercentDefault),
+  "is_critical_component": zod.boolean().default(createBomBodyLinesItemIsCriticalComponentDefault),
+  "traceability_required": zod.boolean().default(createBomBodyLinesItemTraceabilityRequiredDefault),
+  "is_optional": zod.boolean().default(createBomBodyLinesItemIsOptionalDefault),
+  "position": zod.number().default(createBomBodyLinesItemPositionDefault),
+  "notes": zod.string().nullish()
+})).min(1)
+})
+
+export const CreateBomResponse = zod.object({
+  "id": zod.string().uuid(),
+  "bom_number": zod.string(),
+  "model_id": zod.string().uuid(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "revision": zod.number(),
+  "status": zod.enum(['draft', 'approved', 'obsolete']),
+  "name": zod.string().nullish(),
+  "yield_percent": zod.number(),
+  "effective_from": zod.coerce.date().nullish(),
+  "effective_to": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "line_count": zod.number(),
+  "created_by": zod.string().nullish(),
+  "approved_by": zod.string().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "bom_id": zod.string().uuid(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "position": zod.number(),
+  "quantity_per": zod.number(),
+  "uom": zod.string(),
+  "scrap_percent": zod.number(),
+  "is_critical_component": zod.boolean(),
+  "traceability_required": zod.boolean(),
+  "is_optional": zod.boolean(),
+  "alternate_of_line_id": zod.string().uuid().nullish(),
+  "notes": zod.string().nullish()
+}))
+}))
+
+
+/**
+ * @summary Get a BOM (header + lines)
+ */
+export const GetBomParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetBomResponse = zod.object({
+  "id": zod.string().uuid(),
+  "bom_number": zod.string(),
+  "model_id": zod.string().uuid(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "revision": zod.number(),
+  "status": zod.enum(['draft', 'approved', 'obsolete']),
+  "name": zod.string().nullish(),
+  "yield_percent": zod.number(),
+  "effective_from": zod.coerce.date().nullish(),
+  "effective_to": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "line_count": zod.number(),
+  "created_by": zod.string().nullish(),
+  "approved_by": zod.string().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "bom_id": zod.string().uuid(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "position": zod.number(),
+  "quantity_per": zod.number(),
+  "uom": zod.string(),
+  "scrap_percent": zod.number(),
+  "is_critical_component": zod.boolean(),
+  "traceability_required": zod.boolean(),
+  "is_optional": zod.boolean(),
+  "alternate_of_line_id": zod.string().uuid().nullish(),
+  "notes": zod.string().nullish()
+}))
+}))
+
+
+/**
+ * @summary Update a draft BOM (replaces header fields + lines; draft only)
+ */
+export const UpdateBomParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updateBomBodyYieldPercentDefault = 100;
+export const updateBomBodyLinesItemScrapPercentDefault = 0;
+export const updateBomBodyLinesItemIsCriticalComponentDefault = false;
+export const updateBomBodyLinesItemTraceabilityRequiredDefault = false;
+export const updateBomBodyLinesItemIsOptionalDefault = false;
+export const updateBomBodyLinesItemPositionDefault = 0;
+
+
+export const UpdateBomBody = zod.object({
+  "name": zod.string().nullish(),
+  "yield_percent": zod.number().default(updateBomBodyYieldPercentDefault),
+  "effective_from": zod.coerce.date().nullish(),
+  "effective_to": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "lines": zod.array(zod.object({
+  "material_id": zod.string().uuid(),
+  "quantity_per": zod.number(),
+  "scrap_percent": zod.number().default(updateBomBodyLinesItemScrapPercentDefault),
+  "is_critical_component": zod.boolean().default(updateBomBodyLinesItemIsCriticalComponentDefault),
+  "traceability_required": zod.boolean().default(updateBomBodyLinesItemTraceabilityRequiredDefault),
+  "is_optional": zod.boolean().default(updateBomBodyLinesItemIsOptionalDefault),
+  "position": zod.number().default(updateBomBodyLinesItemPositionDefault),
+  "notes": zod.string().nullish()
+})).min(1)
+})
+
+export const UpdateBomResponse = zod.object({
+  "id": zod.string().uuid(),
+  "bom_number": zod.string(),
+  "model_id": zod.string().uuid(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "revision": zod.number(),
+  "status": zod.enum(['draft', 'approved', 'obsolete']),
+  "name": zod.string().nullish(),
+  "yield_percent": zod.number(),
+  "effective_from": zod.coerce.date().nullish(),
+  "effective_to": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "line_count": zod.number(),
+  "created_by": zod.string().nullish(),
+  "approved_by": zod.string().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "bom_id": zod.string().uuid(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "position": zod.number(),
+  "quantity_per": zod.number(),
+  "uom": zod.string(),
+  "scrap_percent": zod.number(),
+  "is_critical_component": zod.boolean(),
+  "traceability_required": zod.boolean(),
+  "is_optional": zod.boolean(),
+  "alternate_of_line_id": zod.string().uuid().nullish(),
+  "notes": zod.string().nullish()
+}))
+}))
+
+
+/**
+ * @summary Delete a draft BOM (draft only)
+ */
+export const DeleteBomParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const DeleteBomResponse = zod.void()
+
+
+/**
+ * @summary Approve a draft BOM (draft → approved)
+ */
+export const ApproveBomParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ApproveBomResponse = zod.object({
+  "id": zod.string().uuid(),
+  "bom_number": zod.string(),
+  "model_id": zod.string().uuid(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "revision": zod.number(),
+  "status": zod.enum(['draft', 'approved', 'obsolete']),
+  "name": zod.string().nullish(),
+  "yield_percent": zod.number(),
+  "effective_from": zod.coerce.date().nullish(),
+  "effective_to": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "line_count": zod.number(),
+  "created_by": zod.string().nullish(),
+  "approved_by": zod.string().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "bom_id": zod.string().uuid(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "position": zod.number(),
+  "quantity_per": zod.number(),
+  "uom": zod.string(),
+  "scrap_percent": zod.number(),
+  "is_critical_component": zod.boolean(),
+  "traceability_required": zod.boolean(),
+  "is_optional": zod.boolean(),
+  "alternate_of_line_id": zod.string().uuid().nullish(),
+  "notes": zod.string().nullish()
+}))
+}))
+
+
+/**
+ * @summary Mark an approved BOM obsolete (approved → obsolete)
+ */
+export const ObsoleteBomParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ObsoleteBomResponse = zod.object({
+  "id": zod.string().uuid(),
+  "bom_number": zod.string(),
+  "model_id": zod.string().uuid(),
+  "model_code": zod.string().nullish(),
+  "model_name": zod.string().nullish(),
+  "revision": zod.number(),
+  "status": zod.enum(['draft', 'approved', 'obsolete']),
+  "name": zod.string().nullish(),
+  "yield_percent": zod.number(),
+  "effective_from": zod.coerce.date().nullish(),
+  "effective_to": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "line_count": zod.number(),
+  "created_by": zod.string().nullish(),
+  "approved_by": zod.string().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "bom_id": zod.string().uuid(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "position": zod.number(),
+  "quantity_per": zod.number(),
+  "uom": zod.string(),
+  "scrap_percent": zod.number(),
+  "is_critical_component": zod.boolean(),
+  "traceability_required": zod.boolean(),
+  "is_optional": zod.boolean(),
+  "alternate_of_line_id": zod.string().uuid().nullish(),
+  "notes": zod.string().nullish()
+}))
+}))
+
+

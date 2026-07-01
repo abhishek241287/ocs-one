@@ -244,6 +244,27 @@ unless a minimum role is stated.
 > assigned to a dealer (`products.dealer_id`), `dispatch-history` replays that dealer's `product.dispatched`
 > events. No writes, no new tables; both 404 when the dealer does not exist.
 
+### MES — Bill of Materials (`/api/boms`) — MES Phase 1
+
+| Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |
+|---|---|---|---|---|---|---|
+| `/api/boms` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (list BOMs; search + model/status filters + pagination) |
+| `/api/boms` | POST | ✅ | **supervisor, director** | global | no (master data) | ✅ (create draft; server-assigned revision + `BOM-YYYYMMDD-NNNNNN`; model + materials must exist 404; 409 on revision collision) |
+| `/api/boms/{id}` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (BOM detail — header + enriched lines) |
+| `/api/boms/{id}` | PUT | ✅ | **supervisor, director** | global | no (master data) | ✅ (update draft only, else 422; FOR UPDATE; replaces header + lines) |
+| `/api/boms/{id}` | DELETE | ✅ | **supervisor, director** | global | no (master data) | ✅ (delete draft only, else 422; FOR UPDATE; lines cascade) |
+| `/api/boms/{id}/approve` | POST | ✅ | **supervisor, director** | global | no (master data) | ✅ (draft → approved, else 422; records approver + timestamp; FOR UPDATE) |
+| `/api/boms/{id}/obsolete` | POST | ✅ | **supervisor, director** | global | no (master data) | ✅ (approved → obsolete, else 422; FOR UPDATE) |
+
+> **Note (BOM):** Additive MES Phase 1 module. A BOM is a **versioned master** owned by a Model
+> (`master_products`): each revision persists (`draft → approved → obsolete`) and is never overwritten —
+> an approved BOM is corrected by creating a new revision. Input validation is Zod (`CreateBomBody` /
+> `UpdateBomBody`); write routes are gated `requireRole(supervisor, director)`; reads are open to any
+> authed user. All state transitions re-check status inside the transaction under `SELECT … FOR UPDATE`
+> (TOCTOU-safe). Not audit-logged — BOM is master data, consistent with the other Masters (no
+> `security_events` / timeline entry), NOT a serialized engineering record. Every write returns the
+> canonical `GET` projection (snake_case).
+
 ### Dashboard / Reports / Developer
 
 | Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |

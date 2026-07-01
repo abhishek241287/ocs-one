@@ -50,6 +50,8 @@ export const ROUTES = {
     testEquipment: "/masters/test-equipment",
     materials: "/masters/materials",
     materialCategories: "/masters/material-categories",
+    boms: "/masters/boms",
+    bomNew: "/masters/boms/new",
   },
 
   // Analytics
