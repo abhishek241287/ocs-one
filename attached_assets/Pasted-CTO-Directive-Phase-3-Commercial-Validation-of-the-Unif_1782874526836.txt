@@ -1,0 +1,44 @@
+CTO Directive – Phase 3: Commercial Validation of the Unified Procurement & Inventory Platform
+
+Before integrating Production, conduct a complete end-to-end commercial validation of the new architecture.
+
+Validate the following flow using realistic factory scenarios:
+
+Create Material Categories with Component Families.
+Create Materials linked to Component Masters (Cell, BMS, Cable, Busbar, Connector, Charger, Cabinet).
+Verify all validator rules (family match, active master, uniqueness, immutability).
+Create one mixed GRN containing multiple component types.
+Complete Incoming Inspection.
+Verify Inventory Ledger balances.
+Verify every filtered inventory tab (All, Cells, BMS, Cable, Busbar, Connector, Charger, Cabinet, Consumables).
+Verify provenance for every inventory row (Material, Usage Type, Linked Master, Supplier, GRN, Inspection Status).
+Verify search, filters, sorting, pagination and RBAC.
+Verify audit trail and transactional integrity.
+Perform regression testing across all Master modules to ensure the shared form changes introduced no regressions.
+
+Do not build any new functionality during this phase.
+
+Produce a Commercial Readiness Report listing every defect, classify each as Critical / High / Medium / Low, recommend fixes, and wait for CTO approval before changing any code.
+
+Why this should come next
+
+Right now you have changed the foundation of your ERP:
+
+Material Master
+GRN
+Inventory
+Component linkage
+
+These affect almost every manufacturing transaction.
+
+If you start wiring Production before validating this layer, you'll make debugging much harder because you'll have two major systems changing at once.
+
+After this validation
+
+Only when the report comes back clean would I issue the next prompt:
+
+Phase 4 – Production Material Consumption
+
+Integrate Production Orders with the unified inventory so that approved BOM components are reserved and consumed directly from the inventory ledger, maintaining full traceability and preventing negative stock.
+
+That sequence is safer and matches how manufacturing ERP projects are typically rolled out. It ensures the procurement and inventory foundation is stable before Production begins consuming stock automatically.
