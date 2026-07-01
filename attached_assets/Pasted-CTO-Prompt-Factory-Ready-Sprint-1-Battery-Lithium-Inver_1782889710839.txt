@@ -1,0 +1,140 @@
+CTO Prompt – Factory Ready Sprint 1 (Battery + Lithium Inverter + Hybrid Inverter)
+
+We are no longer building architecture. OCS One has entered Factory Readiness Mode.
+
+The only goal is to make OCS One capable of operating our real factory for these three commercial products:
+
+OCS Lithium Battery (Manufactured)
+OCS Lithium Inverter (Imported Finished Product, OCS generates serial number)
+Hybrid Inverter (Imported Finished Product, OEM serial number retained, no battery manufacturing)
+
+Ignore all future roadmap items (MRP, OEE, Costing, Maintenance, Mobile Apps, AI, etc.). They are frozen for Phase 2.
+
+Mission
+
+Perform a complete Factory Readiness Gap Analysis.
+
+Do NOT design new architecture.
+
+Do NOT propose future features.
+
+Instead, compare the current implementation against the real factory process.
+
+For each of the three products, verify every step from procurement to warranty.
+
+Product 1 – OCS Lithium Battery
+
+Verify this complete flow:
+
+Supplier
+→ GRN
+→ Incoming Inspection
+→ Inventory
+→ BOM
+→ Material Reservation
+→ Material Issue
+→ Material Consumption
+→ Production Order
+→ Assembly
+→ Testing
+→ QC
+→ Generate OCS Battery Serial
+→ Finished Goods
+→ Packing
+→ Dispatch
+→ Dealer
+→ Customer Registration
+→ Warranty
+→ Service
+
+Product 2 – OCS Lithium Inverter
+
+Imported finished product.
+
+No production order.
+
+No BOM.
+
+No manufacturing.
+
+Verify this flow:
+
+Supplier
+→ GRN
+→ Incoming Inspection
+→ Generate OCS Serial Number
+→ Finished Goods Inventory
+→ Packing
+→ Dispatch
+→ Dealer
+→ Customer Registration
+→ Warranty
+→ Service
+
+Product 3 – Hybrid Inverter
+
+Imported finished product.
+
+OEM serial number only.
+
+No battery.
+
+No production.
+
+Verify this flow:
+
+Supplier
+→ GRN
+→ Incoming Inspection
+→ Capture OEM Serial Number
+→ Finished Goods Inventory
+→ Packing
+→ Dispatch
+→ Dealer
+→ Customer Registration
+→ Warranty
+→ Service
+
+Validation Rules
+
+For every step classify it as exactly one of:
+
+✅ COMPLETE
+
+🟡 PARTIALLY COMPLETE
+
+❌ NOT IMPLEMENTED
+
+For every partial or missing item provide:
+
+Module
+Root cause
+Business impact
+Estimated implementation effort
+Whether it blocks factory operation
+Important
+
+Do NOT recommend new ERP features.
+
+Only identify what prevents these three products from being manufactured or received, stocked, dispatched, and supported in a real factory.
+
+Deliverable
+
+Produce one document only:
+
+OCS One Factory Readiness Report v1.0
+
+Include:
+
+Overall Factory Readiness %
+Battery Readiness %
+Lithium Inverter Readiness %
+Hybrid Inverter Readiness %
+Complete gap list
+Prioritized implementation plan (highest priority first)
+Final recommendation:
+READY FOR FACTORY PILOT
+READY FOR COMMERCIAL DEPLOYMENT
+NOT READY
+
+Do not write any code. Do not modify the database. Do not change architecture. This is a validation and planning exercise only. Wait for my approval before implementing any fixes.
