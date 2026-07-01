@@ -169,17 +169,6 @@ router.patch("/:id", requireWriteRole("supervisor", "director"), async (req, res
   const { id } = UpdateProductionOrderParams.parse(req.params);
   const body = UpdateProductionOrderBody.parse(req.body);
 
-  const [order] = await db
-    .select()
-    .from(mfgProductionOrdersTable)
-    .where(eq(mfgProductionOrdersTable.id, id))
-    .limit(1);
-
-  if (!order) {
-    res.status(404).json({ error: "Production order not found" });
-    return;
-  }
-
   const updates: Partial<typeof mfgProductionOrdersTable.$inferInsert> = {};
   if (body.factoryManager !== undefined) updates.factoryManager = body.factoryManager;
   if (body.priority !== undefined) updates.priority = body.priority;
@@ -195,11 +184,48 @@ router.patch("/:id", requireWriteRole("supervisor", "director"), async (req, res
     return;
   }
 
-  const [updated] = await db
-    .update(mfgProductionOrdersTable)
-    .set(updates)
-    .where(eq(mfgProductionOrdersTable.id, id))
-    .returning();
+  // A completed or cancelled order is a finalized, read-only record — like a
+  // posted GRN, issued MIN, approved BOM, or dispatch note — and must not be
+  // edited (draft / released / in_progress, which covers QC inspection, stay
+  // editable). Lock the row and re-check status INSIDE the tx (TOCTOU-safe): a
+  // pre-tx read alone races a concurrent completion/cancellation.
+  type PatchResult =
+    | { ok: false; statusCode: 404 | 422; error: string }
+    | { ok: true; updated: typeof mfgProductionOrdersTable.$inferSelect };
+
+  const result: PatchResult = await db.transaction(async (tx): Promise<PatchResult> => {
+    const [order] = await tx
+      .select()
+      .from(mfgProductionOrdersTable)
+      .where(eq(mfgProductionOrdersTable.id, id))
+      .limit(1)
+      .for("update");
+
+    if (!order) {
+      return { ok: false, statusCode: 404, error: "Production order not found" };
+    }
+
+    if (order.status === "completed" || order.status === "cancelled") {
+      return {
+        ok: false,
+        statusCode: 422,
+        error: `This production order is ${order.status} and is read-only — finalized orders cannot be edited. Create a new order if a correction is required.`,
+      };
+    }
+
+    const [updated] = await tx
+      .update(mfgProductionOrdersTable)
+      .set(updates)
+      .where(eq(mfgProductionOrdersTable.id, id))
+      .returning();
+
+    return { ok: true, updated };
+  });
+
+  if (!result.ok) {
+    res.status(result.statusCode).json({ error: result.error });
+    return;
+  }
 
   const stages = await db
     .select()
@@ -207,7 +233,7 @@ router.patch("/:id", requireWriteRole("supervisor", "director"), async (req, res
     .where(eq(mfgOrderStagesTable.productionOrderId, id))
     .orderBy(mfgOrderStagesTable.stageOrder);
 
-  res.json({ ...updated, stages });
+  res.json({ ...result.updated, stages });
 });
 
 export default router;
