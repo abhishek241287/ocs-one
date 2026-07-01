@@ -1,0 +1,262 @@
+CTO Architecture Review – Product Platform Final Validation
+PLAN MODE ONLY
+
+Do NOT write code.
+
+Do NOT modify schema.
+
+Do NOT create migrations.
+
+Do NOT change APIs.
+
+This is an architecture validation review only.
+
+The Product Manufacturing & Acquisition Architecture has been completed.
+
+Before Build Mode I want a final CTO review.
+
+Review the complete Product Platform against real factory operations.
+
+Focus on the following.
+
+==================================================
+1. PRODUCT MODES
+==================================================
+
+Validate that these three modes are sufficient.
+
+Mode A
+
+Manufactured Product
+
+Examples
+
+Battery Pack
+
+EV Charger
+
+ESS
+
+--------------------------------------------------
+
+Mode B
+
+Purchased Product with OEM Serial
+
+Example
+
+Hybrid Inverter
+
+--------------------------------------------------
+
+Mode C
+
+Purchased Product without OEM Serial
+
+Example
+
+Lithium Inverter
+
+OCS generates serial during Incoming Inspection.
+
+Question:
+
+Can every future OCS product fit one of these three modes?
+
+If not,
+
+recommend additions.
+
+==================================================
+2. SERIAL STRATEGY
+==================================================
+
+Review serial ownership.
+
+For every mode explain
+
+Who generates the serial.
+
+When.
+
+Whether it can change.
+
+Whether multiple serials should exist.
+
+Examples
+
+OEM Serial
+
+OCS Serial
+
+Barcode
+
+QR Code
+
+Internal Tracking Number
+
+Service Number
+
+Recommend best practice.
+
+==================================================
+3. WARRANTY OWNERSHIP
+==================================================
+
+Review warranty.
+
+Hybrid Inverter
+
+OEM warranty
+
+OCS dealer support
+
+Lithium Inverter
+
+OCS warranty
+
+Battery
+
+OCS warranty
+
+Future products.
+
+Recommend the cleanest architecture.
+
+==================================================
+4. PRODUCT MASTER
+==================================================
+
+Review Product Master.
+
+Should Product Master own
+
+Product Mode
+
+Warranty Strategy
+
+Serial Strategy
+
+Manufacturing Strategy
+
+or should those live somewhere else?
+
+Explain.
+
+==================================================
+5. INVENTORY OWNERSHIP
+==================================================
+
+Validate inventory ownership.
+
+Raw Material
+
+↓
+
+Inventory Ledger
+
+Finished Product
+
+↓
+
+Product Platform
+
+Confirm there is no duplication.
+
+==================================================
+6. SERVICE READINESS
+==================================================
+
+Review future service.
+
+Can Service Module support
+
+Battery
+
+Hybrid Inverter
+
+Lithium Inverter
+
+without redesign?
+
+Explain.
+
+==================================================
+7. FUTURE PRODUCTS
+==================================================
+
+Review scalability.
+
+Can architecture support
+
+Solar PCU
+
+UPS
+
+Home ESS
+
+Industrial ESS
+
+Power Banks
+
+E-Rickshaw Battery
+
+without redesign?
+
+==================================================
+8. RISKS
+==================================================
+
+List every architectural weakness.
+
+Classify
+
+Critical
+
+High
+
+Medium
+
+Low
+
+Recommend solutions.
+
+==================================================
+9. BUILD READINESS
+==================================================
+
+Is the Product Platform ready to freeze?
+
+If yes,
+
+state exactly what can be frozen permanently.
+
+If not,
+
+list remaining architecture decisions.
+
+==================================================
+10. OUTPUT
+==================================================
+
+Produce
+
+Final Product Platform Review
+
+Architecture Score
+
+Risk Matrix
+
+Freeze Recommendation
+
+Future Recommendations
+
+No code.
+
+No implementation.
+
+No schema.
+
+No API.
+
+This is the final CTO architecture review before Product Platform Freeze.
