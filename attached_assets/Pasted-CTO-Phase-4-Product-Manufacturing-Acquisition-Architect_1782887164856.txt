@@ -1,0 +1,375 @@
+CTO Phase 4 – Product Manufacturing & Acquisition Architecture
+PLAN MODE ONLY – NO CODE
+
+This is a planning phase only.
+
+Do NOT write code.
+Do NOT change schema.
+Do NOT modify APIs.
+Do NOT create migrations.
+
+The objective is to design the complete Product Manufacturing & Acquisition Architecture of OCS One.
+
+This architecture becomes the permanent foundation for Manufacturing, Procurement, Inventory, Warranty and Service.
+
+====================================================
+CURRENT PRODUCT FAMILIES
+====================================================
+
+1. Lithium Battery Pack
+    • Manufactured by OCS
+
+2. Hybrid Solar Inverter
+    • Imported as Finished Product
+    • OEM Serial Number already exists
+
+3. Lithium Inverter
+    • Imported as Finished Product
+    • No OEM Serial Number
+    • OCS generates Serial Number
+
+Future Products
+
+4. EV Charger
+5. Energy Storage System (ESS)
+
+====================================================
+1. PRODUCT MODES
+====================================================
+
+Design generic Product Modes.
+
+Required modes:
+
+A. Manufactured Product
+
+Examples
+
+Battery Pack
+EV Charger
+ESS
+
+Characteristics
+
+• BOM
+• Production Order
+• Material Consumption
+• Genealogy
+• OCS Serial
+
+----------------------------------------------------
+
+B. Purchased Product (OEM Serial)
+
+Example
+
+Hybrid Inverter
+
+Characteristics
+
+• GRN
+• Incoming Inspection
+• Inventory
+• Dispatch
+• Dealer
+• Warranty
+
+NO manufacturing.
+
+OEM Serial remains permanent.
+
+----------------------------------------------------
+
+C. Purchased Product (OCS Serial)
+
+Example
+
+Lithium Inverter
+
+Characteristics
+
+• Imported Finished Product
+• Supplier provides NO serial
+
+OCS generates serial during Receiving / Inspection.
+
+No manufacturing route.
+
+====================================================
+2. SERIAL NUMBER STRATEGY
+====================================================
+
+Design complete serial strategy.
+
+Battery
+
+↓
+
+OCS Battery Serial
+
+Hybrid Inverter
+
+↓
+
+OEM Serial
+
+Lithium Inverter
+
+↓
+
+OCS Generated Serial
+
+Future products
+
+↓
+
+OCS Product Serial
+
+Explain:
+
+• generation timing
+
+• uniqueness
+
+• warranty ownership
+
+• service ownership
+
+• traceability
+
+====================================================
+3. PRODUCT LIFE CYCLE
+====================================================
+
+Manufactured Product
+
+Raw Material
+
+↓
+
+Production
+
+↓
+
+QC
+
+↓
+
+Inventory
+
+↓
+
+Dispatch
+
+↓
+
+Dealer
+
+↓
+
+Warranty
+
+↓
+
+Service
+
+----------------------------------------------------
+
+Purchased Product
+
+Supplier
+
+↓
+
+GRN
+
+↓
+
+Inspection
+
+↓
+
+Inventory
+
+↓
+
+Dispatch
+
+↓
+
+Dealer
+
+↓
+
+Warranty
+
+↓
+
+Service
+
+====================================================
+4. INVENTORY MODEL
+====================================================
+
+One Inventory Ledger only.
+
+No duplicate inventory.
+
+Inventory must support:
+
+Manufactured Products
+
+Purchased Products
+
+Raw Materials
+
+Consumables
+
+Packaging
+
+Service Parts
+
+====================================================
+5. WARRANTY MODEL
+====================================================
+
+Design ownership.
+
+Battery
+
+Warranty by OCS
+
+Hybrid Inverter
+
+OEM Warranty
++ optional OCS dealer support
+
+Lithium Inverter
+
+OCS Warranty using OCS-generated Serial
+
+Future Products
+
+OCS Warranty
+
+====================================================
+6. SERVICE MODEL
+====================================================
+
+Design future support for:
+
+AMC
+
+Repair
+
+Replacement
+
+RMA
+
+Field Service
+
+Service Centres
+
+Spare Parts
+
+====================================================
+7. PRODUCT MASTER
+====================================================
+
+Design Product Master.
+
+Explain:
+
+Product Family
+
+Product Category
+
+Product Model
+
+Revision
+
+Variant
+
+Product Mode
+
+Serial Strategy
+
+Warranty Strategy
+
+Manufacturing Strategy
+
+====================================================
+8. GENEALOGY
+====================================================
+
+Explain genealogy requirements.
+
+Manufactured Products
+
+↓
+
+Full genealogy
+
+Purchased Products
+
+↓
+
+Supplier traceability
+
+Inspection
+
+GRN
+
+Serial
+
+Dealer
+
+Warranty
+
+Service
+
+====================================================
+9. FUTURE EXPANSION
+====================================================
+
+Ensure architecture supports:
+
+Solar Inverters
+
+Battery Packs
+
+Lithium Inverters
+
+EV Chargers
+
+ESS
+
+without redesign.
+
+====================================================
+10. DELIVERABLES
+====================================================
+
+Produce:
+
+1. Product Architecture Document
+
+2. Product Mode Matrix
+
+3. Product Life Cycle Diagram
+
+4. Serial Number Architecture
+
+5. Warranty Architecture
+
+6. Service Architecture
+
+7. Inventory Ownership Diagram
+
+8. Product Master Design
+
+9. Future Expansion Roadmap
+
+Do NOT write code.
+
+Wait for CTO approval before Build Mode.
