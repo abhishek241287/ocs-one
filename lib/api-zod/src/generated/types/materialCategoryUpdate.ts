@@ -10,4 +10,5 @@ import type { MasterCommonUpdate } from './masterCommonUpdate';
 export type MaterialCategoryUpdate = MasterCommonUpdate & ({
   /** @nullable */
   linked_master_type?: string | null;
+  engineering_master_required?: boolean;
 });

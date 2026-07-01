@@ -6,6 +6,7 @@ import {
   varchar,
   numeric,
   integer,
+  boolean,
   timestamp,
   date,
   index,
@@ -69,6 +70,14 @@ export const materialUsageTypeEnum = pgEnum("material_usage_type", [
 export const materialCategoriesTable = pgTable("master_material_categories", {
   ...createMasterCommonColumns("master_material_categories"),
   linkedMasterType: linkedMasterTypeEnum("linked_master_type"),
+  // `engineeringMasterRequired` is the SOLE source of truth for whether materials in
+  // this category MUST link a component (engineering) master. It is an independent,
+  // admin-editable flag — NOT derived from `linkedMasterType`. true → a linked master
+  // is mandatory; false → optional (a link, if provided, is still fully validated). No
+  // category names are ever hard-coded; the validation gate reads only this column.
+  engineeringMasterRequired: boolean("engineering_master_required")
+    .notNull()
+    .default(false),
 });
 
 // Unit of Measure — the physical unit a material is counted/stocked in. A small,

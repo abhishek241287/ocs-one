@@ -66,7 +66,6 @@ const router = createMasterRouter({
       const result = await validateLinkedMaster(
         {
           categoryId,
-          usageType,
           linkedMasterType,
           linkedMasterId,
           excludeMaterialId: id ?? null,

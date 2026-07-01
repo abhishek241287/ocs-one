@@ -98,44 +98,52 @@ type ValidationFail = { ok: false; status: number; error: string };
 type ValidationResult = { ok: true } | ValidationFail;
 const fail = (status: number, error: string): ValidationFail => ({ ok: false, status, error });
 
-// THE single material-write integrity gate (Rule 3). Six checks, fail-fast.
+// THE single material-write integrity gate (Rule 3). Fail-fast.
+//
+// The REQUIREMENT to provide a component link is driven SOLELY by the material's
+// category `engineeringMasterRequired` flag (UAT refinement 2026-07-01) — no longer
+// by Usage Type, and never by hard-coded category names. Usage Type defines inventory
+// behavior, not engineering requirements. Every OTHER link check (family declared,
+// family match, master exists + active, one-active-per-master) is UNCHANGED and still
+// runs whenever a link is present — whether that link is mandatory or an optional one
+// supplied for a non-requiring category.
 export async function validateLinkedMaster(
   input: {
     categoryId: string;
-    usageType: MaterialUsageType;
     linkedMasterType: LinkedMasterType | null;
     linkedMasterId: string | null;
     excludeMaterialId?: string | null;
   },
   dbx: Dbx = db,
 ): Promise<ValidationResult> {
-  const { categoryId, usageType, linkedMasterType, linkedMasterId, excludeMaterialId } = input;
+  const { categoryId, linkedMasterType, linkedMasterId, excludeMaterialId } = input;
   const hasLink = !!(linkedMasterType && linkedMasterId);
 
-  // Check 5 — usage-type compatibility (drives whether a link is allowed at all).
-  if (usageType === "INVENTORY_COMPONENT") {
-    if (!hasLink) {
-      return fail(
-        422,
-        "INVENTORY_COMPONENT materials must link to a component master (set Link Type and Master).",
-      );
-    }
-  } else {
-    // CONSUMABLE / PACKAGING / SERVICE_ITEM must NOT carry a component link.
-    if (linkedMasterType || linkedMasterId) {
-      return fail(422, `${usageType} materials cannot link to a component master; clear the link.`);
-    }
-    return { ok: true };
-  }
-
-  // ── component path (hasLink guaranteed) ──
+  // The category carries the (immutable-per-write) declared family AND the
+  // engineeringMasterRequired flag — both read from the SAME row, once.
   const [cat] = await dbx
-    .select({ code: materialCategoriesTable.code, family: materialCategoriesTable.linkedMasterType })
+    .select({
+      code: materialCategoriesTable.code,
+      family: materialCategoriesTable.linkedMasterType,
+      engineeringMasterRequired: materialCategoriesTable.engineeringMasterRequired,
+    })
     .from(materialCategoriesTable)
     .where(eq(materialCategoriesTable.id, categoryId))
     .limit(1);
   if (!cat) return fail(400, "Invalid Material Master: category not found.");
 
+  // Check 5 — the LINK REQUIREMENT, conditional on the category flag ONLY.
+  if (cat.engineeringMasterRequired && !hasLink) {
+    return fail(
+      422,
+      `Category '${cat.code}' requires a linked component master (set Link Type and Master).`,
+    );
+  }
+  // Optional case: a category that does not require a link, and none was supplied,
+  // is valid — imported/finished-goods materials simply carry no component master.
+  if (!hasLink) return { ok: true };
+
+  // ── component path (hasLink guaranteed) — all link checks below are UNCHANGED ──
   // Check 4 — category must declare a component family before it can hold components.
   if (!cat.family) {
     return fail(

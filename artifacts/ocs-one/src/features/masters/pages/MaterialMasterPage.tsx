@@ -72,6 +72,15 @@ export default function MaterialMasterPage() {
     return map;
   }, [categoriesQuery.data]);
 
+  // category id → engineering_master_required flag. This flag ALONE decides whether a
+  // material in the category must link a component master (decoupled from Usage Type).
+  const categoryEngReqById = useMemo(() => {
+    const map = new Map<string, boolean>();
+    for (const c of categoriesQuery.data?.items ?? [])
+      map.set((c as any).id, Boolean((c as any).engineering_master_required));
+    return map;
+  }, [categoriesQuery.data]);
+
   // family → active master options.
   const familyOptions = useMemo(() => {
     const toOpts = (q: any): Opt[] =>
@@ -91,8 +100,10 @@ export default function MaterialMasterPage() {
 
   const familyOf = (form: FormState): string | null =>
     categoryFamilyById.get(form.category_id as string) ?? null;
-  const isComponent = (form: FormState) =>
-    (form.usage_type ?? "INVENTORY_COMPONENT") === "INVENTORY_COMPONENT";
+  // A linked component master is REQUIRED only when the selected category's
+  // engineering_master_required flag is true (sole source of truth).
+  const engReqOf = (form: FormState): boolean =>
+    categoryEngReqById.get(form.category_id as string) ?? false;
 
   const config: MasterConfig<MaterialMaster> = useMemo(() => {
     const columns: ColumnDef<MaterialMaster>[] = [
@@ -151,12 +162,13 @@ export default function MaterialMasterPage() {
         placeholder: "Select the component master this material represents",
         // Scope to the selected category's declared family.
         optionsFn: (form: FormState) => familyOptions[familyOf(form) ?? ""] ?? [],
-        // Shown for every INVENTORY_COMPONENT material so the link requirement is
-        // explicit. When the picked category declares no family the option list is
-        // empty and Save stays disabled with the guidance below — never a silent 422.
-        visibleWhen: (form: FormState) => isComponent(form),
+        // Shown only when the selected category REQUIRES an engineering master
+        // (engineering_master_required = Yes) — the sole driver, independent of Usage
+        // Type. When the category declares no family the option list is empty and Save
+        // stays disabled with the guidance below — never a silent 422.
+        visibleWhen: (form: FormState) => engReqOf(form),
         helpText:
-          "Inventory Components must link to one component master. If this list is empty, the selected category has no component family — pick an inventory-component category (or change the Usage Type). Linking is immutable once the material is received; to change it, create a new material revision.",
+          "This category requires a linked component master. If this list is empty, the category has no component family — set its Link Type on the Material Category master. Linking is immutable once the material is received; to change it, create a new material revision.",
       },
     ];
 
@@ -169,25 +181,29 @@ export default function MaterialMasterPage() {
       columns,
       fields: fields as any,
       onFieldChange: (name: string, _value: unknown, form: FormState) => {
-        // Changing the category (and thus its component family) or leaving the
-        // component usage invalidates any prior link selection — clear it so the
-        // operator re-picks within the new family instead of submitting a stale,
-        // cross-family id that the backend would reject.
+        // Changing the category (and thus its component family / requirement)
+        // invalidates any prior link selection — clear it so the operator re-picks
+        // within the new family instead of submitting a stale, cross-family id that
+        // the backend would reject.
         if (name === "category_id") return { ...form, linked_master_id: undefined };
-        if (name === "usage_type" && form.usage_type !== "INVENTORY_COMPONENT")
-          return { ...form, linked_master_id: undefined };
         return form;
       },
       transformSubmit: (data: FormState) => {
         const family = familyOf(data);
+        const linkId = (data.linked_master_id as string) || null;
         const usage = (data.usage_type as string) || "INVENTORY_COMPONENT";
         const next: FormState = { ...data, usage_type: usage };
         // cell_master_id is derived server-side from a CELL link — never send it.
         delete next.cell_master_id;
         delete next.linked_master; // response-only summary
-        if (usage === "INVENTORY_COMPONENT" && family) {
+        // Persist the link whenever the category declares a family AND an id is
+        // present — this covers both the REQUIRED case (engineering_master_required,
+        // enforced by the visible required field above) and any OPTIONAL link on a
+        // non-requiring category, so an existing link is never silently wiped on edit.
+        // Only when the category has no family (nothing linkable) do we clear it.
+        if (family && linkId) {
           next.linked_master_type = family;
-          next.linked_master_id = (data.linked_master_id as string) || null;
+          next.linked_master_id = linkId;
         } else {
           next.linked_master_type = null;
           next.linked_master_id = null;
@@ -195,7 +211,7 @@ export default function MaterialMasterPage() {
         return next;
       },
     };
-  }, [categoryOptions, categoryNameById, categoryFamilyById, familyOptions]);
+  }, [categoryOptions, categoryNameById, categoryFamilyById, categoryEngReqById, familyOptions]);
 
   return (
     <MasterPage

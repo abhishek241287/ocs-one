@@ -2491,16 +2491,19 @@ export type LinkedMasterSummary = {
 export type MaterialCategory = MasterCommon & ({
   /** @nullable */
   linked_master_type?: string | null;
+  engineering_master_required?: boolean;
 });
 
 export type MaterialCategoryInput = MasterCommonInput & ({
   /** @nullable */
   linked_master_type?: string | null;
+  engineering_master_required?: boolean;
 });
 
 export type MaterialCategoryUpdate = MasterCommonUpdate & ({
   /** @nullable */
   linked_master_type?: string | null;
+  engineering_master_required?: boolean;
 });
 
 export type MaterialMasterUom = typeof MaterialMasterUom[keyof typeof MaterialMasterUom];

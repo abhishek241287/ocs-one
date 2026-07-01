@@ -6159,7 +6159,8 @@ export const ListMaterialCategoriesResponse = zod.object({
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
 }).and(zod.object({
-  "linked_master_type": zod.string().nullish()
+  "linked_master_type": zod.string().nullish(),
+  "engineering_master_required": zod.boolean().optional()
 })))
 }))
 
@@ -6188,7 +6189,8 @@ export const CreateMaterialCategoryBody = zod.object({
   "uploadedAt": zod.coerce.date()
 })).optional()
 }).and(zod.object({
-  "linked_master_type": zod.string().nullish()
+  "linked_master_type": zod.string().nullish(),
+  "engineering_master_required": zod.boolean().optional()
 }))
 
 export const CreateMaterialCategoryResponse = zod.object({
@@ -6212,7 +6214,8 @@ export const CreateMaterialCategoryResponse = zod.object({
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
 }).and(zod.object({
-  "linked_master_type": zod.string().nullish()
+  "linked_master_type": zod.string().nullish(),
+  "engineering_master_required": zod.boolean().optional()
 }))
 
 
@@ -6241,7 +6244,8 @@ export const GetMaterialCategoryResponse = zod.object({
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
 }).and(zod.object({
-  "linked_master_type": zod.string().nullish()
+  "linked_master_type": zod.string().nullish(),
+  "engineering_master_required": zod.boolean().optional()
 }))
 
 
@@ -6273,7 +6277,8 @@ export const UpdateMaterialCategoryBody = zod.object({
   "uploadedAt": zod.coerce.date()
 })).optional()
 }).and(zod.object({
-  "linked_master_type": zod.string().nullish()
+  "linked_master_type": zod.string().nullish(),
+  "engineering_master_required": zod.boolean().optional()
 }))
 
 export const UpdateMaterialCategoryResponse = zod.object({
@@ -6297,7 +6302,8 @@ export const UpdateMaterialCategoryResponse = zod.object({
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
 }).and(zod.object({
-  "linked_master_type": zod.string().nullish()
+  "linked_master_type": zod.string().nullish(),
+  "engineering_master_required": zod.boolean().optional()
 }))
 
 
@@ -6330,7 +6336,8 @@ export const ToggleMaterialCategoryStatusResponse = zod.object({
   "updated_by": zod.string().uuid().nullish(),
   "updated_at": zod.coerce.date()
 }).and(zod.object({
-  "linked_master_type": zod.string().nullish()
+  "linked_master_type": zod.string().nullish(),
+  "engineering_master_required": zod.boolean().optional()
 }))
 
 

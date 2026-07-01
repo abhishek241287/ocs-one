@@ -20,6 +20,11 @@ const columns: ColumnDef<MaterialCategory>[] = [
     accessorFn: (row: any) =>
       row.linked_master_type ? (FAMILY_LABELS[row.linked_master_type] ?? row.linked_master_type) : "—",
   },
+  {
+    id: "engineering_master_required",
+    header: "Engineering Master Required",
+    accessorFn: (row: any) => (row.engineering_master_required ? "Yes" : "No"),
+  },
   { accessorKey: "description", header: "Description" },
 ];
 
@@ -34,6 +39,13 @@ const fields = [
     options: FAMILY_OPTIONS,
     helpText:
       "Set this only for inventory-component categories. Materials in this category link to a master of this family.",
+  },
+  {
+    name: "engineering_master_required",
+    label: "Engineering Master Required",
+    type: "boolean",
+    helpText:
+      "When Yes, every material in this category MUST link to a component (engineering) master. When No, the link is optional (imported/finished goods). This flag alone drives the requirement; set the Component Family above so there is a master to link to.",
   },
   { name: "description", label: "Description", type: "textarea", placeholder: "Optional description" },
   { name: "effective_date", label: "Effective Date", type: "date" },
@@ -51,6 +63,7 @@ const config: MasterConfig<MaterialCategory> = {
   transformSubmit: (data) => ({
     ...data,
     linked_master_type: (data.linked_master_type as string) || null,
+    engineering_master_required: Boolean(data.engineering_master_required),
   }),
 };
 

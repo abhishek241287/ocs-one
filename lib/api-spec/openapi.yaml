@@ -6112,6 +6112,9 @@ components:
             # Declared component family for INVENTORY_COMPONENT materials in this
             # category; drives the picker + validation. Null = non-component category.
             linked_master_type: { type: ["string", "null"] }
+            # SOLE driver of whether materials in this category must link a component
+            # (engineering) master. Admin-editable; not derived from linked_master_type.
+            engineering_master_required: { type: boolean }
 
     MaterialCategoryInput:
       allOf:
@@ -6119,6 +6122,7 @@ components:
         - type: object
           properties:
             linked_master_type: { type: ["string", "null"] }
+            engineering_master_required: { type: boolean }
 
     MaterialCategoryUpdate:
       allOf:
@@ -6126,6 +6130,7 @@ components:
         - type: object
           properties:
             linked_master_type: { type: ["string", "null"] }
+            engineering_master_required: { type: boolean }
 
     # ─── Inventory Platform — Material Master ──────────────────────────────────
     MaterialMaster:

@@ -10,4 +10,5 @@ import type { MasterCommon } from './masterCommon';
 export type MaterialCategory = MasterCommon & ({
   /** @nullable */
   linked_master_type?: string | null;
+  engineering_master_required?: boolean;
 });
