@@ -6,12 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { InventoryUom } from './inventoryUom';
+import type { LinkedMasterSummary } from './linkedMasterSummary';
+import type { MaterialUsageType } from './materialUsageType';
 import type { StockBalanceStockState } from './stockBalanceStockState';
 
 export interface StockBalance {
   material_id: string;
   material_code: string;
   material_name: string;
+  usage_type?: MaterialUsageType;
+  linked_master?: LinkedMasterSummary | null;
   uom: InventoryUom;
   stock_state: StockBalanceStockState;
   quantity: number;

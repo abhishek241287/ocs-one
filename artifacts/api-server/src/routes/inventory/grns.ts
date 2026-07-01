@@ -12,6 +12,21 @@ import { CreateGrnBody } from "@workspace/api-zod";
 import { requireWriteRole } from "../../middleware/auth";
 import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
 import { postGrn } from "../../lib/grn-posting";
+import {
+  resolveLinkedMaster,
+  type LinkedMasterType,
+  type LinkedMasterSummary,
+} from "../../lib/linked-master";
+
+// Derived, read-only provenance for a GRN line: who the material is, how it is used,
+// and which component master it resolves to. The Material Master remains the single
+// source of truth — this is joined at read time, never stored on the line.
+interface LineEnrichment {
+  material_name: string;
+  material_code: string;
+  usage_type: string | null;
+  linked_master: LinkedMasterSummary | null;
+}
 
 const router: IRouter = Router();
 
@@ -42,12 +57,16 @@ function serializeHeader(h: Record<string, any>) {
   };
 }
 
-function serializeLine(l: Record<string, any>) {
+function serializeLine(l: Record<string, any>, e?: LineEnrichment) {
   return {
     id: l.id,
     grn_id: l.grnId,
     line_number: l.lineNumber,
     material_id: l.materialId,
+    material_name: e?.material_name ?? null,
+    material_code: e?.material_code ?? null,
+    usage_type: e?.usage_type ?? null,
+    linked_master: e?.linked_master ?? null,
     quantity_received: numify(l.quantityReceived),
     uom: l.uom,
     supplier_lot_number: l.supplierLotNumber ?? null,
@@ -85,7 +104,52 @@ async function readDetail(grnId: string) {
     .from(grnLineItemsTable)
     .where(eq(grnLineItemsTable.grnId, grnId))
     .orderBy(asc(grnLineItemsTable.lineNumber));
-  return { ...serializeHeader(header), lines: lines.map(serializeLine) };
+
+  const enrichment = await buildLineEnrichment(lines.map((l) => l.materialId));
+  return {
+    ...serializeHeader(header),
+    lines: lines.map((l) => serializeLine(l, enrichment.get(l.materialId))),
+  };
+}
+
+// Resolve derived provenance for a set of material ids in one pass (one materials
+// read + one component-master read per distinct linked type). Joined at read time so
+// the Material Master stays the single source of truth — nothing is copied onto the line.
+async function buildLineEnrichment(
+  materialIds: string[],
+): Promise<Map<string, LineEnrichment>> {
+  const out = new Map<string, LineEnrichment>();
+  const distinct = [...new Set(materialIds)];
+  if (distinct.length === 0) return out;
+
+  const materials = await db
+    .select({
+      id: materialsTable.id,
+      code: materialsTable.code,
+      name: materialsTable.name,
+      usageType: materialsTable.usageType,
+      linkedMasterType: materialsTable.linkedMasterType,
+      linkedMasterId: materialsTable.linkedMasterId,
+    })
+    .from(materialsTable)
+    .where(or(...distinct.map((id) => eq(materialsTable.id, id))));
+
+  for (const m of materials) {
+    let linked: LinkedMasterSummary | null = null;
+    if (m.linkedMasterType && m.linkedMasterId) {
+      linked = await resolveLinkedMaster(
+        m.linkedMasterType as LinkedMasterType,
+        m.linkedMasterId,
+      );
+    }
+    out.set(m.id, {
+      material_name: m.name,
+      material_code: m.code,
+      usage_type: m.usageType ?? null,
+      linked_master: linked,
+    });
+  }
+  return out;
 }
 
 // ─── List ────────────────────────────────────────────────────────────────────

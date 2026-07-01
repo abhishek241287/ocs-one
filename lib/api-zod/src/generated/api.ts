@@ -6607,6 +6607,15 @@ export const CreateGrnResponse = zod.object({
   "grn_id": zod.string().uuid(),
   "line_number": zod.number(),
   "material_id": zod.string().uuid(),
+  "material_name": zod.string().nullish(),
+  "material_code": zod.string().nullish(),
+  "usage_type": zod.string().nullish(),
+  "linked_master": zod.object({
+  "type": zod.enum(['CELL', 'BMS', 'CABLE', 'BUSBAR', 'CONNECTOR', 'CHARGER', 'CABINET']),
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string()
+}).nullish(),
   "quantity_received": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
   "supplier_lot_number": zod.string().nullish(),
@@ -6641,6 +6650,15 @@ export const GetGrnResponse = zod.object({
   "grn_id": zod.string().uuid(),
   "line_number": zod.number(),
   "material_id": zod.string().uuid(),
+  "material_name": zod.string().nullish(),
+  "material_code": zod.string().nullish(),
+  "usage_type": zod.string().nullish(),
+  "linked_master": zod.object({
+  "type": zod.enum(['CELL', 'BMS', 'CABLE', 'BUSBAR', 'CONNECTOR', 'CHARGER', 'CABINET']),
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string()
+}).nullish(),
   "quantity_received": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
   "supplier_lot_number": zod.string().nullish(),
@@ -6682,6 +6700,15 @@ export const PostGrnResponse = zod.object({
   "grn_id": zod.string().uuid(),
   "line_number": zod.number(),
   "material_id": zod.string().uuid(),
+  "material_name": zod.string().nullish(),
+  "material_code": zod.string().nullish(),
+  "usage_type": zod.string().nullish(),
+  "linked_master": zod.object({
+  "type": zod.enum(['CELL', 'BMS', 'CABLE', 'BUSBAR', 'CONNECTOR', 'CHARGER', 'CABINET']),
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string()
+}).nullish(),
   "quantity_received": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
   "supplier_lot_number": zod.string().nullish(),
@@ -6831,7 +6858,9 @@ export const ListStockBalancesQueryParams = zod.object({
   "page": zod.coerce.number().default(listStockBalancesQueryPageDefault),
   "pageSize": zod.coerce.number().default(listStockBalancesQueryPageSizeDefault),
   "search": zod.coerce.string().optional().describe('Filter by material code or name (case-insensitive substring)'),
-  "stock_state": zod.enum(['inspection_pending', 'available', 'rejected']).optional().describe('Filter to a single stock state')
+  "stock_state": zod.enum(['inspection_pending', 'available', 'rejected']).optional().describe('Filter to a single stock state'),
+  "master_type": zod.enum(['CELL', 'BMS', 'CABLE', 'BUSBAR', 'CONNECTOR', 'CHARGER', 'CABINET']).optional().describe('Filter to materials linked to this component-master family'),
+  "usage_type": zod.enum(['INVENTORY_COMPONENT', 'CONSUMABLE', 'PACKAGING', 'SERVICE_ITEM']).optional().describe('Filter to a single material usage type')
 })
 
 export const ListStockBalancesResponse = zod.object({
@@ -6839,6 +6868,13 @@ export const ListStockBalancesResponse = zod.object({
   "material_id": zod.string().uuid(),
   "material_code": zod.string(),
   "material_name": zod.string(),
+  "usage_type": zod.enum(['INVENTORY_COMPONENT', 'CONSUMABLE', 'PACKAGING', 'SERVICE_ITEM']).optional(),
+  "linked_master": zod.object({
+  "type": zod.enum(['CELL', 'BMS', 'CABLE', 'BUSBAR', 'CONNECTOR', 'CHARGER', 'CABINET']),
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string()
+}).nullish(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
   "stock_state": zod.enum(['inspection_pending', 'available', 'rejected']),
   "quantity": zod.number()

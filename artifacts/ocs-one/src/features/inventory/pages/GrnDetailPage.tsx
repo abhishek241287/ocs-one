@@ -36,6 +36,13 @@ const STOCK_STATE_LABEL: Record<string, string> = {
   available: "Available",
 };
 
+const USAGE_LABEL: Record<string, string> = {
+  INVENTORY_COMPONENT: "Inventory Component",
+  CONSUMABLE: "Consumable",
+  PACKAGING: "Packaging",
+  SERVICE_ITEM: "Service Item",
+};
+
 export default function GrnDetailPage() {
   const { id } = useParams<{ id: string }>();
   const grnId = id ?? "";
@@ -177,6 +184,8 @@ export default function GrnDetailPage() {
                 <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
                   <th className="px-4 py-3 font-semibold">#</th>
                   <th className="px-4 py-3 font-semibold">Material</th>
+                  <th className="px-4 py-3 font-semibold">Usage</th>
+                  <th className="px-4 py-3 font-semibold">Linked Master</th>
                   <th className="px-4 py-3 font-semibold text-right">Received</th>
                   <th className="px-4 py-3 font-semibold">UOM</th>
                   <th className="px-4 py-3 font-semibold text-right">Accepted</th>
@@ -193,7 +202,26 @@ export default function GrnDetailPage() {
                     <tr key={line.id} className="border-b last:border-0">
                       <td className="px-4 py-3 text-muted-foreground">{line.line_number}</td>
                       <td className="px-4 py-3">
-                        {mat ? `${mat.name} (${mat.code})` : line.material_id}
+                        {line.material_name
+                          ? `${line.material_name} (${line.material_code})`
+                          : mat
+                            ? `${mat.name} (${mat.code})`
+                            : line.material_id}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {line.usage_type ? USAGE_LABEL[line.usage_type] ?? line.usage_type : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        {line.linked_master ? (
+                          <span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium mr-1.5">
+                              {line.linked_master.type}
+                            </span>
+                            {line.linked_master.name} ({line.linked_master.code})
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right font-mono">{line.quantity_received}</td>
                       <td className="px-4 py-3">{line.uom}</td>

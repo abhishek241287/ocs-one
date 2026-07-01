@@ -3349,6 +3349,16 @@ paths:
           required: false
           description: Filter to a single stock state
           schema: { type: string, enum: [inspection_pending, available, rejected] }
+        - name: master_type
+          in: query
+          required: false
+          description: Filter to materials linked to this component-master family
+          schema: { $ref: "#/components/schemas/LinkedMasterType" }
+        - name: usage_type
+          in: query
+          required: false
+          description: Filter to a single material usage type
+          schema: { $ref: "#/components/schemas/MaterialUsageType" }
       responses:
         "200":
           description: On-hand stock projected from the inventory ledger, by material + state
@@ -5448,6 +5458,12 @@ components:
         grn_id: { type: string, format: uuid }
         line_number: { type: integer }
         material_id: { type: string, format: uuid }
+        # Derived read-only provenance joined from the Material Master (never stored on
+        # the line). Lets the GRN view show what the material is and how it is routed.
+        material_name: { type: ["string", "null"] }
+        material_code: { type: ["string", "null"] }
+        usage_type: { type: ["string", "null"] }
+        linked_master: { $ref: "#/components/schemas/LinkedMasterSummary" }
         quantity_received: { type: number }
         uom: { $ref: "#/components/schemas/InventoryUom" }
         supplier_lot_number: { type: ["string", "null"] }
@@ -5689,6 +5705,10 @@ components:
         material_id: { type: string, format: uuid }
         material_code: { type: string }
         material_name: { type: string }
+        # Derived provenance (read-only) — the material self-describes so the unified
+        # inventory row shows usage + linked component master without a ledger change.
+        usage_type: { $ref: "#/components/schemas/MaterialUsageType" }
+        linked_master: { $ref: "#/components/schemas/LinkedMasterSummary" }
         uom: { $ref: "#/components/schemas/InventoryUom" }
         stock_state: { type: string, enum: [inspection_pending, available, rejected] }
         quantity: { type: number }

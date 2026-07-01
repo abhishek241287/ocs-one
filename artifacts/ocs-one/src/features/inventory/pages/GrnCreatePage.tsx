@@ -3,6 +3,8 @@ import AppLayout from "@/layouts/AppLayout";
 import {
   useListSuppliers,
   useListMaterialMasters,
+  useListMaterialWorkflows,
+  useListMaterialWorkflowAssignments,
   useCreateGrn,
 } from "@workspace/api-client-react";
 import type { GrnInput, GrnLineItemInput } from "@workspace/api-client-react";
@@ -22,6 +24,18 @@ type LineDraft = { material_id: string; quantity_received: string; supplier_lot_
 
 const EMPTY_LINE: LineDraft = { material_id: "", quantity_received: "", supplier_lot_number: "" };
 
+const USAGE_LABEL: Record<string, string> = {
+  INVENTORY_COMPONENT: "Inventory Component",
+  CONSUMABLE: "Consumable",
+  PACKAGING: "Packaging",
+  SERVICE_ITEM: "Service Item",
+};
+
+const WORKFLOW_LABEL: Record<string, string> = {
+  INCOMING_INSPECTION: "Incoming Inspection",
+  DIRECT_TO_INVENTORY: "Direct to Inventory",
+};
+
 export default function GrnCreatePage() {
   const notify = useOdsNotify();
   const [, navigate] = useLocation();
@@ -34,6 +48,8 @@ export default function GrnCreatePage() {
 
   const { data: suppliers } = useListSuppliers({ pageSize: 200 } as any);
   const { data: materials } = useListMaterialMasters({ pageSize: 500 } as any);
+  const { data: workflows } = useListMaterialWorkflows({ pageSize: 200 } as any);
+  const { data: assignments } = useListMaterialWorkflowAssignments();
   const createGrn = useCreateGrn();
 
   const supplierOptions = useMemo(
@@ -49,6 +65,20 @@ export default function GrnCreatePage() {
     for (const m of materialList) map.set(m.id, m);
     return map;
   }, [materialList]);
+
+  // Resolve each material category's receiving workflow the same way the posting
+  // engine does: category → assignment → workflow → post_receipt_action. Lets the
+  // GRN line show a fully-derived, read-only routing preview before the draft exists.
+  const actionByCategory = useMemo(() => {
+    const workflowAction = new Map<string, string>();
+    for (const w of (workflows?.items ?? []) as any[]) workflowAction.set(w.id, w.post_receipt_action);
+    const map = new Map<string, string>();
+    for (const a of (assignments?.items ?? []) as any[]) {
+      const action = workflowAction.get(a.workflow_id);
+      if (action) map.set(a.category_id, action);
+    }
+    return map;
+  }, [workflows, assignments]);
 
   const updateLine = (idx: number, patch: Partial<LineDraft>) =>
     setLines((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
@@ -165,8 +195,10 @@ export default function GrnCreatePage() {
             <div className="space-y-3">
               {lines.map((line, idx) => {
                 const mat = materialById.get(line.material_id);
+                const action = mat ? actionByCategory.get(mat.category_id) : undefined;
                 return (
-                  <div key={idx} className="grid grid-cols-12 gap-3 items-end">
+                  <div key={idx} className="rounded-md border p-3 space-y-3">
+                  <div className="grid grid-cols-12 gap-3 items-end">
                     <div className="col-span-5 space-y-1.5">
                       <Label className="text-xs">Material *</Label>
                       <Select
@@ -218,6 +250,55 @@ export default function GrnCreatePage() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
+                  </div>
+
+                  {mat && (
+                    <div className="rounded-md bg-muted/40 px-3 py-2.5">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                        Derived — Material Master is the source of truth
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-xs">
+                        <div>
+                          <div className="text-muted-foreground">Material</div>
+                          <div className="font-medium">{mat.name} ({mat.code})</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Usage</div>
+                          <div className="font-medium">{USAGE_LABEL[mat.usage_type] ?? mat.usage_type ?? "—"}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Component Type</div>
+                          <div className="font-medium">{mat.linked_master?.type ?? "—"}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Linked Master</div>
+                          <div className="font-medium">
+                            {mat.linked_master
+                              ? `${mat.linked_master.name} (${mat.linked_master.code})`
+                              : "—"}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Workflow</div>
+                          <div className="font-medium">
+                            {action ? (WORKFLOW_LABEL[action] ?? action) : (
+                              <span className="text-amber-600">No workflow assigned</span>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Available After Inspection</div>
+                          <div className="font-medium">
+                            {action === "INCOMING_INSPECTION"
+                              ? "Yes — held until inspection accepts"
+                              : action === "DIRECT_TO_INVENTORY"
+                                ? "Immediately available on posting"
+                                : "—"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   </div>
                 );
               })}

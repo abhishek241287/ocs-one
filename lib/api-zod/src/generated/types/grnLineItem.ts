@@ -7,12 +7,20 @@
  */
 import type { GrnInspectionStatus } from './grnInspectionStatus';
 import type { InventoryUom } from './inventoryUom';
+import type { LinkedMasterSummary } from './linkedMasterSummary';
 
 export interface GrnLineItem {
   id: string;
   grn_id: string;
   line_number: number;
   material_id: string;
+  /** @nullable */
+  material_name?: string | null;
+  /** @nullable */
+  material_code?: string | null;
+  /** @nullable */
+  usage_type?: string | null;
+  linked_master?: LinkedMasterSummary | null;
   quantity_received: number;
   uom: InventoryUom;
   /** @nullable */

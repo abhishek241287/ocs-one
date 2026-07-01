@@ -5,7 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { LinkedMasterType } from './linkedMasterType';
 import type { ListStockBalancesStockState } from './listStockBalancesStockState';
+import type { MaterialUsageType } from './materialUsageType';
 import type { PageParamParameter } from './pageParamParameter';
 import type { PageSizeParamParameter } from './pageSizeParamParameter';
 
@@ -20,4 +22,12 @@ search?: string;
  * Filter to a single stock state
  */
 stock_state?: ListStockBalancesStockState;
+/**
+ * Filter to materials linked to this component-master family
+ */
+master_type?: LinkedMasterType;
+/**
+ * Filter to a single material usage type
+ */
+usage_type?: MaterialUsageType;
 };

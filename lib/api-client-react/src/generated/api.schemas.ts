@@ -2303,6 +2303,13 @@ export interface GrnLineItem {
   grn_id: string;
   line_number: number;
   material_id: string;
+  /** @nullable */
+  material_name?: string | null;
+  /** @nullable */
+  material_code?: string | null;
+  /** @nullable */
+  usage_type?: string | null;
+  linked_master?: LinkedMasterSummary | null;
   quantity_received: number;
   uom: InventoryUom;
   /** @nullable */
@@ -2568,6 +2575,8 @@ export interface StockBalance {
   material_id: string;
   material_code: string;
   material_name: string;
+  usage_type?: MaterialUsageType;
+  linked_master?: LinkedMasterSummary | null;
   uom: InventoryUom;
   stock_state: StockBalanceStockState;
   quantity: number;
@@ -3093,6 +3102,14 @@ search?: string;
  * Filter to a single stock state
  */
 stock_state?: ListStockBalancesStockState;
+/**
+ * Filter to materials linked to this component-master family
+ */
+master_type?: LinkedMasterType;
+/**
+ * Filter to a single material usage type
+ */
+usage_type?: MaterialUsageType;
 };
 
 export type ListStockBalancesStockState = typeof ListStockBalancesStockState[keyof typeof ListStockBalancesStockState];

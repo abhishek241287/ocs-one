@@ -1,4 +1,4 @@
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, inArray } from "drizzle-orm";
 import {
   type Transaction,
   grnHeadersTable,
@@ -122,6 +122,20 @@ export async function postGrn(
       materials: unassigned.map((l) => ({ code: l.materialCode, name: l.materialName })),
     };
   }
+
+  // Lock every referenced material row FOR UPDATE before writing the first inventory
+  // transaction. The material-write path (usage/link edit) also locks the material
+  // FOR UPDATE and only allows a change while NO GRN line / inventory transaction
+  // exists (isMaterialLinkLocked). Without a shared lock, a concurrent link edit and
+  // this first receipt could interleave — the edit reads "not locked yet" while we
+  // insert the first transaction under the old link. Taking the same row lock here
+  // serializes the two paths so a material's link can never change under committed stock.
+  const materialIds = [...new Set(lines.map((l) => l.materialId))];
+  await tx
+    .select({ id: materialsTable.id })
+    .from(materialsTable)
+    .where(inArray(materialsTable.id, materialIds))
+    .for("update");
 
   for (const line of lines) {
     const routing = resolvePostReceiptAction(line.action as PostReceiptAction);

@@ -21,21 +21,56 @@ const STATE_COLOR: Record<string, string> = {
   rejected: "bg-red-100 text-red-600",
 };
 
+const USAGE_LABEL: Record<string, string> = {
+  INVENTORY_COMPONENT: "Inventory Component",
+  CONSUMABLE: "Consumable",
+  PACKAGING: "Packaging",
+  SERVICE_ITEM: "Service Item",
+};
+
 const STATE_OPTIONS = ["inspection_pending", "available", "rejected"] as const;
 const PAGE_SIZE = 25;
+
+// The unified inventory page is ONE projection over the FROZEN signed ledger; every tab
+// is just a filter (master_type for the 7 component families, usage_type for the
+// non-component buckets). "All" applies no material filter.
+type TabDef = {
+  key: string;
+  label: string;
+  masterType?: "CELL" | "BMS" | "CABLE" | "BUSBAR" | "CONNECTOR" | "CHARGER" | "CABINET";
+  usageType?: "CONSUMABLE" | "PACKAGING";
+};
+
+const TABS: TabDef[] = [
+  { key: "all", label: "All" },
+  { key: "CELL", label: "Cells", masterType: "CELL" },
+  { key: "BMS", label: "BMS", masterType: "BMS" },
+  { key: "CABLE", label: "Cable", masterType: "CABLE" },
+  { key: "BUSBAR", label: "Busbar", masterType: "BUSBAR" },
+  { key: "CONNECTOR", label: "Connector", masterType: "CONNECTOR" },
+  { key: "CHARGER", label: "Charger", masterType: "CHARGER" },
+  { key: "CABINET", label: "Cabinet", masterType: "CABINET" },
+  { key: "CONSUMABLE", label: "Consumables", usageType: "CONSUMABLE" },
+  { key: "PACKAGING", label: "Packaging", usageType: "PACKAGING" },
+];
 
 export default function StockPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [stockState, setStockState] = useState<string>("all");
+  const [tab, setTab] = useState<string>("all");
   const [page, setPage] = useState(1);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const activeTab = TABS.find((t) => t.key === tab) ?? TABS[0];
 
   const { data, isLoading, isFetching, refetch } = useListStockBalances({
     page,
     pageSize: PAGE_SIZE,
     search: debouncedSearch || undefined,
     stock_state: stockState !== "all" ? (stockState as (typeof STATE_OPTIONS)[number]) : undefined,
+    master_type: activeTab.masterType,
+    usage_type: activeTab.usageType,
   });
 
   const handleSearch = (val: string) => {
@@ -62,6 +97,42 @@ export default function StockPage() {
         accessorKey: "material_name",
         header: "Material",
         cell: ({ row }) => <span className="text-sm">{row.original.material_name}</span>,
+      },
+      {
+        accessorKey: "usage_type",
+        header: "Usage",
+        cell: ({ row }) => (
+          <span className="text-xs text-muted-foreground">
+            {row.original.usage_type
+              ? USAGE_LABEL[row.original.usage_type] ?? row.original.usage_type
+              : "—"}
+          </span>
+        ),
+      },
+      {
+        id: "component_type",
+        header: "Type",
+        cell: ({ row }) =>
+          row.original.linked_master ? (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-medium">
+              {row.original.linked_master.type}
+            </span>
+          ) : (
+            <span className="text-muted-foreground text-xs">—</span>
+          ),
+      },
+      {
+        id: "linked_master",
+        header: "Linked Master",
+        cell: ({ row }) =>
+          row.original.linked_master ? (
+            <span className="text-xs">
+              <span className="font-mono font-semibold">{row.original.linked_master.code}</span>{" "}
+              <span className="text-muted-foreground">{row.original.linked_master.name}</span>
+            </span>
+          ) : (
+            <span className="text-muted-foreground text-xs">—</span>
+          ),
       },
       {
         accessorKey: "stock_state",
@@ -123,6 +194,23 @@ export default function StockPage() {
           certification="certified"
         />
 
+        <div className="flex flex-wrap gap-1.5 border-b pb-2">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => { setTab(t.key); setPage(1); }}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                tab === t.key
+                  ? "bg-blue-600 text-white"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         <OdsDataTable
           data={items}
           columns={columns}
@@ -130,7 +218,7 @@ export default function StockPage() {
           emptyIcon="📦"
           emptyTitle="No stock on hand"
           emptyDescription={
-            debouncedSearch || stockState !== "all"
+            debouncedSearch || stockState !== "all" || tab !== "all"
               ? "Try adjusting your filters."
               : "Post a GRN and inspect material to build inventory balances."
           }
