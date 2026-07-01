@@ -27,7 +27,7 @@ export function SelectField({ label, name, value, onChange, onBlur, options, req
         {label}
         {required && <span className="text-red-500 ml-0.5" aria-hidden="true">*</span>}
       </Label>
-      <Select value={value} onValueChange={onChange} required={required}>
+      <Select value={value ?? ""} onValueChange={onChange} required={required}>
         <SelectTrigger
           id={name}
           onBlur={onBlur}
