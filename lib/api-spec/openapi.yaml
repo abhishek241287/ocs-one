@@ -24,6 +24,8 @@ tags:
     description: Inventory Platform operations — GRN receiving, workflow routing, stock ledger
   - name: bom
     description: MES — Bill of Materials (BOM Master) operations
+  - name: material-issues
+    description: MES — Material Issue Note (BOM-driven raw-material consumption)
   - name: customers
     description: Customer registration operations (product ownership)
   - name: warranties
@@ -2651,6 +2653,107 @@ paths:
               schema: { $ref: "#/components/schemas/DealerDispatchHistoryResponse" }
         "404":
           description: Dealer not found
+
+  # ─── Material Issue Note (MIN) — BOM-driven raw-material consumption ──────────
+  /manufacturing/orders/{id}/material-issues/preview:
+    get:
+      operationId: previewMaterialIssue
+      tags: [material-issues]
+      summary: Preview the BOM-driven material requirements for an order (availability + FIFO lot suggestions)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Computed material requirements
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MinPreview" }
+        "404":
+          description: Production order not found
+
+  /manufacturing/orders/{id}/material-issues:
+    get:
+      operationId: listMaterialIssues
+      tags: [material-issues]
+      summary: List Material Issue Notes for a production order
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Material Issue Notes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MinListResponse" }
+        "404":
+          description: Production order not found
+    post:
+      operationId: issueMaterials
+      tags: [material-issues]
+      summary: Issue BOM-driven materials against a production order (atomic, immutable MIN)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IssueMaterialsInput" }
+      responses:
+        "201":
+          description: Materials issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MinDetail" }
+        "400":
+          description: Invalid request body
+        "404":
+          description: Production order not found, or no approved BOM
+        "409":
+          description: Materials already issued for this order (active MIN exists)
+        "422":
+          description: Insufficient stock, or missing mandatory traceability reference
+
+  /manufacturing/orders/{id}/material-issues/{minId}:
+    get:
+      operationId: getMaterialIssue
+      tags: [material-issues]
+      summary: Get a Material Issue Note (header + lines + reversal)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: minId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Material Issue Note detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MinDetail" }
+        "404":
+          description: Material Issue Note not found
+
+  /manufacturing/orders/{id}/material-issues/{minId}/reverse:
+    post:
+      operationId: reverseMaterialIssue
+      tags: [material-issues]
+      summary: Reverse a Material Issue Note (append-only; restores stock)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: minId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReverseMinInput" }
+      responses:
+        "200":
+          description: Material Issue Note reversed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MinDetail" }
+        "400":
+          description: Invalid request body
+        "404":
+          description: Material Issue Note not found
+        "409":
+          description: Material Issue Note already reversed
 
   # ─── Customer Registration (G3) ──────────────────────────────────────────────
   /customers/registrations:
@@ -5792,6 +5895,153 @@ components:
         items:
           type: array
           items: { $ref: "#/components/schemas/DealerDispatchHistoryEntry" }
+
+    # ─── Material Issue Note (MIN) ──────────────────────────────────────────────
+    MinRequirementView:
+      type: object
+      required: [bom_line_id, material_id, uom, quantity_per, scrap_percent, required_qty, is_critical_component, traceability_required, available_qty]
+      properties:
+        bom_line_id: { type: string, format: uuid }
+        material_id: { type: string, format: uuid }
+        material_code: { type: ["string", "null"] }
+        material_name: { type: ["string", "null"] }
+        uom: { type: string }
+        quantity_per: { type: number }
+        scrap_percent: { type: number }
+        required_qty: { type: number }
+        is_critical_component: { type: boolean }
+        traceability_required: { type: boolean }
+        available_qty: { type: number }
+        suggested_grn_id: { type: ["string", "null"], format: uuid }
+        suggested_grn_line_id: { type: ["string", "null"], format: uuid }
+        suggested_grn_number: { type: ["string", "null"] }
+        suggested_supplier_lot_number: { type: ["string", "null"] }
+
+    MinPreview:
+      type: object
+      required: [production_order_id, has_active_min, has_approved_bom, requirements]
+      properties:
+        production_order_id: { type: string, format: uuid }
+        bom_header_id: { type: ["string", "null"], format: uuid }
+        bom_number: { type: ["string", "null"] }
+        bom_revision: { type: ["integer", "null"] }
+        has_approved_bom: { type: boolean }
+        has_active_min: { type: boolean }
+        active_min_id: { type: ["string", "null"], format: uuid }
+        active_min_number: { type: ["string", "null"] }
+        requirements:
+          type: array
+          items: { $ref: "#/components/schemas/MinRequirementView" }
+
+    IssueMaterialsLineInput:
+      type: object
+      required: [source_bom_line_id]
+      properties:
+        source_bom_line_id: { type: string, format: uuid }
+        issued_qty: { type: number, minimum: 0 }
+        grn_id: { type: ["string", "null"], format: uuid }
+        grn_line_id: { type: ["string", "null"], format: uuid }
+        supplier_lot_number: { type: ["string", "null"] }
+
+    IssueMaterialsInput:
+      type: object
+      properties:
+        notes: { type: ["string", "null"] }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/IssueMaterialsLineInput" }
+
+    ReverseMinInput:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1 }
+
+    MinLineView:
+      type: object
+      required: [id, line_number, material_id, source_bom_line_id, required_qty, issued_qty, uom, is_critical_component, traceability_required]
+      properties:
+        id: { type: string, format: uuid }
+        line_number: { type: integer }
+        material_id: { type: string, format: uuid }
+        material_code: { type: ["string", "null"] }
+        material_name: { type: ["string", "null"] }
+        source_bom_line_id: { type: string, format: uuid }
+        required_qty: { type: number }
+        issued_qty: { type: number }
+        uom: { type: string }
+        grn_id: { type: ["string", "null"], format: uuid }
+        grn_line_id: { type: ["string", "null"], format: uuid }
+        supplier_lot_number: { type: ["string", "null"] }
+        is_critical_component: { type: boolean }
+        traceability_required: { type: boolean }
+
+    MinReversalInfo:
+      type: object
+      required: [reason, reversed_at]
+      properties:
+        reason: { type: string }
+        reversed_by: { type: ["string", "null"] }
+        reversed_at: { type: string, format: date-time }
+
+    MinSummary:
+      type: object
+      required: [id, min_number, source_type, source_ref_id, bom_revision, status, line_count, is_reversed, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        min_number: { type: string }
+        source_type: { type: string }
+        source_ref_id: { type: string, format: uuid }
+        bom_header_id: { type: ["string", "null"], format: uuid }
+        bom_number: { type: ["string", "null"] }
+        bom_revision: { type: integer }
+        status: { type: string }
+        issued_by: { type: ["string", "null"] }
+        line_count: { type: integer }
+        is_reversed: { type: boolean }
+        reversed_at: { type: ["string", "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+
+    MinDetail:
+      type: object
+      required: [id, min_number, source_type, source_ref_id, bom_revision, status, line_count, is_reversed, created_at, lines]
+      properties:
+        id: { type: string, format: uuid }
+        min_number: { type: string }
+        source_type: { type: string }
+        source_ref_id: { type: string, format: uuid }
+        bom_header_id: { type: ["string", "null"], format: uuid }
+        bom_number: { type: ["string", "null"] }
+        bom_revision: { type: integer }
+        status: { type: string }
+        issued_by: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        line_count: { type: integer }
+        is_reversed: { type: boolean }
+        reversed_at: { type: ["string", "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+        reversal:
+          oneOf:
+            - $ref: "#/components/schemas/MinReversalInfo"
+            - type: "null"
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/MinLineView" }
+
+    MinListResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/MinSummary" }
+        meta:
+          type: object
+          required: [total, page, pageSize]
+          properties:
+            total: { type: integer }
+            page: { type: integer }
+            pageSize: { type: integer }
 
     # Product Category master (A)
     ProductCategory:

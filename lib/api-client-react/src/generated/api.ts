@@ -97,6 +97,7 @@ import type {
   ImportedProductResult,
   IncomingInspectionDetail,
   IncomingInspectionInput,
+  IssueMaterialsInput,
   ListBmsMasters200,
   ListBmsMastersParams,
   ListBomsParams,
@@ -183,6 +184,9 @@ import type {
   MaterialWorkflowAssignmentUpsert,
   MaterialWorkflowInput,
   MaterialWorkflowUpdate,
+  MinDetail,
+  MinListResponse,
+  MinPreview,
   OrderStage,
   PackProductsInput,
   PackProductsResult,
@@ -207,6 +211,7 @@ import type {
   QcApprovalInput,
   RegisterRequest,
   ReverseDispatchInput,
+  ReverseMinInput,
   ReworkTicket,
   ReworkTicketUpdate,
   StageApproveInput,
@@ -9955,6 +9960,386 @@ export function useDealerDispatchHistory<TData = Awaited<ReturnType<typeof deale
 
 
 
+
+export const getPreviewMaterialIssueUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/material-issues/preview`
+}
+
+/**
+ * @summary Preview the BOM-driven material requirements for an order (availability + FIFO lot suggestions)
+ */
+export const previewMaterialIssue = async (id: string, options?: RequestInit): Promise<MinPreview> => {
+
+  return customFetch<MinPreview>(getPreviewMaterialIssueUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPreviewMaterialIssueQueryKey = (id: string,) => {
+    return [
+    `/api/manufacturing/orders/${id}/material-issues/preview`
+    ] as const;
+    }
+
+
+export const getPreviewMaterialIssueQueryOptions = <TData = Awaited<ReturnType<typeof previewMaterialIssue>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof previewMaterialIssue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPreviewMaterialIssueQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof previewMaterialIssue>>> = ({ signal }) => previewMaterialIssue(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof previewMaterialIssue>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type PreviewMaterialIssueQueryResult = NonNullable<Awaited<ReturnType<typeof previewMaterialIssue>>>
+export type PreviewMaterialIssueQueryError = ErrorType<void>
+
+
+/**
+ * @summary Preview the BOM-driven material requirements for an order (availability + FIFO lot suggestions)
+ */
+
+export function usePreviewMaterialIssue<TData = Awaited<ReturnType<typeof previewMaterialIssue>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof previewMaterialIssue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getPreviewMaterialIssueQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListMaterialIssuesUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/material-issues`
+}
+
+/**
+ * @summary List Material Issue Notes for a production order
+ */
+export const listMaterialIssues = async (id: string, options?: RequestInit): Promise<MinListResponse> => {
+
+  return customFetch<MinListResponse>(getListMaterialIssuesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMaterialIssuesQueryKey = (id: string,) => {
+    return [
+    `/api/manufacturing/orders/${id}/material-issues`
+    ] as const;
+    }
+
+
+export const getListMaterialIssuesQueryOptions = <TData = Awaited<ReturnType<typeof listMaterialIssues>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMaterialIssues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMaterialIssuesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMaterialIssues>>> = ({ signal }) => listMaterialIssues(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMaterialIssues>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMaterialIssuesQueryResult = NonNullable<Awaited<ReturnType<typeof listMaterialIssues>>>
+export type ListMaterialIssuesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List Material Issue Notes for a production order
+ */
+
+export function useListMaterialIssues<TData = Awaited<ReturnType<typeof listMaterialIssues>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMaterialIssues>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMaterialIssuesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getIssueMaterialsUrl = (id: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/material-issues`
+}
+
+/**
+ * @summary Issue BOM-driven materials against a production order (atomic, immutable MIN)
+ */
+export const issueMaterials = async (id: string,
+    issueMaterialsInput?: IssueMaterialsInput, options?: RequestInit): Promise<MinDetail> => {
+
+  return customFetch<MinDetail>(getIssueMaterialsUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(issueMaterialsInput)
+  }
+);}
+
+
+
+
+export const getIssueMaterialsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueMaterials>>, TError,{id: string;data?: BodyType<IssueMaterialsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof issueMaterials>>, TError,{id: string;data?: BodyType<IssueMaterialsInput>}, TContext> => {
+
+const mutationKey = ['issueMaterials'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof issueMaterials>>, {id: string;data?: BodyType<IssueMaterialsInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  issueMaterials(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IssueMaterialsMutationResult = NonNullable<Awaited<ReturnType<typeof issueMaterials>>>
+    export type IssueMaterialsMutationBody = BodyType<IssueMaterialsInput> | undefined
+    export type IssueMaterialsMutationError = ErrorType<void>
+
+    /**
+ * @summary Issue BOM-driven materials against a production order (atomic, immutable MIN)
+ */
+export const useIssueMaterials = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueMaterials>>, TError,{id: string;data?: BodyType<IssueMaterialsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof issueMaterials>>,
+        TError,
+        {id: string;data?: BodyType<IssueMaterialsInput>},
+        TContext
+      > => {
+      return useMutation(getIssueMaterialsMutationOptions(options));
+    }
+
+export const getGetMaterialIssueUrl = (id: string,
+    minId: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/material-issues/${minId}`
+}
+
+/**
+ * @summary Get a Material Issue Note (header + lines + reversal)
+ */
+export const getMaterialIssue = async (id: string,
+    minId: string, options?: RequestInit): Promise<MinDetail> => {
+
+  return customFetch<MinDetail>(getGetMaterialIssueUrl(id,minId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMaterialIssueQueryKey = (id: string,
+    minId: string,) => {
+    return [
+    `/api/manufacturing/orders/${id}/material-issues/${minId}`
+    ] as const;
+    }
+
+
+export const getGetMaterialIssueQueryOptions = <TData = Awaited<ReturnType<typeof getMaterialIssue>>, TError = ErrorType<void>>(id: string,
+    minId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMaterialIssue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMaterialIssueQueryKey(id,minId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMaterialIssue>>> = ({ signal }) => getMaterialIssue(id,minId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && minId !== null && minId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMaterialIssue>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMaterialIssueQueryResult = NonNullable<Awaited<ReturnType<typeof getMaterialIssue>>>
+export type GetMaterialIssueQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a Material Issue Note (header + lines + reversal)
+ */
+
+export function useGetMaterialIssue<TData = Awaited<ReturnType<typeof getMaterialIssue>>, TError = ErrorType<void>>(
+ id: string,
+    minId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMaterialIssue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMaterialIssueQueryOptions(id,minId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReverseMaterialIssueUrl = (id: string,
+    minId: string,) => {
+
+
+
+
+  return `/api/manufacturing/orders/${id}/material-issues/${minId}/reverse`
+}
+
+/**
+ * @summary Reverse a Material Issue Note (append-only; restores stock)
+ */
+export const reverseMaterialIssue = async (id: string,
+    minId: string,
+    reverseMinInput: ReverseMinInput, options?: RequestInit): Promise<MinDetail> => {
+
+  return customFetch<MinDetail>(getReverseMaterialIssueUrl(id,minId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reverseMinInput)
+  }
+);}
+
+
+
+
+export const getReverseMaterialIssueMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reverseMaterialIssue>>, TError,{id: string;minId: string;data: BodyType<ReverseMinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reverseMaterialIssue>>, TError,{id: string;minId: string;data: BodyType<ReverseMinInput>}, TContext> => {
+
+const mutationKey = ['reverseMaterialIssue'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reverseMaterialIssue>>, {id: string;minId: string;data: BodyType<ReverseMinInput>}> = (props) => {
+          const {id,minId,data} = props ?? {};
+
+          return  reverseMaterialIssue(id,minId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReverseMaterialIssueMutationResult = NonNullable<Awaited<ReturnType<typeof reverseMaterialIssue>>>
+    export type ReverseMaterialIssueMutationBody = BodyType<ReverseMinInput>
+    export type ReverseMaterialIssueMutationError = ErrorType<void>
+
+    /**
+ * @summary Reverse a Material Issue Note (append-only; restores stock)
+ */
+export const useReverseMaterialIssue = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reverseMaterialIssue>>, TError,{id: string;minId: string;data: BodyType<ReverseMinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reverseMaterialIssue>>,
+        TError,
+        {id: string;minId: string;data: BodyType<ReverseMinInput>},
+        TContext
+      > => {
+      return useMutation(getReverseMaterialIssueMutationOptions(options));
+    }
 
 export const getListCustomerRegistrationsUrl = (params?: ListCustomerRegistrationsParams,) => {
   const normalizedParams = new URLSearchParams();

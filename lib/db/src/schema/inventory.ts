@@ -327,6 +327,12 @@ export const inventoryTransactionTypeEnum = pgEnum("inventory_transaction_type",
   // Named descriptively (not a generic ISSUE) so future issue-to-assembly/packing/scrap
   // transactions read clearly in reports.
   "MATERIAL_TRANSFER_TO_CELL_PROCESSING",
+  // Material Issue Note (MIN): BOM-driven consumption of NON-CELL raw materials into
+  // production. PRODUCTION_ISSUE is signed NEGATIVE @available (stock leaves inventory);
+  // PRODUCTION_ISSUE_REVERSAL is signed POSITIVE @available (a reversed MIN restores it).
+  // Cells are excluded — they are consumed via MATERIAL_TRANSFER_TO_CELL_PROCESSING.
+  "PRODUCTION_ISSUE",
+  "PRODUCTION_ISSUE_REVERSAL",
 ]);
 
 // Where the moved quantity sits. inspection_pending = received but awaiting Incoming

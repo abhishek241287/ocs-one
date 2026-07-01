@@ -163,6 +163,11 @@ unless a minimum role is stated.
 | `/orders/:id/genealogy` | POST | ✅ | **operator, supervisor, director** | global | no | ✅ |
 | `/orders/:id/test-results` | GET | ✅ | viewer (read) | global | no | ✅ |
 | `/orders/:id/test-results` | POST/PUT | ✅ | **operator, supervisor, director** | global | no | ✅ |
+| `/orders/:id/material-issues/preview` | GET | ✅ | viewer (read) | global | no | ✅ (BOM requirement preview + stock availability; suggested GRN/lot) |
+| `/orders/:id/material-issues` | GET | ✅ | viewer (read) | global | no | ✅ (list MINs for the order) |
+| `/orders/:id/material-issues/:minId` | GET | ✅ | viewer (read) | global | no | ✅ (MIN document detail incl. lines + reversal info) |
+| `/orders/:id/material-issues` | POST | ✅ | **supervisor, director** | global | **yes** (`materials_issued` on `mfg_battery_timeline`) | ✅ (BOM-driven MIN; atomic, order locked FOR UPDATE double-issue guard; signed `PRODUCTION_ISSUE` ledger rows; system-generated MIN no.) |
+| `/orders/:id/material-issues/:minId/reverse` | POST | ✅ | **supervisor, director** | global | **yes** (`materials_issue_reversed` on `mfg_battery_timeline`) | ✅ (append-only reversal; one per MIN; mandatory reason; restores stock via `PRODUCTION_ISSUE_REVERSAL` rows; MIN header never mutated) |
 | `/rework` | GET | ✅ | viewer (read) | global | no | ✅ |
 | `/rework/:id` | PATCH | ✅ | **operator, supervisor, director** | global | no | ✅ |
 | `/charger-units` | GET | ✅ | viewer (read) | global | no | ✅ |

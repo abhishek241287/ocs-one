@@ -1,5 +1,5 @@
 import { useGetOrderTimeline } from "@workspace/api-client-react";
-import { Package2, Clock, CheckCircle2, Loader2, CirclePlay, CirclePause, XCircle } from "lucide-react";
+import { Package2, Clock, CheckCircle2, Loader2, CirclePlay, CirclePause, XCircle, PackageOpen, Undo2 } from "lucide-react";
 
 const EVENT_ICONS: Record<string, React.FC<{ className?: string }>> = {
   order_created: Package2,
@@ -11,6 +11,8 @@ const EVENT_ICONS: Record<string, React.FC<{ className?: string }>> = {
   stage_completed: CheckCircle2,
   stage_approved: CheckCircle2,
   stage_rejected: XCircle,
+  materials_issued: PackageOpen,
+  materials_issue_reversed: Undo2,
 };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -23,6 +25,8 @@ const EVENT_COLORS: Record<string, string> = {
   stage_completed: "bg-yellow-100 text-yellow-700",
   stage_approved: "bg-green-100 text-green-600",
   stage_rejected: "bg-red-100 text-red-600",
+  materials_issued: "bg-indigo-100 text-indigo-600",
+  materials_issue_reversed: "bg-red-100 text-red-600",
 };
 
 interface Props {

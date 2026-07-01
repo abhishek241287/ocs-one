@@ -2289,6 +2289,154 @@ export interface DealerDispatchHistoryResponse {
   items: DealerDispatchHistoryEntry[];
 }
 
+export interface MinRequirementView {
+  bom_line_id: string;
+  material_id: string;
+  /** @nullable */
+  material_code?: string | null;
+  /** @nullable */
+  material_name?: string | null;
+  uom: string;
+  quantity_per: number;
+  scrap_percent: number;
+  required_qty: number;
+  is_critical_component: boolean;
+  traceability_required: boolean;
+  available_qty: number;
+  /** @nullable */
+  suggested_grn_id?: string | null;
+  /** @nullable */
+  suggested_grn_line_id?: string | null;
+  /** @nullable */
+  suggested_grn_number?: string | null;
+  /** @nullable */
+  suggested_supplier_lot_number?: string | null;
+}
+
+export interface MinPreview {
+  production_order_id: string;
+  /** @nullable */
+  bom_header_id?: string | null;
+  /** @nullable */
+  bom_number?: string | null;
+  /** @nullable */
+  bom_revision?: number | null;
+  has_approved_bom: boolean;
+  has_active_min: boolean;
+  /** @nullable */
+  active_min_id?: string | null;
+  /** @nullable */
+  active_min_number?: string | null;
+  requirements: MinRequirementView[];
+}
+
+export interface IssueMaterialsLineInput {
+  source_bom_line_id: string;
+  /** @minimum 0 */
+  issued_qty?: number;
+  /** @nullable */
+  grn_id?: string | null;
+  /** @nullable */
+  grn_line_id?: string | null;
+  /** @nullable */
+  supplier_lot_number?: string | null;
+}
+
+export interface IssueMaterialsInput {
+  /** @nullable */
+  notes?: string | null;
+  lines?: IssueMaterialsLineInput[];
+}
+
+export interface ReverseMinInput {
+  /** @minLength 1 */
+  reason: string;
+}
+
+export interface MinLineView {
+  id: string;
+  line_number: number;
+  material_id: string;
+  /** @nullable */
+  material_code?: string | null;
+  /** @nullable */
+  material_name?: string | null;
+  source_bom_line_id: string;
+  required_qty: number;
+  issued_qty: number;
+  uom: string;
+  /** @nullable */
+  grn_id?: string | null;
+  /** @nullable */
+  grn_line_id?: string | null;
+  /** @nullable */
+  supplier_lot_number?: string | null;
+  is_critical_component: boolean;
+  traceability_required: boolean;
+}
+
+export interface MinReversalInfo {
+  reason: string;
+  /** @nullable */
+  reversed_by?: string | null;
+  reversed_at: string;
+}
+
+export interface MinSummary {
+  id: string;
+  min_number: string;
+  source_type: string;
+  source_ref_id: string;
+  /** @nullable */
+  bom_header_id?: string | null;
+  /** @nullable */
+  bom_number?: string | null;
+  bom_revision: number;
+  status: string;
+  /** @nullable */
+  issued_by?: string | null;
+  line_count: number;
+  is_reversed: boolean;
+  /** @nullable */
+  reversed_at?: string | null;
+  created_at: string;
+}
+
+export interface MinDetail {
+  id: string;
+  min_number: string;
+  source_type: string;
+  source_ref_id: string;
+  /** @nullable */
+  bom_header_id?: string | null;
+  /** @nullable */
+  bom_number?: string | null;
+  bom_revision: number;
+  status: string;
+  /** @nullable */
+  issued_by?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  line_count: number;
+  is_reversed: boolean;
+  /** @nullable */
+  reversed_at?: string | null;
+  created_at: string;
+  reversal?: MinReversalInfo | null;
+  lines: MinLineView[];
+}
+
+export type MinListResponseMeta = {
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export interface MinListResponse {
+  items: MinSummary[];
+  meta: MinListResponseMeta;
+}
+
 export type ProductCategory = MasterCommon;
 
 export type ProductCategoryInput = MasterCommonInput;

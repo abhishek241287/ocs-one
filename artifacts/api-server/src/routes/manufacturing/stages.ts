@@ -14,6 +14,7 @@ import {
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { BALANCING_THRESHOLDS } from "../../lib/manufacturing-config";
+import { evaluateStageMaterialGate } from "../../lib/material-issue";
 import {
   ListOrderStagesParams,
   GetOrderStageParams,
@@ -372,6 +373,15 @@ router.post("/:stage/start", async (req, res) => {
       res.status(409).json({ error: "Previous stage must be approved before starting this stage" });
       return;
     }
+  }
+
+  // R3: BOM material-issue gate — the workflow's first material-consuming stage
+  // cannot start until the order's non-cell BOM materials are issued (active MIN).
+  // Orders whose model has no approved BOM proceed ungated (backward-compat).
+  const gate = await evaluateStageMaterialGate(id, stage);
+  if (gate.blocked) {
+    res.status(409).json({ error: gate.message });
+    return;
   }
 
   const startData = (body.stageData as Record<string, unknown>) ?? {};

@@ -34,6 +34,7 @@ export * from "./engineering-corrections";
 export * from "./product-masters";
 export * from "./products";
 export * from "./inventory";
+export * from "./material-issue";
 export * from "./logistics";
 export * from "./dispatch";
 export * from "./customers";

@@ -5228,6 +5228,235 @@ export const DealerDispatchHistoryResponse = zod.object({
 
 
 /**
+ * @summary Preview the BOM-driven material requirements for an order (availability + FIFO lot suggestions)
+ */
+export const PreviewMaterialIssueParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const PreviewMaterialIssueResponse = zod.object({
+  "production_order_id": zod.string().uuid(),
+  "bom_header_id": zod.string().uuid().nullish(),
+  "bom_number": zod.string().nullish(),
+  "bom_revision": zod.number().nullish(),
+  "has_approved_bom": zod.boolean(),
+  "has_active_min": zod.boolean(),
+  "active_min_id": zod.string().uuid().nullish(),
+  "active_min_number": zod.string().nullish(),
+  "requirements": zod.array(zod.object({
+  "bom_line_id": zod.string().uuid(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "uom": zod.string(),
+  "quantity_per": zod.number(),
+  "scrap_percent": zod.number(),
+  "required_qty": zod.number(),
+  "is_critical_component": zod.boolean(),
+  "traceability_required": zod.boolean(),
+  "available_qty": zod.number(),
+  "suggested_grn_id": zod.string().uuid().nullish(),
+  "suggested_grn_line_id": zod.string().uuid().nullish(),
+  "suggested_grn_number": zod.string().nullish(),
+  "suggested_supplier_lot_number": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary List Material Issue Notes for a production order
+ */
+export const ListMaterialIssuesParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ListMaterialIssuesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "min_number": zod.string(),
+  "source_type": zod.string(),
+  "source_ref_id": zod.string().uuid(),
+  "bom_header_id": zod.string().uuid().nullish(),
+  "bom_number": zod.string().nullish(),
+  "bom_revision": zod.number(),
+  "status": zod.string(),
+  "issued_by": zod.string().nullish(),
+  "line_count": zod.number(),
+  "is_reversed": zod.boolean(),
+  "reversed_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date()
+})),
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+})
+
+
+/**
+ * @summary Issue BOM-driven materials against a production order (atomic, immutable MIN)
+ */
+export const IssueMaterialsParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const issueMaterialsBodyLinesItemIssuedQtyMin = 0;
+
+
+
+export const IssueMaterialsBody = zod.object({
+  "notes": zod.string().nullish(),
+  "lines": zod.array(zod.object({
+  "source_bom_line_id": zod.string().uuid(),
+  "issued_qty": zod.number().min(issueMaterialsBodyLinesItemIssuedQtyMin).optional(),
+  "grn_id": zod.string().uuid().nullish(),
+  "grn_line_id": zod.string().uuid().nullish(),
+  "supplier_lot_number": zod.string().nullish()
+})).optional()
+})
+
+export const IssueMaterialsResponse = zod.object({
+  "id": zod.string().uuid(),
+  "min_number": zod.string(),
+  "source_type": zod.string(),
+  "source_ref_id": zod.string().uuid(),
+  "bom_header_id": zod.string().uuid().nullish(),
+  "bom_number": zod.string().nullish(),
+  "bom_revision": zod.number(),
+  "status": zod.string(),
+  "issued_by": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "line_count": zod.number(),
+  "is_reversed": zod.boolean(),
+  "reversed_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "reversal": zod.union([zod.object({
+  "reason": zod.string(),
+  "reversed_by": zod.string().nullish(),
+  "reversed_at": zod.coerce.date()
+}),zod.null()]).optional(),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "source_bom_line_id": zod.string().uuid(),
+  "required_qty": zod.number(),
+  "issued_qty": zod.number(),
+  "uom": zod.string(),
+  "grn_id": zod.string().uuid().nullish(),
+  "grn_line_id": zod.string().uuid().nullish(),
+  "supplier_lot_number": zod.string().nullish(),
+  "is_critical_component": zod.boolean(),
+  "traceability_required": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Get a Material Issue Note (header + lines + reversal)
+ */
+export const GetMaterialIssueParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "minId": zod.coerce.string().uuid()
+})
+
+export const GetMaterialIssueResponse = zod.object({
+  "id": zod.string().uuid(),
+  "min_number": zod.string(),
+  "source_type": zod.string(),
+  "source_ref_id": zod.string().uuid(),
+  "bom_header_id": zod.string().uuid().nullish(),
+  "bom_number": zod.string().nullish(),
+  "bom_revision": zod.number(),
+  "status": zod.string(),
+  "issued_by": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "line_count": zod.number(),
+  "is_reversed": zod.boolean(),
+  "reversed_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "reversal": zod.union([zod.object({
+  "reason": zod.string(),
+  "reversed_by": zod.string().nullish(),
+  "reversed_at": zod.coerce.date()
+}),zod.null()]).optional(),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "source_bom_line_id": zod.string().uuid(),
+  "required_qty": zod.number(),
+  "issued_qty": zod.number(),
+  "uom": zod.string(),
+  "grn_id": zod.string().uuid().nullish(),
+  "grn_line_id": zod.string().uuid().nullish(),
+  "supplier_lot_number": zod.string().nullish(),
+  "is_critical_component": zod.boolean(),
+  "traceability_required": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Reverse a Material Issue Note (append-only; restores stock)
+ */
+export const ReverseMaterialIssueParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "minId": zod.coerce.string().uuid()
+})
+
+
+
+
+export const ReverseMaterialIssueBody = zod.object({
+  "reason": zod.string().min(1)
+})
+
+export const ReverseMaterialIssueResponse = zod.object({
+  "id": zod.string().uuid(),
+  "min_number": zod.string(),
+  "source_type": zod.string(),
+  "source_ref_id": zod.string().uuid(),
+  "bom_header_id": zod.string().uuid().nullish(),
+  "bom_number": zod.string().nullish(),
+  "bom_revision": zod.number(),
+  "status": zod.string(),
+  "issued_by": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "line_count": zod.number(),
+  "is_reversed": zod.boolean(),
+  "reversed_at": zod.coerce.date().nullish(),
+  "created_at": zod.coerce.date(),
+  "reversal": zod.union([zod.object({
+  "reason": zod.string(),
+  "reversed_by": zod.string().nullish(),
+  "reversed_at": zod.coerce.date()
+}),zod.null()]).optional(),
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "source_bom_line_id": zod.string().uuid(),
+  "required_qty": zod.number(),
+  "issued_qty": zod.number(),
+  "uom": zod.string(),
+  "grn_id": zod.string().uuid().nullish(),
+  "grn_line_id": zod.string().uuid().nullish(),
+  "supplier_lot_number": zod.string().nullish(),
+  "is_critical_component": zod.boolean(),
+  "traceability_required": zod.boolean()
+}))
+})
+
+
+/**
  * @summary List customer registrations (search + pagination)
  */
 export const listCustomerRegistrationsQueryPageDefault = 1;

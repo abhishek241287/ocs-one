@@ -32,6 +32,8 @@ export async function seedDatabase(): Promise<void> {
     CREATE SEQUENCE IF NOT EXISTS dispatch_seq START 1 INCREMENT 1;
     -- Inventory: race-safe Material Transfer number (TRF-YYYYMMDD-NNNNNN).
     CREATE SEQUENCE IF NOT EXISTS material_transfer_seq START 1 INCREMENT 1;
+    -- Manufacturing: race-safe Material Issue Note number (MIN-YYYYMMDD-NNNNNN).
+    CREATE SEQUENCE IF NOT EXISTS material_issue_seq START 1 INCREMENT 1;
     -- MES: race-safe BOM number generation (BOM-YYYYMMDD-NNNNNN).
     CREATE SEQUENCE IF NOT EXISTS bom_seq START 1 INCREMENT 1;
     -- Imported Products: race-safe OCS inverter serial (LIV-YYYYMMDD-NNNNNN).
@@ -97,6 +99,12 @@ export async function seedDatabase(): Promise<void> {
         FROM material_transfers WHERE transfer_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
       IF m > 0 THEN
         PERFORM setval('material_transfer_seq', GREATEST((SELECT last_value FROM material_transfer_seq), m), true);
+      END IF;
+
+      SELECT COALESCE(MAX(split_part(min_number, '-', 3)::bigint), 0) INTO m
+        FROM material_issue_notes WHERE min_number ~ '^[A-Za-z]+-[0-9]{8}-[0-9]+$';
+      IF m > 0 THEN
+        PERFORM setval('material_issue_seq', GREATEST((SELECT last_value FROM material_issue_seq), m), true);
       END IF;
 
       SELECT COALESCE(MAX(split_part(bom_number, '-', 3)::bigint), 0) INTO m

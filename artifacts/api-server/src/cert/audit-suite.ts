@@ -378,8 +378,25 @@ function staticImmutabilityViolations(): string[] {
   // The ECF ledger (engineering_corrections) is append-only forever, so it is
   // protected by the same no-UPDATE/DELETE static + runtime guards as the two
   // audit stores. The cert dir (this suite's own teardown) is excluded above.
-  const drizzleTables = ["securityEventsTable", "cellLotEventsTable", "engineeringCorrectionsTable"];
-  const physicalTables = ["security_events", "cell_lot_events", "engineering_corrections"];
+  // MIN documents (material_issue_notes/_lines) + their reversals are append-only:
+  // a posted MIN is never edited/deleted; corrections are reversal documents. They
+  // carry the same no-UPDATE/DELETE static + runtime immutability guarantee.
+  const drizzleTables = [
+    "securityEventsTable",
+    "cellLotEventsTable",
+    "engineeringCorrectionsTable",
+    "materialIssueNotesTable",
+    "materialIssueNoteLinesTable",
+    "materialIssueReversalsTable",
+  ];
+  const physicalTables = [
+    "security_events",
+    "cell_lot_events",
+    "engineering_corrections",
+    "material_issue_notes",
+    "material_issue_note_lines",
+    "material_issue_reversals",
+  ];
   const drizzleRe = new RegExp(`\\.(update|delete)\\(\\s*(${drizzleTables.join("|")})\\b`);
   const rawRe = new RegExp(
     `\\b(update|delete\\s+from|truncate(?:\\s+table)?|insert\\s+into)\\b[\\s\\S]{0,80}?\\b(${physicalTables.join("|")})\\b`,

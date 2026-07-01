@@ -602,6 +602,57 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     expected: all(P),
   },
 
+  // ─── Material Issue Note (MIN) — BOM-driven material consumption ──────────────
+  // Router guard requireWriteRole(supervisor,director): reads open to any authed,
+  // writes gated to supervisor/director.
+  {
+    id: "min.preview",
+    method: "GET",
+    path: `/api/manufacturing/orders/${DUMMY_ID}/material-issues/preview`,
+    group: "Material Issue",
+    description: "Preview BOM requirements + FIFO suggestion (read)",
+    guard: "requireWriteRole (read open to all authed)",
+    expected: all(P),
+  },
+  {
+    id: "min.list",
+    method: "GET",
+    path: `/api/manufacturing/orders/${DUMMY_ID}/material-issues`,
+    group: "Material Issue",
+    description: "List material issue notes for an order (read)",
+    guard: "requireWriteRole (read open to all authed)",
+    expected: all(P),
+  },
+  {
+    id: "min.create",
+    method: "POST",
+    path: `/api/manufacturing/orders/${DUMMY_ID}/material-issues`,
+    group: "Material Issue",
+    description: "Issue BOM materials against an order (write)",
+    guard: "requireWriteRole(supervisor,director)",
+    body: {},
+    expected: roles(P, P, F, F),
+  },
+  {
+    id: "min.get",
+    method: "GET",
+    path: `/api/manufacturing/orders/${DUMMY_ID}/material-issues/${DUMMY_ID}`,
+    group: "Material Issue",
+    description: "Get a material issue note (read)",
+    guard: "requireWriteRole (read open to all authed)",
+    expected: all(P),
+  },
+  {
+    id: "min.reverse",
+    method: "POST",
+    path: `/api/manufacturing/orders/${DUMMY_ID}/material-issues/${DUMMY_ID}/reverse`,
+    group: "Material Issue",
+    description: "Reverse a material issue note (append-only; write)",
+    guard: "requireWriteRole(supervisor,director)",
+    body: {},
+    expected: roles(P, P, F, F),
+  },
+
   // ─── Manufacturing writes ────────────────────────────────────────────────────
   {
     id: "manufacturing.orders.create",

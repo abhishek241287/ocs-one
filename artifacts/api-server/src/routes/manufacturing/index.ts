@@ -11,6 +11,7 @@ import testResultsRouter from "./test-results";
 import qcApprovalRouter from "./qc-approval";
 import reworkRouter from "./rework";
 import testingDashboardRouter from "./testing-dashboard";
+import materialIssuesRouter from "./material-issues";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use("/orders/:id/allocated-cells", allocatedCellsRouter);
 router.use("/orders/:id/formation-report", formationReportRouter);
 router.use("/orders/:id/test-results", testResultsRouter);
 router.use("/orders/:id/qc-approval", qcApprovalRouter);
+router.use("/orders/:id/material-issues", materialIssuesRouter);
 
 export default router;

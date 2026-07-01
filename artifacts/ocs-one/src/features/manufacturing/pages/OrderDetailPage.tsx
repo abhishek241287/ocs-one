@@ -15,6 +15,7 @@ import {
   Clock,
   GitBranch,
   Layers,
+  PackageOpen,
 } from "lucide-react";
 import { useGetProductionOrder } from "@workspace/api-client-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -22,6 +23,7 @@ import StageStepper, { STAGE_SEQUENCE } from "../components/StageStepper";
 import StageCard from "../components/StageCard";
 import TimelineView from "../components/TimelineView";
 import GenealogyView from "../components/GenealogyView";
+import MaterialIssuePanel from "../components/MaterialIssuePanel";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-700",
@@ -159,6 +161,10 @@ export default function OrderDetailPage() {
               <Layers className="h-3.5 w-3.5" />
               Active Stage
             </TabsTrigger>
+            <TabsTrigger value="materials" className="flex items-center gap-1.5">
+              <PackageOpen className="h-3.5 w-3.5" />
+              Materials
+            </TabsTrigger>
             <TabsTrigger value="timeline" className="flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5" />
               Timeline
@@ -184,6 +190,10 @@ export default function OrderDetailPage() {
             ) : (
               <p className="text-gray-400 text-sm py-8 text-center">No stage selected</p>
             )}
+          </TabsContent>
+
+          <TabsContent value="materials" className="mt-4">
+            <MaterialIssuePanel orderId={orderId} onRefresh={refetch} />
           </TabsContent>
 
           <TabsContent value="timeline" className="mt-4">
