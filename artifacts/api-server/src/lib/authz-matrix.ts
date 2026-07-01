@@ -428,6 +428,15 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     guard: "requireWriteRole(supervisor,director) — GET passes for all authed",
     expected: all(P),
   },
+  {
+    id: "inventory.stock.provenance",
+    method: "GET",
+    path: `/api/inventory/stock/${DUMMY_ID}/provenance`,
+    group: "Inventory",
+    description: "Per-material provenance drill-down — contributing GRN receipts (read)",
+    guard: "requireWriteRole(supervisor,director) — GET passes for all authed",
+    expected: all(P),
+  },
 
   // ─── Inventory Platform — Material Transfer (read all; write supervisor+director) ─
   {

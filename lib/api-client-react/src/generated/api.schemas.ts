@@ -2582,6 +2582,50 @@ export interface StockBalance {
   quantity: number;
 }
 
+export interface MaterialProvenanceReceipt {
+  grn_id: string;
+  grn_number: string;
+  supplier_id: string;
+  supplier_name: string;
+  received_date: string;
+  grn_line_id: string;
+  received_qty: number;
+  uom: InventoryUom;
+  /** @nullable */
+  inspection_id?: string | null;
+  /** @nullable */
+  inspection_number?: string | null;
+  /**
+     * The GRN line's inspection badge (pending/passed/rejected/partial); null for direct-to-inventory lines
+     * @nullable
+     */
+  inspection_status?: string | null;
+  /** @nullable */
+  accepted_qty?: number | null;
+  /** @nullable */
+  rejected_qty?: number | null;
+  /** Ledger-derived — SUM of available signed txns for this GRN line (receipts + inspection accepts − transfers) */
+  remaining_available_qty: number;
+  /** @nullable */
+  inspector_id?: string | null;
+  /** @nullable */
+  inspector_name?: string | null;
+  /**
+     * Future-ready placeholder — no warehouse-location model exists yet (always null in v1.0)
+     * @nullable
+     */
+  warehouse_location: string | null;
+}
+
+export interface MaterialProvenance {
+  material_id: string;
+  material_code: string;
+  material_name: string;
+  usage_type?: MaterialUsageType;
+  linked_master?: LinkedMasterSummary | null;
+  receipts: MaterialProvenanceReceipt[];
+}
+
 export type SearchParamParameter = string;
 
 export type StatusParamParameter = typeof StatusParamParameter[keyof typeof StatusParamParameter];

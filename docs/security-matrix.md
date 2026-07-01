@@ -134,6 +134,7 @@ unless a minimum role is stated.
 | `/inspections/:id` | GET | ✅ | viewer (read) | global | no | ✅ |
 | `/inspections` | POST | ✅ | **supervisor, director** | global | ✅ (`inspection.completed`) | ✅ (GRN must be posted+uninspected guarded FOR UPDATE inside tx (TOCTOU); grn_id UNIQUE → already-inspected 409; submitted lines must exactly cover pending lines → 400; per-line accepted+rejected==received & both≥0 → 400; rejection_reason required if rejected>0 → 400; atomic ledger writes; NEVER mutates GRN receipt qty/material/uom) |
 | `/stock` | GET | ✅ | viewer (read) | global | no | ✅ (read-only SUM(quantity) projection of the immutable ledger by material+stock_state) |
+| `/stock/:materialId/provenance` | GET | ✅ | viewer (read) | global | no | ✅ (read-only drill-down: contributing posted-GRN receipt lines + supplier + inspection; `remaining_available_qty` DERIVED from signed ledger by source_line_id; no denormalization, no new tables; 404 if material missing) |
 
 > **Incoming Inspection (Inventory Platform v1.0):** a SEPARATE document from the GRN — it records what OCS
 > ACCEPTED vs REJECTED and NEVER modifies the GRN's receipt data (quantity_received/material/supplier/uom stay

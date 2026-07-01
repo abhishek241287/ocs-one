@@ -1,13 +1,14 @@
 import { useMemo, useRef, useState } from "react";
+import { Link } from "wouter";
 import { ColumnDef } from "@tanstack/react-table";
 import AppLayout from "@/layouts/AppLayout";
-import { useListStockBalances } from "@workspace/api-client-react";
-import type { StockBalance } from "@workspace/api-client-react";
+import { useListStockBalances, useGetMaterialProvenance } from "@workspace/api-client-react";
+import type { StockBalance, MaterialProvenanceReceipt } from "@workspace/api-client-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ModuleHeader, OdsToolbar, OdsDataTable } from "@/components/ods";
-import { AlertTriangle } from "lucide-react";
+import { ModuleHeader, OdsToolbar, OdsDataTable, OdsDrawer } from "@/components/ods";
+import { AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
 
 const STATE_LABEL: Record<string, string> = {
   inspection_pending: "Inspection Pending",
@@ -63,6 +64,15 @@ export default function StockPage() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   const activeTab = TABS.find((t) => t.key === tab) ?? TABS[0];
+
+  // Provenance drill-down: click a stock row to see where its stock came from —
+  // every contributing GRN receipt. Read-only, derived server-side (the main page
+  // stays a pure ledger projection; nothing here is denormalized onto stock rows).
+  const [provenanceOf, setProvenanceOf] = useState<StockBalance | null>(null);
+  const { data: provenance, isLoading: provLoading } = useGetMaterialProvenance(
+    provenanceOf?.material_id ?? "",
+    { query: { enabled: !!provenanceOf } } as any,
+  );
 
   const { data, isLoading, isFetching, refetch } = useListStockBalances({
     page,
@@ -223,6 +233,7 @@ export default function StockPage() {
               : "Post a GRN and inspect material to build inventory balances."
           }
           getRowId={(s) => `${s.material_id}:${s.stock_state}`}
+          onRowClick={(s) => setProvenanceOf(s)}
           enableSorting
           enableColumnVisibility
           enableDensity
@@ -247,6 +258,122 @@ export default function StockPage() {
           }
         />
       </div>
+
+      <OdsDrawer
+        open={!!provenanceOf}
+        onClose={() => setProvenanceOf(null)}
+        title="Stock Provenance"
+        description={
+          provenanceOf
+            ? `${provenanceOf.material_code} · ${provenanceOf.material_name} — contributing GRN receipts`
+            : undefined
+        }
+        size="2xl"
+        footer={null}
+      >
+        {provLoading ? (
+          <div className="flex items-center justify-center py-12 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading provenance…
+          </div>
+        ) : !provenance || provenance.receipts.length === 0 ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            No posted GRN receipts contribute to this material yet.
+          </div>
+        ) : (
+          <ProvenanceTable receipts={provenance.receipts} />
+        )}
+      </OdsDrawer>
     </AppLayout>
+  );
+}
+
+const INSPECTION_BADGE: Record<string, string> = {
+  passed: "bg-green-100 text-green-700",
+  rejected: "bg-red-100 text-red-600",
+  partial: "bg-amber-100 text-amber-700",
+  pending: "bg-yellow-100 text-yellow-700",
+};
+
+function ProvenanceTable({ receipts }: { receipts: MaterialProvenanceReceipt[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b text-left text-muted-foreground">
+            <th className="py-2 pr-3 font-medium">GRN</th>
+            <th className="py-2 pr-3 font-medium">Supplier</th>
+            <th className="py-2 pr-3 font-medium">Received</th>
+            <th className="py-2 pr-3 font-medium">Inspection</th>
+            <th className="py-2 pr-3 font-medium text-right">Accepted</th>
+            <th className="py-2 pr-3 font-medium text-right">Rejected</th>
+            <th className="py-2 pr-3 font-medium text-right">Remaining Avail.</th>
+            <th className="py-2 pr-3 font-medium">Inspector</th>
+            <th className="py-2 pr-3 font-medium">Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          {receipts.map((r) => (
+            <tr key={r.grn_line_id} className="border-b last:border-0 align-top">
+              <td className="py-2 pr-3">
+                <Link
+                  href={`/inventory/grns/${r.grn_id}`}
+                  className="inline-flex items-center gap-1 font-mono font-semibold text-blue-700 hover:underline"
+                >
+                  {r.grn_number}
+                  <ExternalLink size={11} />
+                </Link>
+              </td>
+              <td className="py-2 pr-3">{r.supplier_name}</td>
+              <td className="py-2 pr-3 whitespace-nowrap">{r.received_date}</td>
+              <td className="py-2 pr-3">
+                {r.inspection_id ? (
+                  <div className="flex flex-col gap-0.5">
+                    <Link
+                      href={`/inventory/inspections/${r.inspection_id}`}
+                      className="inline-flex items-center gap-1 font-mono text-blue-700 hover:underline"
+                    >
+                      {r.inspection_number}
+                      <ExternalLink size={11} />
+                    </Link>
+                    {r.inspection_status && (
+                      <span
+                        className={`inline-flex w-fit items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+                          INSPECTION_BADGE[r.inspection_status] ?? "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {r.inspection_status}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">Direct to inventory</span>
+                )}
+              </td>
+              <td className="py-2 pr-3 text-right font-mono">
+                {r.accepted_qty != null ? r.accepted_qty : "—"}
+              </td>
+              <td className="py-2 pr-3 text-right font-mono">
+                {r.rejected_qty != null && r.rejected_qty > 0 ? (
+                  <span className="text-red-600 font-semibold">{r.rejected_qty}</span>
+                ) : r.rejected_qty != null ? (
+                  r.rejected_qty
+                ) : (
+                  "—"
+                )}
+              </td>
+              <td className="py-2 pr-3 text-right font-mono font-semibold">
+                {r.remaining_available_qty} {r.uom}
+              </td>
+              <td className="py-2 pr-3">
+                {r.inspector_name ?? <span className="text-muted-foreground">—</span>}
+              </td>
+              <td className="py-2 pr-3">
+                <span className="text-muted-foreground italic">Not tracked</span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

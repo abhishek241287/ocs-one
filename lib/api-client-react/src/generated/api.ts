@@ -163,6 +163,7 @@ import type {
   MaterialMaster,
   MaterialMasterInput,
   MaterialMasterUpdate,
+  MaterialProvenance,
   MaterialTransferDetail,
   MaterialTransferInput,
   MaterialWorkflow,
@@ -12825,6 +12826,83 @@ export function useListStockBalances<TData = Awaited<ReturnType<typeof listStock
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListStockBalancesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMaterialProvenanceUrl = (materialId: string,) => {
+
+
+
+
+  return `/api/inventory/stock/${materialId}/provenance`
+}
+
+/**
+ * @summary Read-only per-material provenance — every contributing GRN receipt, derived from the signed ledger + existing GRN/Inspection records (no denormalization, no new tables)
+ */
+export const getMaterialProvenance = async (materialId: string, options?: RequestInit): Promise<MaterialProvenance> => {
+
+  return customFetch<MaterialProvenance>(getGetMaterialProvenanceUrl(materialId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMaterialProvenanceQueryKey = (materialId: string,) => {
+    return [
+    `/api/inventory/stock/${materialId}/provenance`
+    ] as const;
+    }
+
+
+export const getGetMaterialProvenanceQueryOptions = <TData = Awaited<ReturnType<typeof getMaterialProvenance>>, TError = ErrorType<void>>(materialId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMaterialProvenance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMaterialProvenanceQueryKey(materialId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMaterialProvenance>>> = ({ signal }) => getMaterialProvenance(materialId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: materialId !== null && materialId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMaterialProvenance>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMaterialProvenanceQueryResult = NonNullable<Awaited<ReturnType<typeof getMaterialProvenance>>>
+export type GetMaterialProvenanceQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read-only per-material provenance — every contributing GRN receipt, derived from the signed ledger + existing GRN/Inspection records (no denormalization, no new tables)
+ */
+
+export function useGetMaterialProvenance<TData = Awaited<ReturnType<typeof getMaterialProvenance>>, TError = ErrorType<void>>(
+ materialId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMaterialProvenance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMaterialProvenanceQueryOptions(materialId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

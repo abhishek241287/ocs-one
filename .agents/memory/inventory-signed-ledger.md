@@ -25,3 +25,11 @@ an immutable history, and concurrent writers must net correctly without lost upd
 - Separation of records: a receipt record (GRN) is immutable once posted; a downstream
   decision (Inspection) records its own outcome and only *reflects* a status badge back —
   it never edits the receipt's quantities/material/supplier/uom.
+- Per-receipt provenance (drill-down): reconstruct *remaining-available per GRN line* with a
+  grouped `SUM(quantity)` over `inventory_transactions` filtered `stock_state='available'`
+  keyed by `source_line_id` (the originating GRN line) — the same signed rows already carry
+  `source_line_id` on every txn type, so this nets correctly and SUM-across-lines reconciles
+  exactly to the material's aggregated `available` stock row. Build provenance as a pure
+  read-only projection joining GRN→supplier→inspection→inspector; NEVER denormalize
+  supplier/GRN/inspection into stock rows or add a table. Join fan-out is safe because
+  `incoming_inspections.grn_id` and `incoming_inspection_lines.grn_line_id` are UNIQUE.

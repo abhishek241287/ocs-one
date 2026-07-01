@@ -6889,6 +6889,46 @@ export const ListStockBalancesResponse = zod.object({
 
 
 /**
+ * @summary Read-only per-material provenance — every contributing GRN receipt, derived from the signed ledger + existing GRN/Inspection records (no denormalization, no new tables)
+ */
+export const GetMaterialProvenanceParams = zod.object({
+  "materialId": zod.coerce.string().uuid()
+})
+
+export const GetMaterialProvenanceResponse = zod.object({
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string(),
+  "material_name": zod.string(),
+  "usage_type": zod.enum(['INVENTORY_COMPONENT', 'CONSUMABLE', 'PACKAGING', 'SERVICE_ITEM']).optional(),
+  "linked_master": zod.object({
+  "type": zod.enum(['CELL', 'BMS', 'CABLE', 'BUSBAR', 'CONNECTOR', 'CHARGER', 'CABINET']),
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string()
+}).nullish(),
+  "receipts": zod.array(zod.object({
+  "grn_id": zod.string().uuid(),
+  "grn_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_name": zod.string(),
+  "received_date": zod.string(),
+  "grn_line_id": zod.string().uuid(),
+  "received_qty": zod.number(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "inspection_id": zod.string().uuid().nullish(),
+  "inspection_number": zod.string().nullish(),
+  "inspection_status": zod.string().nullish().describe('The GRN line\'s inspection badge (pending\/passed\/rejected\/partial); null for direct-to-inventory lines'),
+  "accepted_qty": zod.number().nullish(),
+  "rejected_qty": zod.number().nullish(),
+  "remaining_available_qty": zod.number().describe('Ledger-derived — SUM of available signed txns for this GRN line (receipts + inspection accepts − transfers)'),
+  "inspector_id": zod.string().uuid().nullish(),
+  "inspector_name": zod.string().nullish(),
+  "warehouse_location": zod.string().nullable().describe('Future-ready placeholder — no warehouse-location model exists yet (always null in v1.0)')
+}))
+})
+
+
+/**
  * @summary Available cell-category stock, netted per GRN line, eligible for transfer into Cell Processing
  */
 export const ListCellStockQueryParams = zod.object({

@@ -1,6 +1,16 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { eq, asc, sql, and, or, ilike, count, type SQL } from "drizzle-orm";
-import { db, materialsTable, inventoryTransactionsTable } from "@workspace/db";
+import { eq, asc, desc, sql, and, or, ilike, count, inArray, type SQL } from "drizzle-orm";
+import {
+  db,
+  materialsTable,
+  inventoryTransactionsTable,
+  grnHeadersTable,
+  grnLineItemsTable,
+  suppliersTable,
+  incomingInspectionsTable,
+  incomingInspectionLinesTable,
+  usersTable,
+} from "@workspace/db";
 import { requireWriteRole } from "../../middleware/auth";
 import {
   resolveLinkedMaster,
@@ -158,6 +168,135 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
       pageSize,
       totalPages: Math.max(1, Math.ceil(total / pageSize)),
     },
+  });
+});
+
+// ─── Per-material provenance drill-down (read-only) ──────────────────────────
+// Answers "where did this material's stock come from?" WITHOUT denormalizing
+// Supplier/GRN/Inspection onto stock rows (the main page stays a pure ledger
+// projection). One row per contributing posted-GRN receipt line, joined to its
+// supplier + (if any) incoming inspection. `remaining_available_qty` is DERIVED
+// from the signed ledger by source_line_id — the exact pattern the cell-stock
+// transfer picker already proves — so it nets receipts + inspection accepts −
+// transfers with NO new tables and NO change to inventory calculations.
+router.get("/:materialId/provenance", async (req: Request, res: Response): Promise<void> => {
+  const materialId = String(req.params.materialId);
+
+  const [material] = await db
+    .select({
+      id: materialsTable.id,
+      code: materialsTable.code,
+      name: materialsTable.name,
+      usage_type: materialsTable.usageType,
+      linked_master_type: materialsTable.linkedMasterType,
+      linked_master_id: materialsTable.linkedMasterId,
+    })
+    .from(materialsTable)
+    .where(eq(materialsTable.id, materialId))
+    .limit(1);
+
+  if (!material) {
+    res.status(404).json({ error: "Material not found" });
+    return;
+  }
+
+  // Every posted-GRN receipt line for this material, with supplier + inspection
+  // context. One inspection per GRN (grn_id UNIQUE) and one inspection line per
+  // GRN line, so these LEFT JOINs never fan out a receipt row.
+  const receipts = await db
+    .select({
+      grn_id: grnHeadersTable.id,
+      grn_number: grnHeadersTable.grnNumber,
+      received_date: grnHeadersTable.receivedDate,
+      supplier_id: suppliersTable.id,
+      supplier_name: suppliersTable.name,
+      grn_line_id: grnLineItemsTable.id,
+      received_qty: grnLineItemsTable.quantityReceived,
+      uom: grnLineItemsTable.uom,
+      inspection_status: grnLineItemsTable.inspectionStatus,
+      inspection_id: incomingInspectionsTable.id,
+      inspection_number: incomingInspectionsTable.inspectionNumber,
+      inspector_id: usersTable.id,
+      inspector_name: usersTable.name,
+      accepted_qty: incomingInspectionLinesTable.acceptedQty,
+      rejected_qty: incomingInspectionLinesTable.rejectedQty,
+    })
+    .from(grnLineItemsTable)
+    .innerJoin(
+      grnHeadersTable,
+      and(eq(grnHeadersTable.id, grnLineItemsTable.grnId), eq(grnHeadersTable.status, "posted")),
+    )
+    .innerJoin(suppliersTable, eq(suppliersTable.id, grnHeadersTable.supplierId))
+    .leftJoin(
+      incomingInspectionLinesTable,
+      eq(incomingInspectionLinesTable.grnLineId, grnLineItemsTable.id),
+    )
+    .leftJoin(
+      incomingInspectionsTable,
+      eq(incomingInspectionsTable.id, incomingInspectionLinesTable.inspectionId),
+    )
+    .leftJoin(usersTable, eq(usersTable.id, incomingInspectionsTable.inspectedBy))
+    .where(eq(grnLineItemsTable.materialId, materialId))
+    .orderBy(desc(grnHeadersTable.receivedDate), desc(grnHeadersTable.grnNumber));
+
+  // Ledger-derived remaining AVAILABLE per contributing GRN line: SUM of signed
+  // 'available' txns keyed on source_line_id (receipts + inspection accepts are
+  // positive, transfers out are negative). Never overwritten — always projected.
+  const lineIds = receipts.map((r) => r.grn_line_id);
+  const availableByLine = new Map<string, number>();
+  if (lineIds.length) {
+    const balances = await db
+      .select({
+        source_line_id: inventoryTransactionsTable.sourceLineId,
+        available: sql<string>`sum(${inventoryTransactionsTable.quantity})`,
+      })
+      .from(inventoryTransactionsTable)
+      .where(
+        and(
+          inArray(inventoryTransactionsTable.sourceLineId, lineIds),
+          eq(inventoryTransactionsTable.stockState, "available"),
+        ),
+      )
+      .groupBy(inventoryTransactionsTable.sourceLineId);
+    for (const b of balances) {
+      availableByLine.set(b.source_line_id, Number(b.available));
+    }
+  }
+
+  const linkedMaster: LinkedMasterSummary | null =
+    material.linked_master_type && material.linked_master_id
+      ? await resolveLinkedMaster(
+          material.linked_master_type as LinkedMasterType,
+          material.linked_master_id,
+        )
+      : null;
+
+  res.json({
+    material_id: material.id,
+    material_code: material.code,
+    material_name: material.name,
+    usage_type: material.usage_type ?? null,
+    linked_master: linkedMaster,
+    receipts: receipts.map((r) => ({
+      grn_id: r.grn_id,
+      grn_number: r.grn_number,
+      supplier_id: r.supplier_id,
+      supplier_name: r.supplier_name,
+      received_date: r.received_date,
+      grn_line_id: r.grn_line_id,
+      received_qty: Number(r.received_qty),
+      uom: r.uom,
+      inspection_id: r.inspection_id ?? null,
+      inspection_number: r.inspection_number ?? null,
+      inspection_status: r.inspection_status ?? null,
+      accepted_qty: r.accepted_qty != null ? Number(r.accepted_qty) : null,
+      rejected_qty: r.rejected_qty != null ? Number(r.rejected_qty) : null,
+      remaining_available_qty: availableByLine.get(r.grn_line_id) ?? 0,
+      inspector_id: r.inspector_id ?? null,
+      inspector_name: r.inspector_name ?? null,
+      // Future-ready: no warehouse-location model exists yet (always null in v1.0).
+      warehouse_location: null,
+    })),
   });
 });
 

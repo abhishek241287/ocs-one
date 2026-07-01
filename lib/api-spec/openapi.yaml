@@ -3375,6 +3375,25 @@ paths:
                   meta:
                     $ref: "#/components/schemas/MasterListMeta"
 
+  /inventory/stock/{materialId}/provenance:
+    get:
+      operationId: getMaterialProvenance
+      tags: [inventory]
+      summary: Read-only per-material provenance — every contributing GRN receipt, derived from the signed ledger + existing GRN/Inspection records (no denormalization, no new tables)
+      parameters:
+        - name: materialId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Material provenance — contributing GRN receipts with supplier, inspection, and ledger-derived remaining available
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialProvenance" }
+        "404":
+          description: Material not found
+
   /inventory/cell-stock:
     get:
       operationId: listCellStock
@@ -5712,3 +5731,48 @@ components:
         uom: { $ref: "#/components/schemas/InventoryUom" }
         stock_state: { type: string, enum: [inspection_pending, available, rejected] }
         quantity: { type: number }
+
+    # ─── Per-material provenance drill-down (read-only) ─────────────────────────
+    # One row per contributing GRN receipt line for a material. Derived entirely from
+    # the signed inventory ledger + existing GRN/Inspection records — NO denormalization
+    # onto stock rows, NO new tables, NO change to inventory calculations.
+    MaterialProvenanceReceipt:
+      type: object
+      required: [grn_id, grn_number, supplier_id, supplier_name, received_date, grn_line_id, received_qty, remaining_available_qty, uom, warehouse_location]
+      properties:
+        grn_id: { type: string, format: uuid }
+        grn_number: { type: string }
+        supplier_id: { type: string, format: uuid }
+        supplier_name: { type: string }
+        received_date: { type: string }
+        grn_line_id: { type: string, format: uuid }
+        received_qty: { type: number }
+        uom: { $ref: "#/components/schemas/InventoryUom" }
+        inspection_id: { type: ["string", "null"], format: uuid }
+        inspection_number: { type: ["string", "null"] }
+        inspection_status:
+          type: ["string", "null"]
+          description: The GRN line's inspection badge (pending/passed/rejected/partial); null for direct-to-inventory lines
+        accepted_qty: { type: ["number", "null"] }
+        rejected_qty: { type: ["number", "null"] }
+        remaining_available_qty:
+          type: number
+          description: Ledger-derived — SUM of available signed txns for this GRN line (receipts + inspection accepts − transfers)
+        inspector_id: { type: ["string", "null"], format: uuid }
+        inspector_name: { type: ["string", "null"] }
+        warehouse_location:
+          type: ["string", "null"]
+          description: Future-ready placeholder — no warehouse-location model exists yet (always null in v1.0)
+
+    MaterialProvenance:
+      type: object
+      required: [material_id, material_code, material_name, receipts]
+      properties:
+        material_id: { type: string, format: uuid }
+        material_code: { type: string }
+        material_name: { type: string }
+        usage_type: { $ref: "#/components/schemas/MaterialUsageType" }
+        linked_master: { $ref: "#/components/schemas/LinkedMasterSummary" }
+        receipts:
+          type: array
+          items: { $ref: "#/components/schemas/MaterialProvenanceReceipt" }

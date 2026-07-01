@@ -230,6 +230,8 @@ export * from './materialMasterUom';
 export * from './materialMasterUpdate';
 export * from './materialMasterUpdateUom';
 export * from './materialPostReceiptAction';
+export * from './materialProvenance';
+export * from './materialProvenanceReceipt';
 export * from './materialTransfer';
 export * from './materialTransferConsumer';
 export * from './materialTransferDetail';
