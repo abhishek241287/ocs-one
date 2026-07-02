@@ -10,7 +10,7 @@ const router: IRouter = Router();
 // Category → Workflow assignment is platform routing config: reads pass for any authed
 // user; writes (the PUT upsert) are director-only (mirrors Material Workflow / Category
 // governance).
-router.use(requireWriteRole("director"));
+router.use(requireWriteRole("owner", "director"));
 
 function serialize(a: Record<string, any>) {
   return {

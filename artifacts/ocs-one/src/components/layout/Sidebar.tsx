@@ -307,9 +307,18 @@ export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCo
     if (el) sessionStorage.setItem(SIDEBAR_SCROLL_KEY, String(el.scrollTop));
   };
 
-  const visibleSections = navSections.filter(
-    (section) => !section.directorOnly || user?.role === "director"
-  );
+  // Dealer is an external portal principal — blocked from every factory route, so it
+  // sees no factory navigation. Director-only sections are also visible to the owner
+  // (the unrestricted super-admin).
+  const visibleSections =
+    user?.role === "dealer"
+      ? []
+      : navSections.filter(
+          (section) =>
+            !section.directorOnly ||
+            user?.role === "director" ||
+            user?.role === "owner"
+        );
 
   return (
     <aside

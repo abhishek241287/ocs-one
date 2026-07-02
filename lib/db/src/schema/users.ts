@@ -8,11 +8,18 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
+// Six-role RBAC (Factory Ready v1.0). New values are APPENDED (not reordered) so a
+// `drizzle-kit push` is a simple ALTER TYPE ... ADD VALUE — enum ordinal position is
+// irrelevant because all authorization compares the role by string, never by order.
+// owner  = unrestricted platform administrator (exactly one, the seed admin).
+// dealer = external portal-only role with NO factory access (Dealer Portal v2 later).
 export const userRoleEnum = pgEnum("user_role", [
   "director",
   "supervisor",
   "operator",
   "viewer",
+  "owner",
+  "dealer",
 ]);
 
 export const usersTable = pgTable(

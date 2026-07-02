@@ -14,7 +14,7 @@ const router = createMasterRouter({
   inputSchema: CreateMaterialCategoryBody,
   updateSchema: UpdateMaterialCategoryBody,
   resourceName: "Material Category",
-  writeRoles: ["director"],
+  writeRoles: ["owner", "director"],
 });
 
 export default router;

@@ -247,7 +247,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
 // the same model that collides on UNIQUE(model_id, revision) surfaces as 409.
 router.post(
   "/",
-  requireRole("supervisor", "director"),
+  requireRole("owner", "director"),
   async (req: Request, res: Response): Promise<void> => {
     const parsed = CreateBomBody.safeParse(req.body);
     if (!parsed.success) {
@@ -324,7 +324,7 @@ router.post(
 // ─── PUT /boms/:id — update a draft BOM (draft only; replaces header + lines) ──
 router.put(
   "/:id",
-  requireRole("supervisor", "director"),
+  requireRole("owner", "director"),
   async (req: Request, res: Response): Promise<void> => {
     const parsed = UpdateBomBody.safeParse(req.body);
     if (!parsed.success) {
@@ -385,7 +385,7 @@ router.put(
 // ─── DELETE /boms/:id — delete a draft BOM (draft only; lines cascade) ─────────
 router.delete(
   "/:id",
-  requireRole("supervisor", "director"),
+  requireRole("owner", "director"),
   async (req: Request, res: Response): Promise<void> => {
     const id = req.params.id as string;
     const result = await db.transaction(async (tx) => {
@@ -416,7 +416,7 @@ router.delete(
 // ─── POST /boms/:id/approve — draft → approved (records approver + timestamp) ──
 router.post(
   "/:id/approve",
-  requireRole("supervisor", "director"),
+  requireRole("owner", "director"),
   async (req: Request, res: Response): Promise<void> => {
     const id = req.params.id as string;
     const actor = req.user?.email ?? "unknown";
@@ -454,7 +454,7 @@ router.post(
 // ─── POST /boms/:id/obsolete — approved → obsolete ────────────────────────────
 router.post(
   "/:id/obsolete",
-  requireRole("supervisor", "director"),
+  requireRole("owner", "director"),
   async (req: Request, res: Response): Promise<void> => {
     const id = req.params.id as string;
 

@@ -530,7 +530,7 @@ export function validateConfig(snap: ConfigSnapshot): ConfigValidation {
     `${PRINCIPALS.length} principals each`,
     missingPrincipals.length === 0 ? "complete" : `gaps: ${missingPrincipals.join(", ")}`,
     missingPrincipals.length === 0
-      ? "Each endpoint defines an expected outcome for all 5 principals."
+      ? `Each endpoint defines an expected outcome for all ${PRINCIPALS.length} principals.`
       : `Endpoints missing principal coverage: ${missingPrincipals.join(", ")}.`,
   );
 

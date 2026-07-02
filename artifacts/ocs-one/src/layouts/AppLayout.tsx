@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
-  const { isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -26,6 +26,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return null;
+  }
+
+  // Dealer is an external portal principal — blocked from every factory route on the
+  // backend (denyDealerFactoryAccess). No dealer portal exists this sprint, so show a
+  // clear notice instead of rendering factory pages that would only 403.
+  if (user?.role === "dealer") {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-3 bg-background px-6 text-center">
+        <h1 className="text-xl font-semibold text-foreground">Dealer access</h1>
+        <p className="max-w-md text-sm text-muted-foreground">
+          Your account does not have access to the factory operations console. The
+          dealer portal is not yet available.
+        </p>
+      </div>
+    );
   }
 
   return (

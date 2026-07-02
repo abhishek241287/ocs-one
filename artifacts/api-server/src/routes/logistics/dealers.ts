@@ -15,7 +15,7 @@ import {
 const router: IRouter = Router();
 
 // RBAC (DEF-M06-001): dealer management — supervisor, director only.
-router.use(requireWriteRole("supervisor", "director"));
+router.use(requireWriteRole("owner", "director"));
 
 // GET /logistics/dealers
 router.get("/", async (req, res) => {

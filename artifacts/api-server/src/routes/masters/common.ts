@@ -114,8 +114,9 @@ export function createMasterRouter<
   resourceName: string;
   /**
    * Roles allowed to WRITE (POST/PUT/PATCH/DELETE). Reads (GET/HEAD) pass for any
-   * authed user. Defaults to the standard masters policy (supervisor, director).
-   * Product Category / Workflow masters narrow this to director-only.
+   * authed user. Defaults to the master-governance policy (owner, director) — under
+   * six-role RBAC all master writes are Owner/Director only; supervisors are
+   * read-only on masters. Owner also passes unconditionally at the middleware.
    */
   writeRoles?: Parameters<typeof requireWriteRole>;
   /** Custom write validation / value derivation (see MasterWriteHook). */
@@ -125,7 +126,7 @@ export function createMasterRouter<
 }) {
   const router: IRouter = Router();
   const { table, inputSchema, updateSchema, resourceName } = options;
-  const writeRoles = options.writeRoles ?? ["supervisor", "director"];
+  const writeRoles = options.writeRoles ?? ["owner", "director"];
 
   // RBAC (DEF-M06-001): masters CRUD writes gated; reads open to any authed user.
   router.use(requireWriteRole(...writeRoles));

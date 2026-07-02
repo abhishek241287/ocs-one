@@ -83,6 +83,11 @@ export function requireRole(...roles: UserRole[]) {
       res.status(401).json({ error: "Authentication required" });
       return;
     }
+    // Owner is unrestricted — passes every role gate (six-role RBAC).
+    if (req.user.role === "owner") {
+      next();
+      return;
+    }
     if (!roles.includes(req.user.role)) {
       recordDenial(req, roles);
       res.status(403).json({ error: `Access denied. Required role: ${roles.join(" or ")}` });
@@ -110,6 +115,11 @@ export function requireWriteRole(...roles: UserRole[]) {
       res.status(401).json({ error: "Authentication required" });
       return;
     }
+    // Owner is unrestricted — passes every write gate (six-role RBAC).
+    if (req.user.role === "owner") {
+      next();
+      return;
+    }
     if (!roles.includes(req.user.role)) {
       recordDenial(req, roles);
       res.status(403).json({ error: `Access denied. Required role: ${roles.join(" or ")}` });
@@ -117,6 +127,31 @@ export function requireWriteRole(...roles: UserRole[]) {
     }
     next();
   };
+}
+
+/**
+ * Dealer is an external portal-only role (Factory Ready v1.0): it may authenticate
+ * and read its own session (/auth/me) but has NO access to any factory module.
+ * Mount this globally right after requireAuth so EVERY factory route — reads
+ * included — returns 403 for a dealer. Dealer self-service data (scoped inventory /
+ * dispatch history) is Dealer Portal v2, out of scope this sprint.
+ */
+export function denyDealerFactoryAccess(req: Request, res: Response, next: NextFunction): void {
+  if (req.user?.role === "dealer") {
+    void recordSecurityEvent({
+      eventType: "authz.denied",
+      severity: "warning",
+      actorId: req.user.userId,
+      actorEmail: req.user.email,
+      actorRole: req.user.role,
+      ...reqMeta(req),
+      statusCode: 403,
+      detail: "Dealer role has no factory access (Dealer Portal only)",
+    });
+    res.status(403).json({ error: "Access denied. Dealer accounts cannot access factory modules." });
+    return;
+  }
+  next();
 }
 
 export function signToken(payload: Omit<AuthTokenPayload, "iat" | "exp">): string {

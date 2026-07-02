@@ -8,17 +8,21 @@
 
 export type AuthzOutcome = "pass" | "forbidden" | "unauthorized";
 export type Principal =
+  | "owner"
   | "director"
   | "supervisor"
   | "operator"
   | "viewer"
+  | "dealer"
   | "anonymous";
 
 export const PRINCIPALS: Principal[] = [
+  "owner",
   "director",
   "supervisor",
   "operator",
   "viewer",
+  "dealer",
   "anonymous",
 ];
 
@@ -47,11 +51,18 @@ const P: AuthzOutcome = "pass";
 const F: AuthzOutcome = "forbidden";
 const U: AuthzOutcome = "unauthorized";
 
+// Owner is unrestricted (passes every gate) and Dealer has NO factory access
+// (blocked globally by denyDealerFactoryAccess) — so both are FIXED in every helper:
+// owner = P, dealer = F. The one exception is /auth/me (dealer may read its own
+// session), which is expressed with an explicit literal below. The 4-arg signatures
+// are preserved so existing call sites need no change.
 const all = (o: AuthzOutcome, anon: AuthzOutcome = U): Record<Principal, AuthzOutcome> => ({
+  owner: P,
   director: o,
   supervisor: o,
   operator: o,
   viewer: o,
+  dealer: F,
   anonymous: anon,
 });
 
@@ -62,10 +73,12 @@ const roles = (
   viewer: AuthzOutcome,
   anonymous: AuthzOutcome = U,
 ): Record<Principal, AuthzOutcome> => ({
+  owner: P,
   director,
   supervisor,
   operator,
   viewer,
+  dealer: F,
   anonymous,
 });
 
@@ -77,8 +90,10 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: "/api/auth/me",
     group: "Auth",
     description: "Current session identity",
-    guard: "requireAuth",
-    expected: all(P),
+    guard: "requireAuth (dealer may read its own session)",
+    // Explicit: dealer is the ONLY non-auth.me exception — it may read /auth/me even
+    // though it is blocked from every factory route.
+    expected: { owner: P, director: P, supervisor: P, operator: P, viewer: P, dealer: P, anonymous: U },
   },
   {
     id: "auth.register",
@@ -86,9 +101,11 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: "/api/auth/register",
     group: "Auth",
     description: "Create a user account",
-    guard: "requireAuth + requireRole(director)",
+    guard: "requireAuth + requireRole(owner,director,supervisor) + creation-hierarchy",
     body: {},
-    expected: roles(P, F, F, F),
+    // owner/director/supervisor pass the gate (hierarchy enforced inside the handler);
+    // operator/viewer are 403; dealer 403 (requireRole); anonymous 401.
+    expected: roles(P, P, F, F),
   },
 
   // ─── Read-everywhere dashboards/lists (requireAuth only) ─────────────────────
@@ -163,9 +180,9 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: "/api/masters/products",
     group: "Masters",
     description: "Create product master (write)",
-    guard: "requireWriteRole(supervisor,director)",
+    guard: "requireWriteRole(owner,director)",
     body: {},
-    expected: roles(P, P, F, F),
+    expected: roles(P, F, F, F),
   },
   {
     id: "masters.cells.create",
@@ -173,9 +190,9 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: "/api/masters/cells",
     group: "Masters",
     description: "Create cell master (write)",
-    guard: "requireWriteRole(supervisor,director)",
+    guard: "requireWriteRole(owner,director)",
     body: {},
-    expected: roles(P, P, F, F),
+    expected: roles(P, F, F, F),
   },
 
   // ─── Unified Product Platform masters (read all; write DIRECTOR-only) ─────────
@@ -255,9 +272,9 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: "/api/masters/materials",
     group: "Masters",
     description: "Create material master (write)",
-    guard: "requireWriteRole(supervisor,director)",
+    guard: "requireWriteRole(owner,director)",
     body: {},
-    expected: roles(P, P, F, F),
+    expected: roles(P, F, F, F),
   },
 
   // ─── Inventory Platform — Supplier Master (read all; write supervisor+director) ─
@@ -276,9 +293,9 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: "/api/masters/suppliers",
     group: "Masters",
     description: "Create supplier (write)",
-    guard: "requireWriteRole(supervisor,director)",
+    guard: "requireWriteRole(owner,director)",
     body: {},
-    expected: roles(P, P, F, F),
+    expected: roles(P, F, F, F),
   },
 
   // ─── Inventory Platform — Material Workflow master (read all; write director) ──
@@ -920,9 +937,9 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: "/api/logistics/dealers",
     group: "Logistics",
     description: "Create dealer",
-    guard: "requireWriteRole(supervisor,director)",
+    guard: "requireWriteRole(owner,director)",
     body: {},
-    expected: roles(P, P, F, F),
+    expected: roles(P, F, F, F),
   },
   {
     id: "logistics.dispatch.create",
@@ -1051,9 +1068,9 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: "/api/boms",
     group: "BOM",
     description: "Create a draft BOM (write)",
-    guard: "requireRole(supervisor,director)",
+    guard: "requireRole(owner,director)",
     body: {},
-    expected: roles(P, P, F, F),
+    expected: roles(P, F, F, F),
   },
   {
     id: "bom.update",
@@ -1061,9 +1078,9 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: `/api/boms/${DUMMY_ID}`,
     group: "BOM",
     description: "Update a draft BOM (write)",
-    guard: "requireRole(supervisor,director)",
+    guard: "requireRole(owner,director)",
     body: {},
-    expected: roles(P, P, F, F),
+    expected: roles(P, F, F, F),
   },
   {
     id: "bom.delete",
@@ -1071,8 +1088,8 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: `/api/boms/${DUMMY_ID}`,
     group: "BOM",
     description: "Delete a draft BOM (write)",
-    guard: "requireRole(supervisor,director)",
-    expected: roles(P, P, F, F),
+    guard: "requireRole(owner,director)",
+    expected: roles(P, F, F, F),
   },
   {
     id: "bom.approve",
@@ -1080,9 +1097,9 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: `/api/boms/${DUMMY_ID}/approve`,
     group: "BOM",
     description: "Approve a draft BOM (write)",
-    guard: "requireRole(supervisor,director)",
+    guard: "requireRole(owner,director)",
     body: {},
-    expected: roles(P, P, F, F),
+    expected: roles(P, F, F, F),
   },
   {
     id: "bom.obsolete",
@@ -1090,9 +1107,9 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: `/api/boms/${DUMMY_ID}/obsolete`,
     group: "BOM",
     description: "Mark an approved BOM obsolete (write)",
-    guard: "requireRole(supervisor,director)",
+    guard: "requireRole(owner,director)",
     body: {},
-    expected: roles(P, P, F, F),
+    expected: roles(P, F, F, F),
   },
 
   // ─── Imported Product Creation (G1) — write supervisor+director ────────────────

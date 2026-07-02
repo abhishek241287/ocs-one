@@ -13,7 +13,7 @@ const router = createMasterRouter({
   inputSchema: CreateProductCategoryBody,
   updateSchema: UpdateProductCategoryBody,
   resourceName: "Product Category",
-  writeRoles: ["director"],
+  writeRoles: ["owner", "director"],
 });
 
 export default router;

@@ -1,7 +1,8 @@
 // ─── SS-02 — Automated authorization regression suite ─────────────────────────
 // Permanent RBAC certification test. For EVERY protected endpoint in the
 // authorization matrix (lib/authz-matrix.ts), this suite logs in as each of the
-// five principals (director / supervisor / operator / viewer / anonymous), issues
+// seven principals (owner / director / supervisor / operator / viewer / dealer /
+// anonymous), issues
 // the real request against the live server, and asserts the observed outcome
 // matches the documented expectation:
 //   - "pass"         → status is NOT 401 and NOT 403 (the guard let the request
@@ -11,9 +12,9 @@
 //   - "forbidden"    → status 403
 //   - "unauthorized" → status 401
 //
-// Any mismatch fails certification (process exits non-zero). The suite creates
-// its own temporary supervisor/operator/viewer accounts via the director-only
-// register endpoint and deletes them on exit, so it leaves no residue.
+// Any mismatch fails certification (process exits non-zero). The suite creates its
+// own temporary director/supervisor/operator/viewer/dealer accounts via the
+// owner-seeded register endpoint and deletes them on exit, so it leaves no residue.
 //
 // Run:  pnpm --filter @workspace/api-server run test:authz
 // Env:  CERT_BASE_URL (default http://localhost:80)
@@ -32,16 +33,22 @@ import {
 } from "../lib/authz-matrix";
 
 const BASE_URL = (process.env.CERT_BASE_URL ?? "http://localhost:80").replace(/\/$/, "");
-const DIRECTOR_EMAIL = process.env.CERT_DIRECTOR_EMAIL ?? "admin@ocs.local";
-const DIRECTOR_PASSWORD = process.env.CERT_DIRECTOR_PASSWORD ?? "OCS@Admin2026!";
+// The seed admin is the platform Owner (promoted at startup). CERT_OWNER_* is
+// preferred; CERT_DIRECTOR_* is still honoured for backward compatibility.
+const OWNER_EMAIL = process.env.CERT_OWNER_EMAIL ?? process.env.CERT_DIRECTOR_EMAIL ?? "admin@ocs.local";
+const OWNER_PASSWORD = process.env.CERT_OWNER_PASSWORD ?? process.env.CERT_DIRECTOR_PASSWORD ?? "OCS@Admin2026!";
 const FORCE_FAIL = process.env.CERT_FORCE_FAIL ?? null;
 
-// Temporary principals created for the run. Director re-uses the seed admin.
+// Temporary principals created for the run. Owner re-uses the seed admin; the rest —
+// including a real director and an external dealer — are provisioned by the owner via
+// the register endpoint and torn down on exit.
 const TEMP_PASSWORD = "SS02!Cert#Temp2026";
-const TEMP_USERS: { role: Exclude<Principal, "director" | "anonymous">; email: string; name: string }[] = [
+const TEMP_USERS: { role: Exclude<Principal, "owner" | "anonymous">; email: string; name: string }[] = [
+  { role: "director", email: "ss02.director@cert.local", name: "SS02 Director" },
   { role: "supervisor", email: "ss02.supervisor@cert.local", name: "SS02 Supervisor" },
   { role: "operator", email: "ss02.operator@cert.local", name: "SS02 Operator" },
   { role: "viewer", email: "ss02.viewer@cert.local", name: "SS02 Viewer" },
+  { role: "dealer", email: "ss02.dealer@cert.local", name: "SS02 Dealer" },
 ];
 
 type CookieJar = string | null; // the ocs_token cookie value, or null for anon
@@ -87,11 +94,11 @@ async function login(email: string, password: string): Promise<CookieJar> {
   return jar;
 }
 
-async function ensureTempUsers(directorJar: CookieJar): Promise<void> {
+async function ensureTempUsers(ownerJar: CookieJar): Promise<void> {
   for (const u of TEMP_USERS) {
     const res = await fetchResilient(`${BASE_URL}/api/auth/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Cookie: directorJar ?? "" },
+      headers: { "Content-Type": "application/json", Cookie: ownerJar ?? "" },
       body: JSON.stringify({
         name: u.name,
         email: u.email,
@@ -170,19 +177,23 @@ async function main(): Promise<void> {
   console.log("─".repeat(72));
 
   const jars: Record<Principal, CookieJar> = {
+    owner: null,
     director: null,
     supervisor: null,
     operator: null,
     viewer: null,
+    dealer: null,
     anonymous: null,
   };
 
   try {
-    jars.director = await login(DIRECTOR_EMAIL, DIRECTOR_PASSWORD);
-    await ensureTempUsers(jars.director);
+    jars.owner = await login(OWNER_EMAIL, OWNER_PASSWORD);
+    await ensureTempUsers(jars.owner);
+    jars.director = await login("ss02.director@cert.local", TEMP_PASSWORD);
     jars.supervisor = await login("ss02.supervisor@cert.local", TEMP_PASSWORD);
     jars.operator = await login("ss02.operator@cert.local", TEMP_PASSWORD);
     jars.viewer = await login("ss02.viewer@cert.local", TEMP_PASSWORD);
+    jars.dealer = await login("ss02.dealer@cert.local", TEMP_PASSWORD);
 
     const results: Result[] = [];
     for (const endpoint of AUTHZ_MATRIX) {

@@ -306,7 +306,8 @@ export async function seedDatabase(): Promise<void> {
     ON CONFLICT (dealer_code) DO NOTHING;
   `);
 
-  // Seed default director account if no users exist
+  // Seed default OWNER account if no users exist. Six-role RBAC (Factory Ready v1.0):
+  // the seed administrator is the single unrestricted platform Owner.
   const [existing] = await db
     .select({ id: usersTable.id })
     .from(usersTable)
@@ -321,7 +322,7 @@ export async function seedDatabase(): Promise<void> {
       email,
       passwordHash,
       name: "System Administrator",
-      role: "director",
+      role: "owner",
     });
 
     logger.warn(
@@ -334,5 +335,18 @@ export async function seedDatabase(): Promise<void> {
         "⚠️  ADMIN_PASSWORD not set — default password in use. This must be changed before production."
       );
     }
+  }
+
+  // Six-role RBAC migration (idempotent): promote a pre-existing seed administrator
+  // — created as "director" before this release — to "owner", so exactly one
+  // unrestricted Owner always exists. Matches on the seed admin email only, and only
+  // when it is still a director, so it never clobbers a deliberately-assigned role.
+  const adminEmail = (process.env.ADMIN_EMAIL ?? "admin@ocs.local").toLowerCase();
+  const promoted = await pool.query(
+    `UPDATE users SET role = 'owner' WHERE lower(email) = $1 AND role = 'director'`,
+    [adminEmail],
+  );
+  if (promoted.rowCount && promoted.rowCount > 0) {
+    logger.warn({ email: adminEmail }, "Promoted seed administrator to Owner (six-role RBAC).");
   }
 }

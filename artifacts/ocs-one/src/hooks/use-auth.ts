@@ -4,7 +4,7 @@ export interface AuthUser {
   userId: string;
   email: string;
   name: string;
-  role: "director" | "supervisor" | "operator" | "viewer";
+  role: "owner" | "director" | "supervisor" | "operator" | "viewer" | "dealer";
 }
 
 const AUTH_KEY = ["auth", "me"] as const;

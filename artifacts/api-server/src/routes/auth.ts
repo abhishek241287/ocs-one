@@ -6,8 +6,21 @@ import { requireAuth, requireRole, signToken, decodeAuthCookie } from "../middle
 import { COOKIE_NAME, COOKIE_OPTIONS } from "../lib/security-config";
 import { recordSecurityEvent, reqMeta } from "../lib/security-events";
 
-const ASSIGNABLE_ROLES = ["director", "supervisor", "operator", "viewer"] as const;
+const ASSIGNABLE_ROLES = ["owner", "director", "supervisor", "operator", "viewer", "dealer"] as const;
 type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
+
+// Six-role RBAC user-creation hierarchy (Factory Ready v1.0). Maps a CREATOR's
+// role → the roles they may assign. Only Owner may create/promote another Owner;
+// Director runs the operational org (incl. external Dealer accounts) but cannot
+// mint an Owner; Supervisor may create front-line Operator/Viewer accounts only.
+const CREATION_HIERARCHY: Record<string, readonly AssignableRole[]> = {
+  owner: ["owner", "director", "supervisor", "operator", "viewer", "dealer"],
+  director: ["director", "supervisor", "operator", "viewer", "dealer"],
+  supervisor: ["operator", "viewer"],
+  operator: [],
+  viewer: [],
+  dealer: [],
+};
 
 const router: IRouter = Router();
 
@@ -71,11 +84,13 @@ router.post("/login", async (req, res) => {
   });
 });
 
-// POST /api/auth/register — director-only user creation (DEF-M06-002).
-// OCS One is factory software: users never self-register. Only a director may
-// create accounts; the endpoint is rate-limited (registerLimiter in app.ts) and
-// every creation is audit-logged. No session cookie is issued for the new user.
-router.post("/register", requireAuth, requireRole("director"), async (req, res) => {
+// POST /api/auth/register — hierarchical user creation (DEF-M06-002, six-role RBAC).
+// OCS One is factory software: users never self-register. Only Owner/Director/
+// Supervisor may create accounts, and only within their creation hierarchy
+// (CREATION_HIERARCHY) — e.g. supervisors cannot mint directors and only an owner
+// creates another owner. The endpoint is rate-limited (registerLimiter in app.ts)
+// and every creation is audit-logged. No session cookie is issued for the new user.
+router.post("/register", requireAuth, requireRole("owner", "director", "supervisor"), async (req, res) => {
   const { name, email, password, role } = req.body as {
     name?: unknown; email?: unknown; password?: unknown; role?: unknown;
   };
@@ -101,6 +116,26 @@ router.post("/register", requireAuth, requireRole("director"), async (req, res) 
       return;
     }
     assignedRole = role as AssignableRole;
+  }
+
+  // Enforce the creation hierarchy: the creator may only assign roles within their
+  // authority (supervisors cannot mint directors; only owners create owners).
+  const creatorRole = req.user?.role ?? "";
+  const creatable = CREATION_HIERARCHY[creatorRole] ?? [];
+  if (!creatable.includes(assignedRole)) {
+    void recordSecurityEvent({
+      eventType: "authz.denied",
+      severity: "warning",
+      actorId: req.user?.userId ?? null,
+      actorEmail: req.user?.email ?? null,
+      actorRole: req.user?.role ?? null,
+      targetEmail: email.toLowerCase(),
+      ...reqMeta(req),
+      statusCode: 403,
+      detail: `Role ${creatorRole} may not create a ${assignedRole} account`,
+    });
+    res.status(403).json({ error: `Your role may not create a "${assignedRole}" account` });
+    return;
   }
 
   const [existing] = await db

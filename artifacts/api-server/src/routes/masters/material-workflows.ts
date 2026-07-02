@@ -15,7 +15,7 @@ const router = createMasterRouter({
   inputSchema: CreateMaterialWorkflowBody,
   updateSchema: UpdateMaterialWorkflowBody,
   resourceName: "Material Workflow",
-  writeRoles: ["director"],
+  writeRoles: ["owner", "director"],
 });
 
 export default router;

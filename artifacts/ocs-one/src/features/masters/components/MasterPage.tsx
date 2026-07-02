@@ -5,6 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { MasterConfig } from "../types/master.types";
 import { MasterEditDrawer } from "./MasterEditDrawer";
 import { useMasterCrud } from "../hooks/useMasterCrud";
+import { useAuth } from "@/hooks/use-auth";
 import AppLayout from "@/layouts/AppLayout";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 import { ModuleHeader, OdsToolbar, OdsDataTable, OdsStatusBadge, OdsDialog } from "@/components/ods";
@@ -29,6 +30,11 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
 
   const { listQuery, handleCreate, handleUpdate, handleToggleStatus } =
     useMasterCrud<T>(config.resource, hooks);
+
+  // Master writes are governed to owner + director (mirrors the backend
+  // requireWriteRole(owner,director) gate). Everyone else sees a read-only view.
+  const { user } = useAuth();
+  const canWrite = user?.role === "owner" || user?.role === "director";
 
   const handleAdd = useCallback(() => { setEditingItem(null); setIsDrawerOpen(true); }, []);
   const handleEdit = useCallback((item: T) => { setEditingItem(item); setIsDrawerOpen(true); }, []);
@@ -74,32 +80,34 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
     },
   ];
 
-  const rowActions = (item: T) => (
-    <>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7"
-        onClick={() => handleEdit(item)}
-        title="Edit"
-      >
-        <Edit className="h-3.5 w-3.5" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7"
-        onClick={() => setToggleTarget(item)}
-        title={item.status === "active" ? "Deactivate" : "Activate"}
-      >
-        {item.status === "active" ? (
-          <PowerOff className="h-3.5 w-3.5 text-destructive" />
-        ) : (
-          <Power className="h-3.5 w-3.5 text-primary" />
-        )}
-      </Button>
-    </>
-  );
+  const rowActions = canWrite
+    ? (item: T) => (
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => handleEdit(item)}
+            title="Edit"
+          >
+            <Edit className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setToggleTarget(item)}
+            title={item.status === "active" ? "Deactivate" : "Activate"}
+          >
+            {item.status === "active" ? (
+              <PowerOff className="h-3.5 w-3.5 text-destructive" />
+            ) : (
+              <Power className="h-3.5 w-3.5 text-primary" />
+            )}
+          </Button>
+        </>
+      )
+    : undefined;
 
   return (
     <AppLayout>
@@ -110,9 +118,11 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
           description={config.description}
           certification={config.certification ?? "certified"}
           actions={
-            <Button onClick={handleAdd}>
-              <Plus className="mr-2 h-4 w-4" /> Add {config.title}
-            </Button>
+            canWrite ? (
+              <Button onClick={handleAdd}>
+                <Plus className="mr-2 h-4 w-4" /> Add {config.title}
+              </Button>
+            ) : undefined
           }
         />
 
@@ -127,7 +137,7 @@ export function MasterPage<T extends { id: string; status: "active" | "inactive"
               ? "Try a different search term."
               : `Add your first ${config.title.toLowerCase()} to get started.`
           }
-          emptyAction={!searchTerm ? { label: `Add ${config.title}`, onClick: handleAdd } : undefined}
+          emptyAction={canWrite && !searchTerm ? { label: `Add ${config.title}`, onClick: handleAdd } : undefined}
           rowActions={rowActions}
           onRowClick={(item) => setSelectedItem(item)}
           getRowId={(item) => item.id}

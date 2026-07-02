@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, denyDealerFactoryAccess } from "../middleware/auth";
 import healthRouter from "./health";
 import authRouter from "./auth";
 import productMasterRouter from "./masters/products";
@@ -40,6 +40,11 @@ router.use("/auth", authRouter);
 
 // ─── All routes below require a valid session ─────────────────────────────────
 router.use(requireAuth);
+
+// Dealer is an external portal-only role: deny it access to every factory route
+// below (reads included). Auth routes are mounted ABOVE this line so a dealer can
+// still log in, read /auth/me, and log out.
+router.use(denyDealerFactoryAccess);
 
 // Engineering Masters
 router.use("/masters/products", productMasterRouter);

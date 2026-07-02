@@ -482,7 +482,7 @@ router.post("/:id/correct", requireRole("supervisor", "director"), async (req, r
       performedBy: correctedBy,
       approvedBy: correctedBy,
       actorRole: req.user?.role,
-      allowedRoles: ["supervisor", "director"],
+      allowedRoles: ["owner", "supervisor", "director"],
       auditEventType: "cell_grade_corrected",
       previousValue: {
         voltageV: lockedCell.voltageV,

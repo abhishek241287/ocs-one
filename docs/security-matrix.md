@@ -12,7 +12,7 @@ Every new API endpoint must explicitly declare, before it is merged, the answer 
 all six questions below. No endpoint may be merged until all six are answered.
 
 1. **Authentication required?** — Is a valid session (`requireAuth`) needed?
-2. **Minimum role** — Which role(s) may invoke it? (`director | supervisor | operator | viewer`)
+2. **Minimum role** — Which role(s) may invoke it? (`owner | director | supervisor | operator | viewer | dealer`)
 3. **Audit required?** — Must the action be recorded to the audit/event log?
 4. **Rate limited?** — Is the endpoint throttled?
 5. **Input validation?** — Are all inputs validated (Zod / explicit checks)?
@@ -22,12 +22,12 @@ all six questions below. No endpoint may be merged until all six are answered.
 
 Authorization is enforced by a **permanent regression test**, not by manual review alone.
 `pnpm --filter @workspace/api-server run test:authz` (validation command `authz`) drives
-every endpoint in this matrix against all five principals
-(director / supervisor / operator / viewer / anonymous) and asserts the exact expected
-outcome (`pass` → not-403 / `forbidden` → 403 / `unauthorized` → 401). The matrix lives
+every endpoint in this matrix against all seven principals
+(owner / director / supervisor / operator / viewer / dealer / anonymous) and asserts the exact
+expected outcome (`pass` → not-403 / `forbidden` → 403 / `unauthorized` → 401). The matrix lives
 in code at `lib/authz-matrix.ts` and is the single source of truth shared by both this
 suite and the `/api/developer/security` dashboard — they cannot drift. **Any unexpected
-authorization result fails certification.** Current: ✅ 225/225 assertions pass.
+authorization result fails certification.**
 
 ## Security Standard SS-03 (permanent automated test)
 
@@ -63,20 +63,40 @@ admin-credential rule is value-aware (fails even if `ADMIN_PASSWORD` is set to t
 default). **Any configuration drift fails certification.** Current: ✅ 31 pass · 3 warn · 0 fail
 (34 checks); all warnings are documented dev-mode exceptions.
 
-### RBAC model (CTO-approved — DEF-M06-001)
+### RBAC model (CTO-approved — six-role governance, "Option A")
 
-- **Director** — full access to every module.
-- **Supervisor** — Masters, lot receiving/editing, QC approval, dispatch, dealers,
-  production planning, reports. **Not**: user administration, system settings,
-  certification administration.
-- **Operator** — cell receiving, grading, matching, charging, testing, production
-  stage execution. **Not**: Masters, QC approval, dispatch/dealer management, reports.
+Six roles, enforced by hierarchy and by per-route guards:
+
+- **Owner** — unrestricted super-admin. Passes every gate (a short-circuit in
+  `requireRole`/`requireWriteRole`). Only an Owner may create another Owner.
+- **Director** — full factory access; creates director/supervisor/operator/viewer/dealer
+  (NOT owner). Included in every write list.
+- **Supervisor** — production execution + sign-off (QC approval, dispatch, packing,
+  inspection, GRN, orders, cell correction); creates operator/viewer only. **No master
+  writes** (governance moved to owner+director) and **no user administration** beyond
+  operator/viewer.
+- **Operator** — cell receiving, grading, matching, charging, testing, production stage
+  execution. **Not**: Masters, QC approval, dispatch/dealer management, reports, user admin.
 - **Viewer** — read-only everywhere. No POST / PATCH / PUT / DELETE; no state changes.
+- **Dealer** — external portal principal. **Blocked from ALL factory routes** by
+  `denyDealerFactoryAccess` (mounted globally right after `requireAuth`); the only routes
+  it may reach are `/api/auth/login`, `/api/auth/logout`, and `/api/auth/me`. (No dealer
+  data-scoping / portal v2 this sprint.)
 
-Enforcement: `requireAuth` (global, in `routes/index.ts`) gates every non-public
-route. Write authorization uses `requireWriteRole(...roles)` mounted per sub-router
-— read methods (GET/HEAD) pass for any authenticated user, write methods require a
-listed role. Director is included in every write list.
+**Creation hierarchy** (enforced in `/api/auth/register` after the role gate): Owner →
+any role; Director → director/supervisor/operator/viewer/dealer (never owner); Supervisor
+→ operator/viewer only. A request to create a role outside the actor's permitted set is
+403.
+
+**Master governance:** all master writes (`/api/masters/*`, dealers, supplier/material
+masters, BOM lifecycle, material-workflow assignments) require **owner + director** only —
+supervisor lost master-write access under this model.
+
+Enforcement: `requireAuth` (global, in `routes/index.ts`) gates every non-public route,
+immediately followed by `denyDealerFactoryAccess`. Write authorization uses
+`requireWriteRole(...roles)` mounted per sub-router — read methods (GET/HEAD) pass for any
+authenticated user, write methods require a listed role. Owner short-circuits both guards;
+director is included in every write list.
 
 ---
 
@@ -93,17 +113,17 @@ unless a minimum role is stated.
 | `/api/healthz` | GET | ❌ | — | global | no | ✅ |
 | `/api/auth/login` | POST | ❌ | — | auth (20/15m) | **yes** (`auth.login.success`/`failed`) | ✅ |
 | `/api/auth/logout` | POST | ❌ | — | global | **yes** (`auth.logout`) | ✅ |
-| `/api/auth/me` | GET | ✅ | any | global | no | ✅ |
-| `/api/auth/register` | POST | ✅ | **director** | register (20/15m) | **yes** (`user.created`) | ✅ (DEF-M06-002) |
+| `/api/auth/me` | GET | ✅ | any (incl. dealer) | global | no | ✅ |
+| `/api/auth/register` | POST | ✅ | **owner, director, supervisor** (+ creation hierarchy) | register (20/15m) | **yes** (`user.created`) | ✅ |
 
 ### Masters (`/api/masters/{products,cells,bms,cabinets,connectors,cables,busbars,chargers,test-equipment}`)
 
 | Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |
 |---|---|---|---|---|---|---|
 | `/api/masters/*` | GET | ✅ | viewer (read) | global | no | ✅ |
-| `/api/masters/*` | POST | ✅ | **supervisor, director** | global | no | ✅ (DEF-M06-001) |
-| `/api/masters/*/:id` | PATCH | ✅ | **supervisor, director** | global | no | ✅ |
-| `/api/masters/*/:id/status` | PATCH | ✅ | **supervisor, director** | global | no | ✅ |
+| `/api/masters/*` | POST | ✅ | **owner, director** | global | no | ✅ (six-role governance) |
+| `/api/masters/*/:id` | PATCH | ✅ | **owner, director** | global | no | ✅ |
+| `/api/masters/*/:id/status` | PATCH | ✅ | **owner, director** | global | no | ✅ |
 | `/api/masters/product-categories*` | GET | ✅ | viewer (read) | global | no | ✅ (CW-03) |
 | `/api/masters/product-categories*` | POST/PATCH | ✅ | **director** | global | no | ✅ (CW-03 — category master is a director-only governance concept) |
 | `/api/masters/product-workflows*` | GET | ✅ | viewer (read) | global | no | ✅ (CW-03) |
@@ -111,9 +131,9 @@ unless a minimum role is stated.
 | `/api/masters/material-categories*` | GET | ✅ | viewer (read) | global | no | ✅ (Inventory — Material Master) |
 | `/api/masters/material-categories*` | POST/PATCH | ✅ | **director** | global | no | ✅ (Inventory — category lookup is a director-only governance concept) |
 | `/api/masters/materials*` | GET | ✅ | viewer (read) | global | no | ✅ (Inventory — Material Master) |
-| `/api/masters/materials*` | POST/PATCH | ✅ | **supervisor, director** | global | no | ✅ (Inventory — Material Master; invalid category_id → 400 via FK guard) |
+| `/api/masters/materials*` | POST/PATCH | ✅ | **owner, director** | global | no | ✅ (Inventory — Material Master; invalid category_id → 400 via FK guard) |
 | `/api/masters/suppliers*` | GET | ✅ | viewer (read) | global | no | ✅ (Inventory — Supplier Master) |
-| `/api/masters/suppliers*` | POST/PATCH | ✅ | **supervisor, director** | global | no | ✅ (Inventory — Supplier Master; GRN supplier_id FK source) |
+| `/api/masters/suppliers*` | POST/PATCH | ✅ | **owner, director** | global | no | ✅ (Inventory — Supplier Master; GRN supplier_id FK source) |
 | `/api/masters/material-workflows*` | GET | ✅ | viewer (read) | global | no | ✅ (Inventory — Material Workflow master) |
 | `/api/masters/material-workflows*` | POST/PATCH | ✅ | **director** | global | no | ✅ (Inventory — workflow master is a director-only governance concept; carries post_receipt_action) |
 
@@ -201,7 +221,7 @@ unless a minimum role is stated.
 | `/dispatch-orders*` | GET | ✅ | viewer (read) | global | no | ✅ |
 | `/dispatch-orders*` (create/advance) | POST/PATCH | ✅ | **supervisor, director** | global | no | ✅ |
 | `/dealers*` | GET | ✅ | viewer (read) | global | no | ✅ |
-| `/dealers*` | POST/PATCH/DELETE | ✅ | **supervisor, director** | global | no | ✅ |
+| `/dealers*` | POST/PATCH/DELETE | ✅ | **owner, director** | global | no | ✅ (six-role governance) |
 | `/packing-dashboard` | GET | ✅ | viewer (read) | global | no | ✅ |
 
 ### Products (`/api/products`) — CW-03 Unified Product Platform
@@ -302,17 +322,17 @@ unless a minimum role is stated.
 | Endpoint | Method | Auth | Minimum Role | Rate Limited | Audit Logged | Cert Status |
 |---|---|---|---|---|---|---|
 | `/api/boms` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (list BOMs; search + model/status filters + pagination) |
-| `/api/boms` | POST | ✅ | **supervisor, director** | global | no (master data) | ✅ (create draft; server-assigned revision + `BOM-YYYYMMDD-NNNNNN`; model + materials must exist 404; 409 on revision collision) |
+| `/api/boms` | POST | ✅ | **owner, director** | global | no (master data) | ✅ (create draft; server-assigned revision + `BOM-YYYYMMDD-NNNNNN`; model + materials must exist 404; 409 on revision collision) |
 | `/api/boms/{id}` | GET | ✅ | any authed (read) | global | n/a (read) | ✅ (BOM detail — header + enriched lines) |
-| `/api/boms/{id}` | PUT | ✅ | **supervisor, director** | global | no (master data) | ✅ (update draft only, else 422; FOR UPDATE; replaces header + lines) |
-| `/api/boms/{id}` | DELETE | ✅ | **supervisor, director** | global | no (master data) | ✅ (delete draft only, else 422; FOR UPDATE; lines cascade) |
-| `/api/boms/{id}/approve` | POST | ✅ | **supervisor, director** | global | no (master data) | ✅ (draft → approved, else 422; records approver + timestamp; FOR UPDATE) |
-| `/api/boms/{id}/obsolete` | POST | ✅ | **supervisor, director** | global | no (master data) | ✅ (approved → obsolete, else 422; FOR UPDATE) |
+| `/api/boms/{id}` | PUT | ✅ | **owner, director** | global | no (master data) | ✅ (update draft only, else 422; FOR UPDATE; replaces header + lines) |
+| `/api/boms/{id}` | DELETE | ✅ | **owner, director** | global | no (master data) | ✅ (delete draft only, else 422; FOR UPDATE; lines cascade) |
+| `/api/boms/{id}/approve` | POST | ✅ | **owner, director** | global | no (master data) | ✅ (draft → approved, else 422; records approver + timestamp; FOR UPDATE) |
+| `/api/boms/{id}/obsolete` | POST | ✅ | **owner, director** | global | no (master data) | ✅ (approved → obsolete, else 422; FOR UPDATE) |
 
 > **Note (BOM):** Additive MES Phase 1 module. A BOM is a **versioned master** owned by a Model
 > (`master_products`): each revision persists (`draft → approved → obsolete`) and is never overwritten —
 > an approved BOM is corrected by creating a new revision. Input validation is Zod (`CreateBomBody` /
-> `UpdateBomBody`); write routes are gated `requireRole(supervisor, director)`; reads are open to any
+> `UpdateBomBody`); write routes are gated `requireRole(owner, director)` (BOM is governed master data); reads are open to any
 > authed user. All state transitions re-check status inside the transaction under `SELECT … FOR UPDATE`
 > (TOCTOU-safe). Not audit-logged — BOM is master data, consistent with the other Masters (no
 > `security_events` / timeline entry), NOT a serialized engineering record. Every write returns the

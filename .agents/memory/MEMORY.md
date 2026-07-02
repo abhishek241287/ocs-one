@@ -46,3 +46,4 @@
 - [Radix Select must be controlled](radix-select-controlled.md) — shared SelectField must pass value ?? "" not undefined; uncontrolled→controlled flip warns + intermittently drops the picked value.
 - [Frontend API error shape](api-error-shape.md) — thrown ApiError puts the JSON body on `e.data` (use `e?.data?.error`); the common `e?.response?.data?.error` in existing pages is always undefined.
 - [Category serial-mode join](imported-product-join.md) — resolve product serial mode by category_id (immutable), never category display name (director-editable); ProductMaster response now carries category_id.
+- [Middleware short-circuit vs ECF allowedRoles](middleware-vs-ecf-authz.md) — an "unrestricted" role allowed by auth middleware is still rejected by service-layer allowedRoles (ECF); any new global-allow role must be added to every allowedRoles call site + verified on the real path.
