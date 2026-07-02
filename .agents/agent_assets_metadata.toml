@@ -72,3 +72,9 @@ id = "zGqxOFOTps9xWMuIntB5o"
 uri = "file://docs/operator-user-manual-v1.0.md"
 type = "text"
 title = "OCS One — Operator User Manual v1.0"
+
+[[outputs]]
+id = "SVWAh3FWgDSCc7m5JaWWX"
+uri = "file://docs/quick-start-guide-v1.0.md"
+type = "text"
+title = "OCS One — Quick Start Guide v1.0"
