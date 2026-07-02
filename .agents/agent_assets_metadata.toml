@@ -78,3 +78,9 @@ id = "SVWAh3FWgDSCc7m5JaWWX"
 uri = "file://docs/quick-start-guide-v1.0.md"
 type = "text"
 title = "OCS One — Quick Start Guide v1.0"
+
+[[outputs]]
+id = "eGsbfNdq9atwwRgUt_abj"
+uri = "file://docs/role-responsibility-matrix-v1.0.md"
+type = "text"
+title = "OCS One — Role & Responsibility Matrix v1.0"
