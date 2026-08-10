@@ -947,9 +947,9 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     path: "/api/logistics/dispatch-orders",
     group: "Logistics",
     description: "Create dispatch order",
-    guard: "requireWriteRole(supervisor,director)",
+    guard: "requireRole(owner) — C2 legacy dispatch write freeze; only owner may write",
     body: {},
-    expected: roles(P, P, F, F),
+    expected: roles(F, F, F, F),
   },
 
   // ─── Reports (HARD requireRole(director,supervisor) on ALL methods) ───────────

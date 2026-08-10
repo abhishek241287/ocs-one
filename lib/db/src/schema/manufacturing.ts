@@ -11,7 +11,9 @@ import {
   decimal,
   boolean,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { masterProductsTable } from "./master-products";
 import { cellMatchesTable } from "./cell-grading";
 
@@ -164,6 +166,17 @@ export const mfgBatteryGenealogyTable = pgTable(
   },
   (table) => [
     index("idx_mfg_genealogy_order_id").on(table.productionOrderId),
+    // Prevent duplicate component records per order — use COALESCE so nullable
+    // componentId / serialNumber participate in the uniqueness check correctly
+    // (PostgreSQL treats NULLs as distinct in a plain unique index, so two rows
+    // with NULL componentId would both be inserted for the same order+type).
+    // Zero-UUID sentinel for UUID column; empty-string sentinel for text column.
+    uniqueIndex("unique_battery_genealogy").on(
+      table.productionOrderId,
+      table.componentType,
+      sql`COALESCE(${table.componentId}, '00000000-0000-0000-0000-000000000000'::uuid)`,
+      sql`COALESCE(${table.serialNumber}, '')`,
+    ),
   ]
 );
 

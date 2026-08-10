@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-type NavItem = { label: string; href: string; icon: any };
+type NavItem = { label: string; href: string; icon: any; ownerOnly?: boolean };
 type NavGroup = { label: string; items: NavItem[] };
 type NavSection = {
   title: string;
@@ -118,7 +118,9 @@ const navSections: NavSection[] = [
       { label: "All Dispatches", href: "/fulfillment/dispatch/list", icon: ListChecks },
       { label: "Dealer Portal", href: "/fulfillment/dealers", icon: Store },
       { label: "Packing Dashboard", href: "/logistics/packing-dashboard", icon: Package },
-      { label: "Dispatch Orders", href: "/logistics/dispatch-orders", icon: Truck },
+      // C2: Legacy dispatch is owner-only — hide from all other roles to prevent
+      // new entries via the legacy (COUNT+1) numbering path.
+      { label: "Dispatch Orders", href: "/logistics/dispatch-orders", icon: Truck, ownerOnly: true },
     ],
   },
   {
@@ -369,7 +371,7 @@ export function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCo
                   ))
                 ) : (
                   <ul className="space-y-1 px-2">
-                    {(section.items ?? []).map((item) => (
+                    {(section.items ?? []).filter(item => !item.ownerOnly || user?.role === "owner").map((item) => (
                       <NavItemLink key={item.label} item={item} collapsed={collapsed} location={location} search={search} />
                     ))}
                   </ul>

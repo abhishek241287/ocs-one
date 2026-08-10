@@ -72,10 +72,24 @@ async function onChargingStart(
 ): Promise<void> {
   const chargerUnitId = stageData?.chargerUnitId as string | undefined;
   if (!chargerUnitId) return;
-  await tx
+
+  // H17 — Atomic conditional reservation: only acquire the charger if it is still
+  // in "available" state at the moment of the UPDATE (TOCTOU-safe). If another order
+  // won the race, the UPDATE matches 0 rows and .returning() yields an empty array —
+  // we throw inside the transaction so the stage start rolls back cleanly.
+  const [reserved] = await tx
     .update(mfgChargerUnitsTable)
     .set({ status: "busy", currentOrderId: orderId })
-    .where(eq(mfgChargerUnitsTable.id, chargerUnitId));
+    .where(and(
+      eq(mfgChargerUnitsTable.id, chargerUnitId),
+      eq(mfgChargerUnitsTable.status, "available"),
+    ))
+    .returning({ id: mfgChargerUnitsTable.id });
+  if (!reserved) {
+    throw new Error(
+      `Charger ${chargerUnitId} is no longer available — it may already be in use by another order`,
+    );
+  }
   await tx
     .update(mfgProductionOrdersTable)
     .set({ chargerUnitId })
@@ -127,7 +141,9 @@ async function onCellAllocationComplete(
       .set({ status: "allocated", allocationOrderId: orderId })
       .where(eq(cellsTable.id, item.cellDbId));
 
-    // Auto-write genealogy for each cell
+    // H18 — Auto-write genealogy for each cell; .onConflictDoNothing() makes
+    // re-running this stage (retry / re-approval) idempotent — the unique
+    // COALESCE index on mfg_battery_genealogy silently skips the duplicate.
     await tx.insert(mfgBatteryGenealogyTable).values({
       productionOrderId: orderId,
       componentType: "cell",
@@ -136,7 +152,7 @@ async function onCellAllocationComplete(
       quantity: 1,
       serialNumber: item.cellCode,
       notes: `Position ${item.position} — ${item.lotNumber ?? "unknown lot"}`,
-    });
+    }).onConflictDoNothing();
   }
 }
 
@@ -152,13 +168,14 @@ async function onAssemblyComplete(
   ];
   for (const c of components) {
     if (!c.name) continue;
+    // H18 — idempotent: skip silently if this assembly row already exists
     await tx.insert(mfgBatteryGenealogyTable).values({
       productionOrderId: orderId,
       componentType: c.type,
       componentName: c.label + ": " + c.name,
       quantity: 1,
       serialNumber: c.name,
-    });
+    }).onConflictDoNothing();
   }
 }
 
@@ -169,12 +186,27 @@ async function onChargingComplete(
 ): Promise<void> {
   const chargerUnitId = stageData?.chargerUnitId as string | undefined;
 
-  // Release charger
+  // H17 — Conditional charger release: only flip to "available" if this order
+  // still owns the charger (status = "busy" AND currentOrderId = orderId). A
+  // mismatched .returning() result means the charger was already released or
+  // taken by another order — log a warning but do NOT throw (the charging stage
+  // is completing anyway; blocking completion here would orphan the order).
   if (chargerUnitId) {
-    await tx
+    const [released] = await tx
       .update(mfgChargerUnitsTable)
       .set({ status: "available", currentOrderId: null })
-      .where(eq(mfgChargerUnitsTable.id, chargerUnitId));
+      .where(and(
+        eq(mfgChargerUnitsTable.id, chargerUnitId),
+        eq(mfgChargerUnitsTable.status, "busy"),
+        eq(mfgChargerUnitsTable.currentOrderId, orderId),
+      ))
+      .returning({ id: mfgChargerUnitsTable.id });
+    if (!released) {
+      console.warn(
+        `[stages] Charger ${chargerUnitId} release skipped for order ${orderId}: ` +
+          `charger was not busy/owned by this order — may have been released concurrently.`,
+      );
+    }
   }
 
   // Calculate charge time if we have start/end
@@ -236,7 +268,7 @@ async function onChargingComplete(
     remarks: (stageData?.remarks as string | undefined) ?? null,
   });
 
-  // Genealogy entry for charger
+  // H18 — Genealogy entry for charger; idempotent via COALESCE unique index
   if (chargerUnitId) {
     const [charger] = await tx
       .select()
@@ -252,7 +284,7 @@ async function onChargingComplete(
         quantity: 1,
         serialNumber: charger.serialNumber,
         notes: `Charging completed — formation report generated`,
-      });
+      }).onConflictDoNothing();
     }
   }
 }
@@ -278,6 +310,7 @@ async function onBmsAllocationComplete(
     if (bms) name = `${bms.manufacturer} ${bms.model}`;
   }
 
+  // H18 — idempotent: skip silently if this BMS row already exists
   await tx.insert(mfgBatteryGenealogyTable).values({
     productionOrderId: orderId,
     componentType: "bms",
@@ -286,7 +319,7 @@ async function onBmsAllocationComplete(
     quantity: 1,
     serialNumber: bmsSerial ?? null,
     notes: stageData?.firmwareVersion ? `FW: ${stageData.firmwareVersion}` : null,
-  });
+  }).onConflictDoNothing();
 }
 
 // GET /manufacturing/orders/:id/stages

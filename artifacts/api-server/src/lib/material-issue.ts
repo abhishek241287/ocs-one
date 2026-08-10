@@ -292,7 +292,85 @@ export type IssueOutcome =
   | { status: "already_issued"; minNumber: string }
   | { status: "insufficient"; shortfalls: { materialName: string | null; required: number; available: number }[] }
   | { status: "quantity_mismatch"; mismatches: { materialName: string | null; required: number; issued: number }[] }
-  | { status: "missing_traceability"; materials: (string | null)[] };
+  | { status: "missing_traceability"; materials: (string | null)[] }
+  // H11: returned when a traceability-required line fails the per-lot ledger validation
+  // (wrong lot number, GRN line not found, or insufficient lot-level balance).
+  | { status: "lot_validation_failed"; materialName: string | null; error: string };
+
+/**
+ * H11 — Per-lot balance validation with pg advisory lock.
+ * Acquires pg_advisory_xact_lock(hashtext(grnLineId)) to serialize concurrent MINs
+ * competing for the same lot. Verifies presence, GRN line ownership, lot number
+ * match, and ledger balance. Called for every traceability-required BOM line before
+ * any MIN rows are written so failures are clean (no partial write to reverse).
+ */
+async function validateLotAllocation(
+  materialId: string,
+  grnLineId: string | null | undefined,
+  supplierLotNumber: string | null | undefined,
+  issuedQty: number,
+  tx: Transaction,
+): Promise<{ valid: true } | { valid: false; error: string }> {
+  if (!grnLineId || !supplierLotNumber) {
+    return {
+      valid: false,
+      error:
+        "Traceability-required material is missing GRN line and/or supplier lot reference",
+    };
+  }
+
+  // Acquire transaction-scoped advisory lock on this GRN line — auto-released on
+  // commit/rollback; serializes any two concurrent MIN posts for the same lot.
+  await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${grnLineId}))`);
+
+  const [grnLine] = await tx
+    .select({
+      id: grnLineItemsTable.id,
+      materialId: grnLineItemsTable.materialId,
+      supplierLotNumber: grnLineItemsTable.supplierLotNumber,
+    })
+    .from(grnLineItemsTable)
+    .where(eq(grnLineItemsTable.id, grnLineId))
+    .limit(1);
+
+  if (!grnLine) {
+    return { valid: false, error: `GRN line not found: ${grnLineId}` };
+  }
+  if (grnLine.materialId !== materialId) {
+    return {
+      valid: false,
+      error: `GRN line ${grnLineId} does not belong to the expected material`,
+    };
+  }
+  if (grnLine.supplierLotNumber !== supplierLotNumber) {
+    return {
+      valid: false,
+      error: `Supplier lot number mismatch: GRN line records "${grnLine.supplierLotNumber}", received "${supplierLotNumber}"`,
+    };
+  }
+
+  const [balRow] = await tx
+    .select({
+      available: sql<string>`COALESCE(SUM(${inventoryTransactionsTable.quantity}), '0')`,
+    })
+    .from(inventoryTransactionsTable)
+    .where(
+      and(
+        eq(inventoryTransactionsTable.sourceLineId, grnLineId),
+        eq(inventoryTransactionsTable.stockState, "available"),
+      ),
+    );
+
+  const availQty = Number(balRow?.available ?? 0);
+  if (availQty < issuedQty) {
+    return {
+      valid: false,
+      error: `Insufficient lot balance on GRN line ${grnLineId}: need ${issuedQty}, have ${availQty}`,
+    };
+  }
+
+  return { valid: true };
+}
 
 export interface IssueMaterialsArgs {
   tx: Transaction;
@@ -382,10 +460,32 @@ export async function issueMaterials(args: IssueMaterialsArgs): Promise<IssueOut
   if (shortfalls.length) return { status: "insufficient", shortfalls };
 
   // Traceability — traceability_required lines MUST carry a batch/lot + GRN reference.
+  // Phase 1: fast presence check (no DB call) so we fail early with a clear list.
   const missingTrace = resolved
     .filter((l) => l.req.traceabilityRequired && (!l.grnLineId || !l.supplierLotNumber))
     .map((l) => l.req.materialName);
   if (missingTrace.length) return { status: "missing_traceability", materials: missingTrace };
+
+  // H11 — Phase 2: per-lot ledger validation with advisory lock. Done BEFORE writing
+  // any MIN rows so a failure leaves no partial data to reverse.
+  for (const l of resolved) {
+    if (l.req.traceabilityRequired) {
+      const lotResult = await validateLotAllocation(
+        l.req.materialId,
+        l.grnLineId,
+        l.supplierLotNumber,
+        l.issuedQty,
+        tx,
+      );
+      if (!lotResult.valid) {
+        return {
+          status: "lot_validation_failed",
+          materialName: l.req.materialName,
+          error: lotResult.error,
+        };
+      }
+    }
+  }
 
   // Header (R1: snapshot BOM header id + revision).
   const [min] = await tx

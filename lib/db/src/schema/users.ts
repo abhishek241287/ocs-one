@@ -7,6 +7,7 @@ import {
   timestamp,
   index,
 } from "drizzle-orm/pg-core";
+import { logisticsDealersTable } from "./logistics";
 
 // Six-role RBAC (Factory Ready v1.0). New values are APPENDED (not reordered) so a
 // `drizzle-kit push` is a simple ALTER TYPE ... ADD VALUE — enum ordinal position is
@@ -30,6 +31,7 @@ export const usersTable = pgTable(
     passwordHash: varchar("password_hash", { length: 255 }).notNull(),
     name: varchar("name", { length: 255 }).notNull(),
     role: userRoleEnum("role").notNull().default("operator"),
+    dealerId: uuid("dealer_id").references(() => logisticsDealersTable.id),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

@@ -23,6 +23,7 @@ export interface AuthTokenPayload {
   email: string;
   name: string;
   role: UserRole;
+  dealerId?: string | null;
   iat?: number;
   exp?: number;
 }

@@ -28,7 +28,8 @@
 - [Grading Import Framework](grading-import-framework.md) — ONE engine (calcGrade); future Excel/CSV imports adapt via GradingImportSource→normalized record→same engine; manual=one-row source; validation must mirror GradeCellBody.
 - [Doc refactor sprint (deferred)](doc-refactor-sprint.md) — run docs-only cleanup right AFTER CW-02 closes: thin replit.md → docs/architecture|governance|product; during CW-02 keep updating existing locations, no churn.
 - [Drizzle select key casing](drizzle-select-key-casing.md) — bare `.select()`+numify emits camelCase; snake_case API contracts need explicit `.select({snake: table.camel})` — gates/typecheck won't catch the drift.
-- [Cert validation-workflow false reds](cert-workflow-false-reds.md) — authz/audit "failed" = auth-limiter saturation, not a regression; authoritative run = restart api-server, no competing traffic.
+- [Cert validation-workflow false reds](cert-workflow-false-reds.md) — auth-limiter saturates after 2–3 rapid authz restarts; restart api-server to reset; SS-03 ratelimit.exceeded shape-mode red is pre-existing, not a regression.
+- [/auth/me response shape](auth-me-response-shape.md) — payload nested under `{ user: { ..., dealerId } }`, not top-level; dealerId=null for factory roles, UUID for dealer-role users.
 - [Masters factory PG errors](masters-factory-pg-errors.md) — shared master router maps 23505→409 (field-aware) + 23503 FK→400 for every master; declare constraints in schema, no per-route handlers.
 - [Master-pick dropdowns filter active](master-pick-dropdowns-active-filter.md) — empty ocs-one master dropdown = no ACTIVE rows, not a bug; activate masters before e2e; PATCH doesn't change status (toggle route only).
 - [Generic master-form extension](generic-master-form-extension.md) — extend the shared config-driven master form via optionsFn/visibleWhen/helpText/transformSubmit/onFieldChange; never hide a required field into a silent server-reject dead-end.

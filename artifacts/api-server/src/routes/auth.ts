@@ -66,6 +66,7 @@ router.post("/login", async (req, res) => {
     email: user.email,
     name: user.name,
     role: user.role,
+    dealerId: user.dealerId ?? null,
   });
 
   void recordSecurityEvent({
@@ -80,7 +81,7 @@ router.post("/login", async (req, res) => {
 
   res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
   res.json({
-    user: { id: user.id, email: user.email, name: user.name, role: user.role },
+    user: { id: user.id, email: user.email, name: user.name, role: user.role, dealerId: user.dealerId ?? null },
   });
 });
 

@@ -11,6 +11,22 @@ import {
 
 const router: IRouter = Router();
 
+// C1 — Dealer data isolation: restrict dealer-role users to their own dealership.
+// requireAuth is applied globally in routes/index.ts (before this router is mounted),
+// so req.user is always populated here. Factory roles (director, supervisor, operator,
+// owner, viewer) pass through unrestricted. Dealer-role users may only access routes
+// whose :id / :dealerId parameter matches the dealerId embedded in their JWT.
+router.use((req: Request, res: Response, next) => {
+  if (req.user?.role === "dealer") {
+    const targetId = (req.params.id ?? req.params.dealerId) as string | undefined;
+    if (targetId && req.user.dealerId !== targetId) {
+      res.status(403).json({ error: "Access denied: not your dealership" });
+      return;
+    }
+  }
+  next();
+});
+
 // Postgres numeric/decimal strings → JS numbers; keep everything else as-is.
 function numify<T extends Record<string, unknown>>(row: T): T {
   return Object.fromEntries(

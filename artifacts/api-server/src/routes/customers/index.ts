@@ -10,6 +10,8 @@ import {
   productCategoriesTable,
   masterProductsTable,
   logisticsDealersTable,
+  logisticsDispatchItemsTable,
+  logisticsDispatchOrdersTable,
 } from "@workspace/db";
 import { CreateCustomerRegistrationBody } from "@workspace/api-zod";
 import { requireRole } from "../../middleware/auth";
@@ -133,6 +135,16 @@ router.post(
   "/registrations",
   requireRole("supervisor", "director"),
   async (req: Request, res: Response): Promise<void> => {
+    // H1 — Reject any caller-supplied dealer_id. Dealer attribution is derived from
+    // the product's own dealerId (set at dispatch) or, for legacy products, via the
+    // dispatch-items → dispatch-orders join. Accepting it from the caller would let
+    // anyone forge a dealer relationship on a product.
+    if ((req.body as Record<string, unknown>).dealer_id !== undefined) {
+      res.status(400).json({
+        error: "dealer_id must not be supplied — it is derived from the product's dispatch record",
+      });
+      return;
+    }
     const parsed = CreateCustomerRegistrationBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message });
@@ -160,6 +172,7 @@ router.post(
             status: productsTable.productStatus,
             dealerId: productsTable.dealerId,
             modelId: productsTable.modelId,
+            sourceProductionOrderId: productsTable.sourceProductionOrderId,
           })
           .from(productsTable)
           .where(eq(productsTable.officialProductSerial, product_serial.trim()))
@@ -170,8 +183,34 @@ router.post(
           return { kind: "not_dispatched", status: product.status };
         }
 
-        // Dealer resolution: explicit dealer_id wins, else the product's assigned dealer.
-        const dealerId = parsed.data.dealer_id ?? product.dealerId;
+        // H1 — Dealer resolution with legacy dispatch fallback.
+        // Primary: product.dealerId (set at dispatch via the Product Platform).
+        // Legacy fallback: for products dispatched before the Product Platform, recover
+        // the dealer via the manufacturing order → dispatch items → dispatch orders chain.
+        let dealerId = product.dealerId;
+        if (!dealerId && product.sourceProductionOrderId) {
+          const [dispatchItem] = await tx
+            .select({ dispatchOrderId: logisticsDispatchItemsTable.dispatchOrderId })
+            .from(logisticsDispatchItemsTable)
+            .where(eq(logisticsDispatchItemsTable.productionOrderId, product.sourceProductionOrderId))
+            .limit(1);
+          if (dispatchItem) {
+            const [dispatchOrder] = await tx
+              .select({ dealerId: logisticsDispatchOrdersTable.dealerId })
+              .from(logisticsDispatchOrdersTable)
+              .where(eq(logisticsDispatchOrdersTable.id, dispatchItem.dispatchOrderId))
+              .limit(1);
+            if (dispatchOrder?.dealerId) {
+              dealerId = dispatchOrder.dealerId;
+              // Progressively repair: persist the recovered dealerId to the product so
+              // future lookups (subsequent registrations, warranty portal) resolve instantly.
+              await tx
+                .update(productsTable)
+                .set({ dealerId })
+                .where(eq(productsTable.id, product.id));
+            }
+          }
+        }
         if (!dealerId) return { kind: "no_dealer" };
         const [dealer] = await tx
           .select({ id: logisticsDealersTable.id, status: logisticsDealersTable.status })
@@ -255,7 +294,10 @@ router.post(
         });
         return;
       case "no_dealer":
-        res.status(422).json({ error: "No dealer for this product — provide dealer_id" });
+        res.status(422).json({
+          error:
+            "No dealer found for this product — check dispatch history or contact administrator to migrate legacy data",
+        });
         return;
       case "dealer_not_found":
         res.status(404).json({ error: "Dealer not found" });

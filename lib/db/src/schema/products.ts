@@ -8,7 +8,9 @@ import {
   jsonb,
   timestamp,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { masterProductsTable } from "./master-products";
 import { mfgProductionOrdersTable } from "./manufacturing";
 import { logisticsDealersTable } from "./logistics";
@@ -108,6 +110,10 @@ export const productsTable = pgTable(
 );
 
 // Category-aware lineage keyed by product_id (generalization of mfg_battery_genealogy).
+// Populated at Product creation (DP-1) by copying mfg_battery_genealogy.
+// The unique index prevents duplicate component rows per product — COALESCE
+// sentinels handle nullable UUID (componentId) and text (serialNumber) so
+// that two NULL rows for the same product+componentType are treated as equal.
 export const productGenealogyTable = pgTable(
   "product_genealogy",
   {
@@ -123,7 +129,15 @@ export const productGenealogyTable = pgTable(
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("idx_product_genealogy_product_id").on(table.productId)]
+  (table) => [
+    index("idx_product_genealogy_product_id").on(table.productId),
+    uniqueIndex("unique_product_genealogy").on(
+      table.productId,
+      table.componentType,
+      sql`COALESCE(${table.componentId}, '00000000-0000-0000-0000-000000000000'::uuid)`,
+      sql`COALESCE(${table.serialNumber}, '')`,
+    ),
+  ]
 );
 
 // Append-only Product audit timeline. Immutable (SS-03): never updated/deleted by app routes.

@@ -249,6 +249,7 @@ export async function completeOrderWithProduct(
     .select({
       id: mfgProductionOrdersTable.id,
       modelId: mfgProductionOrdersTable.productId,
+      status: mfgProductionOrdersTable.status,
     })
     .from(mfgProductionOrdersTable)
     .where(eq(mfgProductionOrdersTable.id, orderId))
@@ -259,6 +260,14 @@ export async function completeOrderWithProduct(
       "order_not_found",
       "Production order not found — cannot complete.",
     );
+  }
+
+  // H14 — Idempotency guard: if the order is already completed (e.g. a concurrent
+  // call won the race, or a retry is replaying a succeeded completion), skip every
+  // gate and fall through to createProductFromOrder which returns "exists" —
+  // the sourceProductionOrderId unique constraint guarantees exactly one Product.
+  if (order.status === "completed") {
+    return await createProductFromOrder(tx, orderId, actor);
   }
 
   // (1) Product Model assigned.

@@ -1,5 +1,5 @@
 import { Router, IRouter } from "express";
-import { requireWriteRole } from "../../middleware/auth";
+import { requireWriteRole, requireRole } from "../../middleware/auth";
 import {
   db,
   logisticsDispatchOrdersTable,
@@ -23,8 +23,18 @@ import {
 
 const router: IRouter = Router();
 
-// RBAC (DEF-M06-001): dispatch management — supervisor, director only.
-router.use(requireWriteRole("supervisor", "director"));
+// C2 — Legacy dispatch write freeze. The authoritative dispatch path is /dispatch
+// (Product Platform). This legacy router is kept READ-ONLY for history access;
+// no new dispatch orders may be created or mutated except by owner (platform admin).
+// GET routes remain accessible to all authenticated users (supervisor/director need
+// dispatch history). The blanket requireWriteRole is replaced with per-method guards.
+router.post("/", requireRole("owner"));
+router.put("/:id", requireRole("owner"));
+router.patch("/:id", requireRole("owner"));
+router.delete("/:id", requireRole("owner"));
+router.post("/:id/items", requireRole("owner"));
+router.delete("/:id/items/:itemId", requireRole("owner"));
+router.post("/:id/status", requireRole("owner"));
 
 async function generateDispatchNumber(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0]
