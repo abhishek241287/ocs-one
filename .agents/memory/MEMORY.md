@@ -30,6 +30,8 @@
 - [Drizzle select key casing](drizzle-select-key-casing.md) — bare `.select()`+numify emits camelCase; snake_case API contracts need explicit `.select({snake: table.camel})` — gates/typecheck won't catch the drift.
 - [Cert validation-workflow false reds](cert-workflow-false-reds.md) — auth-limiter saturates after 2–3 rapid authz restarts; restart api-server to reset; SS-03 ratelimit.exceeded shape-mode red is pre-existing, not a regression.
 - [/auth/me response shape](auth-me-response-shape.md) — payload nested under `{ user: { ..., dealerId } }`, not top-level; dealerId=null for factory roles, UUID for dealer-role users.
+- [Dealer portal routing bug](dealer-portal-routing-bug.md) — C1 isolation guard was dead code: denyDealerFactoryAccess must exempt /dealers prefix; req.params empty in router.use() — use req.path.split("/")[1] instead.
+- [FAT blocker suite H17 bugs](fat-blocker-suite-bugs.md) — H17 charger test used wrong URL (/stages/start) and wrong body (stage_type/stage_data); correct is /stages/charging/start + {operatorName, stageData}.
 - [Masters factory PG errors](masters-factory-pg-errors.md) — shared master router maps 23505→409 (field-aware) + 23503 FK→400 for every master; declare constraints in schema, no per-route handlers.
 - [Master-pick dropdowns filter active](master-pick-dropdowns-active-filter.md) — empty ocs-one master dropdown = no ACTIVE rows, not a bug; activate masters before e2e; PATCH doesn't change status (toggle route only).
 - [Generic master-form extension](generic-master-form-extension.md) — extend the shared config-driven master form via optionsFn/visibleWhen/helpText/transformSubmit/onFieldChange; never hide a required field into a silent server-reject dead-end.

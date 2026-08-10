@@ -134,11 +134,21 @@ export function requireWriteRole(...roles: UserRole[]) {
  * Dealer is an external portal-only role (Factory Ready v1.0): it may authenticate
  * and read its own session (/auth/me) but has NO access to any factory module.
  * Mount this globally right after requireAuth so EVERY factory route — reads
- * included — returns 403 for a dealer. Dealer self-service data (scoped inventory /
- * dispatch history) is Dealer Portal v2, out of scope this sprint.
+ * included — returns 403 for a dealer.
+ *
+ * Exception: the /dealers prefix is the Dealer Portal surface. Dealer-role requests
+ * to that prefix pass through here so the per-dealerId isolation guard in
+ * routes/dealers/index.ts (C1 patch) can apply its own, narrower check. Every other
+ * factory path (manufacturing, inventory, masters, etc.) remains fully blocked.
  */
 export function denyDealerFactoryAccess(req: Request, res: Response, next: NextFunction): void {
   if (req.user?.role === "dealer") {
+    // Allow dealer-role requests through to their own portal surface; the dealers
+    // router enforces per-dealerId isolation (C1) for those paths.
+    if (req.path.startsWith("/dealers")) {
+      next();
+      return;
+    }
     void recordSecurityEvent({
       eventType: "authz.denied",
       severity: "warning",

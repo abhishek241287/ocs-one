@@ -340,15 +340,87 @@ async function main() {
     }
   }
 
-  // Isolation guard for dealer-role: a dealer-role user mismatching their JWT dealerId
-  // should get 403. We can't create a dealer-role user with a specific dealerId in this
-  // suite without a complex setup — this is covered end-to-end by SS-02 authz matrix
-  // (dealer principal is blocked from all factory routes; dealer/:id access requires
-  // matching JWT dealerId). The guard code is verified statically here.
-  skip(
-    "Dealer A vs Dealer B cross-access",
-    "requires dealer-role user with specific JWT dealerId — covered by SS-02",
-  );
+  // C1 dynamic cross-access: look for the QA-seeded dealer-role user linked to
+  // Dealer A. If the qa-seed script has been run, we can do a live end-to-end
+  // isolation check: Dealer A JWT → Dealer B endpoint must 403.
+  {
+    const QA_DEALER_EMAIL    = "qa.dealer.a@qa.local";
+    const QA_DEALER_PASSWORD = process.env.CERT_QA_DEALER_PASSWORD ?? "QADlr#2026!";
+
+    // Find the QA dealer user and their linked dealer IDs.
+    const userRows = await db.execute(sql`
+      SELECT u.id, u.email, u.dealer_id
+      FROM   users u
+      WHERE  u.email    = ${QA_DEALER_EMAIL}
+        AND  u.role     = 'dealer'
+        AND  u.dealer_id IS NOT NULL
+        AND  u.is_active = true
+      LIMIT 1
+    `);
+    const qaUser = userRows.rows[0] as { id: string; email: string; dealer_id: string } | undefined;
+
+    if (!qaUser) {
+      skip(
+        "C1: Dealer A vs Dealer B cross-access",
+        "QA dataset not seeded — run: tsx src/cert/qa-seed.ts",
+      );
+    } else {
+      // Find a second dealer (Dealer B) that is NOT the user's own dealer.
+      const otherRows = await db.execute(sql`
+        SELECT id FROM logistics_dealers
+        WHERE  id          != ${qaUser.dealer_id}
+          AND  dealer_code  LIKE 'QA-FAT-%'
+        LIMIT 1
+      `);
+      const dealerBId = (otherRows.rows[0] as { id: string } | undefined)?.id;
+
+      if (!dealerBId) {
+        skip(
+          "C1: Dealer A vs Dealer B cross-access",
+          "second QA dealer not found — re-run qa-seed.ts",
+        );
+      } else {
+        const dealerToken = await login(QA_DEALER_EMAIL, QA_DEALER_PASSWORD);
+        if (!dealerToken) {
+          fail("C1: Dealer A login", "QA dealer user login failed — check password or is_active");
+        } else {
+          // Cross-access: Dealer A JWT → Dealer B endpoint → must 403.
+          const rCross = await apiReq(
+            "GET",
+            `/api/dealers/${dealerBId}/inventory`,
+            dealerToken,
+          );
+          if (rCross.status === 403) {
+            pass(
+              "C1: Dealer A accessing Dealer B inventory → 403 (isolation guard works)",
+            );
+          } else {
+            fail(
+              `C1: Dealer A accessing Dealer B inventory → ${rCross.status} (expected 403)`,
+              `body: ${JSON.stringify(rCross.body)}`,
+            );
+          }
+
+          // Own-dealer access: Dealer A JWT → Dealer A endpoint → must NOT 403.
+          const rOwn = await apiReq(
+            "GET",
+            `/api/dealers/${qaUser.dealer_id}/inventory`,
+            dealerToken,
+          );
+          if (rOwn.status !== 403) {
+            pass(
+              "C1: Dealer A accessing own inventory → not 403 (permitted)",
+              `HTTP ${rOwn.status}`,
+            );
+          } else {
+            fail(
+              "C1: Dealer A accessing own inventory → 403 (should be allowed)",
+            );
+          }
+        }
+      }
+    }
+  }
 
   // ════════════════════════════════════════════════════════════════════════════
   // H11 — Lot Traceability (data-dependent — only run if in-progress orders exist)
@@ -452,14 +524,16 @@ async function main() {
     } else {
       const charger = chargers[0];
       const [o1, o2] = inProgressOrders;
+      // Route: POST /orders/:id/stages/:stage/start  (stage is a URL param, not body field)
+      // Body:  { operatorName: string, stageData?: Record<string,unknown> }
       const [r1, r2] = await Promise.all([
-        apiReq("POST", `/api/manufacturing/orders/${o1.id}/stages/start`, supervisorToken ?? ownerToken, {
-          stage_type: "charging",
-          stage_data: { chargerUnitId: charger.id, chargerCode: charger.chargerCode },
+        apiReq("POST", `/api/manufacturing/orders/${o1.id}/stages/charging/start`, supervisorToken ?? ownerToken, {
+          operatorName: "QA-H17-Operator",
+          stageData: { chargerUnitId: charger.id, chargerCode: charger.chargerCode },
         }),
-        apiReq("POST", `/api/manufacturing/orders/${o2.id}/stages/start`, supervisorToken ?? ownerToken, {
-          stage_type: "charging",
-          stage_data: { chargerUnitId: charger.id, chargerCode: charger.chargerCode },
+        apiReq("POST", `/api/manufacturing/orders/${o2.id}/stages/charging/start`, supervisorToken ?? ownerToken, {
+          operatorName: "QA-H17-Operator",
+          stageData: { chargerUnitId: charger.id, chargerCode: charger.chargerCode },
         }),
       ]);
       const successes = [r1, r2].filter((r) => r.status >= 200 && r.status < 300).length;
