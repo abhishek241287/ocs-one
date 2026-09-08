@@ -221,6 +221,54 @@ The existing QA seed is sufficient only for C1 isolation, H11 invalid-lot
 validation, H14 completed-order readability, and H17 charger reservation
 competition.
 
+
+## 10. Repeatable controlled fixture runner
+
+The full FAT dataset is provided by the approved test-database tooling under
+`artifacts/api-server/src/cert/`. It is deliberately separate from application
+startup seed logic and uses the `FAT-E2E-` namespace; it does not modify the
+existing `QA-FAT-*` blocker fixture.
+
+Before running the commands, check out
+`FAT-CANDIDATE-2026-09-08` (`60564b1b49b76ce0b97e46d1de65a7325ef50ba7`) and
+provide `FAT_TEST_PASSWORD` through the secret runner. The password is used to
+hash the six named accounts and is never written to the manifest or evidence.
+
+```sh
+FAT_TEST_PASSWORD='provided out of band' pnpm cert:fat:seed
+pnpm cert:fat:verify
+pnpm cert:fat:teardown
+pnpm cert:fat:verify
+```
+
+For a fresh FAT run, `FAT_TEST_PASSWORD='provided out of band' pnpm test:fat`
+is the shorthand for seed followed by verification; it intentionally leaves
+the controlled records in place for the manual route journey.
+
+The seed resets only rows in the `FAT-E2E-` namespace, then creates:
+
+- six named accounts (Owner, Director, Supervisor, Operator, Viewer, Dealer)
+  with the Dealer account linked to the controlled Dealer A record;
+- active product, workflow, cell, BMS, cabinet, connector, cable, busbar,
+  charger, test-equipment, supplier, material, and routing masters;
+- an approved revisioned BOM with cell and traceable non-cell lines;
+- valid and negative GRNs, complete incoming inspections, signed inventory
+  movements, a cell-processing transfer, and available stock;
+- a 64-cell received lot with full measurements, accepted/rejected grading,
+  an ECF correction candidate, an allocated match, and a pending match;
+- six independent manufacturing orders with all nine canonical stages,
+  charger-race orders, a completion-boundary order, test results, QC pass and
+  reject/rework records, formation data, genealogy, and a MIN;
+- ready-for-packing, non-packable, packed/dispatched product states plus dealer
+  snapshot, dealer portal history, customer registration, warranty, and a
+  complete traceability anchor.
+
+`certification/fat-fixture-manifest.json` is generated without passwords and
+records the frozen baseline, resolved IDs, counts, and expected concurrency
+fixtures. Teardown is prefix-scoped and FK-ordered, includes downstream
+events/ledgers/ECF rows, and fails unless the residual count is zero. A failed
+seed transaction rolls back; a standalone teardown can recover from an
+interrupted run.
 ## 10. Reset and concurrency integrity requirements
 
 The controlled FAT setup must be deterministic and resettable. Do not create
