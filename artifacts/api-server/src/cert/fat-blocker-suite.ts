@@ -7,8 +7,8 @@
  */
 
 // Use @workspace/db for schema checks (same as authz/audit suites).
-import { db } from "@workspace/db";
-import { sql } from "drizzle-orm";
+import { db, usersTable, logisticsDealersTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
 
 const BASE = process.env.CERT_TARGET ?? "http://localhost:8080";
 
@@ -340,84 +340,132 @@ async function main() {
     }
   }
 
-  // C1 dynamic cross-access: look for the QA-seeded dealer-role user linked to
-  // Dealer A. If the qa-seed script has been run, we can do a live end-to-end
-  // isolation check: Dealer A JWT → Dealer B endpoint must 403.
+  // C1 full end-to-end: dealer A sees own data; accessing dealer B's data returns 403.
+  // We create two dealer records and a dealer-role user linked (via direct DB update)
+  // to dealer A, then verify the isolation middleware fires correctly.
   {
-    const QA_DEALER_EMAIL    = "qa.dealer.a@qa.local";
-    const QA_DEALER_PASSWORD = process.env.CERT_QA_DEALER_PASSWORD ?? "QADlr#2026!";
+    const C1_CODE_A = "C1CERT-DLRA";
+    const C1_CODE_B = "C1CERT-DLRB";
+    const C1_EMAIL  = "c1.dealer-a@cert.local";
+    const C1_PASS   = "C1Cert!DealerA2026";
 
-    // Find the QA dealer user and their linked dealer IDs.
-    const userRows = await db.execute(sql`
-      SELECT u.id, u.email, u.dealer_id
-      FROM   users u
-      WHERE  u.email    = ${QA_DEALER_EMAIL}
-        AND  u.role     = 'dealer'
-        AND  u.dealer_id IS NOT NULL
-        AND  u.is_active = true
-      LIMIT 1
-    `);
-    const qaUser = userRows.rows[0] as { id: string; email: string; dealer_id: string } | undefined;
+    let dealerAId: string | null = null;
+    let dealerBId: string | null = null;
+    let dealerUserId: string | null = null;
 
-    if (!qaUser) {
-      skip(
-        "C1: Dealer A vs Dealer B cross-access",
-        "QA dataset not seeded — run: tsx src/cert/qa-seed.ts",
-      );
-    } else {
-      // Find a second dealer (Dealer B) that is NOT the user's own dealer.
-      const otherRows = await db.execute(sql`
-        SELECT id FROM logistics_dealers
-        WHERE  id          != ${qaUser.dealer_id}
-          AND  dealer_code  LIKE 'QA-FAT-%'
-        LIMIT 1
-      `);
-      const dealerBId = (otherRows.rows[0] as { id: string } | undefined)?.id;
-
-      if (!dealerBId) {
-        skip(
-          "C1: Dealer A vs Dealer B cross-access",
-          "second QA dealer not found — re-run qa-seed.ts",
-        );
+    try {
+      // ── 1. Ensure dealer A exists (create or look up by stable code) ──
+      const rA = await apiReq("POST", "/api/logistics/dealers", ownerToken, {
+        dealerCode: C1_CODE_A,
+        dealerName: "C1 Cert Dealer Alpha",
+        status: "active",
+      });
+      if (rA.status === 201) {
+        dealerAId = (rA.body as { id: string }).id;
       } else {
-        const dealerToken = await login(QA_DEALER_EMAIL, QA_DEALER_PASSWORD);
-        if (!dealerToken) {
-          fail("C1: Dealer A login", "QA dealer user login failed — check password or is_active");
-        } else {
-          // Cross-access: Dealer A JWT → Dealer B endpoint → must 403.
-          const rCross = await apiReq(
-            "GET",
-            `/api/dealers/${dealerBId}/inventory`,
-            dealerToken,
-          );
-          if (rCross.status === 403) {
-            pass(
-              "C1: Dealer A accessing Dealer B inventory → 403 (isolation guard works)",
-            );
-          } else {
-            fail(
-              `C1: Dealer A accessing Dealer B inventory → ${rCross.status} (expected 403)`,
-              `body: ${JSON.stringify(rCross.body)}`,
-            );
-          }
+        // Already exists from a prior crashed run — look it up
+        const rows = await db
+          .select({ id: logisticsDealersTable.id })
+          .from(logisticsDealersTable)
+          .where(eq(logisticsDealersTable.dealerCode, C1_CODE_A))
+          .limit(1);
+        dealerAId = rows[0]?.id ?? null;
+      }
 
-          // Own-dealer access: Dealer A JWT → Dealer A endpoint → must NOT 403.
-          const rOwn = await apiReq(
-            "GET",
-            `/api/dealers/${qaUser.dealer_id}/inventory`,
-            dealerToken,
-          );
-          if (rOwn.status !== 403) {
-            pass(
-              "C1: Dealer A accessing own inventory → not 403 (permitted)",
-              `HTTP ${rOwn.status}`,
-            );
+      // ── 2. Ensure dealer B exists ─────────────────────────────────────
+      const rB = await apiReq("POST", "/api/logistics/dealers", ownerToken, {
+        dealerCode: C1_CODE_B,
+        dealerName: "C1 Cert Dealer Beta",
+        status: "active",
+      });
+      if (rB.status === 201) {
+        dealerBId = (rB.body as { id: string }).id;
+      } else {
+        const rows = await db
+          .select({ id: logisticsDealersTable.id })
+          .from(logisticsDealersTable)
+          .where(eq(logisticsDealersTable.dealerCode, C1_CODE_B))
+          .limit(1);
+        dealerBId = rows[0]?.id ?? null;
+      }
+
+      if (!dealerAId || !dealerBId) {
+        fail("C1 setup: could not obtain both dealer fixtures", `dealerA=${dealerAId} dealerB=${dealerBId}`);
+      } else {
+        // ── 3. Ensure dealer user exists ─────────────────────────────────
+        const rU = await apiReq("POST", "/api/auth/register", ownerToken, {
+          name: "C1 Cert Dealer A User",
+          email: C1_EMAIL,
+          password: C1_PASS,
+          role: "dealer",
+        });
+        if (rU.status !== 201 && rU.status !== 409) {
+          fail("C1 setup: register dealer user", `HTTP ${rU.status}`);
+        } else {
+          // ── 4. Link user to dealer A directly in DB (register endpoint
+          //       does not accept dealerId — that is intentional; the
+          //       director sets it separately) ───────────────────────────
+          await db
+            .update(usersTable)
+            .set({ dealerId: dealerAId })
+            .where(eq(usersTable.email, C1_EMAIL));
+
+          const userRows = await db
+            .select({ id: usersTable.id })
+            .from(usersTable)
+            .where(eq(usersTable.email, C1_EMAIL))
+            .limit(1);
+          dealerUserId = userRows[0]?.id ?? null;
+
+          // ── 5. Login as dealer A user ─────────────────────────────────
+          const dealerAToken = await login(C1_EMAIL, C1_PASS);
+          if (!dealerAToken) {
+            fail("C1: dealer A user login failed");
           } else {
-            fail(
-              "C1: Dealer A accessing own inventory → 403 (should be allowed)",
-            );
+            // ── 6. Own inventory → 200 ───────────────────────────────────
+            const rOwnInv = await apiReq("GET", `/api/dealers/${dealerAId}/inventory`, dealerAToken);
+            if (rOwnInv.status === 200) {
+              pass("C1: Dealer A → /dealers/dealerA/inventory → 200 (own data allowed)");
+            } else {
+              fail("C1: Dealer A → own inventory", `HTTP ${rOwnInv.status} (expected 200)`);
+            }
+
+            // ── 7. Cross-dealer inventory → 403 ──────────────────────────
+            const rCrossInv = await apiReq("GET", `/api/dealers/${dealerBId}/inventory`, dealerAToken);
+            if (rCrossInv.status === 403) {
+              pass("C1: Dealer A → /dealers/dealerB/inventory → 403 (cross-dealer blocked)");
+            } else {
+              fail("C1: Dealer A → dealer B inventory", `HTTP ${rCrossInv.status} (expected 403)`);
+            }
+
+            // ── 8. Own dispatch-history → 200 ────────────────────────────
+            const rOwnDisp = await apiReq("GET", `/api/dealers/${dealerAId}/dispatch-history`, dealerAToken);
+            if (rOwnDisp.status === 200) {
+              pass("C1: Dealer A → /dealers/dealerA/dispatch-history → 200 (own data allowed)");
+            } else {
+              fail("C1: Dealer A → own dispatch-history", `HTTP ${rOwnDisp.status} (expected 200)`);
+            }
+
+            // ── 9. Cross-dealer dispatch-history → 403 ───────────────────
+            const rCrossDisp = await apiReq("GET", `/api/dealers/${dealerBId}/dispatch-history`, dealerAToken);
+            if (rCrossDisp.status === 403) {
+              pass("C1: Dealer A → /dealers/dealerB/dispatch-history → 403 (cross-dealer blocked)");
+            } else {
+              fail("C1: Dealer A → dealer B dispatch-history", `HTTP ${rCrossDisp.status} (expected 403)`);
+            }
           }
         }
+      }
+    } finally {
+      // Teardown — best-effort; FK order: user before dealer
+      if (dealerUserId) {
+        await db.delete(usersTable).where(eq(usersTable.id, dealerUserId)).catch(() => null);
+      }
+      if (dealerAId) {
+        await db.delete(logisticsDealersTable).where(eq(logisticsDealersTable.id, dealerAId)).catch(() => null);
+      }
+      if (dealerBId) {
+        await db.delete(logisticsDealersTable).where(eq(logisticsDealersTable.id, dealerBId)).catch(() => null);
       }
     }
   }
@@ -524,8 +572,8 @@ async function main() {
     } else {
       const charger = chargers[0];
       const [o1, o2] = inProgressOrders;
-      // Route: POST /orders/:id/stages/:stage/start  (stage is a URL param, not body field)
-      // Body:  { operatorName: string, stageData?: Record<string,unknown> }
+      // Route: POST /orders/:id/stages/:stage/start (stage is a URL param).
+      // Body: { operatorName: string, stageData?: Record<string, unknown> }
       const [r1, r2] = await Promise.all([
         apiReq("POST", `/api/manufacturing/orders/${o1.id}/stages/charging/start`, supervisorToken ?? ownerToken, {
           operatorName: "QA-H17-Operator",

@@ -15,18 +15,14 @@ const router: IRouter = Router();
 // requireAuth is applied globally in routes/index.ts (before this router is mounted),
 // so req.user is always populated here. Factory roles (director, supervisor, operator,
 // owner, viewer) pass through unrestricted. Dealer-role users may only access routes
-// whose leading path segment matches the dealerId embedded in their JWT.
+// whose :id parameter matches the dealerId embedded in their JWT.
 //
-// NOTE: req.params is EMPTY at router.use() time — Express only populates route
-// params after a route pattern is matched, which happens after middleware fires.
-// We extract the dealer ID from req.path instead, which IS correctly set relative
-// to the router mount point (e.g. "/<uuid>/inventory") at this stage.
-router.use((req: Request, res: Response, next) => {
+// router.param fires after Express matches a route containing `:id` and has
+// resolved the parameter value — unlike router.use(), req.params.id is always
+// populated here, making it the correct hook for parameter-level access control.
+router.param("id", (req: Request, res: Response, next, id: string) => {
   if (req.user?.role === "dealer") {
-    // req.path inside the dealers sub-router is relative to /dealers, so the
-    // first path segment is the dealer :id (e.g. "/b0b.../inventory" → "b0b...").
-    const targetId = req.path.split("/")[1];
-    if (targetId && req.user.dealerId !== targetId) {
+    if (req.user.dealerId !== id) {
       res.status(403).json({ error: "Access denied: not your dealership" });
       return;
     }

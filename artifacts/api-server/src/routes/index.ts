@@ -41,9 +41,16 @@ router.use("/auth", authRouter);
 // ─── All routes below require a valid session ─────────────────────────────────
 router.use(requireAuth);
 
+// Fulfillment — Dealer portal (read-only projection for dealer-role users).
+// Mounted BEFORE denyDealerFactoryAccess so dealer accounts can reach their own
+// scoped inventory and dispatch-history. The C1 isolation middleware inside
+// dealersRouter enforces that a dealer can only access their own dealership.
+// Factory roles also pass through unrestricted (they have no dealer restriction).
+router.use("/dealers", dealersRouter);
+
 // Dealer is an external portal-only role: deny it access to every factory route
 // below (reads included). Auth routes are mounted ABOVE this line so a dealer can
-// still log in, read /auth/me, and log out.
+// still log in, read /auth/me, log out, and access /dealers (above).
 router.use(denyDealerFactoryAccess);
 
 // Engineering Masters
@@ -74,9 +81,6 @@ router.use("/packing", packingRouter);
 
 // Fulfillment — Dispatch (Product-Platform-driven; status + dealer + events only)
 router.use("/dispatch", dispatchRouter);
-
-// Fulfillment — Dealer (read-only projection over the Product Platform)
-router.use("/dealers", dealersRouter);
 
 // Customer Registration (G3) — end-customer ownership of a dispatched Product
 router.use("/customers", customersRouter);
