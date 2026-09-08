@@ -36,6 +36,7 @@ import {
   cellsTable,
   cellLotEventsTable,
   engineeringCorrectionsTable,
+  logisticsDealersTable,
   securityEventsTable,
   usersTable,
 } from "@workspace/db";
@@ -51,6 +52,8 @@ const FORCE_FAIL = process.env.CERT_FORCE_FAIL ?? null;
 const RUN_TAG = Date.now();
 const TEMP_PASSWORD = "SS03!Cert#Temp2026";
 const VIEWER_EMAIL = `ss03.viewer.${RUN_TAG}@cert.local`;
+const DEALER_EMAIL = `ss03.dealer.${RUN_TAG}@cert.local`;
+const CERT_DEALER_CODE = `SS03-CERT-DEALER-${RUN_TAG}`;
 const CERT_LOT_NUMBER = `SS03-CERT-${RUN_TAG}`;
 
 type CookieJar = string | null;
@@ -122,6 +125,8 @@ function present(v: unknown): boolean {
 // ─── Persisted-row lookups ──────────────────────────────────────────────────
 const runStart = new Date();
 let certLotId = "";
+let certDealerUserId = "";
+let certDealerId = "";
 
 // ─── Semantic correctness ─────────────────────────────────────────────────────
 // Presence is not enough for an audit cert — a record with the right event type but
@@ -151,6 +156,21 @@ const SEMANTIC: Record<string, (r: Record<string, unknown>) => string[]> = {
       typeof r.detail === "string" && r.detail.toLowerCase().includes("viewer")
         ? ""
         : "detail missing role",
+    ].filter(Boolean),
+  "user.dealer_assignment_changed": (r) =>
+    [
+      r.actorEmail === DIRECTOR_EMAIL ? "" : "actor≠director",
+      r.targetEmail === DEALER_EMAIL ? "" : "target≠dealer-user",
+      r.statusCode === 200 ? "" : "status≠200",
+      typeof r.path === "string" && r.path.includes("/api/auth/users/") && r.path.endsWith("/dealer")
+        ? ""
+        : "path≠dealer-assignment",
+      typeof r.detail === "string" && r.detail.includes(CERT_DEALER_CODE)
+        ? ""
+        : "detail missing dealer",
+      typeof r.detail === "string" && r.detail.includes(certDealerId)
+        ? ""
+        : "detail missing dealer id",
     ].filter(Boolean),
   "authz.denied": (r) =>
     [
@@ -254,6 +274,53 @@ async function runTriggers(directorJar: CookieJar): Promise<{ viewerLoginRowId: 
   });
   if (reg.status !== 201) throw new Error(`Could not provision cert viewer: HTTP ${reg.status}`);
   await reg.text().catch(() => undefined);
+
+  // Also provision a dealer-role account so the assignment endpoint is exercised
+  // against a valid target rather than only a dummy user id.
+  const dealerReg = await fetchResilient(`${BASE_URL}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: directorJar ?? "" },
+    body: JSON.stringify({
+      name: "SS03 Dealer",
+      email: DEALER_EMAIL,
+      password: TEMP_PASSWORD,
+      role: "dealer",
+    }),
+  });
+  if (dealerReg.status !== 201) throw new Error(`Could not provision cert dealer: HTTP ${dealerReg.status}`);
+  await dealerReg.text().catch(() => undefined);
+
+  const [dealerUser] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.email, DEALER_EMAIL))
+    .limit(1);
+  if (!dealerUser) throw new Error("Cert dealer user was not created");
+  certDealerUserId = dealerUser.id;
+
+  const [dealer] = await db
+    .insert(logisticsDealersTable)
+    .values({
+      dealerCode: CERT_DEALER_CODE,
+      dealerName: "SS03 Certification Dealer",
+      status: "active",
+    })
+    .returning({ id: logisticsDealersTable.id });
+  if (!dealer) throw new Error("Cert dealer fixture was not created");
+  certDealerId = dealer.id;
+
+  // user.dealer_assignment_changed — director links the real dealer account to
+  // the real active dealership; the audit check below validates actor, target,
+  // path, status, dealer id, and dealer code in the persisted event.
+  const assignment = await fetchResilient(`${BASE_URL}/api/auth/users/${certDealerUserId}/dealer`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Cookie: directorJar ?? "" },
+    body: JSON.stringify({ dealerId: certDealerId }),
+  });
+  if (assignment.status !== 200) {
+    throw new Error(`Dealer assignment trigger failed: HTTP ${assignment.status}`);
+  }
+  await assignment.text().catch(() => undefined);
 
   // auth.login.failed — wrong password for the viewer.
   await login(VIEWER_EMAIL, "wrong-password");
@@ -474,7 +541,14 @@ async function cleanup(): Promise<void> {
     await db.delete(cellLotEventsTable).where(eq(cellLotEventsTable.lotId, certLotId)).catch(() => undefined);
     await db.delete(cellLotsTable).where(eq(cellLotsTable.id, certLotId)).catch(() => undefined);
   }
-  await db.delete(usersTable).where(inArray(usersTable.email, [VIEWER_EMAIL])).catch(() => undefined);
+  await db
+    .delete(usersTable)
+    .where(inArray(usersTable.email, [VIEWER_EMAIL, DEALER_EMAIL]))
+    .catch(() => undefined);
+  await db
+    .delete(logisticsDealersTable)
+    .where(eq(logisticsDealersTable.dealerCode, CERT_DEALER_CODE))
+    .catch(() => undefined);
 }
 
 interface CheckResult {
@@ -575,6 +649,8 @@ async function main(): Promise<void> {
         const match =
           check.id === "auth.login.failed" || check.id === "user.created"
             ? { targetEmail: VIEWER_EMAIL }
+            : check.id === "user.dealer_assignment_changed"
+              ? { targetEmail: DEALER_EMAIL }
             : check.id === "ratelimit.exceeded"
               ? undefined
               : { actorEmail: VIEWER_EMAIL };

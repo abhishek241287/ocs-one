@@ -119,6 +119,18 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     // operator/viewer are 403; dealer 403 (requireRole); anonymous 401.
     expected: roles(P, P, F, F),
   },
+  {
+    id: "auth.users.dealer-assignment",
+    method: "PATCH",
+    path: `/api/auth/users/${DUMMY_ID}/dealer`,
+    group: "Auth",
+    description: "Assign or unlink a dealer account",
+    guard: "requireAuth + requireRole(owner,director)",
+    body: { dealerId: DUMMY_ID },
+    // The dummy target is intentionally nonexistent: allowed principals reach
+    // the handler (404), while all other roles must be stopped by the guard.
+    expected: roles(P, F, F, F),
+  },
 
   // ─── Read-everywhere dashboards/lists (requireAuth only) ─────────────────────
   {

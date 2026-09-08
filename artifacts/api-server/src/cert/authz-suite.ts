@@ -45,6 +45,8 @@ const FORCE_FAIL = process.env.CERT_FORCE_FAIL ?? null;
 // the register endpoint and torn down on exit.
 const TEMP_PASSWORD = "SS02!Cert#Temp2026";
 const TEMP_DEALER_CODE = "SS02-CERT-DEALER";
+const TEMP_REASSIGN_DEALER_CODE = "SS02-CERT-DEALER-2";
+const TEMP_INACTIVE_DEALER_CODE = "SS02-CERT-INACTIVE";
 const TEMP_USERS: { role: Exclude<Principal, "owner" | "anonymous">; email: string; name: string }[] = [
   { role: "director", email: "ss02.director@cert.local", name: "SS02 Director" },
   { role: "supervisor", email: "ss02.supervisor@cert.local", name: "SS02 Supervisor" },
@@ -96,23 +98,33 @@ async function login(email: string, password: string): Promise<CookieJar> {
   return jar;
 }
 
-async function ensureTempDealer(): Promise<string> {
+async function ensureTempDealer(
+  dealerCode: string,
+  dealerName: string,
+  status: "active" | "inactive",
+): Promise<string> {
   const existing = await db
     .select({ id: logisticsDealersTable.id })
     .from(logisticsDealersTable)
-    .where(eq(logisticsDealersTable.dealerCode, TEMP_DEALER_CODE))
+    .where(eq(logisticsDealersTable.dealerCode, dealerCode))
     .limit(1);
-  if (existing[0]) return existing[0].id;
+  if (existing[0]) {
+    await db
+      .update(logisticsDealersTable)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(logisticsDealersTable.id, existing[0].id));
+    return existing[0].id;
+  }
 
   const [created] = await db
     .insert(logisticsDealersTable)
     .values({
-      dealerCode: TEMP_DEALER_CODE,
-      dealerName: "SS-02 Certification Dealer",
-      status: "active",
+      dealerCode,
+      dealerName,
+      status,
     })
     .returning({ id: logisticsDealersTable.id });
-  if (!created) throw new Error("Failed to provision SS-02 dealer fixture");
+  if (!created) throw new Error(`Failed to provision dealer fixture ${dealerCode}`);
   return created.id;
 }
 
@@ -148,7 +160,13 @@ async function cleanupTempUsers(): Promise<void> {
   await db.delete(usersTable).where(inArray(usersTable.email, emails));
   await db
     .delete(logisticsDealersTable)
-    .where(eq(logisticsDealersTable.dealerCode, TEMP_DEALER_CODE));
+    .where(
+      inArray(logisticsDealersTable.dealerCode, [
+        TEMP_DEALER_CODE,
+        TEMP_REASSIGN_DEALER_CODE,
+        TEMP_INACTIVE_DEALER_CODE,
+      ]),
+    );
 }
 
 function classify(status: number): AuthzOutcome {
@@ -181,6 +199,142 @@ async function callEndpoint(
   // Drain body so the socket can be reused.
   await res.text().catch(() => undefined);
   return res.status;
+}
+
+interface DealerAssignmentCheck {
+  name: string;
+  ok: boolean;
+  detail: string;
+}
+
+async function patchDealerAssignment(
+  jar: CookieJar,
+  targetUserId: string,
+  dealerId: string | null,
+): Promise<number> {
+  const res = await fetchResilient(`${BASE_URL}/api/auth/users/${targetUserId}/dealer`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: jar ?? "",
+    },
+    body: JSON.stringify({ dealerId }),
+  });
+  await res.text().catch(() => undefined);
+  return res.status;
+}
+
+async function dealerAssignmentChecks(
+  jars: Record<Principal, CookieJar>,
+  dealerId: string,
+  reassignmentDealerId: string,
+  inactiveDealerId: string,
+): Promise<DealerAssignmentCheck[]> {
+  const [dealerUser] = await db
+    .select({ id: usersTable.id, dealerId: usersTable.dealerId })
+    .from(usersTable)
+    .where(eq(usersTable.email, "ss02.dealer@cert.local"))
+    .limit(1);
+  const [operatorUser] = await db
+    .select({ id: usersTable.id, dealerId: usersTable.dealerId })
+    .from(usersTable)
+    .where(eq(usersTable.email, "ss02.operator@cert.local"))
+    .limit(1);
+  if (!dealerUser || !operatorUser) throw new Error("Dealer-assignment fixtures were not provisioned");
+
+  // Establish a known existing assignment, then exercise every validation and
+  // mutation path against the real endpoint.
+  await db.update(usersTable).set({ dealerId }).where(eq(usersTable.id, dealerUser.id));
+  await db.update(usersTable).set({ dealerId: null }).where(eq(usersTable.id, operatorUser.id));
+
+  const checks: DealerAssignmentCheck[] = [];
+  const add = (name: string, ok: boolean, detail: string) => checks.push({ name, ok, detail });
+
+  const viewerStatus = await patchDealerAssignment(jars.viewer, dealerUser.id, reassignmentDealerId);
+  add("viewer denied", viewerStatus === 403, `HTTP ${viewerStatus} (expected 403)`);
+
+  const supervisorStatus = await patchDealerAssignment(jars.supervisor, dealerUser.id, reassignmentDealerId);
+  add("supervisor denied", supervisorStatus === 403, `HTTP ${supervisorStatus} (expected 403)`);
+
+  const nonDealerStatus = await patchDealerAssignment(jars.director, operatorUser.id, reassignmentDealerId);
+  const [operatorAfterNonDealer] = await db
+    .select({ dealerId: usersTable.dealerId })
+    .from(usersTable)
+    .where(eq(usersTable.id, operatorUser.id))
+    .limit(1);
+  add(
+    "dealer-role-only targeting",
+    nonDealerStatus === 400 && operatorAfterNonDealer?.dealerId === null,
+    `HTTP ${nonDealerStatus}; non-dealer dealer_id=${operatorAfterNonDealer?.dealerId ?? "null"}`,
+  );
+
+  const missingStatus = await patchDealerAssignment(jars.director, dealerUser.id, DUMMY_ID);
+  const [afterMissing] = await db
+    .select({ dealerId: usersTable.dealerId })
+    .from(usersTable)
+    .where(eq(usersTable.id, dealerUser.id))
+    .limit(1);
+  add(
+    "missing dealer rejected",
+    missingStatus === 404 && afterMissing?.dealerId === dealerId,
+    `HTTP ${missingStatus}; assignment preserved=${afterMissing?.dealerId === dealerId}`,
+  );
+
+  const inactiveStatus = await patchDealerAssignment(jars.director, dealerUser.id, inactiveDealerId);
+  const [afterInactive] = await db
+    .select({ dealerId: usersTable.dealerId })
+    .from(usersTable)
+    .where(eq(usersTable.id, dealerUser.id))
+    .limit(1);
+  add(
+    "inactive dealer rejected",
+    inactiveStatus === 400 && afterInactive?.dealerId === dealerId,
+    `HTTP ${inactiveStatus}; assignment preserved=${afterInactive?.dealerId === dealerId}`,
+  );
+
+  const directorStatus = await patchDealerAssignment(jars.director, dealerUser.id, reassignmentDealerId);
+  const [afterDirector] = await db
+    .select({ id: usersTable.id, dealerId: usersTable.dealerId })
+    .from(usersTable)
+    .where(eq(usersTable.id, dealerUser.id))
+    .limit(2);
+  add(
+    "director reassignment succeeds",
+    directorStatus === 200 &&
+      afterDirector?.id === dealerUser.id &&
+      afterDirector.dealerId === reassignmentDealerId,
+    `HTTP ${directorStatus}; rows=1 assignment=${afterDirector?.dealerId ?? "null"}`,
+  );
+
+  const ownerStatus = await patchDealerAssignment(jars.owner, dealerUser.id, dealerId);
+  const [afterOwner] = await db
+    .select({ id: usersTable.id, dealerId: usersTable.dealerId })
+    .from(usersTable)
+    .where(eq(usersTable.id, dealerUser.id))
+    .limit(2);
+  add(
+    "owner assignment succeeds",
+    ownerStatus === 200 &&
+      afterOwner?.id === dealerUser.id &&
+      afterOwner.dealerId === dealerId,
+    `HTTP ${ownerStatus}; rows=1 assignment=${afterOwner?.dealerId ?? "null"}`,
+  );
+
+  const unlinkStatus = await patchDealerAssignment(jars.owner, dealerUser.id, null);
+  const [afterUnlink] = await db
+    .select({ id: usersTable.id, dealerId: usersTable.dealerId })
+    .from(usersTable)
+    .where(eq(usersTable.id, dealerUser.id))
+    .limit(2);
+  add(
+    "null unlinks assignment",
+    unlinkStatus === 200 &&
+      afterUnlink?.id === dealerUser.id &&
+      afterUnlink.dealerId === null,
+    `HTTP ${unlinkStatus}; rows=1 assignment=${afterUnlink?.dealerId ?? "null"}`,
+  );
+
+  return checks;
 }
 
 interface Result {
@@ -226,7 +380,21 @@ async function main(): Promise<void> {
 
   try {
     jars.owner = await login(OWNER_EMAIL, OWNER_PASSWORD);
-    const dealerId = await ensureTempDealer();
+    const dealerId = await ensureTempDealer(
+      TEMP_DEALER_CODE,
+      "SS-02 Certification Dealer",
+      "active",
+    );
+    const reassignmentDealerId = await ensureTempDealer(
+      TEMP_REASSIGN_DEALER_CODE,
+      "SS-02 Reassignment Dealer",
+      "active",
+    );
+    const inactiveDealerId = await ensureTempDealer(
+      TEMP_INACTIVE_DEALER_CODE,
+      "SS-02 Inactive Dealer",
+      "inactive",
+    );
     await ensureTempUsers(jars.owner, dealerId);
     jars.director = await login("ss02.director@cert.local", TEMP_PASSWORD);
     jars.supervisor = await login("ss02.supervisor@cert.local", TEMP_PASSWORD);
@@ -254,6 +422,13 @@ async function main(): Promise<void> {
     }
 
     const failures = results.filter((r) => !r.ok);
+    const assignmentChecks = await dealerAssignmentChecks(
+      jars,
+      dealerId,
+      reassignmentDealerId,
+      inactiveDealerId,
+    );
+    const assignmentFailures = assignmentChecks.filter((check) => !check.ok);
 
     // Per-endpoint compact report.
     for (const endpoint of AUTHZ_MATRIX) {
@@ -271,23 +446,33 @@ async function main(): Promise<void> {
         `[${status}] ${endpoint.method.padEnd(6)} ${endpoint.id.padEnd(38)} ${row}`,
       );
     }
+    for (const check of assignmentChecks) {
+      console.log(
+        `[${check.ok ? "PASS" : "FAIL"}] auth.users.dealer-assignment — ${check.name}: ${check.detail}`,
+      );
+    }
 
     console.log("─".repeat(72));
-    if (failures.length > 0) {
-      console.log(`✗ SS-02 FAILED — ${failures.length} mismatch(es):`);
+    if (failures.length > 0 || assignmentFailures.length > 0) {
+      console.log(
+        `✗ SS-02 FAILED — ${failures.length + assignmentFailures.length} mismatch(es):`,
+      );
       for (const f of failures) {
         console.log(
           `   ${f.method} ${f.path} [${f.principal}] expected ${f.expected}, got ${f.actual} (HTTP ${f.status})`,
         );
       }
+      for (const f of assignmentFailures) {
+        console.log(`   PATCH /api/auth/users/:id/dealer [${f.name}] ${f.detail}`);
+      }
     } else {
       console.log(
-        `✓ SS-02 PASSED — all ${results.length} authorization assertions hold.`,
+        `✓ SS-02 PASSED — all ${results.length} authorization assertions and ${assignmentChecks.length} dealer-assignment checks hold.`,
       );
     }
     console.log("─".repeat(72));
 
-    process.exitCode = failures.length > 0 ? 1 : 0;
+    process.exitCode = failures.length > 0 || assignmentFailures.length > 0 ? 1 : 0;
   } finally {
     await cleanupTempUsers().catch((err) => {
       console.error("⚠ Cleanup of temp users failed:", err);

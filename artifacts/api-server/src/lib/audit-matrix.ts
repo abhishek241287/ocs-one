@@ -85,6 +85,13 @@ export const AUDIT_MATRIX: AuditCheck[] = [
     requires: ALL, // actor(director) + target(new user) + detail(role) + ts
   },
   {
+    id: "user.dealer_assignment_changed",
+    action: "Change a dealer account's dealership assignment",
+    store: "security",
+    expectedEventType: "user.dealer_assignment_changed",
+    requires: ALL,
+  },
+  {
     id: "authz.denied",
     action: "Unauthorized access (403)",
     store: "security",
