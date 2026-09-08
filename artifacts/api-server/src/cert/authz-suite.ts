@@ -306,6 +306,63 @@ async function dealerAssignmentChecks(
     `HTTP ${directorStatus}; rows=1 assignment=${afterDirector?.dealerId ?? "null"}`,
   );
 
+  const staleAfterReassignment = await callEndpoint(
+    {
+      id: "dealer-session-reassignment",
+      method: "GET",
+      path: `/api/dealers/${DUMMY_ID}/inventory`,
+      group: "dealer portal",
+      description: "Dealer inventory after reassignment",
+      guard: "session generation",
+      expected: {
+        owner: "pass",
+        director: "pass",
+        supervisor: "pass",
+        operator: "pass",
+        viewer: "pass",
+        dealer: "unauthorized",
+        anonymous: "unauthorized",
+      },
+      dealerOwnPath: true,
+    },
+    jars.dealer,
+    dealerId,
+  );
+  add(
+    "reassignment invalidates active dealer session",
+    staleAfterReassignment === 401,
+    `HTTP ${staleAfterReassignment} (expected 401)`,
+  );
+
+  const refreshedDealerJar = await login("ss02.dealer@cert.local", TEMP_PASSWORD);
+  const refreshedScope = await callEndpoint(
+    {
+      id: "dealer-session-refreshed-scope",
+      method: "GET",
+      path: `/api/dealers/${DUMMY_ID}/inventory`,
+      group: "dealer portal",
+      description: "Dealer inventory after fresh login",
+      guard: "session generation and dealer isolation",
+      expected: {
+        owner: "pass",
+        director: "pass",
+        supervisor: "pass",
+        operator: "pass",
+        viewer: "pass",
+        dealer: "pass",
+        anonymous: "unauthorized",
+      },
+      dealerOwnPath: true,
+    },
+    refreshedDealerJar,
+    reassignmentDealerId,
+  );
+  add(
+    "fresh login receives reassigned dealer scope",
+    refreshedScope === 200,
+    `HTTP ${refreshedScope} (expected 200)`,
+  );
+
   const ownerStatus = await patchDealerAssignment(jars.owner, dealerUser.id, dealerId);
   const [afterOwner] = await db
     .select({ id: usersTable.id, dealerId: usersTable.dealerId })
@@ -332,6 +389,34 @@ async function dealerAssignmentChecks(
       afterUnlink?.id === dealerUser.id &&
       afterUnlink.dealerId === null,
     `HTTP ${unlinkStatus}; rows=1 assignment=${afterUnlink?.dealerId ?? "null"}`,
+  );
+
+  const staleAfterUnlink = await callEndpoint(
+    {
+      id: "dealer-session-unlink",
+      method: "GET",
+      path: `/api/dealers/${DUMMY_ID}/inventory`,
+      group: "dealer portal",
+      description: "Dealer inventory after unlink",
+      guard: "session generation",
+      expected: {
+        owner: "pass",
+        director: "pass",
+        supervisor: "pass",
+        operator: "pass",
+        viewer: "pass",
+        dealer: "unauthorized",
+        anonymous: "unauthorized",
+      },
+      dealerOwnPath: true,
+    },
+    refreshedDealerJar,
+    dealerId,
+  );
+  add(
+    "unlink invalidates active dealer session",
+    staleAfterUnlink === 401,
+    `HTTP ${staleAfterUnlink} (expected 401)`,
   );
 
   return checks;

@@ -4,6 +4,7 @@ import {
   uuid,
   varchar,
   boolean,
+  integer,
   timestamp,
   index,
 } from "drizzle-orm/pg-core";
@@ -32,6 +33,9 @@ export const usersTable = pgTable(
     name: varchar("name", { length: 255 }).notNull(),
     role: userRoleEnum("role").notNull().default("operator"),
     dealerId: uuid("dealer_id").references(() => logisticsDealersTable.id),
+    // Incremented whenever session-sensitive access changes. Auth middleware
+    // compares the value in a JWT with this row before accepting the request.
+    sessionVersion: integer("session_version").notNull().default(0),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

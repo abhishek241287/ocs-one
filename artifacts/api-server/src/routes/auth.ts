@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { db, logisticsDealersTable, usersTable } from "@workspace/db";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { requireAuth, requireRole, signToken, decodeAuthCookie } from "../middleware/auth";
 import { COOKIE_NAME, COOKIE_OPTIONS } from "../lib/security-config";
 import { recordSecurityEvent, reqMeta } from "../lib/security-events";
@@ -81,6 +81,7 @@ router.post("/login", async (req, res) => {
     name: user.name,
     role: user.role,
     dealerId: user.dealerId ?? null,
+    sessionVersion: user.sessionVersion,
   });
 
   void recordSecurityEvent({
@@ -280,7 +281,14 @@ router.patch(
 
     const [updated] = await db
       .update(usersTable)
-      .set({ dealerId, updatedAt: new Date() })
+      .set({
+        dealerId,
+        // Invalidate every existing token for the affected dealer-role user.
+        // Use a database-side increment so concurrent assignment changes cannot
+        // reuse a stale value read before this update.
+        sessionVersion: sql`${usersTable.sessionVersion} + 1`,
+        updatedAt: new Date(),
+      })
       .where(eq(usersTable.id, id))
       .returning(userAccountProjection);
 

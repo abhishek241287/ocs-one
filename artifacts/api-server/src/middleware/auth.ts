@@ -1,8 +1,10 @@
 import { type Request, type Response, type NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import type { UserRole } from "@workspace/db";
+import { db, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { recordSecurityEvent, reqMeta } from "../lib/security-events";
 import { JWT_EXPIRES_IN } from "../lib/security-config";
+import type { UserRole } from "@workspace/db";
 
 /** Persist an authorization (403) denial to the audit log. */
 function recordDenial(req: Request, required: UserRole[]): void {
@@ -24,6 +26,7 @@ export interface AuthTokenPayload {
   name: string;
   role: UserRole;
   dealerId?: string | null;
+  sessionVersion: number;
   iat?: number;
   exp?: number;
 }
@@ -44,7 +47,7 @@ function getSecret(): string {
   return secret;
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token = req.cookies?.ocs_token as string | undefined;
 
   if (!token) {
@@ -54,6 +57,25 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
   try {
     const payload = jwt.verify(token, getSecret()) as AuthTokenPayload;
+    const [session] = await db
+      .select({ sessionVersion: usersTable.sessionVersion, isActive: usersTable.isActive })
+      .from(usersTable)
+      .where(eq(usersTable.id, payload.userId))
+      .limit(1);
+
+    // Session-sensitive changes (including dealer reassignment/unlink) increment
+    // the database generation. A missing claim is rejected too, so tokens issued
+    // before this check existed cannot bypass the fail-closed refresh boundary.
+    if (
+      !session ||
+      !session.isActive ||
+      !Number.isInteger(payload.sessionVersion) ||
+      payload.sessionVersion !== session.sessionVersion
+    ) {
+      res.status(401).json({ error: "Session is no longer valid. Please log in again." });
+      return;
+    }
+
     req.user = payload;
     next();
   } catch {
