@@ -45,6 +45,8 @@ const router: IRouter = Router({ mergeParams: true });
 // RBAC (DEF-M06-001): production stage execution — operator, supervisor, director.
 router.use(requireWriteRole("operator", "supervisor", "director"));
 
+class ChargerUnavailableError extends Error {}
+
 async function getStageOrFail(
   orderId: string,
   stageType: string,
@@ -86,7 +88,7 @@ async function onChargingStart(
     ))
     .returning({ id: mfgChargerUnitsTable.id });
   if (!reserved) {
-    throw new Error(
+    throw new ChargerUnavailableError(
       `Charger ${chargerUnitId} is no longer available — it may already be in use by another order`,
     );
   }
@@ -419,45 +421,53 @@ router.post("/:stage/start", async (req, res) => {
 
   const startData = (body.stageData as Record<string, unknown>) ?? {};
 
-  await db.transaction(async (tx) => {
-    await tx
-      .update(mfgOrderStagesTable)
-      .set({
-        status: "in_progress",
-        operatorName: body.operatorName,
-        startedAt: new Date(),
-        notes: body.notes ?? found.notes,
-        stageData: { ...(found.stageData ?? {}), ...startData },
-      })
-      .where(eq(mfgOrderStagesTable.id, found.id));
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .update(mfgOrderStagesTable)
+        .set({
+          status: "in_progress",
+          operatorName: body.operatorName,
+          startedAt: new Date(),
+          notes: body.notes ?? found.notes,
+          stageData: { ...(found.stageData ?? {}), ...startData },
+        })
+        .where(eq(mfgOrderStagesTable.id, found.id));
 
-    // Auto-advance order status if still draft/released
-    await tx
-      .update(mfgProductionOrdersTable)
-      .set({ status: "in_progress", currentStage: stage as StageTypeValue })
-      .where(
-        and(
-          eq(mfgProductionOrdersTable.id, id),
-          eq(mfgProductionOrdersTable.status, "draft")
-        )
-      );
+      // Auto-advance order status if still draft/released
+      await tx
+        .update(mfgProductionOrdersTable)
+        .set({ status: "in_progress", currentStage: stage as StageTypeValue })
+        .where(
+          and(
+            eq(mfgProductionOrdersTable.id, id),
+            eq(mfgProductionOrdersTable.status, "draft")
+          )
+        );
 
-    // Charging-specific: reserve charger
-    if (stage === "charging") {
-      await onChargingStart(tx, id, { ...startData, operatorName: body.operatorName });
-    }
+      // Charging-specific: reserve charger
+      if (stage === "charging") {
+        await onChargingStart(tx, id, { ...startData, operatorName: body.operatorName });
+      }
 
-    await logEvent(tx, {
-      productionOrderId: id,
-      eventType: "stage_started",
-      stageType: stage as StageTypeValue,
-      actor: body.operatorName,
-      description: stage === "charging"
-        ? `Charging started${startData.chargerCode ? ` — Charger ${startData.chargerCode}` : ""}`
-        : `Stage ${stage.replace(/_/g, " ")} started`,
-      metadata: startData,
+      await logEvent(tx, {
+        productionOrderId: id,
+        eventType: "stage_started",
+        stageType: stage as StageTypeValue,
+        actor: body.operatorName,
+        description: stage === "charging"
+          ? `Charging started${startData.chargerCode ? ` — Charger ${startData.chargerCode}` : ""}`
+          : `Stage ${stage.replace(/_/g, " ")} started`,
+        metadata: startData,
+      });
     });
-  });
+  } catch (error) {
+    if (error instanceof ChargerUnavailableError) {
+      res.status(409).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
 
   const updated = await getStageOrFail(id, stage, res);
   res.json(updated);

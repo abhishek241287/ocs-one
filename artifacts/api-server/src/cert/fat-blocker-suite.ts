@@ -7,8 +7,15 @@
  */
 
 // Use @workspace/db for schema checks (same as authz/audit suites).
-import { db, usersTable, logisticsDealersTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import {
+  db,
+  usersTable,
+  logisticsDealersTable,
+  mfgChargerUnitsTable,
+  mfgProductionOrdersTable,
+  mfgOrderStagesTable,
+} from "@workspace/db";
+import { eq, inArray, sql } from "drizzle-orm";
 
 const BASE = process.env.CERT_TARGET ?? "http://localhost:8080";
 
@@ -545,33 +552,60 @@ async function main() {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // H17 — Charger Reservation Race (data-dependent)
+  // H17 — Charger Reservation Race
   // ════════════════════════════════════════════════════════════════════════════
   section("H17 — Charger Reservation Race Condition");
   {
-    // Charger UNITS (runtime reservation table) — not master_chargers (catalogue).
-    const chargersResp = await apiReq(
-      "GET",
-      "/api/manufacturing/charger-units?status=available&pageSize=5",
-      ownerToken,
-    );
-    const chargers = (chargersResp.body as { items?: { id: string; chargerCode?: string }[] })?.items ?? [];
+    const runId = `${Date.now()}-${process.pid}`;
+    const orderIds: string[] = [];
+    let chargerId: string | null = null;
 
-    const ordersResp = await apiReq(
-      "GET",
-      "/api/manufacturing/orders?status=in_progress&pageSize=10",
-      ownerToken,
-    );
-    const inProgressOrders = (ordersResp.body as { items?: { id: string }[] })?.items ?? [];
+    try {
+      // Build isolated fixtures so H17 can never skip or accidentally exercise
+      // orders whose charging stage is not ready to start.
+      const [charger] = await db
+        .insert(mfgChargerUnitsTable)
+        .values({
+          chargerCode: `H17-CERT-${runId}`,
+          model: "H17 race fixture",
+          manufacturer: "OCS Cert",
+          serialNumber: `H17-SERIAL-${runId}`,
+          status: "available",
+        })
+        .returning({ id: mfgChargerUnitsTable.id, chargerCode: mfgChargerUnitsTable.chargerCode });
+      chargerId = charger.id;
 
-    if (chargers.length === 0 || inProgressOrders.length < 2) {
-      skip(
-        "H17 concurrent charger reservation",
-        `need ≥1 available charger (have ${chargers.length}) and ≥2 in-progress orders (have ${inProgressOrders.length})`,
+      const orders = await db
+        .insert(mfgProductionOrdersTable)
+        .values([1, 2].map((n) => ({
+          orderNumber: `H17-PO-${runId}-${n}`,
+          batteryNumber: `H17-BAT-${runId}-${n}`,
+          factoryManager: "QA H17",
+          currentStage: "charging" as const,
+          status: "in_progress" as const,
+          priority: "medium" as const,
+        })))
+        .returning({ id: mfgProductionOrdersTable.id });
+      orderIds.push(...orders.map((order) => order.id));
+
+      await db.insert(mfgOrderStagesTable).values(
+        orders.flatMap((order) => [
+          {
+            productionOrderId: order.id,
+            stageType: "bms_programming" as const,
+            stageOrder: 5,
+            status: "approved" as const,
+          },
+          {
+            productionOrderId: order.id,
+            stageType: "charging" as const,
+            stageOrder: 6,
+            status: "pending" as const,
+          },
+        ]),
       );
-    } else {
-      const charger = chargers[0];
-      const [o1, o2] = inProgressOrders;
+
+      const [o1, o2] = orders;
       // Route: POST /orders/:id/stages/:stage/start (stage is a URL param).
       // Body: { operatorName: string, stageData?: Record<string, unknown> }
       const [r1, r2] = await Promise.all([
@@ -585,10 +619,22 @@ async function main() {
         }),
       ]);
       const successes = [r1, r2].filter((r) => r.status >= 200 && r.status < 300).length;
-      if (successes <= 1) {
-        pass("H17: Concurrent charger reservation — at most one success", `HTTP ${r1.status} + ${r2.status}`);
+      const losers = [r1, r2].filter((r) => r.status < 200 || r.status >= 300);
+      const loserMessage = JSON.stringify((losers[0]?.body as { error?: unknown } | undefined)?.error ?? losers[0]?.body ?? "");
+      if (successes === 1 && losers.length === 1 && loserMessage.includes("no longer available")) {
+        pass("H17: Concurrent charger reservation — exactly one winner", `HTTP ${r1.status} + ${r2.status}`);
       } else {
-        fail("H17: BOTH concurrent charger reservations succeeded — double-booking!", `HTTP ${r1.status} + ${r2.status}`);
+        fail(
+          "H17: Concurrent charger reservation did not produce one winner and one availability rejection",
+          `HTTP ${r1.status} + ${r2.status}; loser=${loserMessage}`,
+        );
+      }
+    } finally {
+      if (orderIds.length > 0) {
+        await db.delete(mfgProductionOrdersTable).where(inArray(mfgProductionOrdersTable.id, orderIds));
+      }
+      if (chargerId) {
+        await db.delete(mfgChargerUnitsTable).where(eq(mfgChargerUnitsTable.id, chargerId));
       }
     }
   }

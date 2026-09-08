@@ -51,3 +51,4 @@
 - [Category serial-mode join](imported-product-join.md) — resolve product serial mode by category_id (immutable), never category display name (director-editable); ProductMaster response now carries category_id.
 - [Middleware short-circuit vs ECF allowedRoles](middleware-vs-ecf-authz.md) — an "unrestricted" role allowed by auth middleware is still rejected by service-layer allowedRoles (ECF); any new global-allow role must be added to every allowedRoles call site + verified on the real path.
 - [Dealer portal routing](dealer-portal-routing.md) — portal router must be above denyDealerFactoryAccess; param guards need router.param('id') not router.use (params are undefined in router.use).
+- [Concurrency certification](concurrency-certification.md) — race certs must create ready, isolated fixtures and require exactly one winner plus the expected loser response; “at most one” can hide total failure.
