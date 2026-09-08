@@ -1,0 +1,282 @@
+OCS ONE — FINAL FAT PREPARATION / READ-ONLY VERIFICATION
+
+Treat FAT-CANDIDATE-2026-09-08 as the ONLY system under test.
+
+FROZEN BASELINE:
+Tag: FAT-CANDIDATE-2026-09-08
+Application commit: 60564b1b49b76ce0b97e46d1de65a7325ef50ba7
+
+IMPORTANT:
+DO NOT modify application code, database schema, API routes, UI, workflows, production configuration, or business logic during this task.
+
+We have completed the FAT documentation package. Before actual FAT, perform ONLY the following preparation work.
+
+==================================================
+1. VERIFY C1 FIXES ON THE FROZEN TAG
+==================================================
+
+Read-only Git verification.
+
+Confirm that commit 60564b1b contains the final C1 dealer-isolation fixes that were validated during remediation:
+
+A. denyDealerFactoryAccess / dealer portal path exemption
+   - Dealer users must be permitted to access their own dealer portal routes.
+   - Dealer users must still be denied factory routes.
+
+B. req.path-based dealer ID extraction
+   - Confirm the router-level middleware correctly obtains the dealer ID from the request path.
+   - Confirm this is the version that was actually tested.
+
+Show:
+- exact file(s)
+- relevant commit/diff evidence
+- confirmation that the frozen tag contains the fixes
+- confirmation that the tag still points to 60564b1b
+
+DO NOT change anything.
+
+==================================================
+2. DISP-3 / GATE 9 — DO NOT PATCH
+==================================================
+
+Treat the previously identified dealer commercial-data snapshot issue as a separate Medium finding, outside the seven closed FAT blockers.
+
+Do NOT modify dispatch code.
+
+Verify from the frozen code whether issued dispatch records snapshot dealer commercial/contact information or whether some information is resolved from the current dealer master when the dispatch is subsequently viewed.
+
+Report the actual behavior.
+
+Then classify DISP-3 as:
+
+MEDIUM — BUSINESS ACCEPTANCE DECISION REQUIRED
+
+Do not promote it automatically to a Critical/High blocker.
+
+Do not implement a fix.
+
+Add/document this as a known FAT limitation unless the business explicitly decides that historical dealer snapshotting is mandatory for v1.0.
+
+If a workaround is documented, clearly label it as an operational workaround, not a software fix.
+
+==================================================
+3. PREPARE CONTROLLED FAT DATA SETUP
+==================================================
+
+We agree that manually creating the entire ERP dataset would make FAT inefficient.
+
+Prepare a SEPARATE controlled FAT fixture/setup mechanism.
+
+Do NOT modify production application behavior.
+
+Prefer a separate certification/FAT fixture or setup script rather than changing the existing blocker QA seed, unless the existing architecture makes that impossible.
+
+The fixture must be resettable and deterministic.
+
+Organize it into independent fixture groups:
+
+FAT-01 — Masters
+FAT-02 — Procurement / GRN / Inspection / Inventory
+FAT-03 — Cells / Grading / Matching
+FAT-04 — Manufacturing
+FAT-05 — Finished Product / Packing / Dispatch
+FAT-06 — Customer / Warranty / Traceability
+
+Each group must document:
+- records created
+- IDs/business numbers
+- dependencies
+- reset/cleanup method
+- expected starting state
+
+Do NOT create production-like data outside the controlled FAT namespace/prefix.
+
+==================================================
+4. MINIMUM FAT FIXTURE
+==================================================
+
+Prepare enough controlled data to execute the full positive journey:
+
+Masters:
+- product category
+- product model
+- product workflow
+- cell master
+- required component masters
+- material category
+- material
+- material workflow
+- material-workflow assignment
+- supplier
+- approved BOM
+- active Dealer A
+
+Procurement:
+- draft GRN
+- posted GRN
+- inspection-pending lines
+- completed inspection
+- available inventory
+
+IMPORTANT:
+Keep inspection_pending stock distinct from available stock.
+
+Cells:
+- cell lot
+- sufficient cells for the selected battery
+- capacity and IR measurements
+- grading configuration
+- graded cells
+- matching-ready cells
+
+Manufacturing:
+- production order
+- approved BOM
+- allocated cells
+- order progressing through the actual nine configured stages
+- charging-ready fixture
+- testing-ready fixture
+- QC-ready fixture
+
+Finished product:
+- valid completed-order/product relationship
+- serialized product
+- packed product
+- product assigned to Dealer A
+- dispatched product
+
+Customer:
+- dispatched product suitable for customer registration
+- customer fixture
+- warranty-bearing product
+- complete traceability chain
+
+==================================================
+5. DO NOT CREATE ONE GIANT NON-RESETTABLE FIXTURE
+==================================================
+
+The fixtures must support isolated testing.
+
+Concurrency tests require clean/resettable fixtures for:
+
+- one charger + two charging-ready orders
+- cell matching competition
+- concurrent completion
+
+Do not allow one test to consume the fixture required by another.
+
+Document exactly how each concurrency fixture is restored.
+
+==================================================
+6. UPDATE DOCUMENTATION ONLY WHERE NECESSARY
+==================================================
+
+If the FAT documentation contains a route name that does not exactly match the frozen implementation, correct the documentation only.
+
+In particular, verify the QC approval route.
+
+Earlier verification established that QC completion uses the generic stage approval mechanism rather than a nonexistent standalone qc-approval.ts implementation.
+
+Use the actual frozen route contract in FAT_TEST_CASES.md and FAT_ROLE_MATRIX.md.
+
+Again: documentation only. No application change.
+
+==================================================
+7. ADD THREE FAT TESTS TO THE DOCUMENTATION
+==================================================
+
+Add these documentation-level tests:
+
+INV-P06 — Inventory Reconciliation
+
+Verify:
+
+Opening available quantity
++ receipts
++ valid transfers in
+- transfers out
+- material issues
++/- valid reversals
+= application available stock
+
+The result must reconcile with the underlying inventory ledger.
+
+TRACE-N02 — Duplicate Serial Protection
+
+Attempt to create/import a second product using an existing serial.
+
+Expected:
+- request rejected
+- original product unchanged
+- no second product
+- no duplicate genealogy
+- no duplicate traceability chain
+
+DATA-P01 — FAT Fixture Reset Integrity
+
+After destructive/concurrency tests:
+- reset fixture
+- verify charger availability
+- verify cell allocation state
+- verify production-order state
+- verify product count
+- verify ledger counts
+- verify genealogy counts
+- verify no orphan records relevant to the fixture
+
+==================================================
+8. NINE-STAGE MANUFACTURING ASSERTION
+==================================================
+
+Make MFG-P01 explicitly verify that a newly created FAT production order contains exactly the actual configured stage sequence:
+
+1. cell_allocation
+2. assembly
+3. compression
+4. bms_allocation
+5. bms_programming
+6. charging
+7. testing
+8. quality_control
+9. packing
+
+Do not assume the sequence. Verify it against the frozen candidate.
+
+==================================================
+9. FINAL VALIDATION
+==================================================
+
+After the above:
+
+Confirm:
+
+- frozen tag unchanged
+- application commit unchanged
+- no application/schema/UI/workflow/config changes
+- existing blocker tests remain passing
+- C1 fixes are present on the tag
+- DISP-3 is documented as Medium/business acceptance decision
+- FAT fixture is deterministic/resettable
+- FAT documentation contains the three additional tests
+- actual QC route is documented correctly
+
+Show git status and git diff.
+
+The ONLY permitted workspace changes are:
+1. FAT fixture/setup documentation or controlled FAT fixture files, if required
+2. FAT Markdown documentation corrections/additions
+
+Do NOT change application code.
+
+FINAL OUTPUT:
+
+Provide:
+1. C1 frozen-tag verification result
+2. DISP-3 actual implementation finding and classification
+3. FAT fixture files created
+4. FAT documentation files changed
+5. exact git diff summary
+6. final frozen commit/tag confirmation
+7. confirmation that no application code/schema/routes/UI/workflows/configuration were modified
+
+STOP after this preparation. Do not begin actual FAT execution.
