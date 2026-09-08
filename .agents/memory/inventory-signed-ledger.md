@@ -33,3 +33,15 @@ an immutable history, and concurrent writers must net correctly without lost upd
   read-only projection joining GRN→supplier→inspection→inspector; NEVER denormalize
   supplier/GRN/inspection into stock rows or add a table. Join fan-out is safe because
   `incoming_inspections.grn_id` and `incoming_inspection_lines.grn_line_id` are UNIQUE.
+
+Certification preflights must project the ledger by `stock_state='available'`, not by summing
+all signed rows for a material. Receipt, inspection-pending, rejected, and available states
+are intentionally separate; an all-state sum can look wrong even when the route-facing stock
+projection is correct.
+
+**Why:** a controlled FAT fixture includes rejected and in-flight component rows alongside
+available stock, so an all-state total falsely reported drift during preflight.
+
+**How to apply:** when asserting fixture stock, constrain both the FAT source anchors and
+`stock_state='available'`; count the full controlled transaction set separately to detect
+missing ledger rows.

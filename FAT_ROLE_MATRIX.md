@@ -91,3 +91,24 @@ positive path and the response status/body for each negative path. A 400/404
 after a role gate is acceptable for an allowed role when the test intentionally
 uses a nonexistent ID or invalid body; it proves the request passed
 authorization without mutating data.
+
+## 5. Preflight before manual FAT
+
+Run the read-only fixture gate after seeding and immediately before starting a
+manual FAT journey:
+
+```sh
+FAT_TEST_PASSWORD='provided out of band' pnpm cert:fat:preflight
+```
+
+The gate is limited to the `FAT-E2E-*` fixture namespace. It checks that all
+six role accounts can accept the seeded password, the dealer linkage is intact,
+the canonical nine-stage workflow is present, and the BOM/procurement/cell
+ledger/manufacturing genealogy/dispatch/customer-registration/warranty records
+still have the route-facing state required by FAT. It also verifies that both
+charger-race orders and the pending cell match are ready for concurrency
+coverage.
+
+The command prints grouped pass/fail assertions and never prints the password,
+password hash, session cookie, or other credentials. A non-zero exit means the
+fixture or schema has drifted and manual FAT should not start.

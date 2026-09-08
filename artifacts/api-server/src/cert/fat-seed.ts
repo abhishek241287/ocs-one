@@ -33,6 +33,43 @@ const FROZEN_TAG = "FAT-CANDIDATE-2026-09-08";
 const FROZEN_COMMIT = "60564b1b49b76ce0b97e46d1de65a7325ef50ba7";
 const RUN_AT = new Date().toISOString();
 const DATE = "2026-09-08";
+const FAT_ROLES = ["owner", "director", "supervisor", "operator", "viewer", "dealer"] as const;
+type FatRole = (typeof FAT_ROLES)[number];
+
+type PreflightCheck = {
+  group: string;
+  name: string;
+  ok: boolean;
+  expected?: string;
+  actual?: string;
+};
+
+function preflightValue(value: unknown): string {
+  if (value === undefined || value === null) return "null";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function preflightCheck(
+  checks: PreflightCheck[],
+  group: string,
+  name: string,
+  ok: boolean,
+  expected?: unknown,
+  actual?: unknown,
+): void {
+  checks.push({
+    group,
+    name,
+    ok,
+    ...(expected !== undefined ? { expected: preflightValue(expected) } : {}),
+    ...(actual !== undefined ? { actual: preflightValue(actual) } : {}),
+  });
+}
+
+function exactSet(values: unknown[], expected: string[]): boolean {
+  return values.length === expected.length && values.every((value, index) => String(value) === expected[index]);
+}
 
 async function query(client: SqlClient, text: string, values: unknown[] = []) {
   return client.query(text, values);
@@ -378,12 +415,12 @@ async function seedProcurement(client: SqlClient): Promise<void> {
        source_document_type, source_document_id, source_line_id, created_by)
      VALUES
       ('GRN_RECEIPT', $1, 64, 'PCS', 'inspection_pending', 'GRN', $2, $3, $4),
-      ('GRN_RECEIPT', $1, 2, 'PCS', 'inspection_pending', 'GRN', $2, $5, $4),
+      ('GRN_RECEIPT', $6, 2, 'PCS', 'inspection_pending', 'GRN', $2, $5, $4),
       ('GRN_RECEIPT', $6, 1, 'PCS', 'inspection_pending', 'GRN', $7, $8, $4),
       ('INSPECTION_RELEASE', $1, -64, 'PCS', 'inspection_pending', 'INSPECTION', $9, $3, $4),
       ('INSPECTION_ACCEPT', $1, 64, 'PCS', 'available', 'INSPECTION', $9, $3, $4),
-      ('INSPECTION_RELEASE', $1, -2, 'PCS', 'inspection_pending', 'INSPECTION', $9, $5, $4),
-      ('INSPECTION_ACCEPT', $1, 2, 'PCS', 'available', 'INSPECTION', $9, $5, $4),
+      ('INSPECTION_RELEASE', $6, -2, 'PCS', 'inspection_pending', 'INSPECTION', $9, $5, $4),
+      ('INSPECTION_ACCEPT', $6, 2, 'PCS', 'available', 'INSPECTION', $9, $5, $4),
       ('INSPECTION_RELEASE', $6, -1, 'PCS', 'inspection_pending', 'INSPECTION', $10, $8, $4),
       ('INSPECTION_REJECT', $6, 1, 'PCS', 'rejected', 'INSPECTION', $10, $8, $4),
       ('MATERIAL_TRANSFER_TO_CELL_PROCESSING', $1, -64, 'PCS', 'available', 'TRANSFER', $11, $3, $4),
@@ -1054,6 +1091,303 @@ async function collectManifest(client: SqlClient): Promise<Record<string, unknow
   };
 }
 
+/**
+ * Read-only gate to run immediately before a manual FAT journey.
+ *
+ * This deliberately does not call seed/teardown and does not write the
+ * manifest. Every query is constrained to a FAT fixture id or a FAT-prefixed
+ * business key, so it cannot turn a production/schema check into a global
+ * dataset check. Passwords are compared in memory and never included in the
+ * result.
+ */
+async function preflight(): Promise<void> {
+  const password = process.env.FAT_TEST_PASSWORD;
+  if (!password || password.length < 8) {
+    throw new Error("FAT_TEST_PASSWORD must be supplied out of band and contain at least 8 characters");
+  }
+
+  const checks: PreflightCheck[] = [];
+  const client = await pool.connect();
+  try {
+    const emails = FAT_ROLES.map(actorEmail);
+    const userRows = (
+      await query(
+        client,
+        `SELECT id, email, role::text AS role, is_active, dealer_id, password_hash
+         FROM users
+         WHERE email = ANY($1::text[])`,
+        [emails],
+      )
+    ).rows;
+    const usersByEmail = new Map(userRows.map((row) => [String(row.email), row]));
+    preflightCheck(checks, "auth", "six FAT role accounts exist", userRows.length === FAT_ROLES.length, FAT_ROLES.length, userRows.length);
+
+    for (const role of FAT_ROLES) {
+      const user = usersByEmail.get(actorEmail(role));
+      const expectedDealer = role === "dealer" ? FAT_IDS.dealer : null;
+      preflightCheck(checks, "auth", `${role} account has the frozen id`, user?.id === FAT_IDS.users[role], FAT_IDS.users[role], user?.id);
+      preflightCheck(checks, "auth", `${role} account has the expected role`, user?.role === role, role, user?.role);
+      preflightCheck(checks, "auth", `${role} account is active`, user?.is_active === true, true, user?.is_active);
+      preflightCheck(checks, "auth", `${role} dealer linkage is stable`, (user?.dealer_id ?? null) === expectedDealer, expectedDealer, user?.dealer_id ?? null);
+      const passwordValid = user ? await bcrypt.compare(password, String(user.password_hash ?? "")) : false;
+      preflightCheck(checks, "auth", `${role} login password matches the seeded account`, passwordValid);
+    }
+
+    const dealer = (
+      await query(
+        client,
+        `SELECT id, dealer_code, status, dealer_name, address, gst_number, contact_person, mobile
+         FROM logistics_dealers
+         WHERE id = $1 AND dealer_code LIKE $2`,
+        [FAT_IDS.dealer, `${FAT_PREFIX}%`],
+      )
+    ).rows[0];
+    preflightCheck(checks, "dealer", "linked dealer exists in the FAT namespace", Boolean(dealer), FAT_IDS.dealer, dealer?.id);
+    preflightCheck(checks, "dealer", "linked dealer is active", dealer?.status === "active", "active", dealer?.status);
+    preflightCheck(checks, "dealer", "dealer snapshot fields are populated", Boolean(dealer?.dealer_name && dealer?.address && dealer?.gst_number && dealer?.contact_person && dealer?.mobile));
+
+    const masters = (
+      await query(
+        client,
+        `SELECT
+           (SELECT count(*) FROM product_categories WHERE id = $1 AND code LIKE $7 AND status = 'active') AS category_count,
+           (SELECT count(*) FROM product_workflows WHERE id = $2 AND code LIKE $7 AND status = 'active') AS workflow_count,
+           (SELECT stage_sequence FROM product_workflows WHERE id = $2 AND code LIKE $7) AS stage_sequence,
+           (SELECT count(*) FROM master_products WHERE id = $3 AND code LIKE $7 AND status = 'active') AS model_count,
+           (SELECT count(*) FROM master_cells WHERE id = $4 AND code LIKE $7 AND status = 'active') AS cell_count,
+           (SELECT count(*) FROM master_bms WHERE id = $5 AND code LIKE $7 AND status = 'active') AS bms_count,
+           (SELECT count(*) FROM master_suppliers WHERE id = $6 AND code LIKE $7 AND status = 'active') AS supplier_count`,
+        [
+          FAT_IDS.masters.category,
+          FAT_IDS.masters.workflow,
+          FAT_IDS.masters.model,
+          FAT_IDS.masters.cell,
+          FAT_IDS.masters.bms,
+          FAT_IDS.masters.supplier,
+          `${FAT_PREFIX}%`,
+        ],
+      )
+    ).rows[0] ?? {};
+    preflightCheck(checks, "masters", "product category exists and is active", Number(masters.category_count) === 1, 1, masters.category_count);
+    preflightCheck(checks, "masters", "product workflow exists and is active", Number(masters.workflow_count) === 1, 1, masters.workflow_count);
+    const stageSequence = Array.isArray(masters.stage_sequence) ? masters.stage_sequence : [];
+    const expectedStages = ["cell_allocation", "assembly", "compression", "bms_allocation", "bms_programming", "charging", "testing", "quality_control", "packing"];
+    preflightCheck(checks, "masters", "workflow exposes the canonical nine-stage sequence", exactSet(stageSequence, expectedStages), expectedStages, stageSequence);
+    preflightCheck(checks, "masters", "cell, BMS, model, and supplier anchors exist", [masters.model_count, masters.cell_count, masters.bms_count, masters.supplier_count].every((count) => Number(count) === 1));
+
+    const bom = (
+      await query(
+        client,
+        `SELECT h.status::text AS status, count(l.id)::int AS line_count
+         FROM bom_headers h
+         LEFT JOIN bom_lines l ON l.bom_id = h.id
+         WHERE h.id = $1 AND h.bom_number LIKE $2
+         GROUP BY h.status`,
+        [FAT_IDS.bom.header, `${FAT_PREFIX}%`],
+      )
+    ).rows[0] ?? {};
+    preflightCheck(checks, "bom", "approved FAT BOM exists", bom.status === "approved", "approved", bom.status);
+    preflightCheck(checks, "bom", "approved FAT BOM has both component lines", Number(bom.line_count) === 2, 2, bom.line_count);
+
+    const procurement = (
+      await query(
+        client,
+        `SELECT
+           (SELECT status::text FROM grn_headers WHERE id = $1 AND grn_number LIKE $4) AS grn_status,
+           (SELECT count(*) FROM grn_line_items WHERE grn_id = $1) AS grn_lines,
+           (SELECT count(*) FROM incoming_inspections WHERE id = $2 AND inspection_number LIKE $4) AS inspection_count,
+           (SELECT count(*) FROM incoming_inspection_lines WHERE inspection_id = $2) AS inspection_lines,
+           (SELECT count(*) FROM material_transfers WHERE id = $3 AND transfer_number LIKE $4) AS transfer_count`,
+        [FAT_IDS.procurement.posted, FAT_IDS.procurement.inspection, FAT_IDS.procurement.transfer, `${FAT_PREFIX}%`],
+      )
+    ).rows[0] ?? {};
+    preflightCheck(checks, "procurement", "posted GRN is available for the FAT path", procurement.grn_status === "posted", "posted", procurement.grn_status);
+    preflightCheck(checks, "procurement", "posted GRN has cell and BMS lines", Number(procurement.grn_lines) === 2, 2, procurement.grn_lines);
+    preflightCheck(checks, "procurement", "complete inspection and transfer anchors exist", Number(procurement.inspection_count) === 1 && Number(procurement.inspection_lines) === 2 && Number(procurement.transfer_count) === 1);
+
+    const cellState = (
+      await query(
+        client,
+        `SELECT
+           (SELECT count(*) FROM cells WHERE lot_id = $1 AND cell_id LIKE $4) AS cell_count,
+           (SELECT count(*) FROM cells WHERE lot_id = $1 AND status = 'rejected' AND cell_id LIKE $4) AS rejected_count,
+           (SELECT count(*) FROM cell_lot_events WHERE lot_id = $1) AS lot_event_count,
+           (SELECT count(*) FROM cell_matches WHERE id IN ($2, $3) AND notes LIKE $4) AS match_count,
+           (SELECT count(*) FROM cell_match_items WHERE match_id = $2) AS allocated_items,
+           (SELECT count(*) FROM cell_match_items WHERE match_id = $3) AS pending_items,
+           (SELECT status::text FROM cell_matches WHERE id = $2) AS allocated_status,
+           (SELECT status::text FROM cell_matches WHERE id = $3) AS pending_status,
+           (SELECT count(*) FROM engineering_corrections WHERE entity_id LIKE $4) AS correction_count`,
+        [FAT_IDS.cells.lot, FAT_IDS.cells.matchAllocated, FAT_IDS.cells.matchPending, `${FAT_PREFIX}%`],
+      )
+    ).rows[0] ?? {};
+    preflightCheck(checks, "cells", "controlled lot contains all 64 cells", Number(cellState.cell_count) === 64, 64, cellState.cell_count);
+    preflightCheck(checks, "cells", "controlled lot has four rejected cells", Number(cellState.rejected_count) === 4, 4, cellState.rejected_count);
+    preflightCheck(checks, "cells", "lot ledger has received and graded anchors", Number(cellState.lot_event_count) === 2, 2, cellState.lot_event_count);
+    preflightCheck(checks, "cells", "allocated and pending matches are present", Number(cellState.match_count) === 2 && Number(cellState.allocated_items) === 16 && Number(cellState.pending_items) === 16);
+    preflightCheck(checks, "cells", "match statuses are ready for the FAT paths", cellState.allocated_status === "allocated" && cellState.pending_status === "draft", "allocated + draft", `${cellState.allocated_status} + ${cellState.pending_status}`);
+    preflightCheck(checks, "cells", "correction ledger anchor is present", Number(cellState.correction_count) >= 2, "at least 2", cellState.correction_count);
+
+    const inventory = (
+      await query(
+        client,
+        `SELECT material_id, sum(quantity)::numeric AS quantity
+         FROM inventory_transactions
+         WHERE material_id IN ($1, $2)
+           AND stock_state = 'available'
+           AND source_document_id IN ($3, $4, $5, $6, $7)
+         GROUP BY material_id
+         ORDER BY material_id`,
+        [
+          FAT_IDS.masters.materialCell,
+          FAT_IDS.masters.materialBms,
+          FAT_IDS.procurement.posted,
+          FAT_IDS.procurement.rejected,
+          FAT_IDS.procurement.inspection,
+          FAT_IDS.procurement.transfer,
+          "fa1b0000-0000-4000-8000-000000000001",
+        ],
+      )
+    ).rows;
+    const inventoryByMaterial = new Map(inventory.map((row) => [String(row.material_id), Number(row.quantity)]));
+    preflightCheck(checks, "ledger", "cell signed-ledger projection is 64 available units", inventoryByMaterial.get(FAT_IDS.masters.materialCell) === 64, 64, inventoryByMaterial.get(FAT_IDS.masters.materialCell));
+    preflightCheck(checks, "ledger", "BMS signed-ledger projection is one available unit", inventoryByMaterial.get(FAT_IDS.masters.materialBms) === 1, 1, inventoryByMaterial.get(FAT_IDS.masters.materialBms));
+    const txCount = Number((
+      await query(
+        client,
+        `SELECT count(*) AS n FROM inventory_transactions
+         WHERE material_id IN ($1, $2) AND source_document_id IN ($3, $4, $5, $6, $7)`,
+        [
+          FAT_IDS.masters.materialCell,
+          FAT_IDS.masters.materialBms,
+          FAT_IDS.procurement.posted,
+          FAT_IDS.procurement.rejected,
+          FAT_IDS.procurement.inspection,
+          FAT_IDS.procurement.transfer,
+          "fa1b0000-0000-4000-8000-000000000001",
+        ],
+      )
+    ).rows[0]?.n ?? 0);
+    preflightCheck(checks, "ledger", "controlled inventory transaction anchors are present", txCount === 12, 12, txCount);
+
+    const manufacturing = (
+      await query(
+        client,
+        `SELECT o.id, o.order_number, o.current_stage::text AS current_stage, o.status::text AS status,
+                count(s.id)::int AS stage_count
+         FROM mfg_production_orders o
+         LEFT JOIN mfg_order_stages s ON s.production_order_id = o.id
+         WHERE o.order_number LIKE $1
+         GROUP BY o.id, o.order_number, o.current_stage, o.status
+         ORDER BY o.order_number`,
+        [`${FAT_PREFIX}%`],
+      )
+    ).rows;
+    preflightCheck(checks, "manufacturing", "six controlled production orders exist", manufacturing.length === 6, 6, manufacturing.length);
+    preflightCheck(checks, "manufacturing", "every controlled order has nine stages", manufacturing.length === 6 && manufacturing.every((row) => Number(row.stage_count) === 9), 9, manufacturing.map((row) => `${row.order_number}:${row.stage_count}`).join(", "));
+    const byOrderId = new Map(manufacturing.map((row) => [String(row.id), row]));
+    preflightCheck(checks, "manufacturing", "race orders are in charging and in progress",
+      [FAT_IDS.orders.raceOne, FAT_IDS.orders.raceTwo].every((id) => byOrderId.get(id)?.current_stage === "charging" && byOrderId.get(id)?.status === "in_progress"));
+    preflightCheck(checks, "manufacturing", "clean order is complete", byOrderId.get(FAT_IDS.orders.clean)?.status === "completed", "completed", byOrderId.get(FAT_IDS.orders.clean)?.status);
+
+    const genealogy = (
+      await query(
+        client,
+        `SELECT
+           (SELECT count(*) FROM mfg_battery_genealogy WHERE production_order_id = $1) AS mfg_clean,
+           (SELECT count(*) FROM mfg_battery_genealogy WHERE production_order_id = $2) AS mfg_completion,
+           (SELECT count(*) FROM product_genealogy WHERE product_id = $3) AS product_rows,
+           (SELECT count(*) FROM product_events WHERE product_id = $3) AS product_events`,
+        [FAT_IDS.orders.clean, FAT_IDS.orders.completion, FAT_IDS.products.dispatched],
+      )
+    ).rows[0] ?? {};
+    preflightCheck(checks, "genealogy", "clean order has component genealogy", Number(genealogy.mfg_clean) >= 5, "at least 5", genealogy.mfg_clean);
+    preflightCheck(checks, "genealogy", "completion order has a cell genealogy anchor", Number(genealogy.mfg_completion) >= 1, "at least 1", genealogy.mfg_completion);
+    preflightCheck(checks, "genealogy", "dispatched product has projected genealogy and events", Number(genealogy.product_rows) >= 5 && Number(genealogy.product_events) >= 3);
+
+    const concurrency = (
+      await query(
+        client,
+        `SELECT
+           (SELECT count(*) FROM mfg_charger_units WHERE id = $1 AND charger_code LIKE $5 AND status = 'available' AND current_order_id IS NULL) AS charger_ready,
+           (SELECT count(*) FROM mfg_production_orders WHERE id IN ($2, $3) AND order_number LIKE $5 AND current_stage = 'charging' AND status = 'in_progress') AS race_orders,
+           (SELECT count(*) FROM cell_matches WHERE id = $4 AND status = 'draft' AND notes LIKE $5) AS pending_match,
+           (SELECT count(*) FROM cell_match_items WHERE match_id = $4) AS pending_match_items`,
+        [FAT_IDS.chargers.primary, FAT_IDS.orders.raceOne, FAT_IDS.orders.raceTwo, FAT_IDS.cells.matchPending, `${FAT_PREFIX}%`],
+      )
+    ).rows[0] ?? {};
+    preflightCheck(checks, "concurrency", "one available unassigned charger is reserved for the race", Number(concurrency.charger_ready) === 1, 1, concurrency.charger_ready);
+    preflightCheck(checks, "concurrency", "both race orders are eligible", Number(concurrency.race_orders) === 2, 2, concurrency.race_orders);
+    preflightCheck(checks, "concurrency", "one pending 16-cell match is available", Number(concurrency.pending_match) === 1 && Number(concurrency.pending_match_items) === 16);
+
+    const fulfillment = (
+      await query(
+        client,
+        `SELECT
+           (SELECT json_build_object(
+             'dealer_id', dealer_id, 'dealer_code', dealer_code, 'dealer_name', dealer_name,
+             'dealer_address', dealer_address, 'dealer_gst', dealer_gst, 'dealer_contact', dealer_contact, 'dealer_mobile', dealer_mobile
+           ) FROM dispatches WHERE id = $1 AND dispatch_number LIKE $6) AS dispatch_snapshot,
+           (SELECT count(*) FROM dispatch_items WHERE id = $2 AND dispatch_id = $1 AND product_id = $3) AS dispatch_item,
+           (SELECT json_build_object('product_id', product_id, 'dealer_id', dealer_id, 'customer_name', customer_name)
+            FROM customer_registrations WHERE id = $4 AND registration_number LIKE $6) AS registration,
+           (SELECT json_build_object('product_id', product_id, 'registration_id', registration_id, 'period_months', period_months, 'start_date', start_date, 'end_date', end_date)
+            FROM warranties WHERE id = $5 AND warranty_number LIKE $6) AS warranty`,
+        [FAT_IDS.fulfillment.dispatch, FAT_IDS.fulfillment.dispatchItem, FAT_IDS.products.dispatched, FAT_IDS.fulfillment.registration, FAT_IDS.fulfillment.warranty, `${FAT_PREFIX}%`],
+      )
+    ).rows[0] ?? {};
+    const snapshot = fulfillment.dispatch_snapshot as Record<string, unknown> | null;
+    preflightCheck(checks, "fulfillment", "dispatch stores the dealer snapshot", snapshot !== null &&
+      snapshot.dealer_id === FAT_IDS.dealer &&
+      snapshot.dealer_code === `${FAT_PREFIX}DLR-A` &&
+      snapshot.dealer_name === "FAT E2E Dealer Alpha" &&
+      snapshot.dealer_address === "1 FAT E2E Industrial Estate, Bengaluru" &&
+      snapshot.dealer_gst === "29FATE2E0001Z5" &&
+      snapshot.dealer_contact === "FAT Dealer Desk" &&
+      snapshot.dealer_mobile === "9000000001");
+    preflightCheck(checks, "fulfillment", "dispatch item points to the traceability product", Number(fulfillment.dispatch_item) === 1, 1, fulfillment.dispatch_item);
+    const registration = fulfillment.registration as Record<string, unknown> | null;
+    preflightCheck(checks, "fulfillment", "customer registration points to dealer product", registration !== null &&
+      registration.product_id === FAT_IDS.products.dispatched &&
+      registration.dealer_id === FAT_IDS.dealer &&
+      registration.customer_name === "FAT E2E Customer");
+    const warranty = fulfillment.warranty as Record<string, unknown> | null;
+    preflightCheck(checks, "fulfillment", "warranty points to registration and has the 60-month term", warranty !== null &&
+      warranty.product_id === FAT_IDS.products.dispatched &&
+      warranty.registration_id === FAT_IDS.fulfillment.registration &&
+      Number(warranty.period_months) === 60 &&
+      String(warranty.start_date).startsWith(DATE) &&
+      String(warranty.end_date).startsWith("2031-09-08"));
+
+    const failed = checks.filter((check) => !check.ok);
+    const groups = [...new Set(checks.map((check) => check.group))].map((group) => {
+      const groupChecks = checks.filter((check) => check.group === group);
+      return {
+        group,
+        passed: groupChecks.filter((check) => check.ok).length,
+        failed: groupChecks.filter((check) => !check.ok).length,
+      };
+    });
+    const report = {
+      dataset: "OCS One full FAT controlled dataset",
+      namespace: FAT_PREFIX,
+      frozenTag: FROZEN_TAG,
+      frozenCommit: FROZEN_COMMIT,
+      state: failed.length === 0 ? "ready" : "drift",
+      passwordEvidence: "omitted; supplied only through FAT_TEST_PASSWORD",
+      summary: { passed: checks.length - failed.length, failed: failed.length, total: checks.length },
+      groups,
+      failures: failed.map(({ group, name, expected, actual }) => ({ group, name, expected, actual })),
+    };
+    console.log(JSON.stringify(report, null, 2));
+    if (failed.length > 0) {
+      throw new Error(`FAT preflight failed ${failed.length} assertion(s); inspect the password-free report above`);
+    }
+  } finally {
+    client.release();
+  }
+}
+
 async function seed(): Promise<void> {
   const client = await pool.connect();
   try {
@@ -1143,8 +1477,9 @@ async function main(): Promise<void> {
   const action = actionArg?.slice("--action=".length) ?? "seed";
   if (action === "seed") await seed();
   else if (action === "verify") await verify();
+  else if (action === "preflight") await preflight();
   else if (action === "teardown") await teardown();
-  else throw new Error(`Unknown FAT action "${action}". Use seed, verify, or teardown.`);
+  else throw new Error(`Unknown FAT action "${action}". Use seed, verify, preflight, or teardown.`);
 }
 
 main()
