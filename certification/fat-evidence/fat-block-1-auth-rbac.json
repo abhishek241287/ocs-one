@@ -1,0 +1,1897 @@
+{
+  "document": "OCS One FAT Block 1 — Authentication & RBAC Evidence",
+  "generatedAt": "2026-09-08T12:11:41.593Z",
+  "systemUnderTest": "FAT-CANDIDATE-2026-09-08",
+  "frozenCommit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7",
+  "candidateSource": "/tmp/ocs-fat-candidate (git archive of FAT-CANDIDATE-2026-09-08)",
+  "baseUrl": "http://127.0.0.1:4310",
+  "fixture": {
+    "namespace": "FAT-E2E-",
+    "manifestPath": "certification/fat-fixture-manifest.json",
+    "seed": "PASS",
+    "verify": "PASS",
+    "seededRoles": [
+      "Owner",
+      "Director",
+      "Supervisor",
+      "Operator",
+      "Viewer",
+      "Dealer"
+    ],
+    "recordCounts": {
+      "users": 6,
+      "masters": 1,
+      "materials": 2,
+      "bomLines": 2,
+      "grnLines": 2,
+      "inventoryTransactions": 12,
+      "cells": 64,
+      "stages": 54,
+      "genealogyRows": 5,
+      "traceEvents": 3
+    }
+  },
+  "classification": "PASS",
+  "summary": {
+    "formalRequests": 44,
+    "pass": 44,
+    "fail": 0,
+    "dataSetupRequired": 0,
+    "cases": [
+      {
+        "caseId": "AUTH-P01",
+        "result": "PASS",
+        "requestCount": 6,
+        "statuses": [
+          200
+        ]
+      },
+      {
+        "caseId": "AUTH-P02",
+        "result": "PASS",
+        "requestCount": 6,
+        "statuses": [
+          200
+        ]
+      },
+      {
+        "caseId": "AUTH-P03",
+        "result": "PASS",
+        "requestCount": 2,
+        "statuses": [
+          201
+        ]
+      },
+      {
+        "caseId": "AUTH-P04",
+        "result": "PASS",
+        "requestCount": 4,
+        "statuses": [
+          201
+        ]
+      },
+      {
+        "caseId": "AUTH-P05",
+        "result": "PASS",
+        "requestCount": 2,
+        "statuses": [
+          201
+        ]
+      },
+      {
+        "caseId": "AUTH-N01",
+        "result": "PASS",
+        "requestCount": 2,
+        "statuses": [
+          401
+        ]
+      },
+      {
+        "caseId": "AUTH-N02",
+        "result": "PASS",
+        "requestCount": 2,
+        "statuses": [
+          401
+        ]
+      },
+      {
+        "caseId": "AUTH-N03",
+        "result": "PASS",
+        "requestCount": 2,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "AUTH-N04",
+        "result": "PASS",
+        "requestCount": 3,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "RBAC-N01",
+        "result": "PASS",
+        "requestCount": 1,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "RBAC-N02",
+        "result": "PASS",
+        "requestCount": 1,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "RBAC-N03",
+        "result": "PASS",
+        "requestCount": 1,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "RBAC-N04",
+        "result": "PASS",
+        "requestCount": 1,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "RBAC-N05",
+        "result": "PASS",
+        "requestCount": 1,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "RBAC-N06",
+        "result": "PASS",
+        "requestCount": 1,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "RBAC-N07",
+        "result": "PASS",
+        "requestCount": 1,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "RBAC-N08",
+        "result": "PASS",
+        "requestCount": 1,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "RBAC-N09",
+        "result": "PASS",
+        "requestCount": 1,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "RBAC-N10",
+        "result": "PASS",
+        "requestCount": 1,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "RBAC-N11",
+        "result": "PASS",
+        "requestCount": 1,
+        "statuses": [
+          403
+        ]
+      },
+      {
+        "caseId": "RBAC-N12",
+        "result": "PASS",
+        "requestCount": 1,
+        "statuses": [
+          200
+        ]
+      },
+      {
+        "caseId": "AUTH-N05",
+        "result": "PASS",
+        "requestCount": 3,
+        "statuses": [
+          200,
+          401
+        ]
+      }
+    ]
+  },
+  "audit": {
+    "eventCounts": [
+      {
+        "eventType": "auth.login.success",
+        "count": 8
+      },
+      {
+        "eventType": "user.created",
+        "count": 8
+      },
+      {
+        "eventType": "auth.login.failed",
+        "count": 2
+      },
+      {
+        "eventType": "authz.denied",
+        "count": 15
+      },
+      {
+        "eventType": "auth.logout",
+        "count": 2
+      }
+    ],
+    "matchedRows": [
+      {
+        "recordId": "e5372071-4ac1-4628-9d31-6eb3dce30334",
+        "eventType": "auth.login.success",
+        "severity": "info",
+        "actorEmail": "fat.owner@fat.local",
+        "actorRole": "owner",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/login",
+        "statusCode": 200,
+        "detail": null,
+        "createdAt": "2026-09-08T12:09:16.920287+00:00"
+      },
+      {
+        "recordId": "b73187d5-c60c-44e3-a1ca-18deb88f0e10",
+        "eventType": "auth.login.success",
+        "severity": "info",
+        "actorEmail": "fat.director@fat.local",
+        "actorRole": "director",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/login",
+        "statusCode": 200,
+        "detail": null,
+        "createdAt": "2026-09-08T12:09:17.252629+00:00"
+      },
+      {
+        "recordId": "116a2d99-1c65-497e-aed7-1d21a73ea682",
+        "eventType": "auth.login.success",
+        "severity": "info",
+        "actorEmail": "fat.supervisor@fat.local",
+        "actorRole": "supervisor",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/login",
+        "statusCode": 200,
+        "detail": null,
+        "createdAt": "2026-09-08T12:09:17.55089+00:00"
+      },
+      {
+        "recordId": "26754a69-6376-4a23-bd86-6c637f065e82",
+        "eventType": "auth.login.success",
+        "severity": "info",
+        "actorEmail": "fat.operator@fat.local",
+        "actorRole": "operator",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/login",
+        "statusCode": 200,
+        "detail": null,
+        "createdAt": "2026-09-08T12:09:17.827048+00:00"
+      },
+      {
+        "recordId": "3516277f-a8af-4829-a8f9-3b9effa92d6c",
+        "eventType": "auth.login.success",
+        "severity": "info",
+        "actorEmail": "fat.viewer@fat.local",
+        "actorRole": "viewer",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/login",
+        "statusCode": 200,
+        "detail": null,
+        "createdAt": "2026-09-08T12:09:18.107997+00:00"
+      },
+      {
+        "recordId": "90fd3d46-a6a3-477f-a317-3a15c0ca35d4",
+        "eventType": "auth.login.success",
+        "severity": "info",
+        "actorEmail": "fat.dealer@fat.local",
+        "actorRole": "dealer",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/login",
+        "statusCode": 200,
+        "detail": null,
+        "createdAt": "2026-09-08T12:09:18.386699+00:00"
+      },
+      {
+        "recordId": "78e2edad-a50c-42c7-b006-8d0dd2bdc6e5",
+        "eventType": "user.created",
+        "severity": "info",
+        "actorEmail": "fat.owner@fat.local",
+        "actorRole": "owner",
+        "targetEmail": "fat.block1.owner-director.mtsmmle8@fat.local",
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 201,
+        "detail": "Created account with role: director",
+        "createdAt": "2026-09-08T12:09:18.69416+00:00"
+      },
+      {
+        "recordId": "e82f2818-b031-49e4-b923-e1f69b8dbc05",
+        "eventType": "user.created",
+        "severity": "info",
+        "actorEmail": "fat.owner@fat.local",
+        "actorRole": "owner",
+        "targetEmail": "fat.block1.owner-dealer.mtsmmle8@fat.local",
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 201,
+        "detail": "Created account with role: dealer",
+        "createdAt": "2026-09-08T12:09:18.980798+00:00"
+      },
+      {
+        "recordId": "a5b31cd6-caf9-4113-9bf3-d907ad5b080d",
+        "eventType": "user.created",
+        "severity": "info",
+        "actorEmail": "fat.director@fat.local",
+        "actorRole": "director",
+        "targetEmail": "fat.block1.director-supervisor.mtsmmle8@fat.local",
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 201,
+        "detail": "Created account with role: supervisor",
+        "createdAt": "2026-09-08T12:09:19.268805+00:00"
+      },
+      {
+        "recordId": "440a1aa0-c335-415c-8247-1d8c55987f50",
+        "eventType": "user.created",
+        "severity": "info",
+        "actorEmail": "fat.director@fat.local",
+        "actorRole": "director",
+        "targetEmail": "fat.block1.director-operator.mtsmmle8@fat.local",
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 201,
+        "detail": "Created account with role: operator",
+        "createdAt": "2026-09-08T12:09:19.549622+00:00"
+      },
+      {
+        "recordId": "6de7a8fa-d6a1-4077-a84a-52d275b481e0",
+        "eventType": "user.created",
+        "severity": "info",
+        "actorEmail": "fat.director@fat.local",
+        "actorRole": "director",
+        "targetEmail": "fat.block1.director-viewer.mtsmmle8@fat.local",
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 201,
+        "detail": "Created account with role: viewer",
+        "createdAt": "2026-09-08T12:09:19.829433+00:00"
+      },
+      {
+        "recordId": "c8f47217-3019-4720-8dbd-7fab0f8bd536",
+        "eventType": "user.created",
+        "severity": "info",
+        "actorEmail": "fat.director@fat.local",
+        "actorRole": "director",
+        "targetEmail": "fat.block1.director-dealer.mtsmmle8@fat.local",
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 201,
+        "detail": "Created account with role: dealer",
+        "createdAt": "2026-09-08T12:09:20.106123+00:00"
+      },
+      {
+        "recordId": "a1ad9aa6-4e7a-4cb1-9a7c-f24843dbad91",
+        "eventType": "user.created",
+        "severity": "info",
+        "actorEmail": "fat.supervisor@fat.local",
+        "actorRole": "supervisor",
+        "targetEmail": "fat.block1.supervisor-operator.mtsmmle8@fat.local",
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 201,
+        "detail": "Created account with role: operator",
+        "createdAt": "2026-09-08T12:09:20.393005+00:00"
+      },
+      {
+        "recordId": "8f10bef6-6b74-43f2-9528-0b3712c1373b",
+        "eventType": "user.created",
+        "severity": "info",
+        "actorEmail": "fat.supervisor@fat.local",
+        "actorRole": "supervisor",
+        "targetEmail": "fat.block1.supervisor-viewer.mtsmmle8@fat.local",
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 201,
+        "detail": "Created account with role: viewer",
+        "createdAt": "2026-09-08T12:09:20.673899+00:00"
+      },
+      {
+        "recordId": "8988da50-9f6a-4abf-b9bd-416601476677",
+        "eventType": "auth.login.failed",
+        "severity": "warning",
+        "actorEmail": null,
+        "actorRole": null,
+        "targetEmail": "fat.owner@fat.local",
+        "method": "POST",
+        "path": "/api/auth/login",
+        "statusCode": 401,
+        "detail": "Bad password",
+        "createdAt": "2026-09-08T12:09:20.947544+00:00"
+      },
+      {
+        "recordId": "c00ec2ac-40e4-40ed-ad3f-5c5a693cb629",
+        "eventType": "auth.login.failed",
+        "severity": "warning",
+        "actorEmail": null,
+        "actorRole": null,
+        "targetEmail": "fat.unknown@fat.local",
+        "method": "POST",
+        "path": "/api/auth/login",
+        "statusCode": 401,
+        "detail": "No such account",
+        "createdAt": "2026-09-08T12:09:20.95496+00:00"
+      },
+      {
+        "recordId": "e5d4141f-0a1c-4d9f-81b4-94698446e756",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.supervisor@fat.local",
+        "actorRole": "supervisor",
+        "targetEmail": "fat.block1.n03-director.mtsmmle8@fat.local",
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 403,
+        "detail": "Role supervisor may not create a director account",
+        "createdAt": "2026-09-08T12:09:20.962686+00:00"
+      },
+      {
+        "recordId": "73a35703-f09a-4dbd-aa65-a792a538aafb",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.supervisor@fat.local",
+        "actorRole": "supervisor",
+        "targetEmail": "fat.block1.n03-owner.mtsmmle8@fat.local",
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 403,
+        "detail": "Role supervisor may not create a owner account",
+        "createdAt": "2026-09-08T12:09:20.965946+00:00"
+      },
+      {
+        "recordId": "607d79b6-acc7-4184-8859-89f024fe5a91",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.operator@fat.local",
+        "actorRole": "operator",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 403,
+        "detail": "Denied; required role: owner or director or supervisor",
+        "createdAt": "2026-09-08T12:09:20.968695+00:00"
+      },
+      {
+        "recordId": "e02ccd9c-6da0-4d30-95f9-937a3c365a92",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.viewer@fat.local",
+        "actorRole": "viewer",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 403,
+        "detail": "Denied; required role: owner or director or supervisor",
+        "createdAt": "2026-09-08T12:09:20.971794+00:00"
+      },
+      {
+        "recordId": "e79fb908-9b60-4eca-8f52-c8101cbbddba",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.dealer@fat.local",
+        "actorRole": "dealer",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/register",
+        "statusCode": 403,
+        "detail": "Denied; required role: owner or director or supervisor",
+        "createdAt": "2026-09-08T12:09:20.975501+00:00"
+      },
+      {
+        "recordId": "c6b74a7c-abbb-4eeb-a4ab-f124bad99751",
+        "eventType": "auth.logout",
+        "severity": "info",
+        "actorEmail": "fat.owner@fat.local",
+        "actorRole": "owner",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/logout",
+        "statusCode": 200,
+        "detail": null,
+        "createdAt": "2026-09-08T12:09:20.978167+00:00"
+      },
+      {
+        "recordId": "9dcf31e2-1ef1-4ef6-80fd-22075f0a2942",
+        "eventType": "auth.login.success",
+        "severity": "info",
+        "actorEmail": "fat.owner@fat.local",
+        "actorRole": "owner",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/login",
+        "statusCode": 200,
+        "detail": null,
+        "createdAt": "2026-09-08T12:09:21.266108+00:00"
+      },
+      {
+        "recordId": "b01cc3bb-a484-4430-a891-5562f2e5bfdb",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.viewer@fat.local",
+        "actorRole": "viewer",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/masters/products",
+        "statusCode": 403,
+        "detail": "Denied; required role: owner or director",
+        "createdAt": "2026-09-08T12:09:21.269978+00:00"
+      },
+      {
+        "recordId": "f209b147-f4b6-4480-8a22-95648249be4d",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.supervisor@fat.local",
+        "actorRole": "supervisor",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/boms",
+        "statusCode": 403,
+        "detail": "Denied; required role: owner or director",
+        "createdAt": "2026-09-08T12:09:21.273706+00:00"
+      },
+      {
+        "recordId": "c3e40cc9-ed44-4cd6-9b16-4ac546db499c",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.operator@fat.local",
+        "actorRole": "operator",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "statusCode": 403,
+        "detail": "Denied; required role: supervisor or director",
+        "createdAt": "2026-09-08T12:09:21.275669+00:00"
+      },
+      {
+        "recordId": "6197c813-594e-4f24-883d-15926814225b",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.viewer@fat.local",
+        "actorRole": "viewer",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/manufacturing/orders/fa180000-0000-4000-8000-000000000001/stages/assembly/start",
+        "statusCode": 403,
+        "detail": "Denied; required role: operator or supervisor or director",
+        "createdAt": "2026-09-08T12:09:21.281005+00:00"
+      },
+      {
+        "recordId": "f9d9cc6c-177a-40ed-ae55-7f6d4c9edfbc",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.operator@fat.local",
+        "actorRole": "operator",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/manufacturing/orders/fa180000-0000-4000-8000-000000000001/qc-approval",
+        "statusCode": 403,
+        "detail": "Denied; required role: supervisor or director",
+        "createdAt": "2026-09-08T12:09:21.287058+00:00"
+      },
+      {
+        "recordId": "19e8d9dc-d9fd-40e2-a6b4-c92784544eb1",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.viewer@fat.local",
+        "actorRole": "viewer",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/packing",
+        "statusCode": 403,
+        "detail": "Denied; required role: supervisor or director",
+        "createdAt": "2026-09-08T12:09:21.289881+00:00"
+      },
+      {
+        "recordId": "bc3deb87-8159-4bef-a702-51ecd0758977",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.director@fat.local",
+        "actorRole": "director",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/logistics/dispatch-orders",
+        "statusCode": 403,
+        "detail": "Denied; required role: owner",
+        "createdAt": "2026-09-08T12:09:21.29256+00:00"
+      },
+      {
+        "recordId": "8b4c366c-0617-45f6-a5cb-e6a0a021c438",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.dealer@fat.local",
+        "actorRole": "dealer",
+        "targetEmail": null,
+        "method": "GET",
+        "path": "/api/manufacturing/orders",
+        "statusCode": 403,
+        "detail": "Dealer role has no factory access (Dealer Portal only)",
+        "createdAt": "2026-09-08T12:09:21.299062+00:00"
+      },
+      {
+        "recordId": "a638cf77-3b0c-41d9-b365-e2a7a99e960d",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.operator@fat.local",
+        "actorRole": "operator",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/manufacturing/orders/fa180000-0000-4000-8000-000000000001/stages/quality_control/approve",
+        "statusCode": 403,
+        "detail": "Denied; required role: supervisor or director",
+        "createdAt": "2026-09-08T12:09:21.299344+00:00"
+      },
+      {
+        "recordId": "611721a9-5c20-4f72-8f6a-b0304de50775",
+        "eventType": "authz.denied",
+        "severity": "warning",
+        "actorEmail": "fat.supervisor@fat.local",
+        "actorRole": "supervisor",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/logistics/dispatch-orders",
+        "statusCode": 403,
+        "detail": "Denied; required role: owner",
+        "createdAt": "2026-09-08T12:09:21.307496+00:00"
+      },
+      {
+        "recordId": "be303d72-f0f5-4a7f-8baf-26bc6f88a814",
+        "eventType": "auth.login.success",
+        "severity": "info",
+        "actorEmail": "fat.owner@fat.local",
+        "actorRole": "owner",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/login",
+        "statusCode": 200,
+        "detail": null,
+        "createdAt": "2026-09-08T12:09:55.431997+00:00"
+      },
+      {
+        "recordId": "06040008-ba2f-4d62-8a7d-7b74d676f45c",
+        "eventType": "auth.logout",
+        "severity": "info",
+        "actorEmail": "fat.owner@fat.local",
+        "actorRole": "owner",
+        "targetEmail": null,
+        "method": "POST",
+        "path": "/api/auth/logout",
+        "statusCode": 200,
+        "detail": null,
+        "createdAt": "2026-09-08T12:09:55.442993+00:00"
+      }
+    ],
+    "correlationNote": "The candidate API did not return an X-Request-ID header. Audit rows are correlated by actor, method, path, status, target, and execution window; audit row IDs are retained above.",
+    "observation": "RBAC-N11 returned 403 but did not produce a security_events row in the observed window; the HTTP authorization assertion still passed. No audit-event requirement was specified for that case."
+  },
+  "harnessCorrection": "Initial local harness output compared AUTH-N03/AUTH-N04 to 201 instead of 403 and sent the first AUTH-N05 follow-up with the stale cookie. Those observations were excluded from formal results; the 403 denials and cleared-cookie 401 were reclassified/re-executed correctly.",
+  "createdRegistrationAccounts": [
+    {
+      "label": "owner-director",
+      "role": "director",
+      "email": "fat.block1.owner-director.mtsmmle8@fat.local"
+    },
+    {
+      "label": "owner-dealer",
+      "role": "dealer",
+      "email": "fat.block1.owner-dealer.mtsmmle8@fat.local"
+    },
+    {
+      "label": "director-supervisor",
+      "role": "supervisor",
+      "email": "fat.block1.director-supervisor.mtsmmle8@fat.local"
+    },
+    {
+      "label": "director-operator",
+      "role": "operator",
+      "email": "fat.block1.director-operator.mtsmmle8@fat.local"
+    },
+    {
+      "label": "director-viewer",
+      "role": "viewer",
+      "email": "fat.block1.director-viewer.mtsmmle8@fat.local"
+    },
+    {
+      "label": "director-dealer",
+      "role": "dealer",
+      "email": "fat.block1.director-dealer.mtsmmle8@fat.local"
+    },
+    {
+      "label": "supervisor-operator",
+      "role": "operator",
+      "email": "fat.block1.supervisor-operator.mtsmmle8@fat.local"
+    },
+    {
+      "label": "supervisor-viewer",
+      "role": "viewer",
+      "email": "fat.block1.supervisor-viewer.mtsmmle8@fat.local"
+    },
+    {
+      "label": "n03-director",
+      "role": "director",
+      "email": "fat.block1.n03-director.mtsmmle8@fat.local"
+    },
+    {
+      "label": "n03-owner",
+      "role": "owner",
+      "email": "fat.block1.n03-owner.mtsmmle8@fat.local"
+    },
+    {
+      "label": "n04-operator",
+      "role": "viewer",
+      "email": "fat.block1.n04-operator.mtsmmle8@fat.local"
+    },
+    {
+      "label": "n04-viewer",
+      "role": "viewer",
+      "email": "fat.block1.n04-viewer.mtsmmle8@fat.local"
+    },
+    {
+      "label": "n04-dealer",
+      "role": "viewer",
+      "email": "fat.block1.n04-dealer.mtsmmle8@fat.local"
+    }
+  ],
+  "results": [
+    {
+      "caseId": "AUTH-P01",
+      "step": "login-owner",
+      "result": "PASS",
+      "actorRole": "owner",
+      "testAccount": "owner",
+      "email": "fat.owner@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000001",
+          "email": "fat.owner@fat.local",
+          "name": "FAT E2E Owner",
+          "role": "owner",
+          "dealerId": null
+        }
+      },
+      "cookie": {
+        "present": true,
+        "name": "ocs_token",
+        "httpOnly": true,
+        "secure": false,
+        "sameSite": "Lax",
+        "path": "/",
+        "cleared": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000001"
+    },
+    {
+      "caseId": "AUTH-P01",
+      "step": "login-director",
+      "result": "PASS",
+      "actorRole": "director",
+      "testAccount": "director",
+      "email": "fat.director@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000002",
+          "email": "fat.director@fat.local",
+          "name": "FAT E2E Director",
+          "role": "director",
+          "dealerId": null
+        }
+      },
+      "cookie": {
+        "present": true,
+        "name": "ocs_token",
+        "httpOnly": true,
+        "secure": false,
+        "sameSite": "Lax",
+        "path": "/",
+        "cleared": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000002"
+    },
+    {
+      "caseId": "AUTH-P01",
+      "step": "login-supervisor",
+      "result": "PASS",
+      "actorRole": "supervisor",
+      "testAccount": "supervisor",
+      "email": "fat.supervisor@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000003",
+          "email": "fat.supervisor@fat.local",
+          "name": "FAT E2E Supervisor",
+          "role": "supervisor",
+          "dealerId": null
+        }
+      },
+      "cookie": {
+        "present": true,
+        "name": "ocs_token",
+        "httpOnly": true,
+        "secure": false,
+        "sameSite": "Lax",
+        "path": "/",
+        "cleared": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000003"
+    },
+    {
+      "caseId": "AUTH-P01",
+      "step": "login-operator",
+      "result": "PASS",
+      "actorRole": "operator",
+      "testAccount": "operator",
+      "email": "fat.operator@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000004",
+          "email": "fat.operator@fat.local",
+          "name": "FAT E2E Operator",
+          "role": "operator",
+          "dealerId": null
+        }
+      },
+      "cookie": {
+        "present": true,
+        "name": "ocs_token",
+        "httpOnly": true,
+        "secure": false,
+        "sameSite": "Lax",
+        "path": "/",
+        "cleared": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000004"
+    },
+    {
+      "caseId": "AUTH-P01",
+      "step": "login-viewer",
+      "result": "PASS",
+      "actorRole": "viewer",
+      "testAccount": "viewer",
+      "email": "fat.viewer@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000005",
+          "email": "fat.viewer@fat.local",
+          "name": "FAT E2E Viewer",
+          "role": "viewer",
+          "dealerId": null
+        }
+      },
+      "cookie": {
+        "present": true,
+        "name": "ocs_token",
+        "httpOnly": true,
+        "secure": false,
+        "sameSite": "Lax",
+        "path": "/",
+        "cleared": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000005"
+    },
+    {
+      "caseId": "AUTH-P01",
+      "step": "login-dealer",
+      "result": "PASS",
+      "actorRole": "dealer",
+      "testAccount": "dealer",
+      "email": "fat.dealer@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000006",
+          "email": "fat.dealer@fat.local",
+          "name": "FAT E2E Dealer",
+          "role": "dealer",
+          "dealerId": "fa120000-0000-4000-8000-000000000001"
+        }
+      },
+      "cookie": {
+        "present": true,
+        "name": "ocs_token",
+        "httpOnly": true,
+        "secure": false,
+        "sameSite": "Lax",
+        "path": "/",
+        "cleared": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000006"
+    },
+    {
+      "caseId": "AUTH-P02",
+      "step": "me-owner",
+      "result": "PASS",
+      "actorRole": "owner",
+      "testAccount": "owner",
+      "email": "fat.owner@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "userId": "fa110000-0000-4000-8000-000000000001",
+          "email": "fat.owner@fat.local",
+          "name": "FAT E2E Owner",
+          "role": "owner",
+          "dealerId": null,
+          "iat": 1788869356,
+          "exp": 1788898156
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000001"
+    },
+    {
+      "caseId": "AUTH-P02",
+      "step": "me-director",
+      "result": "PASS",
+      "actorRole": "director",
+      "testAccount": "director",
+      "email": "fat.director@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "userId": "fa110000-0000-4000-8000-000000000002",
+          "email": "fat.director@fat.local",
+          "name": "FAT E2E Director",
+          "role": "director",
+          "dealerId": null,
+          "iat": 1788869357,
+          "exp": 1788898157
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000002"
+    },
+    {
+      "caseId": "AUTH-P02",
+      "step": "me-supervisor",
+      "result": "PASS",
+      "actorRole": "supervisor",
+      "testAccount": "supervisor",
+      "email": "fat.supervisor@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "userId": "fa110000-0000-4000-8000-000000000003",
+          "email": "fat.supervisor@fat.local",
+          "name": "FAT E2E Supervisor",
+          "role": "supervisor",
+          "dealerId": null,
+          "iat": 1788869357,
+          "exp": 1788898157
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000003"
+    },
+    {
+      "caseId": "AUTH-P02",
+      "step": "me-operator",
+      "result": "PASS",
+      "actorRole": "operator",
+      "testAccount": "operator",
+      "email": "fat.operator@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "userId": "fa110000-0000-4000-8000-000000000004",
+          "email": "fat.operator@fat.local",
+          "name": "FAT E2E Operator",
+          "role": "operator",
+          "dealerId": null,
+          "iat": 1788869357,
+          "exp": 1788898157
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000004"
+    },
+    {
+      "caseId": "AUTH-P02",
+      "step": "me-viewer",
+      "result": "PASS",
+      "actorRole": "viewer",
+      "testAccount": "viewer",
+      "email": "fat.viewer@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "userId": "fa110000-0000-4000-8000-000000000005",
+          "email": "fat.viewer@fat.local",
+          "name": "FAT E2E Viewer",
+          "role": "viewer",
+          "dealerId": null,
+          "iat": 1788869358,
+          "exp": 1788898158
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000005"
+    },
+    {
+      "caseId": "AUTH-P02",
+      "step": "me-dealer",
+      "result": "PASS",
+      "actorRole": "dealer",
+      "testAccount": "dealer",
+      "email": "fat.dealer@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "userId": "fa110000-0000-4000-8000-000000000006",
+          "email": "fat.dealer@fat.local",
+          "name": "FAT E2E Dealer",
+          "role": "dealer",
+          "dealerId": "fa120000-0000-4000-8000-000000000001",
+          "iat": 1788869358,
+          "exp": 1788898158
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000006"
+    },
+    {
+      "caseId": "AUTH-P03",
+      "step": "register-director",
+      "result": "PASS",
+      "actorRole": "owner",
+      "testAccount": "owner",
+      "email": "fat.owner@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 201,
+      "status": 201,
+      "sanitizedResponse": {
+        "user": {
+          "id": "aaaea731-9285-4467-975a-c02e8c012f0a",
+          "email": "fat.block1.owner-director.mtsmmle8@fat.local",
+          "name": "FAT Block 1 owner-director",
+          "role": "director"
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "aaaea731-9285-4467-975a-c02e8c012f0a"
+    },
+    {
+      "caseId": "AUTH-P03",
+      "step": "register-dealer",
+      "result": "PASS",
+      "actorRole": "owner",
+      "testAccount": "owner",
+      "email": "fat.owner@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 201,
+      "status": 201,
+      "sanitizedResponse": {
+        "user": {
+          "id": "a9f5cd84-6451-4897-8218-168356c9bb4b",
+          "email": "fat.block1.owner-dealer.mtsmmle8@fat.local",
+          "name": "FAT Block 1 owner-dealer",
+          "role": "dealer"
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "a9f5cd84-6451-4897-8218-168356c9bb4b"
+    },
+    {
+      "caseId": "AUTH-P04",
+      "step": "register-supervisor",
+      "result": "PASS",
+      "actorRole": "director",
+      "testAccount": "director",
+      "email": "fat.director@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 201,
+      "status": 201,
+      "sanitizedResponse": {
+        "user": {
+          "id": "0818a5c2-611a-4c4c-840b-5302c670fcac",
+          "email": "fat.block1.director-supervisor.mtsmmle8@fat.local",
+          "name": "FAT Block 1 director-supervisor",
+          "role": "supervisor"
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "0818a5c2-611a-4c4c-840b-5302c670fcac"
+    },
+    {
+      "caseId": "AUTH-P04",
+      "step": "register-operator",
+      "result": "PASS",
+      "actorRole": "director",
+      "testAccount": "director",
+      "email": "fat.director@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 201,
+      "status": 201,
+      "sanitizedResponse": {
+        "user": {
+          "id": "49b42abc-6236-45c9-91f2-ea31d13dfe9d",
+          "email": "fat.block1.director-operator.mtsmmle8@fat.local",
+          "name": "FAT Block 1 director-operator",
+          "role": "operator"
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "49b42abc-6236-45c9-91f2-ea31d13dfe9d"
+    },
+    {
+      "caseId": "AUTH-P04",
+      "step": "register-viewer",
+      "result": "PASS",
+      "actorRole": "director",
+      "testAccount": "director",
+      "email": "fat.director@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 201,
+      "status": 201,
+      "sanitizedResponse": {
+        "user": {
+          "id": "effad39c-ab76-40b3-b3bf-e331ae685622",
+          "email": "fat.block1.director-viewer.mtsmmle8@fat.local",
+          "name": "FAT Block 1 director-viewer",
+          "role": "viewer"
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "effad39c-ab76-40b3-b3bf-e331ae685622"
+    },
+    {
+      "caseId": "AUTH-P04",
+      "step": "register-dealer",
+      "result": "PASS",
+      "actorRole": "director",
+      "testAccount": "director",
+      "email": "fat.director@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 201,
+      "status": 201,
+      "sanitizedResponse": {
+        "user": {
+          "id": "70a59f34-fc09-4fa4-bf8e-57bbc85dc241",
+          "email": "fat.block1.director-dealer.mtsmmle8@fat.local",
+          "name": "FAT Block 1 director-dealer",
+          "role": "dealer"
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "70a59f34-fc09-4fa4-bf8e-57bbc85dc241"
+    },
+    {
+      "caseId": "AUTH-P05",
+      "step": "register-operator",
+      "result": "PASS",
+      "actorRole": "supervisor",
+      "testAccount": "supervisor",
+      "email": "fat.supervisor@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 201,
+      "status": 201,
+      "sanitizedResponse": {
+        "user": {
+          "id": "7c06ccad-0faf-4aca-8e4a-95ccc7d5984d",
+          "email": "fat.block1.supervisor-operator.mtsmmle8@fat.local",
+          "name": "FAT Block 1 supervisor-operator",
+          "role": "operator"
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "7c06ccad-0faf-4aca-8e4a-95ccc7d5984d"
+    },
+    {
+      "caseId": "AUTH-P05",
+      "step": "register-viewer",
+      "result": "PASS",
+      "actorRole": "supervisor",
+      "testAccount": "supervisor",
+      "email": "fat.supervisor@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 201,
+      "status": 201,
+      "sanitizedResponse": {
+        "user": {
+          "id": "596da84a-9698-48e8-9e9a-9a9682bcdcf5",
+          "email": "fat.block1.supervisor-viewer.mtsmmle8@fat.local",
+          "name": "FAT Block 1 supervisor-viewer",
+          "role": "viewer"
+        }
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "596da84a-9698-48e8-9e9a-9a9682bcdcf5"
+    },
+    {
+      "caseId": "AUTH-N01",
+      "step": "bad-password",
+      "result": "PASS",
+      "actorRole": "owner",
+      "testAccount": "owner",
+      "email": "fat.owner@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "expected": 401,
+      "status": 401,
+      "sanitizedResponse": {
+        "error": "Invalid email or password"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "AUTH-N01",
+      "step": "unknown-email",
+      "result": "PASS",
+      "actorRole": "anonymous",
+      "testAccount": "anonymous",
+      "email": "fat.unknown@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "expected": 401,
+      "status": 401,
+      "sanitizedResponse": {
+        "error": "Invalid email or password"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "AUTH-N02",
+      "step": "anonymous-me",
+      "result": "PASS",
+      "actorRole": "anonymous",
+      "testAccount": "anonymous",
+      "email": null,
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expected": 401,
+      "status": 401,
+      "sanitizedResponse": {
+        "error": "Authentication required"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "AUTH-N02",
+      "step": "anonymous-protected",
+      "result": "PASS",
+      "actorRole": "anonymous",
+      "testAccount": "anonymous",
+      "email": null,
+      "method": "GET",
+      "path": "/api/masters/products",
+      "expected": 401,
+      "status": 401,
+      "sanitizedResponse": {
+        "error": "Authentication required"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "AUTH-N03",
+      "step": "register-director",
+      "result": "PASS",
+      "actorRole": "supervisor",
+      "testAccount": "supervisor",
+      "email": "fat.supervisor@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Your role may not create a \"director\" account"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "AUTH-N03",
+      "step": "register-owner",
+      "result": "PASS",
+      "actorRole": "supervisor",
+      "testAccount": "supervisor",
+      "email": "fat.supervisor@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Your role may not create a \"owner\" account"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "AUTH-N04",
+      "step": "register-viewer",
+      "result": "PASS",
+      "actorRole": "operator",
+      "testAccount": "operator",
+      "email": "fat.operator@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Required role: owner or director or supervisor"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "AUTH-N04",
+      "step": "register-viewer",
+      "result": "PASS",
+      "actorRole": "viewer",
+      "testAccount": "viewer",
+      "email": "fat.viewer@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Required role: owner or director or supervisor"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "AUTH-N04",
+      "step": "register-viewer",
+      "result": "PASS",
+      "actorRole": "dealer",
+      "testAccount": "dealer",
+      "email": "fat.dealer@fat.local",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Required role: owner or director or supervisor"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "RBAC-N01",
+      "step": "authorization-gate",
+      "result": "PASS",
+      "actorRole": "viewer",
+      "testAccount": "viewer",
+      "email": "fat.viewer@fat.local",
+      "method": "POST",
+      "path": "/api/masters/products",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Required role: owner or director"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "RBAC-N02",
+      "step": "authorization-gate",
+      "result": "PASS",
+      "actorRole": "supervisor",
+      "testAccount": "supervisor",
+      "email": "fat.supervisor@fat.local",
+      "method": "POST",
+      "path": "/api/boms",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Required role: owner or director"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "RBAC-N03",
+      "step": "authorization-gate",
+      "result": "PASS",
+      "actorRole": "operator",
+      "testAccount": "operator",
+      "email": "fat.operator@fat.local",
+      "method": "POST",
+      "path": "/api/inventory/grns",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Required role: supervisor or director"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "RBAC-N04",
+      "step": "authorization-gate",
+      "result": "PASS",
+      "actorRole": "viewer",
+      "testAccount": "viewer",
+      "email": "fat.viewer@fat.local",
+      "method": "POST",
+      "path": "/api/manufacturing/orders/fa180000-0000-4000-8000-000000000001/stages/assembly/start",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Required role: operator or supervisor or director"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "RBAC-N05",
+      "step": "authorization-gate",
+      "result": "PASS",
+      "actorRole": "operator",
+      "testAccount": "operator",
+      "email": "fat.operator@fat.local",
+      "method": "POST",
+      "path": "/api/manufacturing/orders/fa180000-0000-4000-8000-000000000001/stages/quality_control/approve",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Required role: supervisor or director"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "RBAC-N06",
+      "step": "authorization-gate",
+      "result": "PASS",
+      "actorRole": "operator",
+      "testAccount": "operator",
+      "email": "fat.operator@fat.local",
+      "method": "POST",
+      "path": "/api/manufacturing/orders/fa180000-0000-4000-8000-000000000001/qc-approval",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Required role: supervisor or director"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "RBAC-N07",
+      "step": "authorization-gate",
+      "result": "PASS",
+      "actorRole": "viewer",
+      "testAccount": "viewer",
+      "email": "fat.viewer@fat.local",
+      "method": "POST",
+      "path": "/api/packing",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Required role: supervisor or director"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "RBAC-N08",
+      "step": "authorization-gate",
+      "result": "PASS",
+      "actorRole": "director",
+      "testAccount": "director",
+      "email": "fat.director@fat.local",
+      "method": "POST",
+      "path": "/api/logistics/dispatch-orders",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Required role: owner"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "RBAC-N09",
+      "step": "authorization-gate",
+      "result": "PASS",
+      "actorRole": "supervisor",
+      "testAccount": "supervisor",
+      "email": "fat.supervisor@fat.local",
+      "method": "POST",
+      "path": "/api/logistics/dispatch-orders",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Required role: owner"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "RBAC-N10",
+      "step": "authorization-gate",
+      "result": "PASS",
+      "actorRole": "dealer",
+      "testAccount": "dealer",
+      "email": "fat.dealer@fat.local",
+      "method": "GET",
+      "path": "/api/manufacturing/orders",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied. Dealer accounts cannot access factory modules."
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "RBAC-N11",
+      "step": "authorization-gate",
+      "result": "PASS",
+      "actorRole": "dealer",
+      "testAccount": "dealer",
+      "email": "fat.dealer@fat.local",
+      "method": "GET",
+      "path": "/api/dealers/00000000-0000-4000-8000-000000000002/inventory",
+      "expected": 403,
+      "status": 403,
+      "sanitizedResponse": {
+        "error": "Access denied: not your dealership"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "RBAC-N12",
+      "step": "authorization-gate",
+      "result": "PASS",
+      "actorRole": "dealer",
+      "testAccount": "dealer",
+      "email": "fat.dealer@fat.local",
+      "method": "GET",
+      "path": "/api/dealers/fa120000-0000-4000-8000-000000000001/inventory",
+      "expected": "not-403",
+      "status": 200,
+      "sanitizedResponse": {
+        "dealer": {
+          "id": "fa120000-0000-4000-8000-000000000001",
+          "dealerCode": "FAT-E2E-DLR-A",
+          "dealerName": "FAT E2E Dealer Alpha",
+          "status": "active"
+        },
+        "total": 1,
+        "items": [
+          {
+            "id": "fa190000-0000-4000-8000-000000000001",
+            "category_id": "fa130000-0000-4000-8000-000000000001",
+            "model_id": "fa130000-0000-4000-8000-000000000011",
+            "workflow_code": "FAT-E2E-BATTERY-WORKFLOW",
+            "source_production_order_id": "fa180000-0000-4000-8000-000000000001",
+            "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+            "serial_source": "OCS",
+            "qc_status": "approved",
+            "product_status": "dispatched",
+            "current_location": "FAT E2E Dealer Alpha",
+            "dealer_id": "fa120000-0000-4000-8000-000000000001",
+            "manufacturing_completed_at": "2026-09-08T11:57:12.680Z",
+            "created_at": "2026-09-08T11:57:12.704Z",
+            "updated_at": "2026-09-08T11:57:12.704Z",
+            "category_name": "FAT E2E Battery Pack",
+            "model_code": "FAT-E2E-MODEL-16S280",
+            "model_name": "FAT E2E 16S 280Ah Battery Pack",
+            "dealer_name": "FAT E2E Dealer Alpha"
+          }
+        ]
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "AUTH-N05",
+      "step": "login-owner-for-logout",
+      "result": "PASS",
+      "actorRole": "owner",
+      "testAccount": "owner",
+      "email": "fat.owner@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000001",
+          "email": "fat.owner@fat.local",
+          "name": "FAT E2E Owner",
+          "role": "owner",
+          "dealerId": null
+        }
+      },
+      "cookie": {
+        "present": true,
+        "httpOnly": true,
+        "sameSite": "Lax",
+        "path": "/",
+        "cleared": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": "fa110000-0000-4000-8000-000000000001"
+    },
+    {
+      "caseId": "AUTH-N05",
+      "step": "logout",
+      "result": "PASS",
+      "actorRole": "owner",
+      "testAccount": "owner",
+      "email": "fat.owner@fat.local",
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "expected": 200,
+      "status": 200,
+      "sanitizedResponse": {
+        "success": true
+      },
+      "cookie": {
+        "present": true,
+        "cleared": true,
+        "path": "/"
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    },
+    {
+      "caseId": "AUTH-N05",
+      "step": "me-after-cleared-cookie",
+      "result": "PASS",
+      "actorRole": "owner",
+      "testAccount": "owner",
+      "email": "fat.owner@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expected": 401,
+      "status": 401,
+      "sanitizedResponse": {
+        "error": "Authentication required"
+      },
+      "cookie": {
+        "present": false
+      },
+      "requestId": null,
+      "error": null,
+      "recordId": null
+    }
+  ]
+}
