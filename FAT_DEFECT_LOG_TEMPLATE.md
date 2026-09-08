@@ -30,9 +30,9 @@ recorded as **DATA SETUP REQUIRED**, not as a defect.
 
 ## Reproduction
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 **Request**
 

@@ -19,6 +19,12 @@ For every case capture:
 Expected 400/404 from an authorized request is not a failure when the case
 intentionally uses invalid input or a dummy ID to prove the role gate opened.
 
+The frozen candidate exposes both QC contracts. Use
+`POST /api/manufacturing/orders/:id/qc-approval` to record a QC decision and
+exercise the QC/rework path. Use
+`POST /api/manufacturing/orders/:id/stages/quality_control/approve` to exercise
+generic stage sign-off. Both call the shared order-completion gate on approval.
+
 ## 2. Authentication and identity
 
 | ID | Type | Role | Preconditions / data | Action | Expected result | Evidence |
@@ -61,6 +67,7 @@ intentionally uses invalid input or a dummy ID to prove the role gate opened.
 | INV-N03 | Negative | Supervisor/Director | Draft GRN with no lines or invalid workflow | Post GRN | 409/422; remains draft; no receipt transactions | GRN status and transaction count |
 | INV-N04 | Negative | Supervisor/Director | Posted GRN or already-inspected GRN | Delete GRN or inspect twice | 409; posted history remains immutable | Status and before/after ledger |
 | INV-N05 | Negative | Supervisor/Director | Transfer quantity greater than available or fractional | Create transfer | 400/422; no transfer, lot, or ledger rows | Response and counts |
+| INV-P06 | Positive / integrity | Supervisor/Director | Controlled FAT fixture with opening balance and receipt/transfer/MIN/reversal records | Reconcile opening available quantity + receipts + valid transfers in − transfers out − material issues +/- valid reversals against application available stock | Every material/category total reconciles to the signed inventory ledger; no unexplained delta | Reconciliation worksheet, stock projection, and ledger export |
 
 ## 5. Cell receiving, grading, and matching
 
@@ -80,8 +87,8 @@ intentionally uses invalid input or a dummy ID to prove the role gate opened.
 
 | ID | Type | Role | Preconditions / data | Action | Expected result | Evidence |
 |---|---|---|---|---|---|---|
-| MFG-P01 | Positive | Supervisor/Director | Product model and approved BOM | Create production order | 201; all nine stages created in canonical order | Order and stage list |
-| MFG-P02 | Positive | Operator/Supervisor/Director | Order with preceding stage approved | Start, complete, approve a normal stage with valid operator/stage data | Correct state transitions; stage timeline event | Stage row and timeline |
+| MFG-P01 | Positive / configuration | Supervisor/Director | Product model and approved BOM | Create production order, then read its stage list | 201; exactly these nine stages exist in this order: `cell_allocation`, `assembly`, `compression`, `bms_allocation`, `bms_programming`, `charging`, `testing`, `quality_control`, `packing`; no duplicate or extra stage | Order stage list, plus comparison to the frozen candidate's `STAGE_ORDER` |
+| MFG-P02 | Positive | Operator/Supervisor/Director | Order with preceding stage approved | Start and complete a normal stage with valid operator/stage data; Supervisor/Director approves via `POST /api/manufacturing/orders/:id/stages/:stage/approve` | Correct state transitions; stage timeline event; next stage unlocks | Stage row, request/response, and timeline |
 | MFG-P03 | Positive | Supervisor/Director | Approved BOM, available lots, exact quantities | Preview and issue MIN | 201; exact BOM quantity consumed; traceability references stored | MIN, lines, negative ledger, source lots |
 | MFG-P04 | Positive | Operator/Supervisor/Director | H17 or clean order with available charger | Start and complete charging with valid stage data | Charger reserved/released only for owning order; formation report written | Charger state, stage, formation report, genealogy |
 | MFG-P05 | Positive | Operator/Supervisor/Director | Allocated cells and valid stage data | Complete BMS allocation/programming | Genealogy entries created idempotently; stage advances | Genealogy count and timeline |
@@ -106,11 +113,12 @@ intentionally uses invalid input or a dummy ID to prove the role gate opened.
 | ID | Type | Role | Preconditions / data | Action | Expected result | Evidence |
 |---|---|---|---|---|---|---|
 | FUL-P01 | Positive | Operator/Supervisor/Director | Testing-ready order and test equipment | Create/complete test results | Results persist with operator/equipment/timestamps | Test-result detail |
-| FUL-P02 | Positive | Supervisor/Director | QC-ready order with passing tests and complete genealogy | POST QC approval `decision=approved` | QC approved; shared completion gate mints exactly one serialized product | QC row, order, product, genealogy |
+| FUL-P02 | Positive | Supervisor/Director | QC-ready order with passing tests and complete genealogy | `POST /api/manufacturing/orders/:id/qc-approval` with `decision=approved` | QC decision recorded; quality-control stage approved; shared completion gate mints exactly one serialized product | QC row, stage row, order, product, genealogy |
 | FUL-P03 | Positive | Supervisor/Director | QC-ready order | POST QC rejection with failure data | QC rejected; rework ticket open; stage rejected | QC, rework, timeline |
-| FUL-P04 | Positive | Supervisor/Director | Product in `ready_for_packing` | POST `/api/packing` with packing date/operator | Product becomes packed; immutable `product.packed` event | Product status and event |
-| FUL-P05 | Positive | Supervisor/Director | Packed product and active dealer | POST `/api/dispatch` | Dispatch document created; product becomes dispatched; dealer snapshot stored | Dispatch, item, product event |
-| FUL-P06 | Positive | Supervisor/Director | Dispatched product | POST customer registration | Registration created only after dispatch; customer fields and serial resolve | Registration and product/dealer evidence |
+| FUL-P04 | Positive | Supervisor/Director | QC-ready order with passing tests and complete genealogy | Complete the quality-control stage and call `POST /api/manufacturing/orders/:id/stages/quality_control/approve` | Generic stage sign-off uses the same completion gate; one product only and no orphan completed order | Stage, order, product, genealogy, and event counts |
+| FUL-P05 | Positive | Supervisor/Director | Product in `ready_for_packing` | POST `/api/packing` with packing date/operator | Product becomes packed; immutable `product.packed` event | Product status and event |
+| FUL-P06 | Positive | Supervisor/Director | Packed product and active dealer | POST `/api/dispatch` | Dispatch document created; product becomes dispatched; dealer snapshot stored in the dispatch header | Dispatch header/detail, item, product event |
+| FUL-P07 | Positive | Supervisor/Director | Dispatched product | POST customer registration | Registration created only after dispatch; customer fields and serial resolve | Registration and product/dealer evidence |
 | FUL-N01 | Negative | Operator/Viewer | Any QC/packing/dispatch payload | Attempt write | 403 | Status/body |
 | FUL-N02 | Negative | Supervisor/Director | Failed/non-ready product | Pack it | 422; no products in batch change state | Response and product statuses |
 | FUL-N03 | Negative | Supervisor/Director | Unpacked or non-eligible product | Dispatch it | 400/422; no dispatch document | Response and counts |
@@ -130,6 +138,7 @@ intentionally uses invalid input or a dummy ID to prove the role gate opened.
 | WAR-N01 | Negative | Operator/Viewer/Dealer | Warranty ID | Attempt void or factory warranty read as Dealer | 403 | Status/body |
 | TRACE-P01 | Positive | All factory roles | Fully linked serialized product from FUL-P06 | GET product, genealogy, events, traceability | One serial resolves across manufacturing, fulfillment, customer, warranty timeline | Four response exports and serial cross-check |
 | TRACE-N01 | Negative | Any factory role | Unknown product UUID | GET traceability/genealogy/events | 404; no fabricated partial trace | Response |
+| TRACE-N02 | Negative / integrity | Supervisor/Director | Existing product with an official serial | Attempt to create/import a second product using the existing serial | Request rejected; original product unchanged; no second product, duplicate genealogy, or duplicate traceability chain | Response, product count, serial uniqueness query, genealogy/event counts |
 
 ## 10. Reports and dashboards
 
@@ -138,3 +147,9 @@ intentionally uses invalid input or a dummy ID to prove the role gate opened.
 | RPT-P01 | Positive | Director/Supervisor | Representative GRN, production, QC, dispatch records | GET operational report endpoints | Counts reconcile to source tables | Report export and reconciliation sheet |
 | RPT-P02 | Positive | Director | Any data | GET developer security/configuration/performance views | 200 and values agree with frozen config/cert suites | Screenshots/JSON |
 | RPT-N01 | Negative | Operator/Viewer/Dealer | Authenticated session | GET restricted reports/developer views | 403 | Status/body |
+
+## 11. Fixture reset integrity
+
+| ID | Type | Role | Preconditions / data | Action | Expected result | Evidence |
+|---|---|---|---|---|---|---|
+| DATA-P01 | Positive / integrity | FAT operator with approved reset access | A completed destructive or concurrency case and its isolated fixture group | Reset the group, then verify charger availability, cell allocation state, production-order state, product count, ledger counts, genealogy counts, and absence of fixture orphans | Fixture returns to its documented starting state; no records outside the FAT namespace are changed | Before/after counts, namespace query, and reset log |

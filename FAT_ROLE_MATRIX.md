@@ -73,14 +73,15 @@ Minimum negative set:
 | RBAC-N02 | Supervisor `POST /api/boms` | 403 |
 | RBAC-N03 | Operator `POST /api/inventory/grns` | 403 |
 | RBAC-N04 | Viewer `POST /api/manufacturing/orders/:id/stages/assembly/start` | 403 |
-| RBAC-N05 | Operator `POST /api/manufacturing/orders/:id/qc-approval` | 403 |
-| RBAC-N06 | Viewer `POST /api/packing` | 403 |
-| RBAC-N07 | Director `POST /api/logistics/dispatch-orders` | 403 |
-| RBAC-N08 | Supervisor `POST /api/logistics/dispatch-orders` | 403 |
-| RBAC-N09 | Dealer `GET /api/manufacturing/orders` | 403 |
-| RBAC-N10 | Dealer `GET /api/dealers/{otherDealerId}/inventory` | 403 |
-| RBAC-N11 | Dealer `GET /api/dealers/{ownDealerId}/inventory` | not 403 |
-| RBAC-N12 | Anonymous `GET /api/auth/me` | 401 |
+| RBAC-N05 | Operator `POST /api/manufacturing/orders/:id/stages/quality_control/approve` | 403 |
+| RBAC-N06 | Operator `POST /api/manufacturing/orders/:id/qc-approval` | 403 |
+| RBAC-N07 | Viewer `POST /api/packing` | 403 |
+| RBAC-N08 | Director `POST /api/logistics/dispatch-orders` | 403 |
+| RBAC-N09 | Supervisor `POST /api/logistics/dispatch-orders` | 403 |
+| RBAC-N10 | Dealer `GET /api/manufacturing/orders` | 403 |
+| RBAC-N11 | Dealer `GET /api/dealers/{otherDealerId}/inventory` | 403 |
+| RBAC-N12 | Dealer `GET /api/dealers/{ownDealerId}/inventory` | not 403 |
+| RBAC-N13 | Anonymous `GET /api/auth/me` | 401 |
 
 ## 4. Cross-role evidence
 

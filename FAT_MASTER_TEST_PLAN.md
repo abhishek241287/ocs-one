@@ -89,7 +89,7 @@ Every test must prove both:
 | Manufacturing stage lifecycle | `/api/manufacturing/orders/:id/stages/:stage/*` | Operator, Supervisor, Director | DATA SETUP REQUIRED — order with valid preceding stages |
 | Charger management and charging | `/api/manufacturing/charger-units`, charging stage | Supervisor, Director for charger master; Operator/Supervisor/Director for stage execution | READY for H17 race only; DATA SETUP REQUIRED for full charge lifecycle |
 | Material Issue Note | `/api/manufacturing/orders/:id/material-issues` | Supervisor, Director writes; factory roles read | DATA SETUP REQUIRED — approved BOM, posted/available stock, traceability lots |
-| Test results and QC | `/api/manufacturing/orders/:id/test-results`, `/qc-approval` | Test execution: Operator/Supervisor/Director; QC approval: Supervisor/Director | DATA SETUP REQUIRED — order through testing with test equipment |
+| Test results and QC | `/api/manufacturing/orders/:id/test-results`, `/qc-approval`, `/stages/quality_control/approve` | Test execution: Operator/Supervisor/Director; QC/stage approval: Supervisor/Director | DATA SETUP REQUIRED — order through testing with test equipment |
 | Rework | `/api/manufacturing/rework` | Supervisor, Director | DATA SETUP REQUIRED — rejected QC order/rework ticket |
 | Serialized product and packing | `/api/products`, `/api/products/imported`, `/api/packing` | Product creation/packing: Supervisor, Director | DATA SETUP REQUIRED — model/category and completed QC order |
 | Dispatch document | `/api/dispatch` | Supervisor, Director | DATA SETUP REQUIRED — packed product and active dealer |
@@ -140,13 +140,66 @@ The following are release-blocking FAT gates:
    concurrent completion cannot mint two products or orphan a completed order.
 8. Packing and dispatch transition only eligible product states and preserve
    serial identity.
-9. Dispatch documents snapshot dealer commercial data; later dealer-master
-   edits must not rewrite an issued document.
+9. Dispatch documents snapshot dealer code, name, address, GST, contact, and
+   mobile into the dispatch header; later dealer-master edits must not rewrite
+   an issued document.
 10. Customer registration is rejected before dispatch and is unique per product.
 11. Product traceability resolves the same serial through manufacturing,
     genealogy, product events, dispatch, customer, and warranty records.
 
-## 8. Exit criteria
+## 8. Frozen-tag preparation verification
+
+### C1 dealer isolation
+
+The frozen tag contains both required C1 fixes:
+
+- `artifacts/api-server/src/middleware/auth.ts` exempts only the `/dealers`
+  portal prefix from the global dealer factory-route denial. Dealer users can
+  reach the portal surface but remain denied manufacturing, inventory, masters,
+  and other factory routes.
+- `artifacts/api-server/src/routes/dealers/index.ts` extracts the target
+  dealership from `req.path.split("/")[1]`. This is required because
+  `req.params` is empty when the router-level middleware runs.
+
+The tag's peeled commit remains `60564b1b49b76ce0b97e46d1de65a7325ef50ba7`.
+The C1 changes are part of that commit; no later C1 commit is the system under
+test.
+
+### DISP-3
+
+The frozen dispatch implementation does not reproduce a live-master lookup
+problem for issued dispatch documents. `POST /api/dispatch` copies dealer code,
+name, address, GST, contact, and mobile into the dispatch header, and
+`GET /api/dispatch/:id` renders those header snapshot fields. Product event
+metadata also records the dealer identity/name at dispatch time.
+
+Record DISP-3 as:
+
+> **Medium — business acceptance decision required; no software patch in this
+> preparation task.**
+
+This is a document-policy acceptance item rather than a Critical/High FAT
+blocker. Business acceptance must confirm that the frozen snapshot fields meet
+the required historical-commercial-document policy. If an operational
+workaround is used, label it as an operational workaround, not a software fix.
+
+### QC route contract
+
+The frozen candidate mounts both QC surfaces:
+
+- `POST /api/manufacturing/orders/:id/qc-approval` records the QC decision,
+  updates the quality-control stage, opens rework on rejection, and calls the
+  shared completion gate on approval.
+- `POST /api/manufacturing/orders/:id/stages/quality_control/approve` performs
+  generic stage sign-off and calls the same shared completion gate when the
+  quality-control stage is approved.
+
+The FAT package must not describe `qc-approval.ts` as nonexistent. Use the
+route appropriate to the assertion: QC decision/rework for the first route,
+generic stage sign-off for the second. Both are guarded for
+Supervisor/Director writes.
+
+## 9. Exit criteria
 
 FAT is ready for sign-off only when:
 

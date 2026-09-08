@@ -40,6 +40,22 @@ controlled test-runner secret mechanism.
 6. Use unique `FAT-YYYYMMDD-*` business numbers where the route generates
    numbers automatically; never reuse production identifiers.
 
+All full-journey fixtures must be grouped and isolated as follows:
+
+| Group | Scope | Starting-state requirement |
+|---|---|---|
+| FAT-01 | Masters | No FAT-prefixed masters exist, or the known manifest IDs are reset to their documented active state |
+| FAT-02 | Procurement / GRN / Inspection / Inventory | Draft GRN and empty FAT ledger baseline are present; inspection-pending stock is distinct from available stock |
+| FAT-03 | Cells / Grading / Matching | Received lot exists, cells are unallocated and ungraded, and grade configuration is known |
+| FAT-04 | Manufacturing | Orders are at their documented pre-stage states; chargers are available |
+| FAT-05 | Finished Product / Packing / Dispatch | No consumed FAT product/dispatch remains, or the group is restored to its ready-for-packing baseline |
+| FAT-06 | Customer / Warranty / Traceability | Product/customer/warranty chain is either absent or restored to the manifest's exact baseline |
+
+Each group must record its created records, stable IDs/business numbers,
+dependencies, reset/cleanup method, and expected starting state. Groups may be
+reset independently where dependencies permit. No production-like row may be
+created outside the `FAT-` namespace.
+
 ## 3. Required master/reference data
 
 The current QA seed does **not** create these records. Their absence is
@@ -204,3 +220,28 @@ These are explicitly **DATA SETUP REQUIRED**:
 The existing QA seed is sufficient only for C1 isolation, H11 invalid-lot
 validation, H14 completed-order readability, and H17 charger reservation
 competition.
+
+## 10. Reset and concurrency integrity requirements
+
+The controlled FAT setup must be deterministic and resettable. Do not create
+one giant fixture that one positive test consumes for every other case.
+
+Maintain isolated resettable fixtures for:
+
+- One available charger shared by two charging-ready orders.
+- Two callers competing for the same cell-match acceptance.
+- One order at the concurrent completion boundary.
+
+After each destructive or concurrency case, verify:
+
+- Charger availability and ownership.
+- Cell allocation and match state.
+- Production-order and stage state.
+- Product count and serial uniqueness.
+- Inventory ledger counts and signed totals.
+- Genealogy and product-event counts.
+- No orphan rows in the FAT namespace.
+
+The reset mechanism must not delete rows outside its stable FAT prefix or
+manifest IDs. It must report before/after counts and fail closed if a
+non-FAT record is selected.
