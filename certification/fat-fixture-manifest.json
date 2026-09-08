@@ -3,7 +3,7 @@
   "namespace": "FAT-E2E-",
   "frozenTag": "FAT-CANDIDATE-2026-09-08",
   "frozenCommit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7",
-  "generatedAt": "2026-09-08T07:16:39.277Z",
+  "generatedAt": "2026-09-08T09:09:20.058Z",
   "passwordEvidence": "omitted; supplied only through FAT_TEST_PASSWORD",
   "manifestPath": "/home/runner/workspace/certification/fat-fixture-manifest.json",
   "ids": {

@@ -7,4 +7,4 @@ Concurrency certification must create isolated fixtures that are already at the 
 
 **Why:** Data-dependent races can skip indefinitely, and permissive success counts can pass when both requests fail before reaching the atomic operation.
 
-**How to apply:** For reservation, allocation, and state-transition races, seed uniquely prefixed fixtures, fire requests concurrently, assert the winner and loser contracts explicitly, and clean fixtures in `finally`.
+**How to apply:** For reservation, allocation, and state-transition races, seed uniquely prefixed fixtures, fire requests concurrently, assert the winner and loser contracts explicitly, and clean fixtures in `finally`. Record a separate aggregate failure when both individually allowed responses are winners.

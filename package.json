@@ -11,7 +11,8 @@
     "cert:fat:seed": "pnpm --filter @workspace/api-server run cert:fat:seed",
     "cert:fat:verify": "pnpm --filter @workspace/api-server run cert:fat:verify",
     "cert:fat:teardown": "pnpm --filter @workspace/api-server run cert:fat:teardown",
-    "test:fat": "pnpm --filter @workspace/api-server run test:fat"
+    "test:fat": "pnpm --filter @workspace/api-server run test:fat",
+    "test:fat:journey": "pnpm --filter @workspace/api-server run test:fat:journey"
   },
   "private": true,
   "devDependencies": {

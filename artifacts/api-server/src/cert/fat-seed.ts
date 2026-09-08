@@ -515,7 +515,7 @@ async function seedCells(client: SqlClient): Promise<void> {
         id,
         cellId(i),
         FAT_IDS.cells.lot,
-        good && i <= 32 ? "allocated" : good ? "approved" : "rejected",
+        good && i <= 16 ? "allocated" : good ? "approved" : "rejected",
         good ? (i <= 48 ? "A" : "B") : "reject",
         good ? 281 + (i % 3) : 240,
         good ? 0.9 + (i % 4) / 10 : 2.8,
@@ -776,6 +776,7 @@ async function seedManufacturing(client: SqlClient): Promise<void> {
     [FAT_IDS.orders.clean, "CABINET", FAT_IDS.masters.cabinet, "FAT E2E Cabinet", 1, "FAT-E2E-CAB-001"],
     [FAT_IDS.orders.clean, "CONNECTOR", FAT_IDS.masters.connector, "FAT E2E HV Connector", 1, "FAT-E2E-CON-001"],
     [FAT_IDS.orders.clean, "CABLE", FAT_IDS.masters.cable, "FAT E2E HV Cable", 1, "FAT-E2E-CABLE-001"],
+    [FAT_IDS.orders.completion, "CELL", FAT_IDS.masters.cell, "FAT E2E LiFePO4 Cell", 16, cellId(33)],
   ] as const) {
     await query(
       client,
