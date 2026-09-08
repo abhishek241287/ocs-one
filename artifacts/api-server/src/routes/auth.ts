@@ -1,10 +1,14 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, logisticsDealersTable, usersTable } from "@workspace/db";
+import { asc, eq } from "drizzle-orm";
 import { requireAuth, requireRole, signToken, decodeAuthCookie } from "../middleware/auth";
 import { COOKIE_NAME, COOKIE_OPTIONS } from "../lib/security-config";
 import { recordSecurityEvent, reqMeta } from "../lib/security-events";
+import {
+  UpdateAuthUserDealerBody,
+  UpdateAuthUserDealerParams,
+} from "@workspace/api-zod";
 
 const ASSIGNABLE_ROLES = ["owner", "director", "supervisor", "operator", "viewer", "dealer"] as const;
 type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
@@ -23,6 +27,16 @@ const CREATION_HIERARCHY: Record<string, readonly AssignableRole[]> = {
 };
 
 const router: IRouter = Router();
+
+const userAccountProjection = {
+  id: usersTable.id,
+  email: usersTable.email,
+  name: usersTable.name,
+  role: usersTable.role,
+  dealerId: usersTable.dealerId,
+  isActive: usersTable.isActive,
+  createdAt: usersTable.createdAt,
+};
 
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
@@ -196,6 +210,107 @@ router.post("/register", requireAuth, requireRole("owner", "director", "supervis
     user: { id: user.id, email: user.email, name: user.name, role: user.role },
   });
 });
+
+// GET /api/auth/users — director/owner-only account list for access management.
+// Password hashes and other session-sensitive fields are intentionally excluded.
+router.get("/users", requireAuth, requireRole("owner", "director"), async (_req, res) => {
+  const items = await db
+    .select(userAccountProjection)
+    .from(usersTable)
+    .orderBy(asc(usersTable.name), asc(usersTable.email));
+
+  res.json({ items, total: items.length });
+});
+
+// PATCH /api/auth/users/:id/dealer — associate a dealer-role user with an
+// active dealership. Null explicitly unlinks the user from their current dealer.
+router.patch(
+  "/users/:id/dealer",
+  requireAuth,
+  requireRole("owner", "director"),
+  async (req, res) => {
+    const { id } = UpdateAuthUserDealerParams.parse(req.params);
+    const { dealerId } = UpdateAuthUserDealerBody.parse(req.body);
+
+    const [target] = await db
+      .select(userAccountProjection)
+      .from(usersTable)
+      .where(eq(usersTable.id, id))
+      .limit(1);
+
+    if (!target) {
+      res.status(404).json({ error: "User account not found" });
+      return;
+    }
+    if (target.role !== "dealer") {
+      res.status(400).json({ error: "Only dealer-role users can be linked to a dealership" });
+      return;
+    }
+
+    let dealerName: string | null = null;
+    let dealerCode: string | null = null;
+    if (dealerId) {
+      const [dealer] = await db
+        .select({
+          id: logisticsDealersTable.id,
+          dealerName: logisticsDealersTable.dealerName,
+          dealerCode: logisticsDealersTable.dealerCode,
+          status: logisticsDealersTable.status,
+        })
+        .from(logisticsDealersTable)
+        .where(eq(logisticsDealersTable.id, dealerId))
+        .limit(1);
+
+      if (!dealer) {
+        res.status(404).json({ error: "Dealer not found" });
+        return;
+      }
+      if (dealer.status !== "active") {
+        res.status(400).json({ error: "Only active dealers can be assigned to a user" });
+        return;
+      }
+      dealerName = dealer.dealerName;
+      dealerCode = dealer.dealerCode;
+    }
+
+    if (target.dealerId === dealerId) {
+      res.json(target);
+      return;
+    }
+
+    const [updated] = await db
+      .update(usersTable)
+      .set({ dealerId, updatedAt: new Date() })
+      .where(eq(usersTable.id, id))
+      .returning(userAccountProjection);
+
+    void recordSecurityEvent({
+      eventType: "user.dealer_assignment_changed",
+      severity: "info",
+      actorId: req.user?.userId ?? null,
+      actorEmail: req.user?.email ?? null,
+      actorRole: req.user?.role ?? null,
+      targetEmail: target.email,
+      ...reqMeta(req),
+      statusCode: 200,
+      detail: `Dealer assignment changed for ${target.email}: ${target.dealerId ?? "unassigned"} → ${dealerId ?? "unassigned"}${dealerCode ? ` (${dealerCode} — ${dealerName})` : ""}`,
+    });
+
+    req.log.info(
+      {
+        event: "user.dealer_assignment_changed",
+        actorId: req.user?.userId,
+        targetUserId: target.id,
+        targetEmail: target.email,
+        previousDealerId: target.dealerId,
+        dealerId,
+      },
+      "Updated dealer assignment for user account"
+    );
+
+    res.json(updated);
+  }
+);
 
 // POST /api/auth/logout — public route (no requireAuth) so it always succeeds
 // in clearing the cookie. We still decode the cookie best-effort to attribute

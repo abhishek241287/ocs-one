@@ -98,6 +98,7 @@ import type {
   IncomingInspectionDetail,
   IncomingInspectionInput,
   IssueMaterialsInput,
+  ListAuthUsers200,
   ListBmsMasters200,
   ListBmsMastersParams,
   ListBomsParams,
@@ -228,6 +229,8 @@ import type {
   TestResult,
   TestResultInput,
   TestingDashboard,
+  UserAccount,
+  UserDealerAssignment,
   VoidWarrantyInput,
   Warranty,
   WarrantyListResponse
@@ -8825,6 +8828,154 @@ export function useAuthMe<TData = Awaited<ReturnType<typeof authMe>>, TError = E
 
 
 
+
+export const getListAuthUsersUrl = () => {
+
+
+
+
+  return `/api/auth/users`
+}
+
+/**
+ * @summary List user accounts for access management
+ */
+export const listAuthUsers = async ( options?: RequestInit): Promise<ListAuthUsers200> => {
+
+  return customFetch<ListAuthUsers200>(getListAuthUsersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAuthUsersQueryKey = () => {
+    return [
+    `/api/auth/users`
+    ] as const;
+    }
+
+
+export const getListAuthUsersQueryOptions = <TData = Awaited<ReturnType<typeof listAuthUsers>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAuthUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAuthUsersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAuthUsers>>> = ({ signal }) => listAuthUsers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAuthUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAuthUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listAuthUsers>>>
+export type ListAuthUsersQueryError = ErrorType<void>
+
+
+/**
+ * @summary List user accounts for access management
+ */
+
+export function useListAuthUsers<TData = Awaited<ReturnType<typeof listAuthUsers>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAuthUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAuthUsersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAuthUserDealerUrl = (id: string,) => {
+
+
+
+
+  return `/api/auth/users/${id}/dealer`
+}
+
+/**
+ * @summary Assign a dealer account to a dealer-role user
+ */
+export const updateAuthUserDealer = async (id: string,
+    userDealerAssignment: UserDealerAssignment, options?: RequestInit): Promise<UserAccount> => {
+
+  return customFetch<UserAccount>(getUpdateAuthUserDealerUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(userDealerAssignment)
+  }
+);}
+
+
+
+
+export const getUpdateAuthUserDealerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAuthUserDealer>>, TError,{id: string;data: BodyType<UserDealerAssignment>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAuthUserDealer>>, TError,{id: string;data: BodyType<UserDealerAssignment>}, TContext> => {
+
+const mutationKey = ['updateAuthUserDealer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAuthUserDealer>>, {id: string;data: BodyType<UserDealerAssignment>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAuthUserDealer(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAuthUserDealerMutationResult = NonNullable<Awaited<ReturnType<typeof updateAuthUserDealer>>>
+    export type UpdateAuthUserDealerMutationBody = BodyType<UserDealerAssignment>
+    export type UpdateAuthUserDealerMutationError = ErrorType<void>
+
+    /**
+ * @summary Assign a dealer account to a dealer-role user
+ */
+export const useUpdateAuthUserDealer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAuthUserDealer>>, TError,{id: string;data: BodyType<UserDealerAssignment>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAuthUserDealer>>,
+        TError,
+        {id: string;data: BodyType<UserDealerAssignment>},
+        TContext
+      > => {
+      return useMutation(getUpdateAuthUserDealerMutationOptions(options));
+    }
 
 export const getGetDirectorDashboardUrl = () => {
 

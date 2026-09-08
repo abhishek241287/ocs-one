@@ -74,6 +74,7 @@ import ArchitecturePage from "@/pages/ArchitecturePage";
 import PerformancePage from "@/pages/PerformancePage";
 import SecurityPage from "@/pages/SecurityPage";
 import ConfigurationPage from "@/pages/ConfigurationPage";
+import UserAccountsPage from "@/pages/UserAccountsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -98,6 +99,7 @@ function Router() {
       <Route path="/developer/performance" component={PerformancePage} />
       <Route path="/developer/security" component={SecurityPage} />
       <Route path="/developer/configuration" component={ConfigurationPage} />
+      <Route path="/administration/users" component={UserAccountsPage} />
 
       {/* Products */}
       <Route path="/product-inventory" component={ProductInventoryDashboardPage} />

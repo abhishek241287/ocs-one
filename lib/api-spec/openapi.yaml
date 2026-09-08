@@ -2340,6 +2340,52 @@ paths:
         "401":
           description: Not authenticated
 
+  /auth/users:
+    get:
+      operationId: listAuthUsers
+      tags: [auth]
+      summary: List user accounts for access management
+      responses:
+        "200":
+          description: User accounts without password or session data
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/UserAccount" }
+                  total: { type: integer }
+        "403":
+          description: Director or owner access required
+
+  /auth/users/{id}/dealer:
+    patch:
+      operationId: updateAuthUserDealer
+      tags: [auth]
+      summary: Assign a dealer account to a dealer-role user
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserDealerAssignment" }
+      responses:
+        "200":
+          description: Updated user account
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserAccount" }
+        "400":
+          description: User is not a dealer role or dealer is inactive
+        "403":
+          description: Director or owner access required
+        "404":
+          description: User or dealer not found
+
   # ─── Director Dashboard ───────────────────────────────────────────────────
   /dashboard/director:
     get:
@@ -5404,6 +5450,26 @@ components:
         role:
           type: string
           enum: [director, supervisor, operator, viewer]
+
+    UserAccount:
+      type: object
+      required: [id, email, name, role, dealerId, isActive, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        role:
+          type: string
+          enum: [owner, director, supervisor, operator, viewer, dealer]
+        dealerId: { type: ["string", "null"], format: uuid }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    UserDealerAssignment:
+      type: object
+      required: [dealerId]
+      properties:
+        dealerId: { type: ["string", "null"], format: uuid }
 
     LoginRequest:
       type: object

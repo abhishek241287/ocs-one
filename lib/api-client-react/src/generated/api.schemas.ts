@@ -1822,6 +1822,34 @@ export interface AuthUser {
   role: AuthUserRole;
 }
 
+export type UserAccountRole = typeof UserAccountRole[keyof typeof UserAccountRole];
+
+
+export const UserAccountRole = {
+  owner: 'owner',
+  director: 'director',
+  supervisor: 'supervisor',
+  operator: 'operator',
+  viewer: 'viewer',
+  dealer: 'dealer',
+} as const;
+
+export interface UserAccount {
+  id: string;
+  email: string;
+  name: string;
+  role: UserAccountRole;
+  /** @nullable */
+  dealerId: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface UserDealerAssignment {
+  /** @nullable */
+  dealerId: string | null;
+}
+
 export interface LoginRequest {
   email: string;
   /** @minLength 1 */
@@ -3418,6 +3446,11 @@ export type AuthLogout200 = {
 
 export type AuthMe200 = {
   user: AuthUser;
+};
+
+export type ListAuthUsers200 = {
+  items: UserAccount[];
+  total: number;
 };
 
 export type ListProductsParams = {

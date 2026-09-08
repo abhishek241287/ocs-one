@@ -4724,6 +4724,45 @@ export const AuthMeResponse = zod.object({
 
 
 /**
+ * @summary List user accounts for access management
+ */
+export const ListAuthUsersResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "name": zod.string(),
+  "role": zod.enum(['owner', 'director', 'supervisor', 'operator', 'viewer', 'dealer']),
+  "dealerId": zod.string().uuid().nullable(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})),
+  "total": zod.number()
+})
+
+
+/**
+ * @summary Assign a dealer account to a dealer-role user
+ */
+export const UpdateAuthUserDealerParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateAuthUserDealerBody = zod.object({
+  "dealerId": zod.string().uuid().nullable()
+})
+
+export const UpdateAuthUserDealerResponse = zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "name": zod.string(),
+  "role": zod.enum(['owner', 'director', 'supervisor', 'operator', 'viewer', 'dealer']),
+  "dealerId": zod.string().uuid().nullable(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Live director dashboard — all KPIs and pipeline in one call
  */
 export const GetDirectorDashboardResponse = zod.object({

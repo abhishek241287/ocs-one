@@ -39,6 +39,7 @@ import {
   PackageCheck,
   PackagePlus,
   UserPlus,
+  UserRoundCog,
   ShieldHalf,
   Store,
   ListChecks,
@@ -181,6 +182,13 @@ const navSections: NavSection[] = [
       { label: "Engineering Health", href: "/developer/performance", icon: Activity },
       { label: "Security Posture", href: "/developer/security", icon: ShieldCheck },
       { label: "Configuration", href: "/developer/configuration", icon: SlidersHorizontal },
+    ],
+  },
+  {
+    title: "Access",
+    directorOnly: true,
+    items: [
+      { label: "User Accounts", href: "/administration/users", icon: UserRoundCog },
     ],
   },
 ];
