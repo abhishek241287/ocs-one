@@ -6,81 +6,165 @@ id = "-sYhonkur1gCihlGDo_Qi"
 uri = "file://engineering_audit.md"
 type = "text"
 title = "Engineering Audit"
+logical_id = "49cb1dae-ca40-4de3-8103-24f39e481299"
 
 [[outputs]]
 id = "sYUneZXx_KeIEayi5FjYF"
 uri = "file://performance_report.md"
 type = "text"
 title = "Performance Report"
+logical_id = "7929d4e8-1727-4c69-9021-ac8787f5b38d"
 
 [[outputs]]
 id = "D2mZ0Oigb91OpmFBSTWgI"
 uri = "file://security_report.md"
 type = "text"
 title = "Security Report"
+logical_id = "1e8697cd-0aa4-4be9-8762-4f8d902e300c"
 
 [[outputs]]
 id = "bxPg_Mco7sRwFGUr_Dqnt"
 uri = "file://refactoring_plan.md"
 type = "text"
 title = "Refactoring Plan"
+logical_id = "8f6fde44-d862-4ef4-961f-6daf03684c70"
 
 [[outputs]]
 id = "sr6z2QAPkt7iQRLyYF1_j"
 uri = "file://docs/ocs-one-v1.0-foundation-backup.tar.gz"
 type = "unspecified"
 title = "OCS One v1.0 Foundation — Source Backup (716K)"
+logical_id = "725c39d6-ac7b-452a-b01a-a93fb17b1666"
 
 [[outputs]]
 id = "pXxZEXq0q3-LIOFva4VU8"
 uri = "file://CW-01_CERTIFICATION_REPORT.md"
 type = "text"
 title = "CW-01 Certification Report — Cell Receiving"
+logical_id = "3a7e4bd8-6d74-4513-b787-eaad5780bb9d"
 
 [[outputs]]
 id = "jOJrjF0VYjbTZvM27csPO"
 uri = "file://CW-03_PHASE-0_FOUNDATION_REVIEW.md"
 type = "text"
 title = "CW-03 Phase 0 — Product Platform Foundation Review"
+logical_id = "432be9aa-fd56-4606-886c-9069c1f0ecbf"
 
 [[outputs]]
 id = "fs41drMnH9Om_rwazu0iM"
 uri = "file://docs/commercial-readiness-report.md"
 type = "text"
 title = "OCS One — Commercial Readiness Report (Phase 1)"
+logical_id = "38893123-2464-4892-8c00-927346f670a5"
 
 [[outputs]]
 id = "XNH4TC2GQQnr-kRKXIf5l"
 uri = "file://docs/inventory-commercial-readiness-report.md"
 type = "text"
 title = "Inventory Commercial Readiness Report"
+logical_id = "d92180b0-b15b-4942-b554-1d4dfdf21ffc"
 
 [[outputs]]
 id = "gM4mPk9oTIOP6zsyB2TC-"
 uri = "file://docs/factory-ready-v1.0-signoff.md"
 type = "text"
 title = "OCS One — Factory Ready v1.0 Sign-Off"
+logical_id = "a404f655-21d4-4b5e-8564-8f31106aeae2"
 
 [[outputs]]
 id = "SNw0ByYRTDNdeDGHgwxzg"
 uri = "file://docs/factory-acceptance-testing-manual-v1.0.md"
 type = "text"
 title = "OCS One — Factory Acceptance Testing (FAT) Manual v1.0"
+logical_id = "97a7e96b-9065-4438-a454-f3aa3969d08f"
 
 [[outputs]]
 id = "zGqxOFOTps9xWMuIntB5o"
 uri = "file://docs/operator-user-manual-v1.0.md"
 type = "text"
 title = "OCS One — Operator User Manual v1.0"
+logical_id = "27d0ba2c-1e5d-4324-b02f-fe6363ac124c"
 
 [[outputs]]
 id = "SVWAh3FWgDSCc7m5JaWWX"
 uri = "file://docs/quick-start-guide-v1.0.md"
 type = "text"
 title = "OCS One — Quick Start Guide v1.0"
+logical_id = "ac64f4d9-c2d4-44e8-af5a-b71917658f38"
 
 [[outputs]]
 id = "eGsbfNdq9atwwRgUt_abj"
 uri = "file://docs/role-responsibility-matrix-v1.0.md"
 type = "text"
 title = "OCS One — Role & Responsibility Matrix v1.0"
+logical_id = "b455b3b3-3c89-4b7b-b0c3-510af09d037d"
+
+[[outputs]]
+id = "Vk_G6JubDyEzVXxtyumva"
+uri = "file://FAT_MASTER_TEST_PLAN.md"
+type = "text"
+title = "FAT Master Test Plan"
+description = "Frozen-candidate FAT scope, workflow coverage, execution controls, integrity gates, and exit criteria."
+logical_id = "bdfe9958-9519-41c3-9da8-68e507a1aa95"
+content_hash = "sha256:35399b2985884db72f68f36ab415c41df5a8850b74d687fbb78a3844b9fb2ab0"
+size = 10401
+mtime_ms = 1788847598756
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/bdfe9958-9519-41c3-9da8-68e507a1aa95/4c70b6aa-54bb-4826-9121-74c4991d2b08"
+storage_version_token = "1788848359173347"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "eAQaZjLqj6VPnVTOuHg4b"
+uri = "file://FAT_TEST_CASES.md"
+type = "text"
+title = "FAT Test Cases"
+description = "Positive, negative, authorization, integrity, and concurrency test cases with expected outcomes and evidence requirements."
+logical_id = "7bc329df-c163-41c9-a34c-7773a801815e"
+content_hash = "sha256:45142f0b275a54daadf7f33b1822feddf6c94174a3230aa98397b89dd5d42fb3"
+size = 17126
+mtime_ms = 1788847662495
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/7bc329df-c163-41c9-a34c-7773a801815e/924521cd-e62b-447d-ae1c-653939b86586"
+storage_version_token = "1788848360608666"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "RE-3B2xAoC_2dmOxUqDDf"
+uri = "file://FAT_DATA_SETUP.md"
+type = "text"
+title = "FAT Data Setup"
+description = "Controlled QA data prerequisites for the complete ERP workflow and current seed limitations."
+logical_id = "801a4c91-bc1a-427b-9556-89ebcd6a5497"
+content_hash = "sha256:5ea37f482d13b1c18dbee865f764b437a55c0dfa011ac1a875a707f438e160d9"
+size = 7586
+mtime_ms = 1788847626035
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/801a4c91-bc1a-427b-9556-89ebcd6a5497/a40c996c-3628-4987-9e9e-8e9d7dba1f81"
+storage_version_token = "1788848361928470"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "qomVoyLfxgMdZIBpRPUmy"
+uri = "file://FAT_ROLE_MATRIX.md"
+type = "text"
+title = "FAT Role Matrix"
+description = "Owner, Director, Supervisor, Operator, Viewer, and Dealer authorization coverage."
+logical_id = "f7e2ed2f-bd8a-4098-bd3e-5009b0dc3589"
+content_hash = "sha256:fd454684ac76241fbee5b6be4eb66366602ac6b977d7f5350e22147fc18ad47b"
+size = 4817
+mtime_ms = 1788847609686
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/f7e2ed2f-bd8a-4098-bd3e-5009b0dc3589/34f14d1c-d5ae-40f0-bf12-f8476ce39cc8"
+storage_version_token = "1788848363247817"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "hPxFdL6N58A1Op34yC61E"
+uri = "file://FAT_DEFECT_LOG_TEMPLATE.md"
+type = "text"
+title = "FAT Defect Log Template"
+description = "Reusable FAT defect, evidence, retest, and DATA SETUP REQUIRED record template."
+logical_id = "974b761d-b6aa-4c66-baaf-84dcaeda75ff"
+content_hash = "sha256:0a7fa0fbe343701fbcf864dc5c1ccd3594e2f383b8f8a8359b9075946c1f0244"
+size = 2103
+mtime_ms = 1788847667984
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/974b761d-b6aa-4c66-baaf-84dcaeda75ff/cf819728-6ce0-4ea2-bdd6-71de3711b9b8"
+storage_version_token = "1788848364597471"
+content_type = "text/markdown"
