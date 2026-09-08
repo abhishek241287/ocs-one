@@ -323,7 +323,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
           .json({ error: "Missing mandatory traceability reference", materials: o.materials });
         return;
       case "lot_validation_failed":
-        res.status(422).json({ error: o.error });
+        res.status(422).json({ error_code: "lot_validation_failed", error: o.error });
         return;
       case "ok":
         minId = o.minId;

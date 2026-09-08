@@ -11,6 +11,16 @@ import {
   db,
   usersTable,
   logisticsDealersTable,
+  masterProductsTable,
+  materialCategoriesTable,
+  materialsTable,
+  suppliersTable,
+  bomHeadersTable,
+  bomLinesTable,
+  grnHeadersTable,
+  grnLineItemsTable,
+  inventoryTransactionsTable,
+  materialIssueNotesTable,
   mfgChargerUnitsTable,
   mfgProductionOrdersTable,
   mfgOrderStagesTable,
@@ -478,51 +488,178 @@ async function main() {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
-  // H11 — Lot Traceability (data-dependent — only run if in-progress orders exist)
+  // H11 — Lot Traceability (isolated fixture; never data-dependent)
   // ════════════════════════════════════════════════════════════════════════════
   section("H11 — Lot Traceability Validation");
 
   {
-    const ordersResp = await apiReq(
-      "GET",
-      "/api/manufacturing/orders?status=in_progress&pageSize=20",
-      ownerToken,
-    );
-    const orders = ((ordersResp.body as { items?: { id: string }[] })?.items ?? []);
-    let testOrderId: string | null = null;
-    for (const o of orders) {
-      const minResp = await apiReq("GET", `/api/manufacturing/orders/${o.id}/material-issues`, ownerToken);
-      const mins = ((minResp.body as { items?: unknown[] })?.items ?? []);
-      if (mins.length === 0) {
-        testOrderId = o.id;
-        break;
-      }
-    }
+    const runId = `${Date.now()}-${process.pid}`;
+    let orderId: string | null = null;
+    let productId: string | null = null;
+    let categoryId: string | null = null;
+    let materialId: string | null = null;
+    let supplierId: string | null = null;
+    let bomId: string | null = null;
+    let grnId: string | null = null;
 
-    if (!testOrderId) {
-      skip("H11 lot tests", "no in-progress order without an active MIN in DB");
-    } else {
-      // Nonexistent lot reference → must not 500
-      const r = await apiReq(
-        "POST",
-        `/api/manufacturing/orders/${testOrderId}/material-issues`,
-        supervisorToken,
+    try {
+      const [product] = await db.insert(masterProductsTable).values({
+        code: `H11-PROD-${runId}`,
+        name: "H11 Lot Validation Product",
+        chemistry: "LFP",
+        category: "CERT",
+        nominalVoltageV: "48",
+        capacityAh: "100",
+        energyKwh: "4.8",
+        configuration: "16S1P",
+        cellCount: 16,
+        warrantyPeriodMonths: 12,
+      }).returning({ id: masterProductsTable.id });
+      productId = product.id;
+
+      const [category] = await db.insert(materialCategoriesTable).values({
+        code: `H11-CAT-${runId}`,
+        name: "H11 Certificate Materials",
+      }).returning({ id: materialCategoriesTable.id });
+      categoryId = category.id;
+
+      const [material] = await db.insert(materialsTable).values({
+        code: `H11-MAT-${runId}`,
+        name: "H11 Traceable Material",
+        categoryId: category.id,
+        uom: "PCS",
+        usageType: "CONSUMABLE",
+      }).returning({ id: materialsTable.id });
+      materialId = material.id;
+
+      const [supplier] = await db.insert(suppliersTable).values({
+        code: `H11-SUP-${runId}`,
+        name: "H11 Certificate Supplier",
+      }).returning({ id: suppliersTable.id });
+      supplierId = supplier.id;
+
+      const [bom] = await db.insert(bomHeadersTable).values({
+        bomNumber: `H11-BOM-${runId}`,
+        modelId: product.id,
+        revision: 1,
+        status: "approved",
+        yieldPercent: "100",
+        approvedBy: "FAT H11",
+        approvedAt: new Date(),
+      }).returning({ id: bomHeadersTable.id });
+      bomId = bom.id;
+
+      const [bomLine] = await db.insert(bomLinesTable).values({
+        bomId: bom.id,
+        materialId: material.id,
+        position: 1,
+        quantityPer: "5",
+        uom: "PCS",
+        traceabilityRequired: true,
+      }).returning({ id: bomLinesTable.id });
+
+      const [grn] = await db.insert(grnHeadersTable).values({
+        grnNumber: `H11-GRN-${runId}`,
+        supplierId: supplier.id,
+        receivedDate: new Date().toISOString().split("T")[0],
+        status: "posted",
+        postedAt: new Date(),
+      }).returning({ id: grnHeadersTable.id });
+      grnId = grn.id;
+
+      const [smallLot, validLot] = await db.insert(grnLineItemsTable).values([
         {
-          lines: [
-            {
-              source_bom_line_id: "00000000-0000-0000-0000-000000000000",
-              issued_qty: 1,
-              grn_line_id: "00000000-0000-0000-0000-000000000000",
-              supplier_lot_number: "NONEXISTENT-LOT",
-            },
-          ],
+          grnId: grn.id,
+          lineNumber: 1,
+          materialId: material.id,
+          quantityReceived: "2",
+          uom: "PCS",
+          supplierLotNumber: `H11-SMALL-${runId}`,
         },
-      );
-      if (r.status === 500) {
-        fail("H11: Invalid lot reference → server error (500) — lot validation not working", `body: ${JSON.stringify(r.body)}`);
+        {
+          grnId: grn.id,
+          lineNumber: 2,
+          materialId: material.id,
+          quantityReceived: "20",
+          uom: "PCS",
+          supplierLotNumber: `H11-VALID-${runId}`,
+        },
+      ]).returning({
+        id: grnLineItemsTable.id,
+        supplierLotNumber: grnLineItemsTable.supplierLotNumber,
+        quantityReceived: grnLineItemsTable.quantityReceived,
+      });
+
+      await db.insert(inventoryTransactionsTable).values([smallLot, validLot].map((lot) => ({
+        transactionType: "GRN_RECEIPT" as const,
+        materialId: material.id,
+        quantity: lot.quantityReceived,
+        uom: "PCS" as const,
+        stockState: "available" as const,
+        sourceDocumentType: "GRN",
+        sourceDocumentId: grn.id,
+        sourceLineId: lot.id,
+      })));
+
+      const [order] = await db.insert(mfgProductionOrdersTable).values({
+        orderNumber: `H11-PO-${runId}`,
+        batteryNumber: `H11-BAT-${runId}`,
+        productId: product.id,
+        factoryManager: "QA H11",
+        status: "in_progress",
+        priority: "medium",
+      }).returning({ id: mfgProductionOrdersTable.id });
+      orderId = order.id;
+
+      const issue = (grnLineId: string, supplierLotNumber: string) =>
+        apiReq("POST", `/api/manufacturing/orders/${order.id}/material-issues`, supervisorToken ?? ownerToken, {
+          lines: [{
+            source_bom_line_id: bomLine.id,
+            issued_qty: 5,
+            grn_id: grn.id,
+            grn_line_id: grnLineId,
+            supplier_lot_number: supplierLotNumber,
+          }],
+        });
+
+      const invalid = await issue("00000000-0000-0000-0000-000000000000", "NONEXISTENT-LOT");
+      if (invalid.status === 422 && (invalid.body as { error_code?: string })?.error_code === "lot_validation_failed") {
+        pass("H11: Nonexistent lot reference rejected before MIN commit", "HTTP 422 lot_validation_failed");
       } else {
-        pass("H11: MIN with invalid lot reference → non-500 response", `HTTP ${r.status}`);
+        fail("H11: Nonexistent lot reference rejection", `HTTP ${invalid.status}; body=${JSON.stringify(invalid.body)}`);
       }
+
+      const insufficient = await issue(smallLot.id, smallLot.supplierLotNumber!);
+      if (
+        insufficient.status === 422 &&
+        (insufficient.body as { error_code?: string })?.error_code === "lot_validation_failed" &&
+        String((insufficient.body as { error?: unknown })?.error).includes("Insufficient lot balance")
+      ) {
+        pass("H11: Selected lot with insufficient balance rejected", "HTTP 422 lot_validation_failed");
+      } else {
+        fail("H11: Insufficient lot balance rejection", `HTTP ${insufficient.status}; body=${JSON.stringify(insufficient.body)}`);
+      }
+
+      const valid = await issue(validLot.id, validLot.supplierLotNumber!);
+      if (valid.status === 201 && (valid.body as { id?: string })?.id) {
+        pass("H11: Valid lot with sufficient balance creates MIN", "HTTP 201");
+      } else {
+        fail("H11: Valid lot issuance", `HTTP ${valid.status}; body=${JSON.stringify(valid.body)}`);
+      }
+    } finally {
+      if (materialId) {
+        await db.delete(inventoryTransactionsTable).where(eq(inventoryTransactionsTable.materialId, materialId));
+      }
+      if (orderId) {
+        await db.delete(materialIssueNotesTable).where(eq(materialIssueNotesTable.sourceRefId, orderId));
+        await db.delete(mfgProductionOrdersTable).where(eq(mfgProductionOrdersTable.id, orderId));
+      }
+      if (bomId) await db.delete(bomHeadersTable).where(eq(bomHeadersTable.id, bomId));
+      if (grnId) await db.delete(grnHeadersTable).where(eq(grnHeadersTable.id, grnId));
+      if (materialId) await db.delete(materialsTable).where(eq(materialsTable.id, materialId));
+      if (categoryId) await db.delete(materialCategoriesTable).where(eq(materialCategoriesTable.id, categoryId));
+      if (supplierId) await db.delete(suppliersTable).where(eq(suppliersTable.id, supplierId));
+      if (productId) await db.delete(masterProductsTable).where(eq(masterProductsTable.id, productId));
     }
   }
 
