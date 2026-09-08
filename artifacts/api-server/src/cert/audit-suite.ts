@@ -39,7 +39,7 @@ import {
   securityEventsTable,
   usersTable,
 } from "@workspace/db";
-import { and, desc, eq, gte, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, like } from "drizzle-orm";
 import { AUDIT_MATRIX, type AuditCheck, type AuditStore } from "../lib/audit-matrix";
 
 const BASE_URL = (process.env.CERT_BASE_URL ?? "http://localhost:80").replace(/\/$/, "");
@@ -562,7 +562,12 @@ async function main(): Promise<void> {
         const [latest] = await db
           .select()
           .from(securityEventsTable)
-          .where(eq(securityEventsTable.eventType, evType))
+          .where(
+            and(
+              eq(securityEventsTable.eventType, evType),
+              like(securityEventsTable.path, "%/auth/login%"),
+            ),
+          )
           .orderBy(desc(securityEventsTable.createdAt))
           .limit(1);
         row = (latest as Record<string, unknown>) ?? null;

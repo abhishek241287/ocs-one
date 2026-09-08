@@ -31,6 +31,8 @@ export interface AuthzEndpoint {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   /** Concrete path (dummy ids) used for live SS-02 verification. */
   path: string;
+  /** For dealer-portal reads, replace the dummy id with the cert dealer's own id. */
+  dealerOwnPath?: boolean;
   group: string;
   description: string;
   /** Human description of the enforcing guard. */
@@ -79,6 +81,16 @@ const roles = (
   operator,
   viewer,
   dealer: F,
+  anonymous,
+});
+
+const dealerPortalRead = (anonymous: AuthzOutcome = U): Record<Principal, AuthzOutcome> => ({
+  owner: P,
+  director: P,
+  supervisor: P,
+  operator: P,
+  viewer: P,
+  dealer: P,
   anonymous,
 });
 
@@ -613,19 +625,21 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     id: "dealer.inventory",
     method: "GET",
     path: `/api/dealers/${DUMMY_ID}/inventory`,
+    dealerOwnPath: true,
     group: "Fulfillment",
     description: "Products assigned to a dealer (read)",
-    guard: "requireAuth (read open to all authed)",
-    expected: all(P),
+    guard: "requireAuth + dealer own-id isolation",
+    expected: dealerPortalRead(),
   },
   {
     id: "dealer.dispatch-history",
     method: "GET",
     path: `/api/dealers/${DUMMY_ID}/dispatch-history`,
+    dealerOwnPath: true,
     group: "Fulfillment",
     description: "Dispatch events for a dealer's products (read)",
-    guard: "requireAuth (read open to all authed)",
-    expected: all(P),
+    guard: "requireAuth + dealer own-id isolation",
+    expected: dealerPortalRead(),
   },
 
   // ─── Material Issue Note (MIN) — BOM-driven material consumption ──────────────

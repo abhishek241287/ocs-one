@@ -22,10 +22,11 @@
 //       CERT_FORCE_FAIL=<endpointId> — flips one expectation to prove the suite
 //                                       actually fails on a mismatch (sanity).
 
-import { db, usersTable } from "@workspace/db";
-import { inArray } from "drizzle-orm";
+import { db, logisticsDealersTable, usersTable } from "@workspace/db";
+import { eq, inArray } from "drizzle-orm";
 import {
   AUTHZ_MATRIX,
+  DUMMY_ID,
   PRINCIPALS,
   type AuthzEndpoint,
   type AuthzOutcome,
@@ -43,6 +44,7 @@ const FORCE_FAIL = process.env.CERT_FORCE_FAIL ?? null;
 // including a real director and an external dealer — are provisioned by the owner via
 // the register endpoint and torn down on exit.
 const TEMP_PASSWORD = "SS02!Cert#Temp2026";
+const TEMP_DEALER_CODE = "SS02-CERT-DEALER";
 const TEMP_USERS: { role: Exclude<Principal, "owner" | "anonymous">; email: string; name: string }[] = [
   { role: "director", email: "ss02.director@cert.local", name: "SS02 Director" },
   { role: "supervisor", email: "ss02.supervisor@cert.local", name: "SS02 Supervisor" },
@@ -94,7 +96,27 @@ async function login(email: string, password: string): Promise<CookieJar> {
   return jar;
 }
 
-async function ensureTempUsers(ownerJar: CookieJar): Promise<void> {
+async function ensureTempDealer(): Promise<string> {
+  const existing = await db
+    .select({ id: logisticsDealersTable.id })
+    .from(logisticsDealersTable)
+    .where(eq(logisticsDealersTable.dealerCode, TEMP_DEALER_CODE))
+    .limit(1);
+  if (existing[0]) return existing[0].id;
+
+  const [created] = await db
+    .insert(logisticsDealersTable)
+    .values({
+      dealerCode: TEMP_DEALER_CODE,
+      dealerName: "SS-02 Certification Dealer",
+      status: "active",
+    })
+    .returning({ id: logisticsDealersTable.id });
+  if (!created) throw new Error("Failed to provision SS-02 dealer fixture");
+  return created.id;
+}
+
+async function ensureTempUsers(ownerJar: CookieJar, dealerId: string): Promise<void> {
   for (const u of TEMP_USERS) {
     const res = await fetchResilient(`${BASE_URL}/api/auth/register`, {
       method: "POST",
@@ -111,11 +133,22 @@ async function ensureTempUsers(ownerJar: CookieJar): Promise<void> {
       throw new Error(`Failed to provision ${u.role} (${u.email}): HTTP ${res.status}`);
     }
   }
+
+  // Registration intentionally does not accept dealerId. Link the temporary
+  // dealer principal after registration so the login token contains its own
+  // dealership and the portal rows can certify the real isolation path.
+  await db
+    .update(usersTable)
+    .set({ dealerId })
+    .where(eq(usersTable.email, "ss02.dealer@cert.local"));
 }
 
 async function cleanupTempUsers(): Promise<void> {
   const emails = TEMP_USERS.map((u) => u.email);
   await db.delete(usersTable).where(inArray(usersTable.email, emails));
+  await db
+    .delete(logisticsDealersTable)
+    .where(eq(logisticsDealersTable.dealerCode, TEMP_DEALER_CODE));
 }
 
 function classify(status: number): AuthzOutcome {
@@ -127,6 +160,7 @@ function classify(status: number): AuthzOutcome {
 async function callEndpoint(
   endpoint: AuthzEndpoint,
   jar: CookieJar,
+  dealerId: string | null,
 ): Promise<number> {
   const headers: Record<string, string> = {};
   if (jar) headers.Cookie = jar;
@@ -135,7 +169,11 @@ async function callEndpoint(
     headers["Content-Type"] = "application/json";
     body = JSON.stringify(endpoint.body ?? {});
   }
-  const res = await fetchResilient(`${BASE_URL}${endpoint.path}`, {
+  const path =
+    endpoint.dealerOwnPath && dealerId
+      ? endpoint.path.replace(DUMMY_ID, dealerId)
+      : endpoint.path;
+  const res = await fetchResilient(`${BASE_URL}${path}`, {
     method: endpoint.method,
     headers,
     body,
@@ -188,7 +226,8 @@ async function main(): Promise<void> {
 
   try {
     jars.owner = await login(OWNER_EMAIL, OWNER_PASSWORD);
-    await ensureTempUsers(jars.owner);
+    const dealerId = await ensureTempDealer();
+    await ensureTempUsers(jars.owner, dealerId);
     jars.director = await login("ss02.director@cert.local", TEMP_PASSWORD);
     jars.supervisor = await login("ss02.supervisor@cert.local", TEMP_PASSWORD);
     jars.operator = await login("ss02.operator@cert.local", TEMP_PASSWORD);
@@ -198,7 +237,7 @@ async function main(): Promise<void> {
     const results: Result[] = [];
     for (const endpoint of AUTHZ_MATRIX) {
       for (const principal of PRINCIPALS) {
-        const status = await callEndpoint(endpoint, jars[principal]);
+        const status = await callEndpoint(endpoint, jars[principal], dealerId);
         const actual = classify(status);
         const expected = expectedFor(endpoint, principal);
         results.push({
