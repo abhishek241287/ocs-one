@@ -5,6 +5,14 @@ import { db, usersTable, securityEventsTable } from "@workspace/db";
 import { count, desc, eq, sql, gte } from "drizzle-orm";
 import { requireRole } from "../../middleware/auth";
 import {
+  AUDIT_MATRIX,
+  DEALER_ASSIGNMENT_EVENT_TYPE,
+} from "../../lib/audit-matrix";
+import type {
+  DealerAssignmentAuditDetail,
+  DealerAssignmentAuditSnapshot,
+} from "../../lib/security-events";
+import {
   AUTHZ_MATRIX,
   PRINCIPALS,
   matrixSummary,
@@ -18,6 +26,80 @@ import {
 const router: IRouter = Router();
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+type SecurityEventRow = typeof securityEventsTable.$inferSelect;
+
+export interface DealerAssignmentChange {
+  id: string;
+  eventType: typeof DEALER_ASSIGNMENT_EVENT_TYPE;
+  createdAt: Date;
+  actorEmail: string | null;
+  actorRole: string | null;
+  targetEmail: string | null;
+  previousDealership: DealerAssignmentAuditSnapshot;
+  newDealership: DealerAssignmentAuditSnapshot;
+}
+
+function isSnapshot(value: unknown): value is DealerAssignmentAuditSnapshot {
+  if (!value || typeof value !== "object") return false;
+  const snapshot = value as Record<string, unknown>;
+  return (
+    (typeof snapshot.id === "string" || snapshot.id === null) &&
+    (typeof snapshot.code === "string" || snapshot.code === null) &&
+    (typeof snapshot.name === "string" || snapshot.name === null)
+  );
+}
+
+/**
+ * Read the structured transition detail and retain a compatibility fallback
+ * for rows written before the structured detail contract existed.
+ */
+function parseDealerAssignmentChange(row: SecurityEventRow): DealerAssignmentChange {
+  let detail: Partial<DealerAssignmentAuditDetail> | null = null;
+  if (row.detail) {
+    try {
+      const parsed = JSON.parse(row.detail) as Partial<DealerAssignmentAuditDetail>;
+      if (
+        parsed.kind === "dealer_assignment" &&
+        isSnapshot(parsed.previousDealership) &&
+        isSnapshot(parsed.newDealership)
+      ) {
+        detail = parsed;
+      }
+    } catch {
+      // Legacy detail is handled below.
+    }
+  }
+
+  if (!detail) {
+    const legacy = row.detail?.match(
+      /^Dealer assignment changed for .+?: (.+?) → (.+?)(?: \(([^ ]+) — (.+)\))?$/,
+    );
+    detail = {
+      previousDealership: {
+        id: legacy?.[1] && legacy[1] !== "unassigned" ? legacy[1] : null,
+        code: null,
+        name: null,
+      },
+      newDealership: {
+        id: legacy?.[2] && legacy[2] !== "unassigned" ? legacy[2] : null,
+        code: legacy?.[3] ?? null,
+        name: legacy?.[4] ?? null,
+      },
+    };
+  }
+
+  return {
+    id: row.id,
+    eventType: DEALER_ASSIGNMENT_EVENT_TYPE,
+    createdAt: row.createdAt,
+    actorEmail: row.actorEmail,
+    actorRole: row.actorRole,
+    targetEmail: row.targetEmail ?? detail.targetEmail ?? null,
+    previousDealership: detail.previousDealership!,
+    newDealership: detail.newDealership!,
+  };
+}
 
 /** Walk up from cwd to the repo root (the dir containing pnpm-workspace.yaml). */
 async function findRepoRoot(): Promise<string> {
@@ -88,6 +170,8 @@ router.get("/", requireRole("director"), async (_req, res) => {
     accountCreationsRecent,
     permissionFailuresRecent,
     auditActivityRecent,
+    dealerAssignmentChangesCountRow,
+    dealerAssignmentChangesRecent,
     scan,
   ] = await Promise.all([
     // 1. Users by role
@@ -143,6 +227,21 @@ router.get("/", requireRole("director"), async (_req, res) => {
       .from(securityEventsTable)
       .orderBy(desc(securityEventsTable.createdAt))
       .limit(30),
+    // Dedicated dealer-account history. This exact event type is also declared
+    // in AUDIT_MATRIX, so the dashboard cannot silently drift to a display-only
+    // label or a different event name.
+    db
+      .select({ total: count() })
+      .from(securityEventsTable)
+      .where(
+        sql`${securityEventsTable.eventType} = ${DEALER_ASSIGNMENT_EVENT_TYPE} AND ${securityEventsTable.createdAt} >= ${since7d}`,
+      ),
+    db
+      .select()
+      .from(securityEventsTable)
+      .where(eq(securityEventsTable.eventType, DEALER_ASSIGNMENT_EVENT_TYPE))
+      .orderBy(desc(securityEventsTable.createdAt))
+      .limit(30),
     // 8. Scan / dependency / certification summary from disk
     readScanSummary(),
   ]);
@@ -156,6 +255,16 @@ router.get("/", requireRole("director"), async (_req, res) => {
   for (const ep of AUTHZ_MATRIX) {
     (matrixByGroup[ep.group] ??= []).push(ep);
   }
+
+  const eventTotals = new Map(eventCountRows.map((row) => [row.eventType, row.total]));
+  const auditEventCounts = AUDIT_MATRIX
+    .filter((check) => check.store === "security")
+    .map((check) => ({
+      id: check.id,
+      action: check.action,
+      eventType: check.expectedEventType,
+      total: eventTotals.get(check.expectedEventType) ?? 0,
+    }));
 
   res.json({
     generatedAt: new Date().toISOString(),
@@ -194,10 +303,19 @@ router.get("/", requireRole("director"), async (_req, res) => {
     // 7. Audit activity feed
     auditActivity: auditActivityRecent,
 
-    // 8. Event counts (histogram, 7d)
-    eventCounts: eventCountRows,
+    // 8. Dedicated dealer-account history and count (last 7d / recent 30)
+    dealerAssignmentChanges: {
+      last7d: dealerAssignmentChangesCountRow[0]?.total ?? 0,
+      recent: dealerAssignmentChangesRecent.map(parseDealerAssignmentChange),
+    },
 
-    // 9. Security scan summary (SAST + privacy)
+    // 9. Event counts (histogram, 7d)
+    eventCounts: eventCountRows,
+    // Matrix-backed counts include zero-count audited events, which makes the
+    // dashboard's summary consistent with the certification contract.
+    auditEventCounts,
+
+    // 10. Security scan summary (SAST + privacy)
     securityScan: {
       recorded: scan.recorded,
       generatedAt: scan.generatedAt,

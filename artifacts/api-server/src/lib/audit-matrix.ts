@@ -43,6 +43,9 @@ export interface AuditCheck {
   requires: AuditFieldRequirements;
 }
 
+/** Stable event type shared by the audit writer and the developer dashboard. */
+export const DEALER_ASSIGNMENT_EVENT_TYPE = "user.dealer_assignment_changed" as const;
+
 const ALL: AuditFieldRequirements = {
   actor: true,
   timestamp: true,
@@ -85,10 +88,10 @@ export const AUDIT_MATRIX: AuditCheck[] = [
     requires: ALL, // actor(director) + target(new user) + detail(role) + ts
   },
   {
-    id: "user.dealer_assignment_changed",
+    id: DEALER_ASSIGNMENT_EVENT_TYPE,
     action: "Change a dealer account's dealership assignment",
     store: "security",
-    expectedEventType: "user.dealer_assignment_changed",
+    expectedEventType: DEALER_ASSIGNMENT_EVENT_TYPE,
     requires: ALL,
   },
   {

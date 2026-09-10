@@ -32,6 +32,23 @@ export interface SecurityEventRow {
   createdAt: string;
 }
 
+export interface DealerAssignmentSnapshot {
+  id: string | null;
+  code: string | null;
+  name: string | null;
+}
+
+export interface DealerAssignmentChange {
+  id: string;
+  eventType: "user.dealer_assignment_changed";
+  createdAt: string;
+  actorEmail: string | null;
+  actorRole: string | null;
+  targetEmail: string | null;
+  previousDealership: DealerAssignmentSnapshot;
+  newDealership: DealerAssignmentSnapshot;
+}
+
 export interface RateLimitPolicy {
   name: string;
   scope: string;
@@ -53,7 +70,9 @@ export interface SecurityDashboard {
   accountCreations: SecurityEventRow[];
   permissionFailures: SecurityEventRow[];
   auditActivity: SecurityEventRow[];
+  dealerAssignmentChanges: { last7d: number; recent: DealerAssignmentChange[] };
   eventCounts: Array<{ eventType: string; total: number }>;
+  auditEventCounts: Array<{ id: string; action: string; eventType: string; total: number }>;
   securityScan: {
     recorded: boolean;
     generatedAt: string | null;

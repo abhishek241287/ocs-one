@@ -254,6 +254,24 @@ async function findSecurityEvent(
   return (hit as Record<string, unknown>) ?? null;
 }
 
+async function waitForDealerAssignmentEvents(targetEmail: string, minimum: number): Promise<number> {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const rows = await db
+      .select({ id: securityEventsTable.id })
+      .from(securityEventsTable)
+      .where(
+        and(
+          eq(securityEventsTable.eventType, "user.dealer_assignment_changed"),
+          eq(securityEventsTable.targetEmail, targetEmail),
+          gte(securityEventsTable.createdAt, runStart),
+        ),
+      );
+    if (rows.length >= minimum) return rows.length;
+    await sleep(50);
+  }
+  return 0;
+}
+
 async function findLotEvent(eventType: string): Promise<Record<string, unknown> | null> {
   const [row] = await db
     .select()
@@ -325,16 +343,11 @@ async function runTriggers(directorJar: CookieJar): Promise<{
   }
   await assignment.text().catch(() => undefined);
 
-  const assignmentEventsBeforeNoOp = await db
-    .select({ id: securityEventsTable.id })
-    .from(securityEventsTable)
-    .where(
-      and(
-        eq(securityEventsTable.eventType, "user.dealer_assignment_changed"),
-        eq(securityEventsTable.targetEmail, DEALER_EMAIL),
-        gte(securityEventsTable.createdAt, runStart),
-      ),
-    );
+  // recordSecurityEvent is intentionally fire-and-forget on the request path;
+  // wait for the real assignment event before establishing the no-op baseline.
+  // Without this, a fast database can make the first event appear after the
+  // no-op query and produce a false "0 → 1" failure.
+  const assignmentEventsBeforeNoOp = await waitForDealerAssignmentEvents(DEALER_EMAIL, 1);
   const noOpAssignment = await fetchResilient(`${BASE_URL}/api/auth/users/${certDealerUserId}/dealer`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Cookie: directorJar ?? "" },
@@ -345,21 +358,15 @@ async function runTriggers(directorJar: CookieJar): Promise<{
   // recordSecurityEvent is intentionally fire-and-forget on the request path;
   // give a mistaken no-op audit write time to settle before checking the count.
   await sleep(50);
-  const assignmentEventsAfterNoOp = await db
-    .select({ id: securityEventsTable.id })
-    .from(securityEventsTable)
-    .where(
-      and(
-        eq(securityEventsTable.eventType, "user.dealer_assignment_changed"),
-        eq(securityEventsTable.targetEmail, DEALER_EMAIL),
-        gte(securityEventsTable.createdAt, runStart),
-      ),
-    );
+  const assignmentEventsAfterNoOp = await waitForDealerAssignmentEvents(
+    DEALER_EMAIL,
+    assignmentEventsBeforeNoOp,
+  );
   const dealerAssignmentNoOp = {
     ok:
       noOpStatus === 200 &&
-      assignmentEventsAfterNoOp.length === assignmentEventsBeforeNoOp.length,
-    detail: `HTTP ${noOpStatus}; assignment events ${assignmentEventsBeforeNoOp.length} → ${assignmentEventsAfterNoOp.length}`,
+      assignmentEventsAfterNoOp === assignmentEventsBeforeNoOp,
+    detail: `HTTP ${noOpStatus}; assignment events ${assignmentEventsBeforeNoOp} → ${assignmentEventsAfterNoOp}`,
   };
 
   // auth.login.failed — wrong password for the viewer.

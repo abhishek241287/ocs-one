@@ -10,6 +10,7 @@ import {
   PackageCheck,
   Lock,
   Award,
+  ArrowRight,
   RefreshCw,
   AlertTriangle,
   CheckCircle2,
@@ -23,6 +24,7 @@ import {
   type AuthzOutcome,
   type Principal,
   type SecurityEventRow,
+  type DealerAssignmentChange,
 } from "@/features/developer/hooks/useSecurityDashboard";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -130,6 +132,58 @@ function EventTable({ rows, emptyLabel }: { rows: SecurityEventRow[]; emptyLabel
                 {r.statusCode != null && <span className="ml-1.5 text-slate-400">{r.statusCode}</span>}
               </td>
               <td className="py-2 pr-3 text-slate-500">{r.detail ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function dealershipLabel(snapshot: DealerAssignmentChange["previousDealership"]): string {
+  if (!snapshot.id) return "Unassigned";
+  return snapshot.name ?? snapshot.code ?? snapshot.id;
+}
+
+function DealershipCell({ snapshot }: { snapshot: DealerAssignmentChange["previousDealership"] }) {
+  return (
+    <div>
+      <div className="font-medium text-slate-700">{dealershipLabel(snapshot)}</div>
+      {snapshot.code && snapshot.name && (
+        <div className="text-[11px] text-slate-500 font-mono">{snapshot.code}</div>
+      )}
+      {snapshot.id && <div className="text-[10px] text-slate-400 font-mono">{snapshot.id}</div>}
+    </div>
+  );
+}
+
+function DealerAssignmentTable({ rows }: { rows: DealerAssignmentChange[] }) {
+  if (rows.length === 0) {
+    return <p className="text-xs text-slate-400 italic">No dealer-account changes recorded.</p>;
+  }
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="text-left text-slate-400 border-b border-slate-100">
+            <th className="py-2 pr-3 font-medium">Time</th>
+            <th className="py-2 pr-3 font-medium">Actor</th>
+            <th className="py-2 pr-3 font-medium">Target account</th>
+            <th className="py-2 pr-3 font-medium">Previous dealership</th>
+            <th className="py-2 pr-3 font-medium"><ArrowRight className="inline h-3 w-3 mr-1" />New dealership</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id} className="border-b border-slate-50 last:border-0">
+              <td className="py-2 pr-3 whitespace-nowrap text-slate-500">{fmtTime(row.createdAt)}</td>
+              <td className="py-2 pr-3 text-slate-700">
+                {row.actorEmail ?? "—"}
+                {row.actorRole && <span className="ml-1 text-slate-400">({row.actorRole})</span>}
+              </td>
+              <td className="py-2 pr-3 text-slate-700">{row.targetEmail ?? "—"}</td>
+              <td className="py-2 pr-3"><DealershipCell snapshot={row.previousDealership} /></td>
+              <td className="py-2 pr-3"><DealershipCell snapshot={row.newDealership} /></td>
             </tr>
           ))}
         </tbody>
@@ -306,6 +360,20 @@ export default function SecurityPage() {
               <EventTable rows={data.accountCreations} emptyLabel="account creations" />
             </SectionCard>
 
+            {/* ─── 6. Dealer-account assignment history ─────────────────── */}
+            <SectionCard
+              icon={<Users className="h-4 w-4" />}
+              title="Dealer-Account Changes"
+              subtitle="Audited dealership assignment history — actor, target, and before/after dealership snapshots"
+              right={
+                <span className={`rounded-full px-3 py-1 text-xs font-medium ${data.dealerAssignmentChanges.last7d > 0 ? "bg-sky-50 text-sky-700" : "bg-slate-100 text-slate-500"}`}>
+                  {data.dealerAssignmentChanges.last7d} in last 7 days
+                </span>
+              }
+            >
+              <DealerAssignmentTable rows={data.dealerAssignmentChanges.recent} />
+            </SectionCard>
+
             {/* ─── 6. Permission failures (403) ─────────────────────────── */}
             <SectionCard
               icon={<Ban className="h-4 w-4" />}
@@ -327,16 +395,16 @@ export default function SecurityPage() {
             {/* ─── 8. Event counts ──────────────────────────────────────── */}
             <SectionCard
               icon={<ScrollText className="h-4 w-4" />}
-              title="Event Histogram (7 days)"
-              subtitle="Security event volume by type"
+              title="Audited Event Counts (7 days)"
+              subtitle="Security event volume by type from the audit matrix"
             >
-              {data.eventCounts.length === 0 ? (
+              {data.auditEventCounts.length === 0 ? (
                 <p className="text-xs text-slate-400 italic">No events recorded in the last 7 days.</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {data.eventCounts.map((e) => (
+                  {data.auditEventCounts.map((e) => (
                     <span key={e.eventType} className={`rounded-full px-3 py-1 text-xs ${severityCls("info")}`}>
-                      <span className="font-mono">{e.eventType}</span>
+                      <span title={e.action} className="font-mono">{e.eventType}</span>
                       <span className="ml-1.5 font-semibold text-slate-700">{e.total}</span>
                     </span>
                   ))}

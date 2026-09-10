@@ -5,6 +5,8 @@ import { asc, eq, sql } from "drizzle-orm";
 import { requireAuth, requireRole, signToken, decodeAuthCookie } from "../middleware/auth";
 import { COOKIE_NAME, COOKIE_OPTIONS } from "../lib/security-config";
 import { recordSecurityEvent, reqMeta } from "../lib/security-events";
+import type { DealerAssignmentAuditDetail } from "../lib/security-events";
+import { DEALER_ASSIGNMENT_EVENT_TYPE } from "../lib/audit-matrix";
 import {
   UpdateAuthUserDealerBody,
   UpdateAuthUserDealerParams,
@@ -279,6 +281,22 @@ router.patch(
       return;
     }
 
+    let previousDealer: {
+      dealerCode: string;
+      dealerName: string;
+    } | null = null;
+    if (target.dealerId) {
+      const [previous] = await db
+        .select({
+          dealerCode: logisticsDealersTable.dealerCode,
+          dealerName: logisticsDealersTable.dealerName,
+        })
+        .from(logisticsDealersTable)
+        .where(eq(logisticsDealersTable.id, target.dealerId))
+        .limit(1);
+      previousDealer = previous ?? null;
+    }
+
     const [updated] = await db
       .update(usersTable)
       .set({
@@ -293,7 +311,7 @@ router.patch(
       .returning(userAccountProjection);
 
     void recordSecurityEvent({
-      eventType: "user.dealer_assignment_changed",
+      eventType: DEALER_ASSIGNMENT_EVENT_TYPE,
       severity: "info",
       actorId: req.user?.userId ?? null,
       actorEmail: req.user?.email ?? null,
@@ -301,7 +319,20 @@ router.patch(
       targetEmail: target.email,
       ...reqMeta(req),
       statusCode: 200,
-      detail: `Dealer assignment changed for ${target.email}: ${target.dealerId ?? "unassigned"} → ${dealerId ?? "unassigned"}${dealerCode ? ` (${dealerCode} — ${dealerName})` : ""}`,
+      detail: JSON.stringify({
+        kind: "dealer_assignment",
+        targetEmail: target.email,
+        previousDealership: {
+          id: target.dealerId,
+          code: previousDealer?.dealerCode ?? null,
+          name: previousDealer?.dealerName ?? null,
+        },
+        newDealership: {
+          id: dealerId,
+          code: dealerCode,
+          name: dealerName,
+        },
+      } satisfies DealerAssignmentAuditDetail),
     });
 
     req.log.info(

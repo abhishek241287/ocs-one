@@ -9,6 +9,24 @@ import { logger } from "./logger";
 
 export type SecuritySeverity = "info" | "warning" | "critical";
 
+export interface DealerAssignmentAuditSnapshot {
+  id: string | null;
+  code: string | null;
+  name: string | null;
+}
+
+/**
+ * Structured detail persisted for dealer-account changes. It stays in the
+ * existing immutable detail column so the audit row remains append-only while
+ * the dashboard can render the transition without parsing display text.
+ */
+export interface DealerAssignmentAuditDetail {
+  kind: "dealer_assignment";
+  targetEmail: string;
+  previousDealership: DealerAssignmentAuditSnapshot;
+  newDealership: DealerAssignmentAuditSnapshot;
+}
+
 export interface SecurityEventInput {
   eventType: string;
   severity?: SecuritySeverity;
