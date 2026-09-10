@@ -1,0 +1,3858 @@
+{
+  "report_type": "FAT Block 3 — Procurement → GRN → Incoming Inspection → Inventory",
+  "run_finished": "2026-09-10T16:09:40.111Z",
+  "frozen_candidate": "FAT-CANDIDATE-2026-09-08",
+  "frozen_commit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7",
+  "environment": "http://127.0.0.1:4310",
+  "scope": [
+    "INV-P01",
+    "INV-P02",
+    "INV-P03",
+    "INV-P04",
+    "INV-P05",
+    "INV-N01",
+    "INV-N02",
+    "INV-N03",
+    "INV-N04",
+    "INV-N05",
+    "INV-P06"
+  ],
+  "application_code_modified": false,
+  "reseeded_or_torn_down": false,
+  "controlled_identifiers": {
+    "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+    "grn_line_ids": [
+      "01139942-82aa-4fff-be93-7fcba3d505a3",
+      "849805e9-07ea-4ace-b1f9-9c41dd073f69"
+    ],
+    "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+    "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+    "cell_lot_id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+    "supplier_lot_numbers": [
+      "FAT-E2E-B3-CELL-B3-1789056224422",
+      "FAT-E2E-B3-BMS-B3-1789056224422"
+    ]
+  },
+  "counts": {
+    "PASS": 66,
+    "FAIL": 1,
+    "DATA SETUP REQUIRED": 1
+  },
+  "evidence": [
+    {
+      "case_id": "INV-P01",
+      "subcheck": "isolated draft request/result recovered from controlled GRN",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "POST",
+      "path": "/api/inventory/grns",
+      "request_body": {
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "received_date": "2026-09-10",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "remarks": "FAT Block 3 isolated positive receipt",
+        "lines": [
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity_received": 8,
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "remarks": "Block 3 cell line"
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity_received": 1,
+            "supplier_lot_number": "FAT-E2E-B3-BMS-B3-1789056224422",
+            "remarks": "Block 3 rejected-line control"
+          }
+        ]
+      },
+      "http_status": 200,
+      "response_body": {
+        "id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "received_date": "2026-09-10",
+        "status": "posted",
+        "remarks": "FAT Block 3 isolated positive receipt",
+        "posted_at": "2026-09-10T16:03:45.236Z",
+        "posted_by": "fa110000-0000-4000-8000-000000000003",
+        "created_by": "fa110000-0000-4000-8000-000000000003",
+        "created_at": "2026-09-10T16:03:45.095Z",
+        "updated_by": null,
+        "updated_at": "2026-09-10T16:03:45.236Z",
+        "lines": [
+          {
+            "id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 1,
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_name": "FAT E2E Cell Material",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "CELL",
+              "id": "fa130000-0000-4000-8000-000000000003",
+              "code": "FAT-E2E-CELL-MASTER",
+              "name": "FAT E2E LiFePO4 Cell",
+              "status": "active"
+            },
+            "quantity_received": 8,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "inspection_status": "passed",
+            "remarks": "Block 3 cell line",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          },
+          {
+            "id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 2,
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_name": "FAT E2E BMS Material",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "quantity_received": 1,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-BMS-B3-1789056224422",
+            "inspection_status": "rejected",
+            "remarks": "Block 3 rejected-line control",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          }
+        ]
+      },
+      "notes": "The positive POST completed before evidence finalization; this GET verifies the exact generated GRN/line projection without creating a second GRN.",
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_line_ids": [
+          "01139942-82aa-4fff-be93-7fcba3d505a3",
+          "849805e9-07ea-4ace-b1f9-9c41dd073f69"
+        ],
+        "supplier_lot_numbers": [
+          "FAT-E2E-B3-CELL-B3-1789056224422",
+          "FAT-E2E-B3-BMS-B3-1789056224422"
+        ]
+      }
+    },
+    {
+      "case_id": "INV-P02",
+      "subcheck": "exactly one receipt per GRN line",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d/transactions",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "id": "0de09472-3166-431c-b676-88f0545769d2",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity": 8,
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "created_by": "fa110000-0000-4000-8000-000000000003",
+            "created_at": "2026-09-10T16:03:45.224Z"
+          },
+          {
+            "id": "ec6fd289-34ae-4b57-9df5-7abc8c5ec726",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity": 1,
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "created_by": "fa110000-0000-4000-8000-000000000003",
+            "created_at": "2026-09-10T16:03:45.224Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "transaction_ids": [
+          "0de09472-3166-431c-b676-88f0545769d2",
+          "ec6fd289-34ae-4b57-9df5-7abc8c5ec726"
+        ],
+        "source_line_ids": [
+          "01139942-82aa-4fff-be93-7fcba3d505a3",
+          "849805e9-07ea-4ace-b1f9-9c41dd073f69"
+        ]
+      },
+      "notes": "The initial post already completed; current ledger has exactly one GRN_RECEIPT per line."
+    },
+    {
+      "case_id": "INV-P02",
+      "subcheck": "repost does not duplicate receipts",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "POST",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d/post",
+      "request_body": {},
+      "http_status": 409,
+      "response_body": {
+        "error": "GRN cannot be posted from status 'posted'"
+      },
+      "notes": "Expected 409; received 409",
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d"
+      }
+    },
+    {
+      "case_id": "INV-P02",
+      "subcheck": "receipt count unchanged after repost",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d/transactions",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "id": "0de09472-3166-431c-b676-88f0545769d2",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity": "8.000",
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3"
+          },
+          {
+            "id": "ec6fd289-34ae-4b57-9df5-7abc8c5ec726",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity": "1.000",
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "transaction_ids": [
+          "0de09472-3166-431c-b676-88f0545769d2",
+          "ec6fd289-34ae-4b57-9df5-7abc8c5ec726"
+        ]
+      }
+    },
+    {
+      "case_id": "INV-P03",
+      "subcheck": "eligible list and pending coverage",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "GET",
+      "path": "/api/inventory/inspections/eligible",
+      "http_status": 200,
+      "response_body": {
+        "item": null
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d"
+      },
+      "notes": "The initial Block 3 run queried eligibility immediately after posting and before the inspection; the finalization read is after the one-shot inspection and therefore correctly excludes this GRN."
+    },
+    {
+      "case_id": "INV-P03",
+      "subcheck": "inspection covers every pending line exactly once and separates states",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "method": "GET",
+      "path": "/api/inventory/inspections/7bab3a01-cf76-4cee-bb83-705edce5a679",
+      "http_status": 200,
+      "response_body": {
+        "inspection": {
+          "id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+          "inspection_number": "INSP-20260910-0001",
+          "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+          "grn_number": "GRN-20260910-0001",
+          "remarks": null,
+          "inspected_by": "fa110000-0000-4000-8000-000000000003",
+          "created_at": "2026-09-10T16:03:45.283Z",
+          "lines": [
+            {
+              "id": "4b658346-67f4-4e53-8c7b-4981b0b9e9de",
+              "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+              "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+              "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+              "material_id": "fa130000-0000-4000-8000-000000000016",
+              "quantity_received": 8,
+              "accepted_qty": 8,
+              "rejected_qty": 0,
+              "result": "passed",
+              "rejection_reason": null,
+              "created_at": "2026-09-10T16:03:45.283Z"
+            },
+            {
+              "id": "3a5c5f11-5594-4bd4-b481-7dd47b988e16",
+              "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+              "grn_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+              "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+              "material_id": "fa130000-0000-4000-8000-000000000017",
+              "quantity_received": 1,
+              "accepted_qty": 0,
+              "rejected_qty": 1,
+              "result": "rejected",
+              "rejection_reason": "FAT Block 3 controlled rejection",
+              "created_at": "2026-09-10T16:03:45.283Z"
+            }
+          ]
+        },
+        "grn_lines": [
+          {
+            "id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 1,
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_name": "FAT E2E Cell Material",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "CELL",
+              "id": "fa130000-0000-4000-8000-000000000003",
+              "code": "FAT-E2E-CELL-MASTER",
+              "name": "FAT E2E LiFePO4 Cell",
+              "status": "active"
+            },
+            "quantity_received": 8,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "inspection_status": "passed",
+            "remarks": "Block 3 cell line",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          },
+          {
+            "id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 2,
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_name": "FAT E2E BMS Material",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "quantity_received": 1,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-BMS-B3-1789056224422",
+            "inspection_status": "rejected",
+            "remarks": "Block 3 rejected-line control",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          }
+        ],
+        "receipt_ledger": [
+          {
+            "id": "0de09472-3166-431c-b676-88f0545769d2",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity": "8.000",
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3"
+          },
+          {
+            "id": "ec6fd289-34ae-4b57-9df5-7abc8c5ec726",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity": "1.000",
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69"
+          }
+        ],
+        "inspection_ledger": [
+          {
+            "id": "029619ae-2d12-4472-80c6-b3bb6b96ff50",
+            "transaction_type": "INSPECTION_RELEASE",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity": "-1.000",
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "INSPECTION",
+            "source_document_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "source_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69"
+          },
+          {
+            "id": "089b60c8-8f36-4d0c-a22e-80d3f6ddaef9",
+            "transaction_type": "INSPECTION_RELEASE",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity": "-8.000",
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "INSPECTION",
+            "source_document_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3"
+          },
+          {
+            "id": "d5cbcb14-0e23-45d2-a06e-28cf5af118b9",
+            "transaction_type": "INSPECTION_ACCEPT",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity": "8.000",
+            "uom": "PCS",
+            "stock_state": "available",
+            "source_document_type": "INSPECTION",
+            "source_document_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3"
+          },
+          {
+            "id": "f8c193fa-19af-4e4c-805a-ccb073910e0e",
+            "transaction_type": "INSPECTION_REJECT",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity": "1.000",
+            "uom": "PCS",
+            "stock_state": "rejected",
+            "source_document_type": "INSPECTION",
+            "source_document_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "source_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transaction_ids": [
+          "029619ae-2d12-4472-80c6-b3bb6b96ff50",
+          "089b60c8-8f36-4d0c-a22e-80d3f6ddaef9",
+          "d5cbcb14-0e23-45d2-a06e-28cf5af118b9",
+          "f8c193fa-19af-4e4c-805a-ccb073910e0e"
+        ],
+        "supplier_lot_numbers": [
+          "FAT-E2E-B3-CELL-B3-1789056224422",
+          "FAT-E2E-B3-BMS-B3-1789056224422"
+        ]
+      }
+    },
+    {
+      "case_id": "INV-P04",
+      "subcheck": "negative source and positive transfer document movement",
+      "result": "FAIL",
+      "actor_role": "supervisor",
+      "method": "GET",
+      "path": "/api/inventory/transfers/2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+      "http_status": 200,
+      "response_body": {
+        "transfer": {
+          "id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+          "transfer_number": "TRF-20260910-000001",
+          "from_location": "STORE",
+          "to_location": "CELL_PROCESSING",
+          "material_id": "fa130000-0000-4000-8000-000000000016",
+          "material_code": "FAT-E2E-MATERIAL-CELL",
+          "material_name": "FAT E2E Cell Material",
+          "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+          "grn_number": "GRN-20260910-0001",
+          "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+          "supplier_id": "fa130000-0000-4000-8000-000000000015",
+          "supplier_name": "FAT E2E Cell and BMS Supplier",
+          "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+          "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+          "quantity": 3,
+          "uom": "PCS",
+          "transferred_by": "fa110000-0000-4000-8000-000000000003",
+          "operator_name": "FAT E2E Supervisor",
+          "created_at": "2026-09-10T16:03:45.322Z",
+          "cell_lot_id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+          "lot_number": "TRF-20260910-000001",
+          "remarks": "FAT Block 3 positive whole-cell transfer",
+          "cell_lot": {
+            "id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+            "supplier": "FAT E2E Cell and BMS Supplier",
+            "manufacturer": "FAT Cell Works",
+            "cellModel": "FAT-LFP-280",
+            "cellChemistry": "LiFePO4",
+            "nominalCapacityAh": 280,
+            "lotNumber": "TRF-20260910-000001",
+            "invoiceNumber": "FAT-E2E-B3-INV-B3-1789056224422",
+            "supplierLotNumber": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "dateReceived": "2026-09-10",
+            "quantityReceived": 3,
+            "receivedBy": "FAT Block 3 controlled operator",
+            "remarks": "FAT Block 3 positive whole-cell transfer",
+            "status": "received",
+            "cellMasterId": "fa130000-0000-4000-8000-000000000003",
+            "transferId": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+            "createdAt": "2026-09-10T16:03:45.322Z",
+            "updatedAt": "2026-09-10T16:03:45.322Z"
+          },
+          "consumed_by": []
+        },
+        "source_line_ledger": [
+          {
+            "id": "0de09472-3166-431c-b676-88f0545769d2",
+            "transaction_type": "GRN_RECEIPT",
+            "quantity": "8.000",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3"
+          },
+          {
+            "id": "089b60c8-8f36-4d0c-a22e-80d3f6ddaef9",
+            "transaction_type": "INSPECTION_RELEASE",
+            "quantity": "-8.000",
+            "stock_state": "inspection_pending",
+            "source_document_type": "INSPECTION",
+            "source_document_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3"
+          },
+          {
+            "id": "d5cbcb14-0e23-45d2-a06e-28cf5af118b9",
+            "transaction_type": "INSPECTION_ACCEPT",
+            "quantity": "8.000",
+            "stock_state": "available",
+            "source_document_type": "INSPECTION",
+            "source_document_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3"
+          },
+          {
+            "id": "811596fe-415f-40f9-b863-d1db69be4c28",
+            "transaction_type": "MATERIAL_TRANSFER_TO_CELL_PROCESSING",
+            "quantity": "-3.000",
+            "stock_state": "available",
+            "source_document_type": "TRANSFER",
+            "source_document_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3"
+          }
+        ],
+        "transfer_ledger": [
+          {
+            "id": "811596fe-415f-40f9-b863-d1db69be4c28",
+            "transaction_type": "MATERIAL_TRANSFER_TO_CELL_PROCESSING",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity": "-3.000",
+            "uom": "PCS",
+            "stock_state": "available",
+            "source_document_type": "TRANSFER",
+            "source_document_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3"
+          }
+        ]
+      },
+      "ids": {
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+        "cell_lot_id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+        "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+        "ledger_transaction_ids": [
+          "811596fe-415f-40f9-b863-d1db69be4c28"
+        ]
+      },
+      "notes": "Application defect: the frozen implementation wrote only the -3 source ledger movement; the required +3 destination ledger movement is absent. No application fix was applied."
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "owner: GRN detail",
+      "result": "PASS",
+      "actor_role": "owner",
+      "actor_id": "fa110000-0000-4000-8000-000000000001",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d",
+      "http_status": 200,
+      "response_body": {
+        "id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "received_date": "2026-09-10",
+        "status": "posted",
+        "remarks": "FAT Block 3 isolated positive receipt",
+        "posted_at": "2026-09-10T16:03:45.236Z",
+        "posted_by": "fa110000-0000-4000-8000-000000000003",
+        "created_by": "fa110000-0000-4000-8000-000000000003",
+        "created_at": "2026-09-10T16:03:45.095Z",
+        "updated_by": null,
+        "updated_at": "2026-09-10T16:03:45.236Z",
+        "lines": [
+          {
+            "id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 1,
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_name": "FAT E2E Cell Material",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "CELL",
+              "id": "fa130000-0000-4000-8000-000000000003",
+              "code": "FAT-E2E-CELL-MASTER",
+              "name": "FAT E2E LiFePO4 Cell",
+              "status": "active"
+            },
+            "quantity_received": 8,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "inspection_status": "passed",
+            "remarks": "Block 3 cell line",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          },
+          {
+            "id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 2,
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_name": "FAT E2E BMS Material",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "quantity_received": 1,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-BMS-B3-1789056224422",
+            "inspection_status": "rejected",
+            "remarks": "Block 3 rejected-line control",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "owner: GRN transactions",
+      "result": "PASS",
+      "actor_role": "owner",
+      "actor_id": "fa110000-0000-4000-8000-000000000001",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d/transactions",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "id": "0de09472-3166-431c-b676-88f0545769d2",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity": 8,
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "created_by": "fa110000-0000-4000-8000-000000000003",
+            "created_at": "2026-09-10T16:03:45.224Z"
+          },
+          {
+            "id": "ec6fd289-34ae-4b57-9df5-7abc8c5ec726",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity": 1,
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "created_by": "fa110000-0000-4000-8000-000000000003",
+            "created_at": "2026-09-10T16:03:45.224Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "owner: inspection detail",
+      "result": "PASS",
+      "actor_role": "owner",
+      "actor_id": "fa110000-0000-4000-8000-000000000001",
+      "method": "GET",
+      "path": "/api/inventory/inspections/7bab3a01-cf76-4cee-bb83-705edce5a679",
+      "http_status": 200,
+      "response_body": {
+        "id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "inspection_number": "INSP-20260910-0001",
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "remarks": null,
+        "inspected_by": "fa110000-0000-4000-8000-000000000003",
+        "created_at": "2026-09-10T16:03:45.283Z",
+        "lines": [
+          {
+            "id": "4b658346-67f4-4e53-8c7b-4981b0b9e9de",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity_received": 8,
+            "accepted_qty": 8,
+            "rejected_qty": 0,
+            "result": "passed",
+            "rejection_reason": null,
+            "created_at": "2026-09-10T16:03:45.283Z"
+          },
+          {
+            "id": "3a5c5f11-5594-4bd4-b481-7dd47b988e16",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "grn_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity_received": 1,
+            "accepted_qty": 0,
+            "rejected_qty": 1,
+            "result": "rejected",
+            "rejection_reason": "FAT Block 3 controlled rejection",
+            "created_at": "2026-09-10T16:03:45.283Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "owner: stock",
+      "result": "PASS",
+      "actor_role": "owner",
+      "actor_id": "fa110000-0000-4000-8000-000000000001",
+      "method": "GET",
+      "path": "/api/inventory/stock",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "material_name": "FAT E2E BMS Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "available",
+            "quantity": -1
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "material_name": "FAT E2E BMS Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "rejected",
+            "quantity": 2
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "CELL",
+              "id": "fa130000-0000-4000-8000-000000000003",
+              "code": "FAT-E2E-CELL-MASTER",
+              "name": "FAT E2E LiFePO4 Cell",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "available",
+            "quantity": 71
+          }
+        ],
+        "meta": {
+          "total": 3,
+          "page": 1,
+          "pageSize": 25,
+          "totalPages": 1
+        }
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "owner: cell stock",
+      "result": "PASS",
+      "actor_role": "owner",
+      "actor_id": "fa110000-0000-4000-8000-000000000001",
+      "method": "GET",
+      "path": "/api/inventory/cell-stock",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "grn_line_id": "fa150000-0000-4000-8000-000000000005",
+            "grn_id": "fa150000-0000-4000-8000-000000000004",
+            "grn_number": "FAT-E2E-GRN-POSTED-001",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "manufacturer": "FAT Cell Works",
+            "invoice_number": "FAT-E2E-INV-POSTED-001",
+            "supplier_lot_number": "FAT-E2E-SUP-LOT-CELL-001",
+            "uom": "PCS",
+            "received_date": "2026-09-08",
+            "available_qty": 64,
+            "is_mapped": true,
+            "cell_master_id": "fa130000-0000-4000-8000-000000000003",
+            "cell_model": "FAT-LFP-280",
+            "cell_chemistry": "LiFePO4",
+            "nominal_capacity_ah": 280,
+            "nominal_voltage_v": 3.2
+          },
+          {
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "grn_number": "GRN-20260910-0001",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "manufacturer": "FAT Cell Works",
+            "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "uom": "PCS",
+            "received_date": "2026-09-10",
+            "available_qty": 5,
+            "is_mapped": true,
+            "cell_master_id": "fa130000-0000-4000-8000-000000000003",
+            "cell_model": "FAT-LFP-280",
+            "cell_chemistry": "LiFePO4",
+            "nominal_capacity_ah": 280,
+            "nominal_voltage_v": 3.2
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "owner: provenance",
+      "result": "PASS",
+      "actor_role": "owner",
+      "actor_id": "fa110000-0000-4000-8000-000000000001",
+      "method": "GET",
+      "path": "/api/inventory/stock/fa130000-0000-4000-8000-000000000016/provenance",
+      "http_status": 200,
+      "response_body": {
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "material_code": "FAT-E2E-MATERIAL-CELL",
+        "material_name": "FAT E2E Cell Material",
+        "usage_type": "INVENTORY_COMPONENT",
+        "linked_master": {
+          "type": "CELL",
+          "id": "fa130000-0000-4000-8000-000000000003",
+          "code": "FAT-E2E-CELL-MASTER",
+          "name": "FAT E2E LiFePO4 Cell",
+          "status": "active"
+        },
+        "receipts": [
+          {
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "grn_number": "GRN-20260910-0001",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "received_date": "2026-09-10",
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "received_qty": 8,
+            "uom": "PCS",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "inspection_number": "INSP-20260910-0001",
+            "inspection_status": "passed",
+            "accepted_qty": 8,
+            "rejected_qty": 0,
+            "remaining_available_qty": 5,
+            "inspector_id": "fa110000-0000-4000-8000-000000000003",
+            "inspector_name": "FAT E2E Supervisor",
+            "warehouse_location": null
+          },
+          {
+            "grn_id": "fa150000-0000-4000-8000-000000000004",
+            "grn_number": "FAT-E2E-GRN-POSTED-001",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "received_date": "2026-09-08",
+            "grn_line_id": "fa150000-0000-4000-8000-000000000005",
+            "received_qty": 64,
+            "uom": "PCS",
+            "inspection_id": "fa150000-0000-4000-8000-000000000009",
+            "inspection_number": "FAT-E2E-INSP-001",
+            "inspection_status": "passed",
+            "accepted_qty": 64,
+            "rejected_qty": 0,
+            "remaining_available_qty": 64,
+            "inspector_id": "fa110000-0000-4000-8000-000000000003",
+            "inspector_name": "FAT E2E Supervisor",
+            "warehouse_location": null
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "owner: transfer",
+      "result": "PASS",
+      "actor_role": "owner",
+      "actor_id": "fa110000-0000-4000-8000-000000000001",
+      "method": "GET",
+      "path": "/api/inventory/transfers/2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+      "http_status": 200,
+      "response_body": {
+        "id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+        "transfer_number": "TRF-20260910-000001",
+        "from_location": "STORE",
+        "to_location": "CELL_PROCESSING",
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "material_code": "FAT-E2E-MATERIAL-CELL",
+        "material_name": "FAT E2E Cell Material",
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "supplier_name": "FAT E2E Cell and BMS Supplier",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+        "quantity": 3,
+        "uom": "PCS",
+        "transferred_by": "fa110000-0000-4000-8000-000000000003",
+        "operator_name": "FAT E2E Supervisor",
+        "created_at": "2026-09-10T16:03:45.322Z",
+        "cell_lot_id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+        "lot_number": "TRF-20260910-000001",
+        "remarks": "FAT Block 3 positive whole-cell transfer",
+        "cell_lot": {
+          "id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+          "supplier": "FAT E2E Cell and BMS Supplier",
+          "manufacturer": "FAT Cell Works",
+          "cellModel": "FAT-LFP-280",
+          "cellChemistry": "LiFePO4",
+          "nominalCapacityAh": 280,
+          "lotNumber": "TRF-20260910-000001",
+          "invoiceNumber": "FAT-E2E-B3-INV-B3-1789056224422",
+          "supplierLotNumber": "FAT-E2E-B3-CELL-B3-1789056224422",
+          "dateReceived": "2026-09-10",
+          "quantityReceived": 3,
+          "receivedBy": "FAT Block 3 controlled operator",
+          "remarks": "FAT Block 3 positive whole-cell transfer",
+          "status": "received",
+          "cellMasterId": "fa130000-0000-4000-8000-000000000003",
+          "transferId": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+          "createdAt": "2026-09-10T16:03:45.322Z",
+          "updatedAt": "2026-09-10T16:03:45.322Z"
+        },
+        "consumed_by": []
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "director: GRN detail",
+      "result": "PASS",
+      "actor_role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d",
+      "http_status": 200,
+      "response_body": {
+        "id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "received_date": "2026-09-10",
+        "status": "posted",
+        "remarks": "FAT Block 3 isolated positive receipt",
+        "posted_at": "2026-09-10T16:03:45.236Z",
+        "posted_by": "fa110000-0000-4000-8000-000000000003",
+        "created_by": "fa110000-0000-4000-8000-000000000003",
+        "created_at": "2026-09-10T16:03:45.095Z",
+        "updated_by": null,
+        "updated_at": "2026-09-10T16:03:45.236Z",
+        "lines": [
+          {
+            "id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 1,
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_name": "FAT E2E Cell Material",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "CELL",
+              "id": "fa130000-0000-4000-8000-000000000003",
+              "code": "FAT-E2E-CELL-MASTER",
+              "name": "FAT E2E LiFePO4 Cell",
+              "status": "active"
+            },
+            "quantity_received": 8,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "inspection_status": "passed",
+            "remarks": "Block 3 cell line",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          },
+          {
+            "id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 2,
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_name": "FAT E2E BMS Material",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "quantity_received": 1,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-BMS-B3-1789056224422",
+            "inspection_status": "rejected",
+            "remarks": "Block 3 rejected-line control",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "director: GRN transactions",
+      "result": "PASS",
+      "actor_role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d/transactions",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "id": "0de09472-3166-431c-b676-88f0545769d2",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity": 8,
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "created_by": "fa110000-0000-4000-8000-000000000003",
+            "created_at": "2026-09-10T16:03:45.224Z"
+          },
+          {
+            "id": "ec6fd289-34ae-4b57-9df5-7abc8c5ec726",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity": 1,
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "created_by": "fa110000-0000-4000-8000-000000000003",
+            "created_at": "2026-09-10T16:03:45.224Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "director: inspection detail",
+      "result": "PASS",
+      "actor_role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "method": "GET",
+      "path": "/api/inventory/inspections/7bab3a01-cf76-4cee-bb83-705edce5a679",
+      "http_status": 200,
+      "response_body": {
+        "id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "inspection_number": "INSP-20260910-0001",
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "remarks": null,
+        "inspected_by": "fa110000-0000-4000-8000-000000000003",
+        "created_at": "2026-09-10T16:03:45.283Z",
+        "lines": [
+          {
+            "id": "4b658346-67f4-4e53-8c7b-4981b0b9e9de",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity_received": 8,
+            "accepted_qty": 8,
+            "rejected_qty": 0,
+            "result": "passed",
+            "rejection_reason": null,
+            "created_at": "2026-09-10T16:03:45.283Z"
+          },
+          {
+            "id": "3a5c5f11-5594-4bd4-b481-7dd47b988e16",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "grn_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity_received": 1,
+            "accepted_qty": 0,
+            "rejected_qty": 1,
+            "result": "rejected",
+            "rejection_reason": "FAT Block 3 controlled rejection",
+            "created_at": "2026-09-10T16:03:45.283Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "director: stock",
+      "result": "PASS",
+      "actor_role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "method": "GET",
+      "path": "/api/inventory/stock",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "material_name": "FAT E2E BMS Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "available",
+            "quantity": -1
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "material_name": "FAT E2E BMS Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "rejected",
+            "quantity": 2
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "CELL",
+              "id": "fa130000-0000-4000-8000-000000000003",
+              "code": "FAT-E2E-CELL-MASTER",
+              "name": "FAT E2E LiFePO4 Cell",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "available",
+            "quantity": 71
+          }
+        ],
+        "meta": {
+          "total": 3,
+          "page": 1,
+          "pageSize": 25,
+          "totalPages": 1
+        }
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "director: cell stock",
+      "result": "PASS",
+      "actor_role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "method": "GET",
+      "path": "/api/inventory/cell-stock",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "grn_line_id": "fa150000-0000-4000-8000-000000000005",
+            "grn_id": "fa150000-0000-4000-8000-000000000004",
+            "grn_number": "FAT-E2E-GRN-POSTED-001",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "manufacturer": "FAT Cell Works",
+            "invoice_number": "FAT-E2E-INV-POSTED-001",
+            "supplier_lot_number": "FAT-E2E-SUP-LOT-CELL-001",
+            "uom": "PCS",
+            "received_date": "2026-09-08",
+            "available_qty": 64,
+            "is_mapped": true,
+            "cell_master_id": "fa130000-0000-4000-8000-000000000003",
+            "cell_model": "FAT-LFP-280",
+            "cell_chemistry": "LiFePO4",
+            "nominal_capacity_ah": 280,
+            "nominal_voltage_v": 3.2
+          },
+          {
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "grn_number": "GRN-20260910-0001",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "manufacturer": "FAT Cell Works",
+            "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "uom": "PCS",
+            "received_date": "2026-09-10",
+            "available_qty": 5,
+            "is_mapped": true,
+            "cell_master_id": "fa130000-0000-4000-8000-000000000003",
+            "cell_model": "FAT-LFP-280",
+            "cell_chemistry": "LiFePO4",
+            "nominal_capacity_ah": 280,
+            "nominal_voltage_v": 3.2
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "director: provenance",
+      "result": "PASS",
+      "actor_role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "method": "GET",
+      "path": "/api/inventory/stock/fa130000-0000-4000-8000-000000000016/provenance",
+      "http_status": 200,
+      "response_body": {
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "material_code": "FAT-E2E-MATERIAL-CELL",
+        "material_name": "FAT E2E Cell Material",
+        "usage_type": "INVENTORY_COMPONENT",
+        "linked_master": {
+          "type": "CELL",
+          "id": "fa130000-0000-4000-8000-000000000003",
+          "code": "FAT-E2E-CELL-MASTER",
+          "name": "FAT E2E LiFePO4 Cell",
+          "status": "active"
+        },
+        "receipts": [
+          {
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "grn_number": "GRN-20260910-0001",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "received_date": "2026-09-10",
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "received_qty": 8,
+            "uom": "PCS",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "inspection_number": "INSP-20260910-0001",
+            "inspection_status": "passed",
+            "accepted_qty": 8,
+            "rejected_qty": 0,
+            "remaining_available_qty": 5,
+            "inspector_id": "fa110000-0000-4000-8000-000000000003",
+            "inspector_name": "FAT E2E Supervisor",
+            "warehouse_location": null
+          },
+          {
+            "grn_id": "fa150000-0000-4000-8000-000000000004",
+            "grn_number": "FAT-E2E-GRN-POSTED-001",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "received_date": "2026-09-08",
+            "grn_line_id": "fa150000-0000-4000-8000-000000000005",
+            "received_qty": 64,
+            "uom": "PCS",
+            "inspection_id": "fa150000-0000-4000-8000-000000000009",
+            "inspection_number": "FAT-E2E-INSP-001",
+            "inspection_status": "passed",
+            "accepted_qty": 64,
+            "rejected_qty": 0,
+            "remaining_available_qty": 64,
+            "inspector_id": "fa110000-0000-4000-8000-000000000003",
+            "inspector_name": "FAT E2E Supervisor",
+            "warehouse_location": null
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "director: transfer",
+      "result": "PASS",
+      "actor_role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "method": "GET",
+      "path": "/api/inventory/transfers/2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+      "http_status": 200,
+      "response_body": {
+        "id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+        "transfer_number": "TRF-20260910-000001",
+        "from_location": "STORE",
+        "to_location": "CELL_PROCESSING",
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "material_code": "FAT-E2E-MATERIAL-CELL",
+        "material_name": "FAT E2E Cell Material",
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "supplier_name": "FAT E2E Cell and BMS Supplier",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+        "quantity": 3,
+        "uom": "PCS",
+        "transferred_by": "fa110000-0000-4000-8000-000000000003",
+        "operator_name": "FAT E2E Supervisor",
+        "created_at": "2026-09-10T16:03:45.322Z",
+        "cell_lot_id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+        "lot_number": "TRF-20260910-000001",
+        "remarks": "FAT Block 3 positive whole-cell transfer",
+        "cell_lot": {
+          "id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+          "supplier": "FAT E2E Cell and BMS Supplier",
+          "manufacturer": "FAT Cell Works",
+          "cellModel": "FAT-LFP-280",
+          "cellChemistry": "LiFePO4",
+          "nominalCapacityAh": 280,
+          "lotNumber": "TRF-20260910-000001",
+          "invoiceNumber": "FAT-E2E-B3-INV-B3-1789056224422",
+          "supplierLotNumber": "FAT-E2E-B3-CELL-B3-1789056224422",
+          "dateReceived": "2026-09-10",
+          "quantityReceived": 3,
+          "receivedBy": "FAT Block 3 controlled operator",
+          "remarks": "FAT Block 3 positive whole-cell transfer",
+          "status": "received",
+          "cellMasterId": "fa130000-0000-4000-8000-000000000003",
+          "transferId": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+          "createdAt": "2026-09-10T16:03:45.322Z",
+          "updatedAt": "2026-09-10T16:03:45.322Z"
+        },
+        "consumed_by": []
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "supervisor: GRN detail",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d",
+      "http_status": 200,
+      "response_body": {
+        "id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "received_date": "2026-09-10",
+        "status": "posted",
+        "remarks": "FAT Block 3 isolated positive receipt",
+        "posted_at": "2026-09-10T16:03:45.236Z",
+        "posted_by": "fa110000-0000-4000-8000-000000000003",
+        "created_by": "fa110000-0000-4000-8000-000000000003",
+        "created_at": "2026-09-10T16:03:45.095Z",
+        "updated_by": null,
+        "updated_at": "2026-09-10T16:03:45.236Z",
+        "lines": [
+          {
+            "id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 1,
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_name": "FAT E2E Cell Material",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "CELL",
+              "id": "fa130000-0000-4000-8000-000000000003",
+              "code": "FAT-E2E-CELL-MASTER",
+              "name": "FAT E2E LiFePO4 Cell",
+              "status": "active"
+            },
+            "quantity_received": 8,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "inspection_status": "passed",
+            "remarks": "Block 3 cell line",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          },
+          {
+            "id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 2,
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_name": "FAT E2E BMS Material",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "quantity_received": 1,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-BMS-B3-1789056224422",
+            "inspection_status": "rejected",
+            "remarks": "Block 3 rejected-line control",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "supervisor: GRN transactions",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d/transactions",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "id": "0de09472-3166-431c-b676-88f0545769d2",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity": 8,
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "created_by": "fa110000-0000-4000-8000-000000000003",
+            "created_at": "2026-09-10T16:03:45.224Z"
+          },
+          {
+            "id": "ec6fd289-34ae-4b57-9df5-7abc8c5ec726",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity": 1,
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "created_by": "fa110000-0000-4000-8000-000000000003",
+            "created_at": "2026-09-10T16:03:45.224Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "supervisor: inspection detail",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "GET",
+      "path": "/api/inventory/inspections/7bab3a01-cf76-4cee-bb83-705edce5a679",
+      "http_status": 200,
+      "response_body": {
+        "id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "inspection_number": "INSP-20260910-0001",
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "remarks": null,
+        "inspected_by": "fa110000-0000-4000-8000-000000000003",
+        "created_at": "2026-09-10T16:03:45.283Z",
+        "lines": [
+          {
+            "id": "4b658346-67f4-4e53-8c7b-4981b0b9e9de",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity_received": 8,
+            "accepted_qty": 8,
+            "rejected_qty": 0,
+            "result": "passed",
+            "rejection_reason": null,
+            "created_at": "2026-09-10T16:03:45.283Z"
+          },
+          {
+            "id": "3a5c5f11-5594-4bd4-b481-7dd47b988e16",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "grn_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity_received": 1,
+            "accepted_qty": 0,
+            "rejected_qty": 1,
+            "result": "rejected",
+            "rejection_reason": "FAT Block 3 controlled rejection",
+            "created_at": "2026-09-10T16:03:45.283Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "supervisor: stock",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "GET",
+      "path": "/api/inventory/stock",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "material_name": "FAT E2E BMS Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "available",
+            "quantity": -1
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "material_name": "FAT E2E BMS Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "rejected",
+            "quantity": 2
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "CELL",
+              "id": "fa130000-0000-4000-8000-000000000003",
+              "code": "FAT-E2E-CELL-MASTER",
+              "name": "FAT E2E LiFePO4 Cell",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "available",
+            "quantity": 71
+          }
+        ],
+        "meta": {
+          "total": 3,
+          "page": 1,
+          "pageSize": 25,
+          "totalPages": 1
+        }
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "supervisor: cell stock",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "GET",
+      "path": "/api/inventory/cell-stock",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "grn_line_id": "fa150000-0000-4000-8000-000000000005",
+            "grn_id": "fa150000-0000-4000-8000-000000000004",
+            "grn_number": "FAT-E2E-GRN-POSTED-001",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "manufacturer": "FAT Cell Works",
+            "invoice_number": "FAT-E2E-INV-POSTED-001",
+            "supplier_lot_number": "FAT-E2E-SUP-LOT-CELL-001",
+            "uom": "PCS",
+            "received_date": "2026-09-08",
+            "available_qty": 64,
+            "is_mapped": true,
+            "cell_master_id": "fa130000-0000-4000-8000-000000000003",
+            "cell_model": "FAT-LFP-280",
+            "cell_chemistry": "LiFePO4",
+            "nominal_capacity_ah": 280,
+            "nominal_voltage_v": 3.2
+          },
+          {
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "grn_number": "GRN-20260910-0001",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "manufacturer": "FAT Cell Works",
+            "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "uom": "PCS",
+            "received_date": "2026-09-10",
+            "available_qty": 5,
+            "is_mapped": true,
+            "cell_master_id": "fa130000-0000-4000-8000-000000000003",
+            "cell_model": "FAT-LFP-280",
+            "cell_chemistry": "LiFePO4",
+            "nominal_capacity_ah": 280,
+            "nominal_voltage_v": 3.2
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "supervisor: provenance",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "GET",
+      "path": "/api/inventory/stock/fa130000-0000-4000-8000-000000000016/provenance",
+      "http_status": 200,
+      "response_body": {
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "material_code": "FAT-E2E-MATERIAL-CELL",
+        "material_name": "FAT E2E Cell Material",
+        "usage_type": "INVENTORY_COMPONENT",
+        "linked_master": {
+          "type": "CELL",
+          "id": "fa130000-0000-4000-8000-000000000003",
+          "code": "FAT-E2E-CELL-MASTER",
+          "name": "FAT E2E LiFePO4 Cell",
+          "status": "active"
+        },
+        "receipts": [
+          {
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "grn_number": "GRN-20260910-0001",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "received_date": "2026-09-10",
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "received_qty": 8,
+            "uom": "PCS",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "inspection_number": "INSP-20260910-0001",
+            "inspection_status": "passed",
+            "accepted_qty": 8,
+            "rejected_qty": 0,
+            "remaining_available_qty": 5,
+            "inspector_id": "fa110000-0000-4000-8000-000000000003",
+            "inspector_name": "FAT E2E Supervisor",
+            "warehouse_location": null
+          },
+          {
+            "grn_id": "fa150000-0000-4000-8000-000000000004",
+            "grn_number": "FAT-E2E-GRN-POSTED-001",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "received_date": "2026-09-08",
+            "grn_line_id": "fa150000-0000-4000-8000-000000000005",
+            "received_qty": 64,
+            "uom": "PCS",
+            "inspection_id": "fa150000-0000-4000-8000-000000000009",
+            "inspection_number": "FAT-E2E-INSP-001",
+            "inspection_status": "passed",
+            "accepted_qty": 64,
+            "rejected_qty": 0,
+            "remaining_available_qty": 64,
+            "inspector_id": "fa110000-0000-4000-8000-000000000003",
+            "inspector_name": "FAT E2E Supervisor",
+            "warehouse_location": null
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "supervisor: transfer",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "GET",
+      "path": "/api/inventory/transfers/2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+      "http_status": 200,
+      "response_body": {
+        "id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+        "transfer_number": "TRF-20260910-000001",
+        "from_location": "STORE",
+        "to_location": "CELL_PROCESSING",
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "material_code": "FAT-E2E-MATERIAL-CELL",
+        "material_name": "FAT E2E Cell Material",
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "supplier_name": "FAT E2E Cell and BMS Supplier",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+        "quantity": 3,
+        "uom": "PCS",
+        "transferred_by": "fa110000-0000-4000-8000-000000000003",
+        "operator_name": "FAT E2E Supervisor",
+        "created_at": "2026-09-10T16:03:45.322Z",
+        "cell_lot_id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+        "lot_number": "TRF-20260910-000001",
+        "remarks": "FAT Block 3 positive whole-cell transfer",
+        "cell_lot": {
+          "id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+          "supplier": "FAT E2E Cell and BMS Supplier",
+          "manufacturer": "FAT Cell Works",
+          "cellModel": "FAT-LFP-280",
+          "cellChemistry": "LiFePO4",
+          "nominalCapacityAh": 280,
+          "lotNumber": "TRF-20260910-000001",
+          "invoiceNumber": "FAT-E2E-B3-INV-B3-1789056224422",
+          "supplierLotNumber": "FAT-E2E-B3-CELL-B3-1789056224422",
+          "dateReceived": "2026-09-10",
+          "quantityReceived": 3,
+          "receivedBy": "FAT Block 3 controlled operator",
+          "remarks": "FAT Block 3 positive whole-cell transfer",
+          "status": "received",
+          "cellMasterId": "fa130000-0000-4000-8000-000000000003",
+          "transferId": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+          "createdAt": "2026-09-10T16:03:45.322Z",
+          "updatedAt": "2026-09-10T16:03:45.322Z"
+        },
+        "consumed_by": []
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "operator: GRN detail",
+      "result": "PASS",
+      "actor_role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d",
+      "http_status": 200,
+      "response_body": {
+        "id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "received_date": "2026-09-10",
+        "status": "posted",
+        "remarks": "FAT Block 3 isolated positive receipt",
+        "posted_at": "2026-09-10T16:03:45.236Z",
+        "posted_by": "fa110000-0000-4000-8000-000000000003",
+        "created_by": "fa110000-0000-4000-8000-000000000003",
+        "created_at": "2026-09-10T16:03:45.095Z",
+        "updated_by": null,
+        "updated_at": "2026-09-10T16:03:45.236Z",
+        "lines": [
+          {
+            "id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 1,
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_name": "FAT E2E Cell Material",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "CELL",
+              "id": "fa130000-0000-4000-8000-000000000003",
+              "code": "FAT-E2E-CELL-MASTER",
+              "name": "FAT E2E LiFePO4 Cell",
+              "status": "active"
+            },
+            "quantity_received": 8,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "inspection_status": "passed",
+            "remarks": "Block 3 cell line",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          },
+          {
+            "id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 2,
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_name": "FAT E2E BMS Material",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "quantity_received": 1,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-BMS-B3-1789056224422",
+            "inspection_status": "rejected",
+            "remarks": "Block 3 rejected-line control",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "operator: GRN transactions",
+      "result": "PASS",
+      "actor_role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d/transactions",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "id": "0de09472-3166-431c-b676-88f0545769d2",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity": 8,
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "created_by": "fa110000-0000-4000-8000-000000000003",
+            "created_at": "2026-09-10T16:03:45.224Z"
+          },
+          {
+            "id": "ec6fd289-34ae-4b57-9df5-7abc8c5ec726",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity": 1,
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "created_by": "fa110000-0000-4000-8000-000000000003",
+            "created_at": "2026-09-10T16:03:45.224Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "operator: inspection detail",
+      "result": "PASS",
+      "actor_role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "method": "GET",
+      "path": "/api/inventory/inspections/7bab3a01-cf76-4cee-bb83-705edce5a679",
+      "http_status": 200,
+      "response_body": {
+        "id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "inspection_number": "INSP-20260910-0001",
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "remarks": null,
+        "inspected_by": "fa110000-0000-4000-8000-000000000003",
+        "created_at": "2026-09-10T16:03:45.283Z",
+        "lines": [
+          {
+            "id": "4b658346-67f4-4e53-8c7b-4981b0b9e9de",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity_received": 8,
+            "accepted_qty": 8,
+            "rejected_qty": 0,
+            "result": "passed",
+            "rejection_reason": null,
+            "created_at": "2026-09-10T16:03:45.283Z"
+          },
+          {
+            "id": "3a5c5f11-5594-4bd4-b481-7dd47b988e16",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "grn_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity_received": 1,
+            "accepted_qty": 0,
+            "rejected_qty": 1,
+            "result": "rejected",
+            "rejection_reason": "FAT Block 3 controlled rejection",
+            "created_at": "2026-09-10T16:03:45.283Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "operator: stock",
+      "result": "PASS",
+      "actor_role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "method": "GET",
+      "path": "/api/inventory/stock",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "material_name": "FAT E2E BMS Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "available",
+            "quantity": -1
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "material_name": "FAT E2E BMS Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "rejected",
+            "quantity": 2
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "CELL",
+              "id": "fa130000-0000-4000-8000-000000000003",
+              "code": "FAT-E2E-CELL-MASTER",
+              "name": "FAT E2E LiFePO4 Cell",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "available",
+            "quantity": 71
+          }
+        ],
+        "meta": {
+          "total": 3,
+          "page": 1,
+          "pageSize": 25,
+          "totalPages": 1
+        }
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "operator: cell stock",
+      "result": "PASS",
+      "actor_role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "method": "GET",
+      "path": "/api/inventory/cell-stock",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "grn_line_id": "fa150000-0000-4000-8000-000000000005",
+            "grn_id": "fa150000-0000-4000-8000-000000000004",
+            "grn_number": "FAT-E2E-GRN-POSTED-001",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "manufacturer": "FAT Cell Works",
+            "invoice_number": "FAT-E2E-INV-POSTED-001",
+            "supplier_lot_number": "FAT-E2E-SUP-LOT-CELL-001",
+            "uom": "PCS",
+            "received_date": "2026-09-08",
+            "available_qty": 64,
+            "is_mapped": true,
+            "cell_master_id": "fa130000-0000-4000-8000-000000000003",
+            "cell_model": "FAT-LFP-280",
+            "cell_chemistry": "LiFePO4",
+            "nominal_capacity_ah": 280,
+            "nominal_voltage_v": 3.2
+          },
+          {
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "grn_number": "GRN-20260910-0001",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "manufacturer": "FAT Cell Works",
+            "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "uom": "PCS",
+            "received_date": "2026-09-10",
+            "available_qty": 5,
+            "is_mapped": true,
+            "cell_master_id": "fa130000-0000-4000-8000-000000000003",
+            "cell_model": "FAT-LFP-280",
+            "cell_chemistry": "LiFePO4",
+            "nominal_capacity_ah": 280,
+            "nominal_voltage_v": 3.2
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "operator: provenance",
+      "result": "PASS",
+      "actor_role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "method": "GET",
+      "path": "/api/inventory/stock/fa130000-0000-4000-8000-000000000016/provenance",
+      "http_status": 200,
+      "response_body": {
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "material_code": "FAT-E2E-MATERIAL-CELL",
+        "material_name": "FAT E2E Cell Material",
+        "usage_type": "INVENTORY_COMPONENT",
+        "linked_master": {
+          "type": "CELL",
+          "id": "fa130000-0000-4000-8000-000000000003",
+          "code": "FAT-E2E-CELL-MASTER",
+          "name": "FAT E2E LiFePO4 Cell",
+          "status": "active"
+        },
+        "receipts": [
+          {
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "grn_number": "GRN-20260910-0001",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "received_date": "2026-09-10",
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "received_qty": 8,
+            "uom": "PCS",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "inspection_number": "INSP-20260910-0001",
+            "inspection_status": "passed",
+            "accepted_qty": 8,
+            "rejected_qty": 0,
+            "remaining_available_qty": 5,
+            "inspector_id": "fa110000-0000-4000-8000-000000000003",
+            "inspector_name": "FAT E2E Supervisor",
+            "warehouse_location": null
+          },
+          {
+            "grn_id": "fa150000-0000-4000-8000-000000000004",
+            "grn_number": "FAT-E2E-GRN-POSTED-001",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "received_date": "2026-09-08",
+            "grn_line_id": "fa150000-0000-4000-8000-000000000005",
+            "received_qty": 64,
+            "uom": "PCS",
+            "inspection_id": "fa150000-0000-4000-8000-000000000009",
+            "inspection_number": "FAT-E2E-INSP-001",
+            "inspection_status": "passed",
+            "accepted_qty": 64,
+            "rejected_qty": 0,
+            "remaining_available_qty": 64,
+            "inspector_id": "fa110000-0000-4000-8000-000000000003",
+            "inspector_name": "FAT E2E Supervisor",
+            "warehouse_location": null
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "operator: transfer",
+      "result": "PASS",
+      "actor_role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "method": "GET",
+      "path": "/api/inventory/transfers/2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+      "http_status": 200,
+      "response_body": {
+        "id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+        "transfer_number": "TRF-20260910-000001",
+        "from_location": "STORE",
+        "to_location": "CELL_PROCESSING",
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "material_code": "FAT-E2E-MATERIAL-CELL",
+        "material_name": "FAT E2E Cell Material",
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "supplier_name": "FAT E2E Cell and BMS Supplier",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+        "quantity": 3,
+        "uom": "PCS",
+        "transferred_by": "fa110000-0000-4000-8000-000000000003",
+        "operator_name": "FAT E2E Supervisor",
+        "created_at": "2026-09-10T16:03:45.322Z",
+        "cell_lot_id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+        "lot_number": "TRF-20260910-000001",
+        "remarks": "FAT Block 3 positive whole-cell transfer",
+        "cell_lot": {
+          "id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+          "supplier": "FAT E2E Cell and BMS Supplier",
+          "manufacturer": "FAT Cell Works",
+          "cellModel": "FAT-LFP-280",
+          "cellChemistry": "LiFePO4",
+          "nominalCapacityAh": 280,
+          "lotNumber": "TRF-20260910-000001",
+          "invoiceNumber": "FAT-E2E-B3-INV-B3-1789056224422",
+          "supplierLotNumber": "FAT-E2E-B3-CELL-B3-1789056224422",
+          "dateReceived": "2026-09-10",
+          "quantityReceived": 3,
+          "receivedBy": "FAT Block 3 controlled operator",
+          "remarks": "FAT Block 3 positive whole-cell transfer",
+          "status": "received",
+          "cellMasterId": "fa130000-0000-4000-8000-000000000003",
+          "transferId": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+          "createdAt": "2026-09-10T16:03:45.322Z",
+          "updatedAt": "2026-09-10T16:03:45.322Z"
+        },
+        "consumed_by": []
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "viewer: GRN detail",
+      "result": "PASS",
+      "actor_role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d",
+      "http_status": 200,
+      "response_body": {
+        "id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "received_date": "2026-09-10",
+        "status": "posted",
+        "remarks": "FAT Block 3 isolated positive receipt",
+        "posted_at": "2026-09-10T16:03:45.236Z",
+        "posted_by": "fa110000-0000-4000-8000-000000000003",
+        "created_by": "fa110000-0000-4000-8000-000000000003",
+        "created_at": "2026-09-10T16:03:45.095Z",
+        "updated_by": null,
+        "updated_at": "2026-09-10T16:03:45.236Z",
+        "lines": [
+          {
+            "id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 1,
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_name": "FAT E2E Cell Material",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "CELL",
+              "id": "fa130000-0000-4000-8000-000000000003",
+              "code": "FAT-E2E-CELL-MASTER",
+              "name": "FAT E2E LiFePO4 Cell",
+              "status": "active"
+            },
+            "quantity_received": 8,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "inspection_status": "passed",
+            "remarks": "Block 3 cell line",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          },
+          {
+            "id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "line_number": 2,
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_name": "FAT E2E BMS Material",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "quantity_received": 1,
+            "uom": "PCS",
+            "supplier_lot_number": "FAT-E2E-B3-BMS-B3-1789056224422",
+            "inspection_status": "rejected",
+            "remarks": "Block 3 rejected-line control",
+            "created_at": "2026-09-10T16:03:45.095Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "viewer: GRN transactions",
+      "result": "PASS",
+      "actor_role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d/transactions",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "id": "0de09472-3166-431c-b676-88f0545769d2",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity": 8,
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "created_by": "fa110000-0000-4000-8000-000000000003",
+            "created_at": "2026-09-10T16:03:45.224Z"
+          },
+          {
+            "id": "ec6fd289-34ae-4b57-9df5-7abc8c5ec726",
+            "transaction_type": "GRN_RECEIPT",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity": 1,
+            "uom": "PCS",
+            "stock_state": "inspection_pending",
+            "source_document_type": "GRN",
+            "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "source_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "created_by": "fa110000-0000-4000-8000-000000000003",
+            "created_at": "2026-09-10T16:03:45.224Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "viewer: inspection detail",
+      "result": "PASS",
+      "actor_role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "method": "GET",
+      "path": "/api/inventory/inspections/7bab3a01-cf76-4cee-bb83-705edce5a679",
+      "http_status": 200,
+      "response_body": {
+        "id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "inspection_number": "INSP-20260910-0001",
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "remarks": null,
+        "inspected_by": "fa110000-0000-4000-8000-000000000003",
+        "created_at": "2026-09-10T16:03:45.283Z",
+        "lines": [
+          {
+            "id": "4b658346-67f4-4e53-8c7b-4981b0b9e9de",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity_received": 8,
+            "accepted_qty": 8,
+            "rejected_qty": 0,
+            "result": "passed",
+            "rejection_reason": null,
+            "created_at": "2026-09-10T16:03:45.283Z"
+          },
+          {
+            "id": "3a5c5f11-5594-4bd4-b481-7dd47b988e16",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "grn_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity_received": 1,
+            "accepted_qty": 0,
+            "rejected_qty": 1,
+            "result": "rejected",
+            "rejection_reason": "FAT Block 3 controlled rejection",
+            "created_at": "2026-09-10T16:03:45.283Z"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "viewer: stock",
+      "result": "PASS",
+      "actor_role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "method": "GET",
+      "path": "/api/inventory/stock",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "material_name": "FAT E2E BMS Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "available",
+            "quantity": -1
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "material_code": "FAT-E2E-MATERIAL-BMS",
+            "material_name": "FAT E2E BMS Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "BMS",
+              "id": "fa130000-0000-4000-8000-000000000004",
+              "code": "FAT-E2E-BMS-MASTER",
+              "name": "FAT E2E BMS",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "rejected",
+            "quantity": 2
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "usage_type": "INVENTORY_COMPONENT",
+            "linked_master": {
+              "type": "CELL",
+              "id": "fa130000-0000-4000-8000-000000000003",
+              "code": "FAT-E2E-CELL-MASTER",
+              "name": "FAT E2E LiFePO4 Cell",
+              "status": "active"
+            },
+            "uom": "PCS",
+            "stock_state": "available",
+            "quantity": 71
+          }
+        ],
+        "meta": {
+          "total": 3,
+          "page": 1,
+          "pageSize": 25,
+          "totalPages": 1
+        }
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "viewer: cell stock",
+      "result": "PASS",
+      "actor_role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "method": "GET",
+      "path": "/api/inventory/cell-stock",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "grn_line_id": "fa150000-0000-4000-8000-000000000005",
+            "grn_id": "fa150000-0000-4000-8000-000000000004",
+            "grn_number": "FAT-E2E-GRN-POSTED-001",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "manufacturer": "FAT Cell Works",
+            "invoice_number": "FAT-E2E-INV-POSTED-001",
+            "supplier_lot_number": "FAT-E2E-SUP-LOT-CELL-001",
+            "uom": "PCS",
+            "received_date": "2026-09-08",
+            "available_qty": 64,
+            "is_mapped": true,
+            "cell_master_id": "fa130000-0000-4000-8000-000000000003",
+            "cell_model": "FAT-LFP-280",
+            "cell_chemistry": "LiFePO4",
+            "nominal_capacity_ah": 280,
+            "nominal_voltage_v": 3.2
+          },
+          {
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "grn_number": "GRN-20260910-0001",
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "material_code": "FAT-E2E-MATERIAL-CELL",
+            "material_name": "FAT E2E Cell Material",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "manufacturer": "FAT Cell Works",
+            "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "uom": "PCS",
+            "received_date": "2026-09-10",
+            "available_qty": 5,
+            "is_mapped": true,
+            "cell_master_id": "fa130000-0000-4000-8000-000000000003",
+            "cell_model": "FAT-LFP-280",
+            "cell_chemistry": "LiFePO4",
+            "nominal_capacity_ah": 280,
+            "nominal_voltage_v": 3.2
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "viewer: provenance",
+      "result": "PASS",
+      "actor_role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "method": "GET",
+      "path": "/api/inventory/stock/fa130000-0000-4000-8000-000000000016/provenance",
+      "http_status": 200,
+      "response_body": {
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "material_code": "FAT-E2E-MATERIAL-CELL",
+        "material_name": "FAT E2E Cell Material",
+        "usage_type": "INVENTORY_COMPONENT",
+        "linked_master": {
+          "type": "CELL",
+          "id": "fa130000-0000-4000-8000-000000000003",
+          "code": "FAT-E2E-CELL-MASTER",
+          "name": "FAT E2E LiFePO4 Cell",
+          "status": "active"
+        },
+        "receipts": [
+          {
+            "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+            "grn_number": "GRN-20260910-0001",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "received_date": "2026-09-10",
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "received_qty": 8,
+            "uom": "PCS",
+            "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+            "inspection_number": "INSP-20260910-0001",
+            "inspection_status": "passed",
+            "accepted_qty": 8,
+            "rejected_qty": 0,
+            "remaining_available_qty": 5,
+            "inspector_id": "fa110000-0000-4000-8000-000000000003",
+            "inspector_name": "FAT E2E Supervisor",
+            "warehouse_location": null
+          },
+          {
+            "grn_id": "fa150000-0000-4000-8000-000000000004",
+            "grn_number": "FAT-E2E-GRN-POSTED-001",
+            "supplier_id": "fa130000-0000-4000-8000-000000000015",
+            "supplier_name": "FAT E2E Cell and BMS Supplier",
+            "received_date": "2026-09-08",
+            "grn_line_id": "fa150000-0000-4000-8000-000000000005",
+            "received_qty": 64,
+            "uom": "PCS",
+            "inspection_id": "fa150000-0000-4000-8000-000000000009",
+            "inspection_number": "FAT-E2E-INSP-001",
+            "inspection_status": "passed",
+            "accepted_qty": 64,
+            "rejected_qty": 0,
+            "remaining_available_qty": 64,
+            "inspector_id": "fa110000-0000-4000-8000-000000000003",
+            "inspector_name": "FAT E2E Supervisor",
+            "warehouse_location": null
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P05",
+      "subcheck": "viewer: transfer",
+      "result": "PASS",
+      "actor_role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "method": "GET",
+      "path": "/api/inventory/transfers/2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+      "http_status": 200,
+      "response_body": {
+        "id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+        "transfer_number": "TRF-20260910-000001",
+        "from_location": "STORE",
+        "to_location": "CELL_PROCESSING",
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "material_code": "FAT-E2E-MATERIAL-CELL",
+        "material_name": "FAT E2E Cell Material",
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "supplier_name": "FAT E2E Cell and BMS Supplier",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+        "quantity": 3,
+        "uom": "PCS",
+        "transferred_by": "fa110000-0000-4000-8000-000000000003",
+        "operator_name": "FAT E2E Supervisor",
+        "created_at": "2026-09-10T16:03:45.322Z",
+        "cell_lot_id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+        "lot_number": "TRF-20260910-000001",
+        "remarks": "FAT Block 3 positive whole-cell transfer",
+        "cell_lot": {
+          "id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+          "supplier": "FAT E2E Cell and BMS Supplier",
+          "manufacturer": "FAT Cell Works",
+          "cellModel": "FAT-LFP-280",
+          "cellChemistry": "LiFePO4",
+          "nominalCapacityAh": 280,
+          "lotNumber": "TRF-20260910-000001",
+          "invoiceNumber": "FAT-E2E-B3-INV-B3-1789056224422",
+          "supplierLotNumber": "FAT-E2E-B3-CELL-B3-1789056224422",
+          "dateReceived": "2026-09-10",
+          "quantityReceived": 3,
+          "receivedBy": "FAT Block 3 controlled operator",
+          "remarks": "FAT Block 3 positive whole-cell transfer",
+          "status": "received",
+          "cellMasterId": "fa130000-0000-4000-8000-000000000003",
+          "transferId": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+          "createdAt": "2026-09-10T16:03:45.322Z",
+          "updatedAt": "2026-09-10T16:03:45.322Z"
+        },
+        "consumed_by": []
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "inspection_id": "7bab3a01-cf76-4cee-bb83-705edce5a679",
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-N01",
+      "subcheck": "operator cannot write GRN",
+      "result": "PASS",
+      "actor_role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "method": "POST",
+      "path": "/api/inventory/grns",
+      "request_body": {
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "received_date": "2026-09-10",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "remarks": "FAT Block 3 isolated positive receipt",
+        "lines": [
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity_received": 8,
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "remarks": "Block 3 cell line"
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity_received": 1,
+            "supplier_lot_number": "FAT-E2E-B3-BMS-B3-1789056224422",
+            "remarks": "Block 3 rejected-line control"
+          }
+        ]
+      },
+      "http_status": 403,
+      "response_body": {
+        "error": "Access denied. Required role: supervisor or director"
+      },
+      "notes": "Expected 403; received 403"
+    },
+    {
+      "case_id": "INV-N01",
+      "subcheck": "operator cannot write inspection",
+      "result": "PASS",
+      "actor_role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "method": "POST",
+      "path": "/api/inventory/inspections",
+      "request_body": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "remarks": "FAT Block 3 complete incoming inspection",
+        "lines": [
+          {
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "accepted_qty": 8,
+            "rejected_qty": 0
+          },
+          {
+            "grn_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "accepted_qty": 0,
+            "rejected_qty": 1,
+            "rejection_reason": "FAT Block 3 controlled rejection"
+          }
+        ]
+      },
+      "http_status": 403,
+      "response_body": {
+        "error": "Access denied. Required role: supervisor or director"
+      },
+      "notes": "Expected 403; received 403"
+    },
+    {
+      "case_id": "INV-N01",
+      "subcheck": "operator cannot write transfer",
+      "result": "PASS",
+      "actor_role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "method": "POST",
+      "path": "/api/inventory/transfers",
+      "request_body": {
+        "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+        "quantity": 3,
+        "received_by": "FAT Block 3 controlled operator",
+        "remarks": "FAT Block 3 positive whole-cell transfer"
+      },
+      "http_status": 403,
+      "response_body": {
+        "error": "Access denied. Required role: supervisor or director"
+      },
+      "notes": "Expected 403; received 403"
+    },
+    {
+      "case_id": "INV-N01",
+      "subcheck": "viewer cannot write GRN",
+      "result": "PASS",
+      "actor_role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "method": "POST",
+      "path": "/api/inventory/grns",
+      "request_body": {
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "received_date": "2026-09-10",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "remarks": "FAT Block 3 isolated positive receipt",
+        "lines": [
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity_received": 8,
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "remarks": "Block 3 cell line"
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity_received": 1,
+            "supplier_lot_number": "FAT-E2E-B3-BMS-B3-1789056224422",
+            "remarks": "Block 3 rejected-line control"
+          }
+        ]
+      },
+      "http_status": 403,
+      "response_body": {
+        "error": "Access denied. Required role: supervisor or director"
+      },
+      "notes": "Expected 403; received 403"
+    },
+    {
+      "case_id": "INV-N01",
+      "subcheck": "viewer cannot write inspection",
+      "result": "PASS",
+      "actor_role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "method": "POST",
+      "path": "/api/inventory/inspections",
+      "request_body": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "remarks": "FAT Block 3 complete incoming inspection",
+        "lines": [
+          {
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "accepted_qty": 8,
+            "rejected_qty": 0
+          },
+          {
+            "grn_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "accepted_qty": 0,
+            "rejected_qty": 1,
+            "rejection_reason": "FAT Block 3 controlled rejection"
+          }
+        ]
+      },
+      "http_status": 403,
+      "response_body": {
+        "error": "Access denied. Required role: supervisor or director"
+      },
+      "notes": "Expected 403; received 403"
+    },
+    {
+      "case_id": "INV-N01",
+      "subcheck": "viewer cannot write transfer",
+      "result": "PASS",
+      "actor_role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "method": "POST",
+      "path": "/api/inventory/transfers",
+      "request_body": {
+        "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+        "quantity": 3,
+        "received_by": "FAT Block 3 controlled operator",
+        "remarks": "FAT Block 3 positive whole-cell transfer"
+      },
+      "http_status": 403,
+      "response_body": {
+        "error": "Access denied. Required role: supervisor or director"
+      },
+      "notes": "Expected 403; received 403"
+    },
+    {
+      "case_id": "INV-N01",
+      "subcheck": "denied writes leave counts unchanged",
+      "result": "PASS",
+      "actor_role": "operator/viewer",
+      "method": "POST",
+      "path": "/api/inventory/*",
+      "response_body": {
+        "before": {
+          "grns": 5,
+          "inspections": 3,
+          "transfers": 2,
+          "txns": 19
+        },
+        "after": {
+          "grns": 5,
+          "inspections": 3,
+          "transfers": 2,
+          "txns": 19
+        }
+      }
+    },
+    {
+      "case_id": "INV-N02",
+      "subcheck": "unknown material",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "POST",
+      "path": "/api/inventory/grns",
+      "request_body": {
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "received_date": "2026-09-10",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "remarks": "FAT Block 3 isolated positive receipt",
+        "lines": [
+          {
+            "material_id": "11111111-1111-4111-8111-111111111111",
+            "quantity_received": 1
+          }
+        ]
+      },
+      "http_status": 400,
+      "response_body": {
+        "error": "Unknown material id(s): 11111111-1111-4111-8111-111111111111"
+      },
+      "notes": "Expected 400; received 400"
+    },
+    {
+      "case_id": "INV-N02",
+      "subcheck": "unknown material: no draft header",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "method": "GET",
+      "path": "/api/inventory/grns",
+      "http_status": 200,
+      "response_body": {
+        "before_count": 5,
+        "after_count": 5
+      }
+    },
+    {
+      "case_id": "INV-N02",
+      "subcheck": "empty GRN",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "POST",
+      "path": "/api/inventory/grns",
+      "request_body": {
+        "supplier_id": "fa130000-0000-4000-8000-000000000015",
+        "received_date": "2026-09-10",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "remarks": "FAT Block 3 isolated positive receipt",
+        "lines": []
+      },
+      "http_status": 400,
+      "response_body": {
+        "error": "[\n  {\n    \"code\": \"too_small\",\n    \"minimum\": 1,\n    \"type\": \"array\",\n    \"inclusive\": true,\n    \"exact\": false,\n    \"message\": \"Array must contain at least 1 element(s)\",\n    \"path\": [\n      \"lines\"\n    ]\n  }\n]"
+      },
+      "notes": "Expected 400; received 400"
+    },
+    {
+      "case_id": "INV-N02",
+      "subcheck": "empty GRN: no draft header",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "method": "GET",
+      "path": "/api/inventory/grns",
+      "http_status": 200,
+      "response_body": {
+        "before_count": 5,
+        "after_count": 5
+      }
+    },
+    {
+      "case_id": "INV-N02",
+      "subcheck": "invalid supplier FK",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "POST",
+      "path": "/api/inventory/grns",
+      "request_body": {
+        "supplier_id": "22222222-2222-4222-8222-222222222222",
+        "received_date": "2026-09-10",
+        "invoice_number": "FAT-E2E-B3-INV-B3-1789056224422",
+        "remarks": "FAT Block 3 isolated positive receipt",
+        "lines": [
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "quantity_received": 8,
+            "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+            "remarks": "Block 3 cell line"
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "quantity_received": 1,
+            "supplier_lot_number": "FAT-E2E-B3-BMS-B3-1789056224422",
+            "remarks": "Block 3 rejected-line control"
+          }
+        ]
+      },
+      "http_status": 400,
+      "response_body": {
+        "error": "Invalid GRN: a referenced record does not exist"
+      },
+      "notes": "Expected 400; received 400"
+    },
+    {
+      "case_id": "INV-N02",
+      "subcheck": "invalid supplier FK: no draft header",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "method": "GET",
+      "path": "/api/inventory/grns",
+      "http_status": 200,
+      "response_body": {
+        "before_count": 5,
+        "after_count": 5
+      }
+    },
+    {
+      "case_id": "INV-N03",
+      "subcheck": "empty draft cannot be posted",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "POST",
+      "path": "/api/inventory/grns/fa150000-0000-4000-8000-000000000003/post",
+      "request_body": {},
+      "http_status": 409,
+      "response_body": {
+        "error": "GRN has no line items to post"
+      },
+      "notes": "Expected 409; received 409"
+    },
+    {
+      "case_id": "INV-N03",
+      "subcheck": "empty draft remains draft with no receipts",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "method": "GET",
+      "path": "/api/inventory/grns/fa150000-0000-4000-8000-000000000003/transactions",
+      "http_status": 200,
+      "response_body": {
+        "status": "draft",
+        "transactions": []
+      },
+      "ids": {
+        "grn_id": "fa150000-0000-4000-8000-000000000003"
+      }
+    },
+    {
+      "case_id": "INV-N03",
+      "subcheck": "invalid workflow variant",
+      "result": "DATA SETUP REQUIRED",
+      "actor_role": "supervisor",
+      "method": "POST",
+      "path": "/api/inventory/grns/fa150000-0000-4000-8000-000000000003/post",
+      "response_body": null,
+      "notes": "No approved controlled fixture lacks a workflow assignment; no invalid workflow state was manufactured."
+    },
+    {
+      "case_id": "INV-N04",
+      "subcheck": "posted GRN cannot be deleted",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "DELETE",
+      "path": "/api/inventory/grns/fa150000-0000-4000-8000-000000000004",
+      "http_status": 409,
+      "response_body": {
+        "error": "Only draft GRNs can be deleted"
+      },
+      "notes": "Expected 409; received 409"
+    },
+    {
+      "case_id": "INV-N04",
+      "subcheck": "posted history unchanged",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "method": "GET",
+      "path": "/api/inventory/grns/fa150000-0000-4000-8000-000000000004",
+      "http_status": 200,
+      "response_body": [
+        {
+          "id": "fa150000-0000-4000-8000-000000000004",
+          "status": "posted"
+        }
+      ]
+    },
+    {
+      "case_id": "INV-N04",
+      "subcheck": "already inspected GRN cannot be inspected twice",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "POST",
+      "path": "/api/inventory/inspections",
+      "request_body": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "remarks": "FAT Block 3 complete incoming inspection",
+        "lines": [
+          {
+            "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "accepted_qty": 8,
+            "rejected_qty": 0
+          },
+          {
+            "grn_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+            "accepted_qty": 0,
+            "rejected_qty": 1,
+            "rejection_reason": "FAT Block 3 controlled rejection"
+          }
+        ]
+      },
+      "http_status": 409,
+      "response_body": {
+        "error": "This GRN has already been inspected"
+      },
+      "notes": "Expected 409; received 409"
+    },
+    {
+      "case_id": "INV-N04",
+      "subcheck": "second inspection creates no rows",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "method": "GET",
+      "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d/transactions",
+      "http_status": 200,
+      "response_body": {
+        "count": 2
+      }
+    },
+    {
+      "case_id": "INV-N05",
+      "subcheck": "greater than available",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "POST",
+      "path": "/api/inventory/transfers",
+      "request_body": {
+        "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+        "quantity": 6,
+        "received_by": "FAT Block 3 controlled operator",
+        "remarks": "FAT Block 3 positive whole-cell transfer"
+      },
+      "http_status": 422,
+      "response_body": {
+        "error": "Insufficient available stock: requested 6, available 5."
+      },
+      "notes": "Expected 400 or 422; received 422"
+    },
+    {
+      "case_id": "INV-N05",
+      "subcheck": "greater than available: no transfer/lot/ledger rows",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "method": "GET",
+      "path": "/api/inventory/transfers",
+      "http_status": 200,
+      "response_body": {
+        "before": {
+          "transfers": 2,
+          "lots": 2,
+          "txns": 19
+        },
+        "after": {
+          "transfers": 2,
+          "lots": 2,
+          "txns": 19
+        }
+      }
+    },
+    {
+      "case_id": "INV-N05",
+      "subcheck": "fractional cell quantity",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "POST",
+      "path": "/api/inventory/transfers",
+      "request_body": {
+        "grn_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+        "quantity": 0.5,
+        "received_by": "FAT Block 3 controlled operator",
+        "remarks": "FAT Block 3 positive whole-cell transfer"
+      },
+      "http_status": 400,
+      "response_body": {
+        "error": "quantity must be a positive whole number of cells"
+      },
+      "notes": "Expected 400; received 400"
+    },
+    {
+      "case_id": "INV-N05",
+      "subcheck": "fractional cell quantity: no transfer/lot/ledger rows",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "method": "GET",
+      "path": "/api/inventory/transfers",
+      "http_status": 200,
+      "response_body": {
+        "before": {
+          "transfers": 2,
+          "lots": 2,
+          "txns": 19
+        },
+        "after": {
+          "transfers": 2,
+          "lots": 2,
+          "txns": 19
+        }
+      }
+    },
+    {
+      "case_id": "INV-P06",
+      "subcheck": "signed ledger reconciles to application stock",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "method": "GET",
+      "path": "/api/inventory/stock?page=1&pageSize=1000",
+      "http_status": 200,
+      "response_body": {
+        "application_stock": [
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "stock_state": "available",
+            "quantity": -1
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "stock_state": "rejected",
+            "quantity": 2
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "stock_state": "available",
+            "quantity": 71
+          }
+        ],
+        "ledger_projection": [
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000016",
+            "stock_state": "available",
+            "quantity": 71
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "stock_state": "available",
+            "quantity": -1
+          },
+          {
+            "material_id": "fa130000-0000-4000-8000-000000000017",
+            "stock_state": "rejected",
+            "quantity": 2
+          }
+        ],
+        "mismatches": [],
+        "new_grn_line_balances": [
+          {
+            "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+            "available_balance": "5.000"
+          }
+        ]
+      },
+      "ids": {
+        "grn_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_line_ids": [
+          "01139942-82aa-4fff-be93-7fcba3d505a3",
+          "849805e9-07ea-4ace-b1f9-9c41dd073f69"
+        ],
+        "transfer_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094"
+      }
+    },
+    {
+      "case_id": "INV-P06",
+      "subcheck": "no duplicate or orphan transactions",
+      "result": "PASS",
+      "actor_role": "supervisor",
+      "method": "SELECT",
+      "path": "inventory_transactions integrity query",
+      "response_body": {
+        "duplicate_groups": [],
+        "orphan_rows": []
+      },
+      "notes": "Orphan validation is source-document-aware: GRN, inspection, transfer, and MIN rows are each checked against their own document/line table."
+    }
+  ],
+  "final_state": {
+    "grn": [
+      {
+        "id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "status": "posted",
+        "line_id": "01139942-82aa-4fff-be93-7fcba3d505a3",
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "quantity_received": "8.000",
+        "supplier_lot_number": "FAT-E2E-B3-CELL-B3-1789056224422",
+        "inspection_status": "passed"
+      },
+      {
+        "id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "grn_number": "GRN-20260910-0001",
+        "status": "posted",
+        "line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69",
+        "material_id": "fa130000-0000-4000-8000-000000000017",
+        "quantity_received": "1.000",
+        "supplier_lot_number": "FAT-E2E-B3-BMS-B3-1789056224422",
+        "inspection_status": "rejected"
+      }
+    ],
+    "grn_transactions": [
+      {
+        "id": "0de09472-3166-431c-b676-88f0545769d2",
+        "transaction_type": "GRN_RECEIPT",
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "quantity": "8.000",
+        "uom": "PCS",
+        "stock_state": "inspection_pending",
+        "source_document_type": "GRN",
+        "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3"
+      },
+      {
+        "id": "ec6fd289-34ae-4b57-9df5-7abc8c5ec726",
+        "transaction_type": "GRN_RECEIPT",
+        "material_id": "fa130000-0000-4000-8000-000000000017",
+        "quantity": "1.000",
+        "uom": "PCS",
+        "stock_state": "inspection_pending",
+        "source_document_type": "GRN",
+        "source_document_id": "56e17005-eecc-47bd-b996-a408d52e545d",
+        "source_line_id": "849805e9-07ea-4ace-b1f9-9c41dd073f69"
+      }
+    ],
+    "transfer_transactions": [
+      {
+        "id": "811596fe-415f-40f9-b863-d1db69be4c28",
+        "transaction_type": "MATERIAL_TRANSFER_TO_CELL_PROCESSING",
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "quantity": "-3.000",
+        "uom": "PCS",
+        "stock_state": "available",
+        "source_document_type": "TRANSFER",
+        "source_document_id": "2f8abd1a-8739-4bd1-84fe-bf3eb587c094",
+        "source_line_id": "01139942-82aa-4fff-be93-7fcba3d505a3"
+      }
+    ],
+    "stock_projection": [
+      {
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "stock_state": "inspection_pending",
+        "quantity": "0.000",
+        "txn_count": 6
+      },
+      {
+        "material_id": "fa130000-0000-4000-8000-000000000016",
+        "stock_state": "available",
+        "quantity": "71.000",
+        "txn_count": 6
+      },
+      {
+        "material_id": "fa130000-0000-4000-8000-000000000017",
+        "stock_state": "inspection_pending",
+        "quantity": "0.000",
+        "txn_count": 4
+      },
+      {
+        "material_id": "fa130000-0000-4000-8000-000000000017",
+        "stock_state": "available",
+        "quantity": "-1.000",
+        "txn_count": 1
+      },
+      {
+        "material_id": "fa130000-0000-4000-8000-000000000017",
+        "stock_state": "rejected",
+        "quantity": "2.000",
+        "txn_count": 2
+      }
+    ],
+    "audit": [
+      {
+        "id": "58ac68f1-3951-43d8-902d-0d5384530809",
+        "event_type": "grn.created",
+        "actor_role": "supervisor",
+        "status_code": 201,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "GRN GRN-20260910-0001 created (draft, 2 line(s))",
+        "created_at": "2026-09-10 16:03:45.112665+00"
+      },
+      {
+        "id": "4a1d79fa-c3bb-46b2-823b-6a095f06b509",
+        "event_type": "grn.posted",
+        "actor_role": "supervisor",
+        "status_code": 200,
+        "method": "POST",
+        "path": "/api/inventory/grns/56e17005-eecc-47bd-b996-a408d52e545d/post",
+        "detail": "GRN 56e17005-eecc-47bd-b996-a408d52e545d posted (2 line(s), inventory transactions generated)",
+        "created_at": "2026-09-10 16:03:45.25098+00"
+      },
+      {
+        "id": "93afe80f-9cfb-4268-a917-4839d2a4fcca",
+        "event_type": "inspection.completed",
+        "actor_role": "supervisor",
+        "status_code": 201,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Inspection INSP-20260910-0001 completed for GRN 56e17005-eecc-47bd-b996-a408d52e545d (2 line(s))",
+        "created_at": "2026-09-10 16:03:45.302154+00"
+      },
+      {
+        "id": "723a7e0a-03c1-494f-ae2a-fee08527bedc",
+        "event_type": "inventory.transfer.created",
+        "actor_role": "supervisor",
+        "status_code": 201,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Transfer TRF-20260910-000001 created (3 cell(s) → Cell Processing, lot TRF-20260910-000001)",
+        "created_at": "2026-09-10 16:03:45.359999+00"
+      },
+      {
+        "id": "dc9ea87b-616a-42d1-887b-a513e629d363",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:03:47.157992+00"
+      },
+      {
+        "id": "712018e9-a3bf-4253-b5cd-bfbdb8bc363a",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:03:47.160171+00"
+      },
+      {
+        "id": "367e496a-6675-4835-946c-3ed6377701f5",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:03:47.167512+00"
+      },
+      {
+        "id": "a26ac3eb-2b31-46ec-b31b-e98d452e0ac7",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:03:47.174532+00"
+      },
+      {
+        "id": "486371e9-7d71-44a6-83ca-0c1bb89f36a4",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:03:47.184262+00"
+      },
+      {
+        "id": "34155629-d1ee-4764-af8f-1f18ca89763a",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:03:47.184879+00"
+      },
+      {
+        "id": "83c42a3e-c876-4828-8baf-9cfe778f2f10",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:05:09.984646+00"
+      },
+      {
+        "id": "b351028b-3626-44b6-9122-205dde673dbc",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:05:09.987018+00"
+      },
+      {
+        "id": "e0c447ea-23bf-4fd3-893d-77a86d60b4b5",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:05:09.995156+00"
+      },
+      {
+        "id": "b88cc9bc-8f43-4cac-b648-67ca395ee10a",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:05:09.997105+00"
+      },
+      {
+        "id": "f1a9f850-ee2d-4d7e-9652-5a3d4b34e776",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:05:10.000979+00"
+      },
+      {
+        "id": "860df5a5-02dc-4ee8-a110-b617103660cf",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:05:10.012985+00"
+      },
+      {
+        "id": "3a3e6615-2962-41e8-9990-6328c88903e1",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:05:39.987223+00"
+      },
+      {
+        "id": "a114c90f-18e8-4587-8a88-49b8a59d5bc3",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:05:39.990836+00"
+      },
+      {
+        "id": "2ef31ca4-5904-4333-98cd-68419ce22a99",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:05:39.994759+00"
+      },
+      {
+        "id": "6706c24d-4a04-4d8f-97e6-22ad63012729",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:05:39.996975+00"
+      },
+      {
+        "id": "b77ff9c2-1bda-4444-9559-ddfc04ca3a69",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:05:40.003479+00"
+      },
+      {
+        "id": "f6507543-e8d8-4f42-9f66-87c43dd9650e",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:05:40.016937+00"
+      },
+      {
+        "id": "db6cd482-343f-4ee8-8dbb-a5923b4130d3",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:06:37.556353+00"
+      },
+      {
+        "id": "90f7160b-d372-4314-8370-04e4506396e3",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:06:37.557561+00"
+      },
+      {
+        "id": "7029b9c9-13e2-4750-9a21-35468b2aa3fd",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:06:37.573474+00"
+      },
+      {
+        "id": "91cb547d-e039-48db-bf7e-829b5b5958b8",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:06:37.576567+00"
+      },
+      {
+        "id": "90bb70b6-2c4d-43a5-b36a-62601e299fae",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:06:37.57702+00"
+      },
+      {
+        "id": "5fd842e4-5b58-4cf0-adbd-9c32fc62b29e",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:06:37.582883+00"
+      },
+      {
+        "id": "0b555744-13a2-4674-939f-ed84ab307a75",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:07:42.979951+00"
+      },
+      {
+        "id": "9979046b-7d57-415d-9e3d-3bfa18c34c8d",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:07:42.983418+00"
+      },
+      {
+        "id": "fb2a2733-35de-4e28-a500-930c73fe5ec4",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:07:42.988164+00"
+      },
+      {
+        "id": "c455d1e9-6080-41ce-9de8-a607dc8c87b6",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:07:43.003208+00"
+      },
+      {
+        "id": "bbde6105-9f3d-414e-bcc6-7aa15ff33b46",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:07:43.008538+00"
+      },
+      {
+        "id": "a15f9970-ef3c-4030-bb77-eed447827a2e",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:07:43.012616+00"
+      },
+      {
+        "id": "0ddbdcd6-d3c0-4d55-b506-c4f77d8de21f",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:09:39.975934+00"
+      },
+      {
+        "id": "1ee0c956-a7c1-4f09-9653-eba4a592eaf9",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:09:39.980009+00"
+      },
+      {
+        "id": "2fdd7083-4af4-413f-a215-7a6bf5a3e64f",
+        "event_type": "authz.denied",
+        "actor_role": "operator",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:09:39.98209+00"
+      },
+      {
+        "id": "ed10c229-51b8-4cae-a096-1d249e50d924",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/inspections",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:09:39.992359+00"
+      },
+      {
+        "id": "5efcd57e-be11-47b0-a683-536d34af3911",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/grns",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:09:39.996835+00"
+      },
+      {
+        "id": "14de54c1-2e86-40d6-96ab-601c9a023860",
+        "event_type": "authz.denied",
+        "actor_role": "viewer",
+        "status_code": 403,
+        "method": "POST",
+        "path": "/api/inventory/transfers",
+        "detail": "Denied; required role: supervisor or director",
+        "created_at": "2026-09-10 16:09:40.018868+00"
+      }
+    ],
+    "timeline": [
+      {
+        "id": "17b8da3c-6a06-4ccb-9e56-ef66738dff82",
+        "lot_id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+        "event_type": "lot_received",
+        "performed_by": "fat.supervisor@fat.local",
+        "reason": null,
+        "changes": {
+          "lotNumber": "TRF-20260910-000001",
+          "supplier": "FAT E2E Cell and BMS Supplier",
+          "quantityReceived": 3,
+          "transferNumber": "TRF-20260910-000001",
+          "grnNumber": "GRN-20260910-0001"
+        },
+        "performed_at": "2026-09-10 16:03:45.32282+00"
+      },
+      {
+        "id": "f27737f6-3413-4f02-84bf-75c2c9b4e25b",
+        "lot_id": "b60dea03-0067-41a3-beeb-fb4e097f1f70",
+        "event_type": "cell_records_generated",
+        "performed_by": "fat.supervisor@fat.local",
+        "reason": null,
+        "changes": {
+          "quantity": 3,
+          "range": "CELL-20260910-000001 → CELL-20260910-000003"
+        },
+        "performed_at": "2026-09-10 16:03:45.32282+00"
+      }
+    ]
+  }
+}
