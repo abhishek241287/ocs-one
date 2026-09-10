@@ -1,0 +1,111 @@
+OCS ONE — FAT BLOCK 3 ONLY
+
+Blocks 1 and 2 are ACCEPTED.
+
+Block 1:
+44/44 assertions PASS.
+
+Block 2:
+105/105 executed assertions PASS.
+One MAS-N04 sub-check remains DATA SETUP REQUIRED and is tracked separately as Task #32.
+Do not execute Task #32 during this block.
+
+Proceed with ONLY FAT Block 3:
+
+PROCUREMENT → GRN → INCOMING INSPECTION → INVENTORY
+
+SYSTEM UNDER TEST:
+FAT-CANDIDATE-2026-09-08
+Application commit:
+60564b1b49b76ce0b97e46d1de65a7325ef50ba7
+
+Use the controlled FAT-E2E fixture.
+
+Execute:
+
+INV-P01
+INV-P02
+INV-P03
+INV-P04
+INV-P05
+INV-P06
+
+INV-N01
+INV-N02
+INV-N03
+INV-N04
+INV-N05
+
+For every case capture:
+- PASS / FAIL / DATA SETUP REQUIRED
+- actor role
+- request method/path
+- sanitized request/response
+- GRN/inspection/transfer IDs
+- before/after inventory state
+- inventory ledger transaction IDs
+- stock_state
+- source_document_type
+- source_document_id
+- source_line_id
+- supplier lot where applicable
+- audit/timeline evidence
+
+CRITICAL INVENTORY ACCEPTANCE:
+
+1. GRN posting must create the expected receipt transactions exactly once.
+
+2. Posting the same GRN twice must not create duplicate receipt transactions.
+
+3. Inspection must cover the complete pending GRN according to the frozen one-shot inspection model.
+
+4. A GRN that has already been inspected must not be inspected again.
+
+5. inspection_pending, available, and rejected stock states must remain distinct.
+
+6. Transfer must produce the expected signed ledger movements:
+   - negative source movement
+   - positive destination movement
+
+7. Transfer must not create stock when quantity is invalid or unavailable.
+
+8. Supplier lot traceability must remain linked through the actual frozen ledger/source-line structure.
+
+9. Execute INV-P06 inventory reconciliation:
+   reconcile receipts, transfers, material movements/reversals applicable to this block against the application's available-stock projection.
+
+10. Confirm no transaction duplication or orphan inventory records.
+
+IMPORTANT:
+Do NOT modify application code, schema, routes, UI, workflows, or business logic.
+
+Do NOT fix defects during FAT.
+
+Do NOT modify the canonical BOM or canonical blocker fixtures.
+
+Use only FAT-E2E controlled records.
+
+If a prerequisite is missing:
+DATA SETUP REQUIRED — do not manufacture a prerequisite by manually editing database state unless that setup method is explicitly part of the approved FAT fixture.
+
+If an application behavior is incorrect with valid prerequisites:
+record FAT defect and stop that case. Do not patch.
+
+Do not execute Blocks 4–12.
+
+At the end report:
+
+1. Case-by-case results
+2. Total PASS
+3. Total FAIL
+4. Total DATA SETUP REQUIRED
+5. Inventory reconciliation result
+6. Exact ledger movements
+7. Any duplicate/orphan transaction findings
+8. Any defects/observations
+9. Evidence files
+10. FAT-E2E fixture state
+11. Confirmation that 60564b1b remains the application under test
+12. Confirmation that no application source/schema/routes/UI/workflows were modified
+
+STOP after Block 3.
