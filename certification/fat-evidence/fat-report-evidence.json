@@ -1,0 +1,2625 @@
+{
+  "run_at": "2026-09-08T15:55:05.189Z",
+  "environment": "http://localhost:8080",
+  "dataset": "FAT-E2E-",
+  "frozen_tag": "FAT-CANDIDATE-2026-09-08",
+  "frozen_commit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7",
+  "password_evidence": "omitted; supplied only through FAT_TEST_PASSWORD",
+  "summary": {
+    "total": 60,
+    "passed": 60,
+    "failed": 0
+  },
+  "cases": [
+    {
+      "case_id": "RPT-AUTH",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "owner",
+      "actor_id": "fa110000-0000-4000-8000-000000000001",
+      "actor_alias": "fat.owner@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "request_body": {
+        "email": "fat.owner@fat.local",
+        "password": "[REDACTED]"
+      },
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000001",
+          "email": "fat.owner@fat.local",
+          "name": "FAT E2E Owner",
+          "role": "owner",
+          "dealerId": null
+        }
+      }
+    },
+    {
+      "case_id": "RPT-AUTH",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "request_body": {
+        "email": "fat.director@fat.local",
+        "password": "[REDACTED]"
+      },
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000002",
+          "email": "fat.director@fat.local",
+          "name": "FAT E2E Director",
+          "role": "director",
+          "dealerId": null
+        }
+      }
+    },
+    {
+      "case_id": "RPT-AUTH",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "request_body": {
+        "email": "fat.supervisor@fat.local",
+        "password": "[REDACTED]"
+      },
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000003",
+          "email": "fat.supervisor@fat.local",
+          "name": "FAT E2E Supervisor",
+          "role": "supervisor",
+          "dealerId": null
+        }
+      }
+    },
+    {
+      "case_id": "RPT-AUTH",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "actor_alias": "fat.operator@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "request_body": {
+        "email": "fat.operator@fat.local",
+        "password": "[REDACTED]"
+      },
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000004",
+          "email": "fat.operator@fat.local",
+          "name": "FAT E2E Operator",
+          "role": "operator",
+          "dealerId": null
+        }
+      }
+    },
+    {
+      "case_id": "RPT-AUTH",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "request_body": {
+        "email": "fat.viewer@fat.local",
+        "password": "[REDACTED]"
+      },
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000005",
+          "email": "fat.viewer@fat.local",
+          "name": "FAT E2E Viewer",
+          "role": "viewer",
+          "dealerId": null
+        }
+      }
+    },
+    {
+      "case_id": "RPT-AUTH",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "request_body": {
+        "email": "fat.dealer@fat.local",
+        "password": "[REDACTED]"
+      },
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000006",
+          "email": "fat.dealer@fat.local",
+          "name": "FAT E2E Dealer",
+          "role": "dealer",
+          "dealerId": "fa120000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "GET",
+      "path": "/api/reports/executive",
+      "http_status": 200,
+      "response_body": {
+        "production": {
+          "today": 2,
+          "thisMonth": 2,
+          "total": 3,
+          "inProgress": 7,
+          "draft": 0
+        },
+        "quality": {
+          "qcPassPct": 67,
+          "qcRejectPct": 33,
+          "firstPassYield": 67,
+          "reworkPct": 33,
+          "openReworks": 1,
+          "totalReworks": 1
+        },
+        "timings": {
+          "avgMfgHrs": 0,
+          "avgChargingHrs": 0,
+          "avgTestingHrs": 0
+        },
+        "inventory": {
+          "totalCells": 64,
+          "availableCells": 44,
+          "allocatedCells": 16,
+          "gradeA": 48,
+          "gradeB": 12,
+          "gradeC": 0,
+          "rejected": 4,
+          "batteriesInProduction": 7,
+          "readyForDispatch": 2
+        },
+        "logistics": {
+          "dispatchedToday": 1,
+          "inTransit": 0,
+          "totalShipments": 10
+        },
+        "yieldPct": 30,
+        "refreshedAt": "2026-09-08T15:55:06.983Z"
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "GET",
+      "path": "/api/reports/executive",
+      "http_status": 200,
+      "response_body": {
+        "production": {
+          "today": 2,
+          "thisMonth": 2,
+          "total": 3,
+          "inProgress": 7,
+          "draft": 0
+        },
+        "quality": {
+          "qcPassPct": 67,
+          "qcRejectPct": 33,
+          "firstPassYield": 67,
+          "reworkPct": 33,
+          "openReworks": 1,
+          "totalReworks": 1
+        },
+        "timings": {
+          "avgMfgHrs": 0,
+          "avgChargingHrs": 0,
+          "avgTestingHrs": 0
+        },
+        "inventory": {
+          "totalCells": 64,
+          "availableCells": 44,
+          "allocatedCells": 16,
+          "gradeA": 48,
+          "gradeB": 12,
+          "gradeC": 0,
+          "rejected": 4,
+          "batteriesInProduction": 7,
+          "readyForDispatch": 2
+        },
+        "logistics": {
+          "dispatchedToday": 1,
+          "inTransit": 0,
+          "totalShipments": 10
+        },
+        "yieldPct": 30,
+        "refreshedAt": "2026-09-08T15:55:06.994Z"
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "GET",
+      "path": "/api/reports/production",
+      "http_status": 200,
+      "response_body": {
+        "filters": {
+          "from": "2026-08-09T15:55:06.999Z",
+          "to": "2026-09-08T23:59:59.999Z",
+          "productId": null
+        },
+        "byDay": [
+          {
+            "date": "2026-08-10",
+            "created": 4,
+            "completed": 1
+          },
+          {
+            "date": "2026-09-08",
+            "created": 6,
+            "completed": 2
+          }
+        ],
+        "byWeek": [
+          {
+            "week": "2026-W33",
+            "created": 4,
+            "completed": 1
+          },
+          {
+            "week": "2026-W37",
+            "created": 6,
+            "completed": 2
+          }
+        ],
+        "byMonth": [
+          {
+            "month": "Aug 2026",
+            "created": 4,
+            "completed": 1
+          },
+          {
+            "month": "Sep 2026",
+            "created": 6,
+            "completed": 2
+          }
+        ],
+        "byOperator": [
+          {
+            "operator": "fat.operator@fat.local",
+            "completed": 6
+          },
+          {
+            "operator": "Unassigned",
+            "completed": 2
+          }
+        ],
+        "stageTimings": [
+          {
+            "stage": "cell_allocation",
+            "avgHrs": 0,
+            "count": 8
+          },
+          {
+            "stage": "assembly",
+            "avgHrs": 0,
+            "count": 8
+          },
+          {
+            "stage": "compression",
+            "avgHrs": 0,
+            "count": 8
+          },
+          {
+            "stage": "bms_allocation",
+            "avgHrs": 0,
+            "count": 8
+          },
+          {
+            "stage": "bms_programming",
+            "avgHrs": 0,
+            "count": 8
+          },
+          {
+            "stage": "charging",
+            "avgHrs": 0,
+            "count": 4
+          },
+          {
+            "stage": "testing",
+            "avgHrs": 0,
+            "count": 4
+          },
+          {
+            "stage": "quality_control",
+            "avgHrs": 0,
+            "count": 2
+          },
+          {
+            "stage": "packing",
+            "avgHrs": 0,
+            "count": 2
+          }
+        ],
+        "refreshedAt": "2026-09-08T15:55:07.007Z"
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "GET",
+      "path": "/api/reports/production",
+      "http_status": 200,
+      "response_body": {
+        "filters": {
+          "from": "2026-08-09T15:55:07.011Z",
+          "to": "2026-09-08T23:59:59.999Z",
+          "productId": null
+        },
+        "byDay": [
+          {
+            "date": "2026-08-10",
+            "created": 4,
+            "completed": 1
+          },
+          {
+            "date": "2026-09-08",
+            "created": 6,
+            "completed": 2
+          }
+        ],
+        "byWeek": [
+          {
+            "week": "2026-W33",
+            "created": 4,
+            "completed": 1
+          },
+          {
+            "week": "2026-W37",
+            "created": 6,
+            "completed": 2
+          }
+        ],
+        "byMonth": [
+          {
+            "month": "Aug 2026",
+            "created": 4,
+            "completed": 1
+          },
+          {
+            "month": "Sep 2026",
+            "created": 6,
+            "completed": 2
+          }
+        ],
+        "byOperator": [
+          {
+            "operator": "fat.operator@fat.local",
+            "completed": 6
+          },
+          {
+            "operator": "Unassigned",
+            "completed": 2
+          }
+        ],
+        "stageTimings": [
+          {
+            "stage": "cell_allocation",
+            "avgHrs": 0,
+            "count": 8
+          },
+          {
+            "stage": "assembly",
+            "avgHrs": 0,
+            "count": 8
+          },
+          {
+            "stage": "compression",
+            "avgHrs": 0,
+            "count": 8
+          },
+          {
+            "stage": "bms_allocation",
+            "avgHrs": 0,
+            "count": 8
+          },
+          {
+            "stage": "bms_programming",
+            "avgHrs": 0,
+            "count": 8
+          },
+          {
+            "stage": "charging",
+            "avgHrs": 0,
+            "count": 4
+          },
+          {
+            "stage": "testing",
+            "avgHrs": 0,
+            "count": 4
+          },
+          {
+            "stage": "quality_control",
+            "avgHrs": 0,
+            "count": 2
+          },
+          {
+            "stage": "packing",
+            "avgHrs": 0,
+            "count": 2
+          }
+        ],
+        "refreshedAt": "2026-09-08T15:55:07.019Z"
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "GET",
+      "path": "/api/reports/cells",
+      "http_status": 200,
+      "response_body": {
+        "summary": {
+          "total": 64,
+          "gradeA": 48,
+          "gradeB": 12,
+          "gradeC": 0,
+          "rejected": 4,
+          "gradeAPct": 75,
+          "gradeBPct": 19,
+          "gradeCPct": 0,
+          "rejectedPct": 6,
+          "avgCapacity": 279.38,
+          "avgIr": 1.16
+        },
+        "capacityDistribution": [
+          {
+            "bucket": "240–245 Ah",
+            "count": 4
+          },
+          {
+            "bucket": "280–285 Ah",
+            "count": 60
+          }
+        ],
+        "irDistribution": [
+          {
+            "bucket": "0.5–1.0 mΩ",
+            "count": 15
+          },
+          {
+            "bucket": "1.0–1.5 mΩ",
+            "count": 45
+          },
+          {
+            "bucket": "2.5–3.0 mΩ",
+            "count": 4
+          }
+        ],
+        "bySupplier": [
+          {
+            "supplier": "FAT E2E Cell and BMS Supplier",
+            "total": 64,
+            "gradeA": 48,
+            "gradeB": 12,
+            "gradeC": 0,
+            "rejected": 4,
+            "yieldPct": 94,
+            "avgCapacity": 279.38
+          }
+        ],
+        "byLot": [
+          {
+            "lotNumber": "FAT-E2E-LOT-CELL-001",
+            "supplier": "FAT E2E Cell and BMS Supplier",
+            "total": 64,
+            "gradeA": 48,
+            "rejected": 4,
+            "yieldPct": 75
+          }
+        ],
+        "matchingStats": {
+          "total": 2,
+          "allocated": 1,
+          "reserved": 0,
+          "successPct": 50
+        },
+        "refreshedAt": "2026-09-08T15:55:07.030Z"
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "GET",
+      "path": "/api/reports/cells",
+      "http_status": 200,
+      "response_body": {
+        "summary": {
+          "total": 64,
+          "gradeA": 48,
+          "gradeB": 12,
+          "gradeC": 0,
+          "rejected": 4,
+          "gradeAPct": 75,
+          "gradeBPct": 19,
+          "gradeCPct": 0,
+          "rejectedPct": 6,
+          "avgCapacity": 279.38,
+          "avgIr": 1.16
+        },
+        "capacityDistribution": [
+          {
+            "bucket": "240–245 Ah",
+            "count": 4
+          },
+          {
+            "bucket": "280–285 Ah",
+            "count": 60
+          }
+        ],
+        "irDistribution": [
+          {
+            "bucket": "0.5–1.0 mΩ",
+            "count": 15
+          },
+          {
+            "bucket": "1.0–1.5 mΩ",
+            "count": 45
+          },
+          {
+            "bucket": "2.5–3.0 mΩ",
+            "count": 4
+          }
+        ],
+        "bySupplier": [
+          {
+            "supplier": "FAT E2E Cell and BMS Supplier",
+            "total": 64,
+            "gradeA": 48,
+            "gradeB": 12,
+            "gradeC": 0,
+            "rejected": 4,
+            "yieldPct": 94,
+            "avgCapacity": 279.38
+          }
+        ],
+        "byLot": [
+          {
+            "lotNumber": "FAT-E2E-LOT-CELL-001",
+            "supplier": "FAT E2E Cell and BMS Supplier",
+            "total": 64,
+            "gradeA": 48,
+            "rejected": 4,
+            "yieldPct": 75
+          }
+        ],
+        "matchingStats": {
+          "total": 2,
+          "allocated": 1,
+          "reserved": 0,
+          "successPct": 50
+        },
+        "refreshedAt": "2026-09-08T15:55:07.038Z"
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "GET",
+      "path": "/api/reports/quality",
+      "http_status": 200,
+      "response_body": {
+        "summary": {
+          "totalTests": 3,
+          "passed": 2,
+          "failed": 1,
+          "qcPassPct": 67,
+          "qcRejectPct": 33,
+          "firstPassYield": 67,
+          "qcApprovals": 8,
+          "qcApproved": 2,
+          "qcRejected": 1,
+          "qcApprovalPct": 25
+        },
+        "rework": {
+          "total": 1,
+          "open": 1,
+          "resolved": 0
+        },
+        "byTestType": [
+          {
+            "testType": "capacity",
+            "total": 2,
+            "passed": 1,
+            "failed": 1,
+            "passRate": 50
+          },
+          {
+            "testType": "protection",
+            "total": 1,
+            "passed": 1,
+            "failed": 0,
+            "passRate": 100
+          }
+        ],
+        "stageRejections": [
+          {
+            "stage": "quality_control",
+            "rejected": 1
+          }
+        ],
+        "topDefects": [
+          {
+            "reason": "FAT capacity result below threshold",
+            "count": 1
+          }
+        ],
+        "refreshedAt": "2026-09-08T15:55:07.046Z"
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "GET",
+      "path": "/api/reports/quality",
+      "http_status": 200,
+      "response_body": {
+        "summary": {
+          "totalTests": 3,
+          "passed": 2,
+          "failed": 1,
+          "qcPassPct": 67,
+          "qcRejectPct": 33,
+          "firstPassYield": 67,
+          "qcApprovals": 8,
+          "qcApproved": 2,
+          "qcRejected": 1,
+          "qcApprovalPct": 25
+        },
+        "rework": {
+          "total": 1,
+          "open": 1,
+          "resolved": 0
+        },
+        "byTestType": [
+          {
+            "testType": "capacity",
+            "total": 2,
+            "passed": 1,
+            "failed": 1,
+            "passRate": 50
+          },
+          {
+            "testType": "protection",
+            "total": 1,
+            "passed": 1,
+            "failed": 0,
+            "passRate": 100
+          }
+        ],
+        "stageRejections": [
+          {
+            "stage": "quality_control",
+            "rejected": 1
+          }
+        ],
+        "topDefects": [
+          {
+            "reason": "FAT capacity result below threshold",
+            "count": 1
+          }
+        ],
+        "refreshedAt": "2026-09-08T15:55:07.053Z"
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "GET",
+      "path": "/api/reports/inventory",
+      "http_status": 200,
+      "response_body": {
+        "cells": {
+          "total": 64,
+          "available": 44,
+          "allocated": 16,
+          "inProduction": 16,
+          "rejected": 4,
+          "statusBreakdown": [
+            {
+              "status": "Available",
+              "count": 44
+            },
+            {
+              "status": "In Production",
+              "count": 16
+            },
+            {
+              "status": "Rejected",
+              "count": 4
+            }
+          ],
+          "gradeBreakdown": [
+            {
+              "grade": "Grade A",
+              "count": 48
+            },
+            {
+              "grade": "Grade B",
+              "count": 12
+            },
+            {
+              "grade": "Rejected",
+              "count": 4
+            }
+          ]
+        },
+        "batteries": {
+          "total": 10,
+          "inProgress": 7,
+          "completed": 3,
+          "readyForDispatch": 2,
+          "draft": 0
+        },
+        "byLot": [
+          {
+            "lotNumber": "FAT-E2E-LOT-CELL-001",
+            "supplier": "FAT E2E Cell and BMS Supplier",
+            "receivedAt": "2026-09-08T15:54:42.064Z",
+            "total": 64,
+            "available": 44,
+            "allocated": 16,
+            "rejected": 4,
+            "utilizationPct": 31
+          }
+        ],
+        "rawMaterials": {
+          "byState": [
+            {
+              "stock_state": "rejected",
+              "total_qty": 1,
+              "material_count": 1
+            },
+            {
+              "stock_state": "available",
+              "total_qty": 65,
+              "material_count": 2
+            }
+          ],
+          "availableQty": 65
+        },
+        "finishedProducts": {
+          "total": 3,
+          "available": 1,
+          "readyForPacking": 1,
+          "packed": 0,
+          "dispatched": 1,
+          "dealerStock": 0,
+          "byStatus": [
+            {
+              "status": "ready_for_packing",
+              "count": 1
+            },
+            {
+              "status": "qc_passed",
+              "count": 1
+            },
+            {
+              "status": "dispatched",
+              "count": 1
+            }
+          ]
+        },
+        "refreshedAt": "2026-09-08T15:55:07.064Z"
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "GET",
+      "path": "/api/reports/inventory",
+      "http_status": 200,
+      "response_body": {
+        "cells": {
+          "total": 64,
+          "available": 44,
+          "allocated": 16,
+          "inProduction": 16,
+          "rejected": 4,
+          "statusBreakdown": [
+            {
+              "status": "Available",
+              "count": 44
+            },
+            {
+              "status": "In Production",
+              "count": 16
+            },
+            {
+              "status": "Rejected",
+              "count": 4
+            }
+          ],
+          "gradeBreakdown": [
+            {
+              "grade": "Grade A",
+              "count": 48
+            },
+            {
+              "grade": "Grade B",
+              "count": 12
+            },
+            {
+              "grade": "Rejected",
+              "count": 4
+            }
+          ]
+        },
+        "batteries": {
+          "total": 10,
+          "inProgress": 7,
+          "completed": 3,
+          "readyForDispatch": 2,
+          "draft": 0
+        },
+        "byLot": [
+          {
+            "lotNumber": "FAT-E2E-LOT-CELL-001",
+            "supplier": "FAT E2E Cell and BMS Supplier",
+            "receivedAt": "2026-09-08T15:54:42.064Z",
+            "total": 64,
+            "available": 44,
+            "allocated": 16,
+            "rejected": 4,
+            "utilizationPct": 31
+          }
+        ],
+        "rawMaterials": {
+          "byState": [
+            {
+              "stock_state": "rejected",
+              "total_qty": 1,
+              "material_count": 1
+            },
+            {
+              "stock_state": "available",
+              "total_qty": 65,
+              "material_count": 2
+            }
+          ],
+          "availableQty": 65
+        },
+        "finishedProducts": {
+          "total": 3,
+          "available": 1,
+          "readyForPacking": 1,
+          "packed": 0,
+          "dispatched": 1,
+          "dealerStock": 0,
+          "byStatus": [
+            {
+              "status": "ready_for_packing",
+              "count": 1
+            },
+            {
+              "status": "qc_passed",
+              "count": 1
+            },
+            {
+              "status": "dispatched",
+              "count": 1
+            }
+          ]
+        },
+        "refreshedAt": "2026-09-08T15:55:07.074Z"
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "GET",
+      "path": "/api/reports/logistics",
+      "http_status": 200,
+      "response_body": {
+        "summary": {
+          "total": 10,
+          "loadedToday": 0,
+          "dispatchedToday": 1,
+          "inTransit": 0,
+          "delivered": 1,
+          "totalBatteriesShipped": 1
+        },
+        "statusFlow": [
+          {
+            "status": "Draft",
+            "count": 9
+          },
+          {
+            "status": "Confirmed",
+            "count": 0
+          },
+          {
+            "status": "Loaded",
+            "count": 0
+          },
+          {
+            "status": "In Transit",
+            "count": 0
+          },
+          {
+            "status": "Delivered",
+            "count": 1
+          }
+        ],
+        "byDealer": [
+          {
+            "dealerName": "FAT E2E Dealer Alpha",
+            "territory": "FAT E2E Territory",
+            "total": 1,
+            "delivered": 1,
+            "inTransit": 0
+          }
+        ],
+        "byTerritory": [
+          {
+            "territory": "FAT E2E Territory",
+            "total": 1,
+            "delivered": 1
+          }
+        ],
+        "byMonth": [
+          {
+            "month": "Aug 2026",
+            "total": 8,
+            "dispatched": 0
+          },
+          {
+            "month": "Sep 2026",
+            "total": 2,
+            "dispatched": 1
+          }
+        ],
+        "refreshedAt": "2026-09-08T15:55:07.086Z"
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "GET",
+      "path": "/api/reports/logistics",
+      "http_status": 200,
+      "response_body": {
+        "summary": {
+          "total": 10,
+          "loadedToday": 0,
+          "dispatchedToday": 1,
+          "inTransit": 0,
+          "delivered": 1,
+          "totalBatteriesShipped": 1
+        },
+        "statusFlow": [
+          {
+            "status": "Draft",
+            "count": 9
+          },
+          {
+            "status": "Confirmed",
+            "count": 0
+          },
+          {
+            "status": "Loaded",
+            "count": 0
+          },
+          {
+            "status": "In Transit",
+            "count": 0
+          },
+          {
+            "status": "Delivered",
+            "count": 1
+          }
+        ],
+        "byDealer": [
+          {
+            "dealerName": "FAT E2E Dealer Alpha",
+            "territory": "FAT E2E Territory",
+            "total": 1,
+            "delivered": 1,
+            "inTransit": 0
+          }
+        ],
+        "byTerritory": [
+          {
+            "territory": "FAT E2E Territory",
+            "total": 1,
+            "delivered": 1
+          }
+        ],
+        "byMonth": [
+          {
+            "month": "Aug 2026",
+            "total": 8,
+            "dispatched": 0
+          },
+          {
+            "month": "Sep 2026",
+            "total": 2,
+            "dispatched": 1
+          }
+        ],
+        "refreshedAt": "2026-09-08T15:55:07.094Z"
+      }
+    },
+    {
+      "case_id": "RPT-P02",
+      "area": "reports",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "GET",
+      "path": "/api/dashboard/director",
+      "http_status": 200,
+      "response_body": {
+        "refreshedAt": "2026-09-08T15:55:07.098Z",
+        "kpis": {
+          "todayTarget": 6,
+          "todayCompleted": 2,
+          "productionEfficiency": 33,
+          "inProgress": 7,
+          "qcPending": 0,
+          "dispatchReady": 2,
+          "reworkQueue": 1,
+          "chargerUtilization": 25
+        },
+        "pipeline": [
+          {
+            "key": "cell_receiving",
+            "label": "Cell Receiving",
+            "href": "/cells/receiving",
+            "inProgress": 1,
+            "waiting": 0,
+            "blocked": 0,
+            "completedToday": 0,
+            "health": "green"
+          },
+          {
+            "key": "cell_grading",
+            "label": "Cell Grading",
+            "href": "/cells/grading",
+            "inProgress": 0,
+            "waiting": 0,
+            "blocked": 4,
+            "completedToday": 0,
+            "health": "yellow"
+          },
+          {
+            "key": "cell_matching",
+            "label": "Cell Matching",
+            "href": "/cells/matching",
+            "inProgress": 1,
+            "waiting": 44,
+            "blocked": 0,
+            "completedToday": 0,
+            "health": "green"
+          },
+          {
+            "key": "cell_allocation",
+            "label": "Cell Allocation",
+            "href": "/cells/inventory",
+            "inProgress": 0,
+            "waiting": 0,
+            "blocked": 0,
+            "completedToday": 4,
+            "health": "green"
+          },
+          {
+            "key": "bms_allocation",
+            "label": "BMS Installation",
+            "href": "/masters/bms",
+            "inProgress": 0,
+            "waiting": 0,
+            "blocked": 0,
+            "completedToday": 4,
+            "health": "green"
+          },
+          {
+            "key": "assembly",
+            "label": "Assembly",
+            "href": "/manufacturing/orders",
+            "inProgress": 0,
+            "waiting": 0,
+            "blocked": 0,
+            "completedToday": 4,
+            "health": "green"
+          },
+          {
+            "key": "compression",
+            "label": "Compression",
+            "href": "/manufacturing/orders",
+            "inProgress": 0,
+            "waiting": 0,
+            "blocked": 0,
+            "completedToday": 4,
+            "health": "green"
+          },
+          {
+            "key": "charging",
+            "label": "Charging",
+            "href": "/manufacturing/charging-dashboard",
+            "inProgress": 1,
+            "waiting": 3,
+            "blocked": 0,
+            "completedToday": 2,
+            "health": "green"
+          },
+          {
+            "key": "testing",
+            "label": "Testing",
+            "href": "/manufacturing/testing-dashboard",
+            "inProgress": 0,
+            "waiting": 4,
+            "blocked": 0,
+            "completedToday": 2,
+            "health": "green"
+          },
+          {
+            "key": "quality_control",
+            "label": "Quality Control",
+            "href": "/manufacturing/orders",
+            "inProgress": 0,
+            "waiting": 5,
+            "blocked": 1,
+            "completedToday": 0,
+            "health": "red"
+          },
+          {
+            "key": "packing",
+            "label": "Packing",
+            "href": "/logistics/packing-dashboard",
+            "inProgress": 0,
+            "waiting": 6,
+            "blocked": 0,
+            "completedToday": 0,
+            "health": "yellow"
+          },
+          {
+            "key": "dispatch",
+            "label": "Dispatch",
+            "href": "/logistics/dispatch-orders",
+            "inProgress": 0,
+            "waiting": 9,
+            "blocked": 0,
+            "completedToday": 1,
+            "health": "green"
+          }
+        ],
+        "alerts": [
+          {
+            "id": "cells",
+            "severity": "warning",
+            "message": "Low cell inventory: only 0 cells received/available",
+            "timestamp": "2026-09-08T15:55:07.098Z"
+          },
+          {
+            "id": "chg",
+            "severity": "warning",
+            "message": "1 charger(s) under maintenance",
+            "timestamp": "2026-09-08T15:55:07.098Z"
+          }
+        ],
+        "recentOrders": [
+          {
+            "id": "fa180000-0000-4000-8000-000000000006",
+            "orderNumber": "FAT-E2E-ORD-COMPLETE",
+            "batteryNumber": "FAT-E2E-BAT-COMPLETE",
+            "status": "in_progress",
+            "currentStage": "quality_control",
+            "priority": "high",
+            "createdAt": "2026-09-08T15:54:42.064Z",
+            "updatedAt": "2026-09-08T15:54:42.064Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8000-000000000005",
+            "orderNumber": "FAT-E2E-ORD-RACE-TWO",
+            "batteryNumber": "FAT-E2E-BAT-RACE-TWO",
+            "status": "in_progress",
+            "currentStage": "charging",
+            "priority": "high",
+            "createdAt": "2026-09-08T15:54:42.064Z",
+            "updatedAt": "2026-09-08T15:54:42.064Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8000-000000000004",
+            "orderNumber": "FAT-E2E-ORD-RACE-ONE",
+            "batteryNumber": "FAT-E2E-BAT-RACE-ONE",
+            "status": "in_progress",
+            "currentStage": "charging",
+            "priority": "high",
+            "createdAt": "2026-09-08T15:54:42.064Z",
+            "updatedAt": "2026-09-08T15:54:42.064Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8000-000000000003",
+            "orderNumber": "FAT-E2E-ORD-REJECT",
+            "batteryNumber": "FAT-E2E-BAT-REJECT",
+            "status": "in_progress",
+            "currentStage": "quality_control",
+            "priority": "high",
+            "createdAt": "2026-09-08T15:54:42.064Z",
+            "updatedAt": "2026-09-08T15:54:42.064Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8000-000000000002",
+            "orderNumber": "FAT-E2E-ORD-PACKED",
+            "batteryNumber": "FAT-E2E-BAT-PACKED",
+            "status": "completed",
+            "currentStage": "packing",
+            "priority": "high",
+            "createdAt": "2026-09-08T15:54:42.064Z",
+            "updatedAt": "2026-09-08T15:54:42.064Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8000-000000000001",
+            "orderNumber": "FAT-E2E-ORD-CLEAN",
+            "batteryNumber": "FAT-E2E-BAT-CLEAN",
+            "status": "completed",
+            "currentStage": "packing",
+            "priority": "high",
+            "createdAt": "2026-09-08T15:54:42.064Z",
+            "updatedAt": "2026-09-08T15:54:42.064Z"
+          },
+          {
+            "id": "d1700000-f017-4000-8001-000000d17002",
+            "orderNumber": "QA-ORD-H17-002",
+            "batteryNumber": "QA-BATT-H17-002",
+            "status": "in_progress",
+            "currentStage": "charging",
+            "priority": "medium",
+            "createdAt": "2026-08-10T08:22:22.749Z",
+            "updatedAt": "2026-08-10T08:27:45.583Z"
+          },
+          {
+            "id": "d1700000-f017-4000-8001-000000d17001",
+            "orderNumber": "QA-ORD-H17-001",
+            "batteryNumber": "QA-BATT-H17-001",
+            "status": "in_progress",
+            "currentStage": "charging",
+            "priority": "medium",
+            "createdAt": "2026-08-10T08:22:22.749Z",
+            "updatedAt": "2026-08-10T08:27:47.909Z"
+          },
+          {
+            "id": "d1400000-f014-4000-8001-000000d14001",
+            "orderNumber": "QA-ORD-H14-001",
+            "batteryNumber": "QA-BATT-H14-001",
+            "status": "completed",
+            "currentStage": "packing",
+            "priority": "medium",
+            "createdAt": "2026-08-10T08:22:22.749Z",
+            "updatedAt": "2026-08-10T08:27:45.583Z"
+          },
+          {
+            "id": "d1100000-f011-4000-8001-000000d11001",
+            "orderNumber": "QA-ORD-H11-001",
+            "batteryNumber": "QA-BATT-H11-001",
+            "status": "in_progress",
+            "currentStage": "assembly",
+            "priority": "medium",
+            "createdAt": "2026-08-10T08:22:22.749Z",
+            "updatedAt": "2026-08-10T08:27:45.583Z"
+          }
+        ],
+        "operatorActivity": [
+          {
+            "operatorName": "QA-H17-Operator",
+            "stage": "charging",
+            "lastActivity": "2026-08-10 08:27:47.904+00",
+            "batteriesCompletedToday": 0
+          }
+        ],
+        "equipmentStatus": {
+          "chargers": {
+            "total": 4,
+            "available": 2,
+            "busy": 1,
+            "maintenance": 1
+          },
+          "testEquipment": {
+            "total": 1,
+            "available": 1,
+            "busy": 0,
+            "maintenance": 0
+          }
+        },
+        "qualitySummary": {
+          "passRate": 50,
+          "rejectRate": 50,
+          "testPassCount": 2,
+          "testFailCount": 1,
+          "sampleCount": 2
+        },
+        "logistics": {
+          "readyForDispatch": 2,
+          "inTransit": 0,
+          "deliveredToday": 1,
+          "totalDealers": 4,
+          "ordersByStatus": {
+            "draft": "9",
+            "confirmed": "0",
+            "loaded": "0",
+            "inTransit": "0",
+            "delivered": "1"
+          }
+        },
+        "cellInventory": {
+          "total": 64,
+          "received": 0,
+          "grading": 0,
+          "approved": 44,
+          "reserved": 0,
+          "allocated": 16,
+          "rejected": 4,
+          "quarantine": 0
+        },
+        "orderStats": {
+          "total": 10,
+          "inProgress": 7,
+          "completed": 3,
+          "draft": 0
+        }
+      }
+    },
+    {
+      "case_id": "RPT-P02",
+      "area": "reports",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "GET",
+      "path": "/api/dashboard/director",
+      "http_status": 200,
+      "response_body": {
+        "refreshedAt": "2026-09-08T15:55:07.143Z",
+        "kpis": {
+          "todayTarget": 6,
+          "todayCompleted": 2,
+          "productionEfficiency": 33,
+          "inProgress": 7,
+          "qcPending": 0,
+          "dispatchReady": 2,
+          "reworkQueue": 1,
+          "chargerUtilization": 25
+        },
+        "pipeline": [
+          {
+            "key": "cell_receiving",
+            "label": "Cell Receiving",
+            "href": "/cells/receiving",
+            "inProgress": 1,
+            "waiting": 0,
+            "blocked": 0,
+            "completedToday": 0,
+            "health": "green"
+          },
+          {
+            "key": "cell_grading",
+            "label": "Cell Grading",
+            "href": "/cells/grading",
+            "inProgress": 0,
+            "waiting": 0,
+            "blocked": 4,
+            "completedToday": 0,
+            "health": "yellow"
+          },
+          {
+            "key": "cell_matching",
+            "label": "Cell Matching",
+            "href": "/cells/matching",
+            "inProgress": 1,
+            "waiting": 44,
+            "blocked": 0,
+            "completedToday": 0,
+            "health": "green"
+          },
+          {
+            "key": "cell_allocation",
+            "label": "Cell Allocation",
+            "href": "/cells/inventory",
+            "inProgress": 0,
+            "waiting": 0,
+            "blocked": 0,
+            "completedToday": 4,
+            "health": "green"
+          },
+          {
+            "key": "bms_allocation",
+            "label": "BMS Installation",
+            "href": "/masters/bms",
+            "inProgress": 0,
+            "waiting": 0,
+            "blocked": 0,
+            "completedToday": 4,
+            "health": "green"
+          },
+          {
+            "key": "assembly",
+            "label": "Assembly",
+            "href": "/manufacturing/orders",
+            "inProgress": 0,
+            "waiting": 0,
+            "blocked": 0,
+            "completedToday": 4,
+            "health": "green"
+          },
+          {
+            "key": "compression",
+            "label": "Compression",
+            "href": "/manufacturing/orders",
+            "inProgress": 0,
+            "waiting": 0,
+            "blocked": 0,
+            "completedToday": 4,
+            "health": "green"
+          },
+          {
+            "key": "charging",
+            "label": "Charging",
+            "href": "/manufacturing/charging-dashboard",
+            "inProgress": 1,
+            "waiting": 3,
+            "blocked": 0,
+            "completedToday": 2,
+            "health": "green"
+          },
+          {
+            "key": "testing",
+            "label": "Testing",
+            "href": "/manufacturing/testing-dashboard",
+            "inProgress": 0,
+            "waiting": 4,
+            "blocked": 0,
+            "completedToday": 2,
+            "health": "green"
+          },
+          {
+            "key": "quality_control",
+            "label": "Quality Control",
+            "href": "/manufacturing/orders",
+            "inProgress": 0,
+            "waiting": 5,
+            "blocked": 1,
+            "completedToday": 0,
+            "health": "red"
+          },
+          {
+            "key": "packing",
+            "label": "Packing",
+            "href": "/logistics/packing-dashboard",
+            "inProgress": 0,
+            "waiting": 6,
+            "blocked": 0,
+            "completedToday": 0,
+            "health": "yellow"
+          },
+          {
+            "key": "dispatch",
+            "label": "Dispatch",
+            "href": "/logistics/dispatch-orders",
+            "inProgress": 0,
+            "waiting": 9,
+            "blocked": 0,
+            "completedToday": 1,
+            "health": "green"
+          }
+        ],
+        "alerts": [
+          {
+            "id": "cells",
+            "severity": "warning",
+            "message": "Low cell inventory: only 0 cells received/available",
+            "timestamp": "2026-09-08T15:55:07.143Z"
+          },
+          {
+            "id": "chg",
+            "severity": "warning",
+            "message": "1 charger(s) under maintenance",
+            "timestamp": "2026-09-08T15:55:07.143Z"
+          }
+        ],
+        "recentOrders": [
+          {
+            "id": "fa180000-0000-4000-8000-000000000006",
+            "orderNumber": "FAT-E2E-ORD-COMPLETE",
+            "batteryNumber": "FAT-E2E-BAT-COMPLETE",
+            "status": "in_progress",
+            "currentStage": "quality_control",
+            "priority": "high",
+            "createdAt": "2026-09-08T15:54:42.064Z",
+            "updatedAt": "2026-09-08T15:54:42.064Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8000-000000000005",
+            "orderNumber": "FAT-E2E-ORD-RACE-TWO",
+            "batteryNumber": "FAT-E2E-BAT-RACE-TWO",
+            "status": "in_progress",
+            "currentStage": "charging",
+            "priority": "high",
+            "createdAt": "2026-09-08T15:54:42.064Z",
+            "updatedAt": "2026-09-08T15:54:42.064Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8000-000000000004",
+            "orderNumber": "FAT-E2E-ORD-RACE-ONE",
+            "batteryNumber": "FAT-E2E-BAT-RACE-ONE",
+            "status": "in_progress",
+            "currentStage": "charging",
+            "priority": "high",
+            "createdAt": "2026-09-08T15:54:42.064Z",
+            "updatedAt": "2026-09-08T15:54:42.064Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8000-000000000003",
+            "orderNumber": "FAT-E2E-ORD-REJECT",
+            "batteryNumber": "FAT-E2E-BAT-REJECT",
+            "status": "in_progress",
+            "currentStage": "quality_control",
+            "priority": "high",
+            "createdAt": "2026-09-08T15:54:42.064Z",
+            "updatedAt": "2026-09-08T15:54:42.064Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8000-000000000002",
+            "orderNumber": "FAT-E2E-ORD-PACKED",
+            "batteryNumber": "FAT-E2E-BAT-PACKED",
+            "status": "completed",
+            "currentStage": "packing",
+            "priority": "high",
+            "createdAt": "2026-09-08T15:54:42.064Z",
+            "updatedAt": "2026-09-08T15:54:42.064Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8000-000000000001",
+            "orderNumber": "FAT-E2E-ORD-CLEAN",
+            "batteryNumber": "FAT-E2E-BAT-CLEAN",
+            "status": "completed",
+            "currentStage": "packing",
+            "priority": "high",
+            "createdAt": "2026-09-08T15:54:42.064Z",
+            "updatedAt": "2026-09-08T15:54:42.064Z"
+          },
+          {
+            "id": "d1700000-f017-4000-8001-000000d17002",
+            "orderNumber": "QA-ORD-H17-002",
+            "batteryNumber": "QA-BATT-H17-002",
+            "status": "in_progress",
+            "currentStage": "charging",
+            "priority": "medium",
+            "createdAt": "2026-08-10T08:22:22.749Z",
+            "updatedAt": "2026-08-10T08:27:45.583Z"
+          },
+          {
+            "id": "d1700000-f017-4000-8001-000000d17001",
+            "orderNumber": "QA-ORD-H17-001",
+            "batteryNumber": "QA-BATT-H17-001",
+            "status": "in_progress",
+            "currentStage": "charging",
+            "priority": "medium",
+            "createdAt": "2026-08-10T08:22:22.749Z",
+            "updatedAt": "2026-08-10T08:27:47.909Z"
+          },
+          {
+            "id": "d1400000-f014-4000-8001-000000d14001",
+            "orderNumber": "QA-ORD-H14-001",
+            "batteryNumber": "QA-BATT-H14-001",
+            "status": "completed",
+            "currentStage": "packing",
+            "priority": "medium",
+            "createdAt": "2026-08-10T08:22:22.749Z",
+            "updatedAt": "2026-08-10T08:27:45.583Z"
+          },
+          {
+            "id": "d1100000-f011-4000-8001-000000d11001",
+            "orderNumber": "QA-ORD-H11-001",
+            "batteryNumber": "QA-BATT-H11-001",
+            "status": "in_progress",
+            "currentStage": "assembly",
+            "priority": "medium",
+            "createdAt": "2026-08-10T08:22:22.749Z",
+            "updatedAt": "2026-08-10T08:27:45.583Z"
+          }
+        ],
+        "operatorActivity": [
+          {
+            "operatorName": "QA-H17-Operator",
+            "stage": "charging",
+            "lastActivity": "2026-08-10 08:27:47.904+00",
+            "batteriesCompletedToday": 0
+          }
+        ],
+        "equipmentStatus": {
+          "chargers": {
+            "total": 4,
+            "available": 2,
+            "busy": 1,
+            "maintenance": 1
+          },
+          "testEquipment": {
+            "total": 1,
+            "available": 1,
+            "busy": 0,
+            "maintenance": 0
+          }
+        },
+        "qualitySummary": {
+          "passRate": 50,
+          "rejectRate": 50,
+          "testPassCount": 2,
+          "testFailCount": 1,
+          "sampleCount": 2
+        },
+        "logistics": {
+          "readyForDispatch": 2,
+          "inTransit": 0,
+          "deliveredToday": 1,
+          "totalDealers": 4,
+          "ordersByStatus": {
+            "draft": "9",
+            "confirmed": "0",
+            "loaded": "0",
+            "inTransit": "0",
+            "delivered": "1"
+          }
+        },
+        "cellInventory": {
+          "total": 64,
+          "received": 0,
+          "grading": 0,
+          "approved": 44,
+          "reserved": 0,
+          "allocated": 16,
+          "rejected": 4,
+          "quarantine": 0
+        },
+        "orderStats": {
+          "total": 10,
+          "inProgress": 7,
+          "completed": 3,
+          "draft": 0
+        }
+      }
+    },
+    {
+      "case_id": "RPT-N01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "actor_alias": "fat.operator@fat.local",
+      "method": "GET",
+      "path": "/api/reports/executive",
+      "http_status": 403,
+      "response_body": {
+        "error": "Access denied. Required role: director or supervisor"
+      }
+    },
+    {
+      "case_id": "RPT-N01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "GET",
+      "path": "/api/reports/executive",
+      "http_status": 403,
+      "response_body": {
+        "error": "Access denied. Required role: director or supervisor"
+      }
+    },
+    {
+      "case_id": "RPT-N01",
+      "area": "reports",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "GET",
+      "path": "/api/reports/executive",
+      "http_status": 403,
+      "response_body": {
+        "error": "Access denied. Dealer accounts cannot access factory modules."
+      }
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/executive",
+      "http_status": 0,
+      "response_body": {
+        "expected": 3,
+        "actual": 3
+      },
+      "note": "Executive production total must equal completed orders."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/executive",
+      "http_status": 0,
+      "response_body": {
+        "expected": 7,
+        "actual": 7
+      },
+      "note": "Executive in-progress orders must equal the production-order source."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/executive",
+      "http_status": 0,
+      "response_body": {
+        "expected": 64,
+        "actual": 64
+      },
+      "note": "Executive cell total must equal the cells source."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/executive",
+      "http_status": 0,
+      "response_body": {
+        "expected": 10,
+        "actual": 10
+      },
+      "note": "Executive shipment total must equal dispatch orders."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/quality",
+      "http_status": 0,
+      "response_body": {
+        "expected": 3,
+        "actual": 3
+      },
+      "note": "Quality test total must equal test-result rows."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/quality",
+      "http_status": 0,
+      "response_body": {
+        "expected": 2,
+        "actual": 2
+      },
+      "note": "Quality pass count must equal passed test-result rows."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/quality",
+      "http_status": 0,
+      "response_body": {
+        "expected": 1,
+        "actual": 1
+      },
+      "note": "Quality fail count must equal failed test-result rows."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/quality",
+      "http_status": 0,
+      "response_body": {
+        "expected": 8,
+        "actual": 8
+      },
+      "note": "Quality-control stage count must equal QC stage rows."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/inventory",
+      "http_status": 0,
+      "response_body": {
+        "expected": 64,
+        "actual": 64
+      },
+      "note": "Inventory cell total must equal the cells source."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/inventory",
+      "http_status": 0,
+      "response_body": {
+        "expected": 44,
+        "actual": 44
+      },
+      "note": "Inventory available cells must equal approved cells."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/inventory",
+      "http_status": 0,
+      "response_body": {
+        "expected": 16,
+        "actual": 16
+      },
+      "note": "Inventory allocated cells must equal allocated cells."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/inventory",
+      "http_status": 0,
+      "response_body": {
+        "expected": 10,
+        "actual": 10
+      },
+      "note": "Inventory battery total must equal production orders."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/inventory",
+      "http_status": 0,
+      "response_body": {
+        "expected": 3,
+        "actual": 3
+      },
+      "note": "Inventory finished-product total must equal products."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/logistics",
+      "http_status": 0,
+      "response_body": {
+        "expected": 10,
+        "actual": 10
+      },
+      "note": "Logistics shipment total must equal dispatch orders."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/logistics",
+      "http_status": 0,
+      "response_body": {
+        "expected": 0,
+        "actual": 0
+      },
+      "note": "Logistics in-transit total must equal dispatch status rows."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/logistics",
+      "http_status": 0,
+      "response_body": {
+        "expected": 1,
+        "actual": 1
+      },
+      "note": "Logistics delivered total must equal dispatch status rows."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/logistics",
+      "http_status": 0,
+      "response_body": {
+        "expected": 1,
+        "actual": 1
+      },
+      "note": "Logistics shipped-item total must equal dispatched/delivered items."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/cells",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "total": 64,
+          "gradeA": 48,
+          "rejected": 4
+        },
+        "actual": {
+          "lotNumber": "FAT-E2E-LOT-CELL-001",
+          "supplier": "FAT E2E Cell and BMS Supplier",
+          "total": 64,
+          "gradeA": 48,
+          "rejected": 4,
+          "yieldPct": 75
+        }
+      },
+      "note": "The FAT lot must retain the manifest cell count and controlled grading split."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/inventory",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "total": 64,
+          "available": 44,
+          "allocated": 16,
+          "rejected": 4
+        },
+        "actual": {
+          "lotNumber": "FAT-E2E-LOT-CELL-001",
+          "supplier": "FAT E2E Cell and BMS Supplier",
+          "receivedAt": "2026-09-08T15:54:42.064Z",
+          "total": 64,
+          "available": 44,
+          "allocated": 16,
+          "rejected": 4,
+          "utilizationPct": 31
+        }
+      },
+      "note": "The inventory report must preserve the FAT lot availability projection."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/production",
+      "http_status": 0,
+      "response_body": {
+        "expected": "at least 6 controlled orders in the date window",
+        "actual": 10
+      },
+      "note": "Production report date buckets must include every FAT production order."
+    },
+    {
+      "case_id": "RPT-P01",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/reports/production",
+      "http_status": 0,
+      "response_body": {
+        "expected": "at least 2 controlled completed orders",
+        "actual": 3
+      },
+      "note": "Production report completed buckets must include the two seeded completed orders."
+    },
+    {
+      "case_id": "RPT-P02",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/dashboard/director",
+      "http_status": 0,
+      "response_body": {
+        "expected": 10,
+        "actual": 10
+      },
+      "note": "Dashboard order total must equal the production-order source."
+    },
+    {
+      "case_id": "RPT-P02",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/dashboard/director",
+      "http_status": 0,
+      "response_body": {
+        "expected": 64,
+        "actual": 64
+      },
+      "note": "Dashboard cell total must equal the cells source."
+    },
+    {
+      "case_id": "RPT-P02",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/dashboard/director",
+      "http_status": 0,
+      "response_body": {
+        "expected": 4,
+        "actual": 4
+      },
+      "note": "Dashboard charger total must equal charger-unit rows."
+    },
+    {
+      "case_id": "RPT-P02",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/dashboard/director",
+      "http_status": 0,
+      "response_body": {
+        "expected": 2,
+        "actual": 2
+      },
+      "note": "Dashboard quality pass count must equal test-result rows."
+    },
+    {
+      "case_id": "RPT-P02",
+      "area": "reports-reconciliation",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/dashboard/director",
+      "http_status": 0,
+      "response_body": {
+        "expected": 4,
+        "actual": 4
+      },
+      "note": "Dashboard dealer count must equal dealer-master rows."
+    },
+    {
+      "case_id": "PORTAL-P01",
+      "area": "dealer-portal",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "GET",
+      "path": "/api/dealers/fa120000-0000-4000-8000-000000000001/inventory",
+      "http_status": 200,
+      "response_body": {
+        "dealer": {
+          "id": "fa120000-0000-4000-8000-000000000001",
+          "dealerCode": "FAT-E2E-DLR-A",
+          "dealerName": "FAT E2E Dealer Alpha",
+          "status": "active"
+        },
+        "total": 1,
+        "items": [
+          {
+            "id": "fa190000-0000-4000-8000-000000000001",
+            "category_id": "fa130000-0000-4000-8000-000000000001",
+            "model_id": "fa130000-0000-4000-8000-000000000011",
+            "workflow_code": "FAT-E2E-BATTERY-WORKFLOW",
+            "source_production_order_id": "fa180000-0000-4000-8000-000000000001",
+            "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+            "serial_source": "OCS",
+            "qc_status": "approved",
+            "product_status": "dispatched",
+            "current_location": "FAT E2E Dealer Alpha",
+            "dealer_id": "fa120000-0000-4000-8000-000000000001",
+            "manufacturing_completed_at": "2026-09-08T15:54:42.049Z",
+            "created_at": "2026-09-08T15:54:42.064Z",
+            "updated_at": "2026-09-08T15:54:42.064Z",
+            "category_name": "FAT E2E Battery Pack",
+            "model_code": "FAT-E2E-MODEL-16S280",
+            "model_name": "FAT E2E 16S 280Ah Battery Pack",
+            "dealer_name": "FAT E2E Dealer Alpha"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "PORTAL-P01",
+      "area": "dealer-portal",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "GET",
+      "path": "/api/dealers/fa120000-0000-4000-8000-000000000001/dispatch-history",
+      "http_status": 200,
+      "response_body": {
+        "dealer": {
+          "id": "fa120000-0000-4000-8000-000000000001",
+          "dealerCode": "FAT-E2E-DLR-A",
+          "dealerName": "FAT E2E Dealer Alpha",
+          "status": "active"
+        },
+        "total": 1,
+        "items": [
+          {
+            "event_id": "1a46e263-367e-4431-b9e7-5b26906522f1",
+            "product_id": "fa190000-0000-4000-8000-000000000001",
+            "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+            "category_name": "FAT E2E Battery Pack",
+            "model_name": "FAT E2E 16S 280Ah Battery Pack",
+            "dispatch_number": null,
+            "dispatch_date": null,
+            "invoice_number": null,
+            "dispatched_at": "2026-09-08T15:54:42.064Z",
+            "actor": "fat.director@fat.local"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "PORTAL-P02",
+      "area": "dealer-portal",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "GET",
+      "path": "/api/dealers/fa120000-0000-4000-8000-000000000001/inventory",
+      "http_status": 200,
+      "response_body": {
+        "dealer": {
+          "id": "fa120000-0000-4000-8000-000000000001",
+          "dealerCode": "FAT-E2E-DLR-A",
+          "dealerName": "FAT E2E Dealer Alpha",
+          "status": "active"
+        },
+        "total": 1,
+        "items": [
+          {
+            "id": "fa190000-0000-4000-8000-000000000001",
+            "category_id": "fa130000-0000-4000-8000-000000000001",
+            "model_id": "fa130000-0000-4000-8000-000000000011",
+            "workflow_code": "FAT-E2E-BATTERY-WORKFLOW",
+            "source_production_order_id": "fa180000-0000-4000-8000-000000000001",
+            "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+            "serial_source": "OCS",
+            "qc_status": "approved",
+            "product_status": "dispatched",
+            "current_location": "FAT E2E Dealer Alpha",
+            "dealer_id": "fa120000-0000-4000-8000-000000000001",
+            "manufacturing_completed_at": "2026-09-08T15:54:42.049Z",
+            "created_at": "2026-09-08T15:54:42.064Z",
+            "updated_at": "2026-09-08T15:54:42.064Z",
+            "category_name": "FAT E2E Battery Pack",
+            "model_code": "FAT-E2E-MODEL-16S280",
+            "model_name": "FAT E2E 16S 280Ah Battery Pack",
+            "dealer_name": "FAT E2E Dealer Alpha"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "PORTAL-N01",
+      "area": "dealer-portal",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "GET",
+      "path": "/api/dealers/00000000-0000-0000-0000-000000000002/inventory",
+      "http_status": 403,
+      "response_body": {
+        "error": "Access denied: not your dealership"
+      }
+    },
+    {
+      "case_id": "PORTAL-P01",
+      "area": "dealer-portal",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "ASSERT",
+      "path": "/api/dealers/fa120000-0000-4000-8000-000000000001/inventory",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "total": 1,
+          "productId": "fa190000-0000-4000-8000-000000000001"
+        },
+        "actual": {
+          "dealer": {
+            "id": "fa120000-0000-4000-8000-000000000001",
+            "dealerCode": "FAT-E2E-DLR-A",
+            "dealerName": "FAT E2E Dealer Alpha",
+            "status": "active"
+          },
+          "total": 1,
+          "items": [
+            {
+              "id": "fa190000-0000-4000-8000-000000000001",
+              "category_id": "fa130000-0000-4000-8000-000000000001",
+              "model_id": "fa130000-0000-4000-8000-000000000011",
+              "workflow_code": "FAT-E2E-BATTERY-WORKFLOW",
+              "source_production_order_id": "fa180000-0000-4000-8000-000000000001",
+              "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+              "serial_source": "OCS",
+              "qc_status": "approved",
+              "product_status": "dispatched",
+              "current_location": "FAT E2E Dealer Alpha",
+              "dealer_id": "fa120000-0000-4000-8000-000000000001",
+              "manufacturing_completed_at": "2026-09-08T15:54:42.049Z",
+              "created_at": "2026-09-08T15:54:42.064Z",
+              "updated_at": "2026-09-08T15:54:42.064Z",
+              "category_name": "FAT E2E Battery Pack",
+              "model_code": "FAT-E2E-MODEL-16S280",
+              "model_name": "FAT E2E 16S 280Ah Battery Pack",
+              "dealer_name": "FAT E2E Dealer Alpha"
+            }
+          ]
+        }
+      },
+      "note": "Dealer inventory must expose exactly the controlled product and no other dealer's rows."
+    },
+    {
+      "case_id": "PORTAL-P01",
+      "area": "dealer-portal",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "ASSERT",
+      "path": "/api/dealers/fa120000-0000-4000-8000-000000000001/dispatch-history",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "total": 1,
+          "productId": "fa190000-0000-4000-8000-000000000001"
+        },
+        "actual": {
+          "dealer": {
+            "id": "fa120000-0000-4000-8000-000000000001",
+            "dealerCode": "FAT-E2E-DLR-A",
+            "dealerName": "FAT E2E Dealer Alpha",
+            "status": "active"
+          },
+          "total": 1,
+          "items": [
+            {
+              "event_id": "1a46e263-367e-4431-b9e7-5b26906522f1",
+              "product_id": "fa190000-0000-4000-8000-000000000001",
+              "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+              "category_name": "FAT E2E Battery Pack",
+              "model_name": "FAT E2E 16S 280Ah Battery Pack",
+              "dispatch_number": null,
+              "dispatch_date": null,
+              "invoice_number": null,
+              "dispatched_at": "2026-09-08T15:54:42.064Z",
+              "actor": "fat.director@fat.local"
+            }
+          ]
+        }
+      },
+      "note": "Dealer dispatch history must expose the controlled dispatched product."
+    },
+    {
+      "case_id": "WAR-P01",
+      "area": "customer-warranty",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "GET",
+      "path": "/api/warranties",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "id": "fa1a0000-0000-4000-8000-000000000004",
+            "warranty_number": "FAT-E2E-WARRANTY-001",
+            "product_id": "fa190000-0000-4000-8000-000000000001",
+            "registration_id": "fa1a0000-0000-4000-8000-000000000003",
+            "start_date": "2026-09-08",
+            "period_months": 60,
+            "end_date": "2031-09-08",
+            "voided_at": null,
+            "void_reason": null,
+            "voided_by": null,
+            "created_at": "2026-09-08T15:54:42.064Z",
+            "updated_at": "2026-09-08T15:54:42.064Z",
+            "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+            "customer_name": "FAT E2E Customer",
+            "category_name": "FAT E2E Battery Pack",
+            "model_name": "FAT E2E 16S 280Ah Battery Pack",
+            "status": "active"
+          }
+        ],
+        "meta": {
+          "total": 1,
+          "page": 1,
+          "pageSize": 50
+        }
+      }
+    },
+    {
+      "case_id": "WAR-P01",
+      "area": "customer-warranty",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "GET",
+      "path": "/api/warranties/fa1a0000-0000-4000-8000-000000000004",
+      "http_status": 200,
+      "response_body": {
+        "id": "fa1a0000-0000-4000-8000-000000000004",
+        "warranty_number": "FAT-E2E-WARRANTY-001",
+        "product_id": "fa190000-0000-4000-8000-000000000001",
+        "registration_id": "fa1a0000-0000-4000-8000-000000000003",
+        "start_date": "2026-09-08",
+        "period_months": 60,
+        "end_date": "2031-09-08",
+        "voided_at": null,
+        "void_reason": null,
+        "voided_by": null,
+        "created_at": "2026-09-08T15:54:42.064Z",
+        "updated_at": "2026-09-08T15:54:42.064Z",
+        "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+        "customer_name": "FAT E2E Customer",
+        "category_name": "FAT E2E Battery Pack",
+        "model_name": "FAT E2E 16S 280Ah Battery Pack",
+        "status": "active"
+      }
+    },
+    {
+      "case_id": "WAR-N01",
+      "area": "customer-warranty",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "GET",
+      "path": "/api/warranties",
+      "http_status": 403,
+      "response_body": {
+        "error": "Access denied. Dealer accounts cannot access factory modules."
+      }
+    },
+    {
+      "case_id": "WAR-P01",
+      "area": "customer-warranty",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "ASSERT",
+      "path": "/api/warranties",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "warrantyId": "fa1a0000-0000-4000-8000-000000000004"
+        },
+        "actual": {
+          "items": [
+            {
+              "id": "fa1a0000-0000-4000-8000-000000000004",
+              "warranty_number": "FAT-E2E-WARRANTY-001",
+              "product_id": "fa190000-0000-4000-8000-000000000001",
+              "registration_id": "fa1a0000-0000-4000-8000-000000000003",
+              "start_date": "2026-09-08",
+              "period_months": 60,
+              "end_date": "2031-09-08",
+              "voided_at": null,
+              "void_reason": null,
+              "voided_by": null,
+              "created_at": "2026-09-08T15:54:42.064Z",
+              "updated_at": "2026-09-08T15:54:42.064Z",
+              "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+              "customer_name": "FAT E2E Customer",
+              "category_name": "FAT E2E Battery Pack",
+              "model_name": "FAT E2E 16S 280Ah Battery Pack",
+              "status": "active"
+            }
+          ],
+          "meta": {
+            "total": 1,
+            "page": 1,
+            "pageSize": 50
+          }
+        }
+      },
+      "note": "Factory read access must include the controlled warranty record."
+    },
+    {
+      "case_id": "WAR-P01",
+      "area": "customer-warranty",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "ASSERT",
+      "path": "/api/warranties/fa1a0000-0000-4000-8000-000000000004",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "warrantyId": "fa1a0000-0000-4000-8000-000000000004",
+          "productId": "fa190000-0000-4000-8000-000000000001"
+        },
+        "actual": {
+          "id": "fa1a0000-0000-4000-8000-000000000004",
+          "warranty_number": "FAT-E2E-WARRANTY-001",
+          "product_id": "fa190000-0000-4000-8000-000000000001",
+          "registration_id": "fa1a0000-0000-4000-8000-000000000003",
+          "start_date": "2026-09-08",
+          "period_months": 60,
+          "end_date": "2031-09-08",
+          "voided_at": null,
+          "void_reason": null,
+          "voided_by": null,
+          "created_at": "2026-09-08T15:54:42.064Z",
+          "updated_at": "2026-09-08T15:54:42.064Z",
+          "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+          "customer_name": "FAT E2E Customer",
+          "category_name": "FAT E2E Battery Pack",
+          "model_name": "FAT E2E 16S 280Ah Battery Pack",
+          "status": "active"
+        }
+      },
+      "note": "Warranty detail must resolve to the controlled serialized product."
+    }
+  ]
+}

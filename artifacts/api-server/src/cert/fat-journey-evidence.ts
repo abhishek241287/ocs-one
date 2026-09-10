@@ -7,10 +7,11 @@
  * never written to evidence. Set FAT_EVIDENCE_DIR to change the output dir.
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
-import { actorEmail, FAT_IDS, FAT_PREFIX } from "./fat-fixture-manifest";
+import { pool } from "@workspace/db";
+import { actorEmail, FAT_IDS, FAT_MANIFEST_PATH, FAT_PREFIX } from "./fat-fixture-manifest";
 
 const BASE = process.env.CERT_TARGET ?? "http://localhost:8080";
 const PASSWORD = process.env.FAT_TEST_PASSWORD;
@@ -123,6 +124,48 @@ async function request(
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function numberAt(value: unknown, path: string): number | null {
+  const result = path.split(".").reduce<unknown>((current, key) => (
+    isRecord(current) ? current[key] : undefined
+  ), value);
+  return typeof result === "number" ? result : null;
+}
+
+function rowsAt(value: unknown, path: string): Array<Record<string, unknown>> {
+  const result = path.split(".").reduce<unknown>((current, key) => (
+    isRecord(current) ? current[key] : undefined
+  ), value);
+  return Array.isArray(result) ? result.filter(isRecord) : [];
+}
+
+function assertCheck(
+  caseId: string,
+  area: string,
+  role: Role,
+  path: string,
+  passed: boolean,
+  expected: unknown,
+  actual: unknown,
+  note: string,
+): void {
+  if (!passed) failures += 1;
+  evidence.push({
+    case_id: caseId,
+    area,
+    result: passed ? "PASS" : "FAIL",
+    ...actor(role),
+    method: "ASSERT",
+    path,
+    http_status: 0,
+    response_body: { expected: redact(expected), actual: redact(actual) },
+    note,
+  });
+}
+
 async function login(role: Role, caseId = "AUTH-P01"): Promise<void> {
   const result = await request(caseId, "authentication", role, "POST", "/api/auth/login", {
     body: { email: actorEmail(role), password: PASSWORD },
@@ -131,8 +174,9 @@ async function login(role: Role, caseId = "AUTH-P01"): Promise<void> {
   if (result.cookie) tokens.set(role, result.cookie);
 }
 
-async function get(caseId: string, area: string, role: Role, path: string, expected: number | number[] = 200): Promise<void> {
-  await request(caseId, area, role, "GET", path, { expected });
+async function get(caseId: string, area: string, role: Role, path: string, expected: number | number[] = 200): Promise<unknown> {
+  const result = await request(caseId, area, role, "GET", path, { expected });
+  return result.body;
 }
 
 async function post(
@@ -354,14 +398,144 @@ async function runFulfillmentAndTraceability(): Promise<void> {
 }
 
 async function runReportsAndDashboard(): Promise<void> {
+  const manifest = JSON.parse(await readFile(FAT_MANIFEST_PATH, "utf8")) as {
+    recordCounts: Record<string, number>;
+    expectations: Record<string, number | boolean>;
+    residualCounts: Record<string, number>;
+  };
+  const reportBodies = new Map<string, unknown>();
   for (const report of ["executive", "production", "cells", "quality", "inventory", "logistics"]) {
-    await get("RPT-P01", "reports", "director", `/api/reports/${report}`);
+    reportBodies.set(report, await get("RPT-P01", "reports", "director", `/api/reports/${report}`));
     await get("RPT-P01", "reports", "supervisor", `/api/reports/${report}`);
   }
-  await get("RPT-P02", "reports", "director", "/api/dashboard/director");
+  const dashboard = await get("RPT-P02", "reports", "director", "/api/dashboard/director");
+  await get("RPT-P02", "reports", "viewer", "/api/dashboard/director");
   await get("RPT-N01", "reports", "operator", "/api/reports/executive", 403);
   await get("RPT-N01", "reports", "viewer", "/api/reports/executive", 403);
   await get("RPT-N01", "reports", "dealer", "/api/reports/executive", 403);
+
+  const [source] = (await pool.query(`
+    SELECT
+      (SELECT count(*)::int FROM mfg_production_orders) AS orders_total,
+      (SELECT count(*)::int FROM mfg_production_orders WHERE status = 'in_progress') AS orders_in_progress,
+      (SELECT count(*)::int FROM mfg_production_orders WHERE status = 'completed') AS orders_completed,
+      (SELECT count(*)::int FROM mfg_production_orders WHERE status = 'draft') AS orders_draft,
+      (SELECT count(*)::int FROM cells) AS cells_total,
+      (SELECT count(*)::int FROM cells WHERE status = 'approved') AS cells_approved,
+      (SELECT count(*)::int FROM cells WHERE status = 'allocated') AS cells_allocated,
+      (SELECT count(*)::int FROM cells WHERE grade = 'A') AS cells_grade_a,
+      (SELECT count(*)::int FROM cells WHERE grade = 'B') AS cells_grade_b,
+      (SELECT count(*)::int FROM cells WHERE grade = 'C') AS cells_grade_c,
+      (SELECT count(*)::int FROM cells WHERE grade = 'reject') AS cells_rejected,
+      (SELECT count(*)::int FROM mfg_test_results) AS tests_total,
+      (SELECT count(*)::int FROM mfg_test_results WHERE result = 'pass') AS tests_passed,
+      (SELECT count(*)::int FROM mfg_test_results WHERE result = 'fail') AS tests_failed,
+      (SELECT count(*)::int FROM mfg_order_stages WHERE stage_type = 'quality_control') AS qc_total,
+      (SELECT count(*)::int FROM mfg_order_stages WHERE stage_type = 'quality_control' AND status = 'approved') AS qc_approved,
+      (SELECT count(*)::int FROM mfg_order_stages WHERE stage_type = 'quality_control' AND status = 'rejected') AS qc_rejected,
+      (SELECT count(*)::int FROM mfg_rework_tickets) AS rework_total,
+      (SELECT count(*)::int FROM mfg_rework_tickets WHERE status = 'open') AS rework_open,
+      (SELECT count(*)::int FROM logistics_dispatch_orders) AS dispatch_total,
+      (SELECT count(*)::int FROM logistics_dispatch_orders WHERE status = 'in_transit') AS dispatch_in_transit,
+      (SELECT count(*)::int FROM logistics_dispatch_orders WHERE status = 'delivered') AS dispatch_delivered,
+      (SELECT count(*)::int FROM logistics_dispatch_items i
+        INNER JOIN logistics_dispatch_orders d ON d.id = i.dispatch_order_id
+        WHERE d.status IN ('in_transit', 'delivered')) AS shipped_items,
+      (SELECT count(*)::int FROM products) AS products_total,
+      (SELECT count(*)::int FROM mfg_charger_units) AS chargers_total,
+      (SELECT count(*)::int FROM mfg_charger_units WHERE status = 'available') AS chargers_available,
+      (SELECT count(*)::int FROM mfg_charger_units WHERE status = 'busy') AS chargers_busy,
+      (SELECT count(*)::int FROM mfg_charger_units WHERE status = 'maintenance') AS chargers_maintenance,
+      (SELECT count(*)::int FROM logistics_dealers) AS dealers_total
+  `)).rows;
+
+  const executive = reportBodies.get("executive");
+  const quality = reportBodies.get("quality");
+  const cells = reportBodies.get("cells");
+  const inventory = reportBodies.get("inventory");
+  const logistics = reportBodies.get("logistics");
+
+  const sourceCount = (key: string): number => Number(source?.[key] ?? -1);
+  const compare = (caseId: string, role: Role, path: string, actual: unknown, expected: unknown, note: string) => {
+    assertCheck(caseId, "reports-reconciliation", role, path, actual === expected, expected, actual, note);
+  };
+
+  compare("RPT-P01", "director", "/api/reports/executive", numberAt(executive, "production.total"), sourceCount("orders_completed"), "Executive production total must equal completed orders.");
+  compare("RPT-P01", "director", "/api/reports/executive", numberAt(executive, "production.inProgress"), sourceCount("orders_in_progress"), "Executive in-progress orders must equal the production-order source.");
+  compare("RPT-P01", "director", "/api/reports/executive", numberAt(executive, "inventory.totalCells"), sourceCount("cells_total"), "Executive cell total must equal the cells source.");
+  compare("RPT-P01", "director", "/api/reports/executive", numberAt(executive, "logistics.totalShipments"), sourceCount("dispatch_total"), "Executive shipment total must equal dispatch orders.");
+  compare("RPT-P01", "director", "/api/reports/quality", numberAt(quality, "summary.totalTests"), sourceCount("tests_total"), "Quality test total must equal test-result rows.");
+  compare("RPT-P01", "director", "/api/reports/quality", numberAt(quality, "summary.passed"), sourceCount("tests_passed"), "Quality pass count must equal passed test-result rows.");
+  compare("RPT-P01", "director", "/api/reports/quality", numberAt(quality, "summary.failed"), sourceCount("tests_failed"), "Quality fail count must equal failed test-result rows.");
+  compare("RPT-P01", "director", "/api/reports/quality", numberAt(quality, "summary.qcApprovals"), sourceCount("qc_total"), "Quality-control stage count must equal QC stage rows.");
+  compare("RPT-P01", "director", "/api/reports/inventory", numberAt(inventory, "cells.total"), sourceCount("cells_total"), "Inventory cell total must equal the cells source.");
+  compare("RPT-P01", "director", "/api/reports/inventory", numberAt(inventory, "cells.available"), sourceCount("cells_approved"), "Inventory available cells must equal approved cells.");
+  compare("RPT-P01", "director", "/api/reports/inventory", numberAt(inventory, "cells.allocated"), sourceCount("cells_allocated"), "Inventory allocated cells must equal allocated cells.");
+  compare("RPT-P01", "director", "/api/reports/inventory", numberAt(inventory, "batteries.total"), sourceCount("orders_total"), "Inventory battery total must equal production orders.");
+  compare("RPT-P01", "director", "/api/reports/inventory", numberAt(inventory, "finishedProducts.total"), sourceCount("products_total"), "Inventory finished-product total must equal products.");
+  compare("RPT-P01", "director", "/api/reports/logistics", numberAt(logistics, "summary.total"), sourceCount("dispatch_total"), "Logistics shipment total must equal dispatch orders.");
+  compare("RPT-P01", "director", "/api/reports/logistics", numberAt(logistics, "summary.inTransit"), sourceCount("dispatch_in_transit"), "Logistics in-transit total must equal dispatch status rows.");
+  compare("RPT-P01", "director", "/api/reports/logistics", numberAt(logistics, "summary.delivered"), sourceCount("dispatch_delivered"), "Logistics delivered total must equal dispatch status rows.");
+  compare("RPT-P01", "director", "/api/reports/logistics", numberAt(logistics, "summary.totalBatteriesShipped"), sourceCount("shipped_items"), "Logistics shipped-item total must equal dispatched/delivered items.");
+
+  const fixtureCellLot = rowsAt(cells, "byLot").find((row) => String(row.lotNumber ?? "").startsWith(FAT_PREFIX));
+  const fixtureInventoryLot = rowsAt(inventory, "byLot").find((row) => String(row.lotNumber ?? "").startsWith(FAT_PREFIX));
+  const expectedAcceptedCells = Number(manifest.expectations.gradedAcceptableCells);
+  const expectedAllocatedCells = 16;
+  const expectedAvailableCells = expectedAcceptedCells - expectedAllocatedCells;
+  assertCheck("RPT-P01", "reports-reconciliation", "director", "/api/reports/cells", fixtureCellLot?.total === manifest.recordCounts.cells &&
+    fixtureCellLot?.gradeA === 48 && fixtureCellLot?.rejected === 4,
+  { total: manifest.recordCounts.cells, gradeA: 48, rejected: 4 }, fixtureCellLot,
+  "The FAT lot must retain the manifest cell count and controlled grading split.");
+  assertCheck("RPT-P01", "reports-reconciliation", "director", "/api/reports/inventory", fixtureInventoryLot?.total === manifest.recordCounts.cells &&
+    fixtureInventoryLot?.available === expectedAvailableCells && fixtureInventoryLot?.allocated === expectedAllocatedCells && fixtureInventoryLot?.rejected === 4,
+  { total: manifest.recordCounts.cells, available: expectedAvailableCells, allocated: expectedAllocatedCells, rejected: 4 }, fixtureInventoryLot,
+  "The inventory report must preserve the FAT lot availability projection.");
+
+  const production = reportBodies.get("production");
+  const productionCreated = rowsAt(production, "byDay").reduce((sum, row) => sum + Number(row.created ?? 0), 0);
+  const productionCompleted = rowsAt(production, "byDay").reduce((sum, row) => sum + Number(row.completed ?? 0), 0);
+  assertCheck("RPT-P01", "reports-reconciliation", "director", "/api/reports/production", productionCreated >= manifest.residualCounts.orders,
+    `at least ${manifest.residualCounts.orders} controlled orders in the date window`, productionCreated,
+    "Production report date buckets must include every FAT production order.");
+  assertCheck("RPT-P01", "reports-reconciliation", "director", "/api/reports/production", productionCompleted >= 2,
+    "at least 2 controlled completed orders", productionCompleted,
+    "Production report completed buckets must include the two seeded completed orders.");
+
+  const dashboardProductionTotal = numberAt(dashboard, "orderStats.total");
+  const dashboardCellsTotal = numberAt(dashboard, "cellInventory.total");
+  const dashboardChargers = numberAt(dashboard, "equipmentStatus.chargers.total");
+  compare("RPT-P02", "director", "/api/dashboard/director", dashboardProductionTotal, sourceCount("orders_total"), "Dashboard order total must equal the production-order source.");
+  compare("RPT-P02", "director", "/api/dashboard/director", dashboardCellsTotal, sourceCount("cells_total"), "Dashboard cell total must equal the cells source.");
+  compare("RPT-P02", "director", "/api/dashboard/director", dashboardChargers, sourceCount("chargers_total"), "Dashboard charger total must equal charger-unit rows.");
+  compare("RPT-P02", "director", "/api/dashboard/director", numberAt(dashboard, "qualitySummary.testPassCount"), sourceCount("tests_passed"), "Dashboard quality pass count must equal test-result rows.");
+  compare("RPT-P02", "director", "/api/dashboard/director", numberAt(dashboard, "logistics.totalDealers"), sourceCount("dealers_total"), "Dashboard dealer count must equal dealer-master rows.");
+
+  const dealerInventory = await get("PORTAL-P01", "dealer-portal", "dealer", `/api/dealers/${FAT_IDS.dealer}/inventory`);
+  const dealerHistory = await get("PORTAL-P01", "dealer-portal", "dealer", `/api/dealers/${FAT_IDS.dealer}/dispatch-history`);
+  await get("PORTAL-P02", "dealer-portal", "viewer", `/api/dealers/${FAT_IDS.dealer}/inventory`);
+  await get("PORTAL-N01", "dealer-portal", "dealer", "/api/dealers/00000000-0000-0000-0000-000000000002/inventory", 403);
+  assertCheck("PORTAL-P01", "dealer-portal", "dealer", `/api/dealers/${FAT_IDS.dealer}/inventory`,
+    numberAt(dealerInventory, "total") === 1 && rowsAt(dealerInventory, "items")[0]?.id === FAT_IDS.products.dispatched,
+    { total: 1, productId: FAT_IDS.products.dispatched }, dealerInventory,
+    "Dealer inventory must expose exactly the controlled product and no other dealer's rows.");
+  assertCheck("PORTAL-P01", "dealer-portal", "dealer", `/api/dealers/${FAT_IDS.dealer}/dispatch-history`,
+    numberAt(dealerHistory, "total") === 1 && rowsAt(dealerHistory, "items")[0]?.product_id === FAT_IDS.products.dispatched,
+    { total: 1, productId: FAT_IDS.products.dispatched }, dealerHistory,
+    "Dealer dispatch history must expose the controlled dispatched product.");
+
+  const warrantyList = await get("WAR-P01", "customer-warranty", "viewer", "/api/warranties");
+  const warrantyDetail = await get("WAR-P01", "customer-warranty", "viewer", `/api/warranties/${FAT_IDS.fulfillment.warranty}`);
+  await get("WAR-N01", "customer-warranty", "dealer", "/api/warranties", 403);
+  assertCheck("WAR-P01", "customer-warranty", "viewer", "/api/warranties",
+    rowsAt(warrantyList, "items").some((row) => row.id === FAT_IDS.fulfillment.warranty),
+    { warrantyId: FAT_IDS.fulfillment.warranty }, warrantyList,
+    "Factory read access must include the controlled warranty record.");
+  assertCheck("WAR-P01", "customer-warranty", "viewer", `/api/warranties/${FAT_IDS.fulfillment.warranty}`,
+    isRecord(warrantyDetail) && warrantyDetail.id === FAT_IDS.fulfillment.warranty &&
+      warrantyDetail.product_id === FAT_IDS.products.dispatched,
+    { warrantyId: FAT_IDS.fulfillment.warranty, productId: FAT_IDS.products.dispatched }, warrantyDetail,
+    "Warranty detail must resolve to the controlled serialized product.");
 }
 
 function markdown(): string {
@@ -419,14 +593,53 @@ function resetFixture(): void {
   });
 }
 
+async function persistEvidence(): Promise<void> {
+  const reportOnly = process.env.FAT_REPORTS_ONLY === "1";
+  const jsonName = reportOnly ? "fat-report-evidence.json" : "fat-journey-evidence.json";
+  const markdownName = reportOnly ? "fat-report-evidence.md" : "fat-journey-evidence.md";
+  await mkdir(OUTPUT_DIR, { recursive: true });
+  await writeFile(resolve(OUTPUT_DIR, jsonName), `${JSON.stringify({
+    run_at: RUN_AT,
+    environment: BASE,
+    dataset: FAT_PREFIX,
+    frozen_tag: FROZEN_TAG,
+    frozen_commit: FROZEN_COMMIT,
+    password_evidence: "omitted; supplied only through FAT_TEST_PASSWORD",
+    summary: {
+      total: evidence.length,
+      passed: evidence.filter((item) => item.result === "PASS").length,
+      failed: evidence.filter((item) => item.result === "FAIL").length,
+    },
+    cases: evidence,
+  }, null, 2)}\n`, "utf8");
+  await writeFile(resolve(OUTPUT_DIR, markdownName), markdown(), "utf8");
+  console.log(JSON.stringify({
+    outputDir: OUTPUT_DIR,
+    total: evidence.length,
+    passed: evidence.filter((item) => item.result === "PASS").length,
+    failed: failures,
+    passwordEvidence: "omitted",
+  }, null, 2));
+}
+
 async function main(): Promise<void> {
+  if (process.env.FAT_REPORTS_ONLY === "1") {
+    for (const role of roles) await login(role, "RPT-AUTH");
+    await runReportsAndDashboard();
+    await persistEvidence();
+    if (failures > 0) process.exitCode = 1;
+    return;
+  }
+
   await runAuth();
   await runMasters();
   await runInventoryAndCells();
   await runManufacturing();
+  // Reconcile all report/dashboard/portal read paths before the later
+  // concurrency and fulfillment probes mutate their isolated FAT fixtures.
+  await runReportsAndDashboard();
   await runConcurrency();
   await runFulfillmentAndTraceability();
-  await runReportsAndDashboard();
 
   let resetError: unknown;
   try {
@@ -448,30 +661,7 @@ async function main(): Promise<void> {
     });
   }
 
-  await mkdir(OUTPUT_DIR, { recursive: true });
-  await writeFile(resolve(OUTPUT_DIR, "fat-journey-evidence.json"), `${JSON.stringify({
-    run_at: RUN_AT,
-    environment: BASE,
-    dataset: FAT_PREFIX,
-    frozen_tag: FROZEN_TAG,
-    frozen_commit: FROZEN_COMMIT,
-    password_evidence: "omitted; supplied only through FAT_TEST_PASSWORD",
-    summary: {
-      total: evidence.length,
-      passed: evidence.filter((item) => item.result === "PASS").length,
-      failed: evidence.filter((item) => item.result === "FAIL").length,
-    },
-    cases: evidence,
-  }, null, 2)}\n`, "utf8");
-  await writeFile(resolve(OUTPUT_DIR, "fat-journey-evidence.md"), markdown(), "utf8");
-
-  console.log(JSON.stringify({
-    outputDir: OUTPUT_DIR,
-    total: evidence.length,
-    passed: evidence.filter((item) => item.result === "PASS").length,
-    failed: failures,
-    passwordEvidence: "omitted",
-  }, null, 2));
+  await persistEvidence();
   if (resetError) console.error("FAT fixture reset failed:", resetError instanceof Error ? resetError.message : resetError);
   if (failures > 0) process.exitCode = 1;
 }
@@ -479,4 +669,6 @@ async function main(): Promise<void> {
 main().catch((error) => {
   console.error("FAT journey evidence failed:", error instanceof Error ? error.message : error);
   process.exitCode = 1;
+}).finally(async () => {
+  await pool.end();
 });
