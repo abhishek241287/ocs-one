@@ -265,7 +265,10 @@ async function findLotEvent(eventType: string): Promise<Record<string, unknown> 
 }
 
 // ─── Triggers — perform the real operations that must be audited ─────────────
-async function runTriggers(directorJar: CookieJar): Promise<{ viewerLoginRowId: string | null }> {
+async function runTriggers(directorJar: CookieJar): Promise<{
+  viewerLoginRowId: string | null;
+  dealerAssignmentNoOp: { ok: boolean; detail: string };
+}> {
   // user.created — director registers a uniquely-named viewer (always 201).
   const reg = await fetchResilient(`${BASE_URL}/api/auth/register`, {
     method: "POST",
@@ -321,6 +324,43 @@ async function runTriggers(directorJar: CookieJar): Promise<{ viewerLoginRowId: 
     throw new Error(`Dealer assignment trigger failed: HTTP ${assignment.status}`);
   }
   await assignment.text().catch(() => undefined);
+
+  const assignmentEventsBeforeNoOp = await db
+    .select({ id: securityEventsTable.id })
+    .from(securityEventsTable)
+    .where(
+      and(
+        eq(securityEventsTable.eventType, "user.dealer_assignment_changed"),
+        eq(securityEventsTable.targetEmail, DEALER_EMAIL),
+        gte(securityEventsTable.createdAt, runStart),
+      ),
+    );
+  const noOpAssignment = await fetchResilient(`${BASE_URL}/api/auth/users/${certDealerUserId}/dealer`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Cookie: directorJar ?? "" },
+    body: JSON.stringify({ dealerId: certDealerId }),
+  });
+  const noOpStatus = noOpAssignment.status;
+  await noOpAssignment.text().catch(() => undefined);
+  // recordSecurityEvent is intentionally fire-and-forget on the request path;
+  // give a mistaken no-op audit write time to settle before checking the count.
+  await sleep(50);
+  const assignmentEventsAfterNoOp = await db
+    .select({ id: securityEventsTable.id })
+    .from(securityEventsTable)
+    .where(
+      and(
+        eq(securityEventsTable.eventType, "user.dealer_assignment_changed"),
+        eq(securityEventsTable.targetEmail, DEALER_EMAIL),
+        gte(securityEventsTable.createdAt, runStart),
+      ),
+    );
+  const dealerAssignmentNoOp = {
+    ok:
+      noOpStatus === 200 &&
+      assignmentEventsAfterNoOp.length === assignmentEventsBeforeNoOp.length,
+    detail: `HTTP ${noOpStatus}; assignment events ${assignmentEventsBeforeNoOp.length} → ${assignmentEventsAfterNoOp.length}`,
+  };
 
   // auth.login.failed — wrong password for the viewer.
   await login(VIEWER_EMAIL, "wrong-password");
@@ -429,7 +469,7 @@ async function runTriggers(directorJar: CookieJar): Promise<{ viewerLoginRowId: 
     }
   }
 
-  return { viewerLoginRowId };
+  return { viewerLoginRowId, dealerAssignmentNoOp };
 }
 
 // ─── Immutability: no application route may UPDATE/DELETE an audit table ──────
@@ -582,7 +622,7 @@ async function main(): Promise<void> {
     const { jar: directorJar, status } = await login(DIRECTOR_EMAIL, DIRECTOR_PASSWORD);
     if (!directorJar) throw new Error(`Director login failed: HTTP ${status}`);
 
-    const { viewerLoginRowId } = await runTriggers(directorJar);
+    const { viewerLoginRowId, dealerAssignmentNoOp } = await runTriggers(directorJar);
 
     // Snapshot two real records for the runtime immutability re-read.
     const lotReceivedRow = await findLotEvent("lot_received");
@@ -747,15 +787,18 @@ async function main(): Promise<void> {
         `[${mark}] ${r.check.store.padEnd(9)} ${r.check.expectedEventType.padEnd(22)} fields:${reqd.padEnd(4)} ${detail}`,
       );
     }
+    console.log(
+      `[${dealerAssignmentNoOp.ok ? "PASS" : "FAIL"}] security  user.dealer_assignment_changed no-op ${dealerAssignmentNoOp.detail}`,
+    );
     console.log("─".repeat(72));
     console.log("Immutability:");
     immutabilityNotes.forEach((n) => console.log(`  ${n}`));
     console.log("─".repeat(72));
 
     const failures = results.filter((r) => !r.ok);
-    if (failures.length > 0 || !immutabilityOk) {
+    if (failures.length > 0 || !dealerAssignmentNoOp.ok || !immutabilityOk) {
       console.log(
-        `✗ SS-03 FAILED — ${failures.length} audit mismatch(es)${immutabilityOk ? "" : " + immutability violation"}.`,
+        `✗ SS-03 FAILED — ${failures.length + (dealerAssignmentNoOp.ok ? 0 : 1)} audit mismatch(es)${immutabilityOk ? "" : " + immutability violation"}.`,
       );
       process.exitCode = 1;
     } else {

@@ -250,6 +250,18 @@ async function dealerAssignmentChecks(
   const checks: DealerAssignmentCheck[] = [];
   const add = (name: string, ok: boolean, detail: string) => checks.push({ name, ok, detail });
 
+  const noOpStatus = await patchDealerAssignment(jars.director, dealerUser.id, dealerId);
+  const [afterNoOp] = await db
+    .select({ dealerId: usersTable.dealerId })
+    .from(usersTable)
+    .where(eq(usersTable.id, dealerUser.id))
+    .limit(1);
+  add(
+    "same dealer assignment is a no-op",
+    noOpStatus === 200 && afterNoOp?.dealerId === dealerId,
+    `HTTP ${noOpStatus}; assignment unchanged=${afterNoOp?.dealerId === dealerId}`,
+  );
+
   const viewerStatus = await patchDealerAssignment(jars.viewer, dealerUser.id, reassignmentDealerId);
   add("viewer denied", viewerStatus === 403, `HTTP ${viewerStatus} (expected 403)`);
 
