@@ -1,0 +1,95 @@
+OCS ONE — INV-P04 DEFECT INVESTIGATION ONLY
+
+FAT Block 3 is NOT accepted because INV-P04 FAILED.
+
+Frozen system under test:
+FAT-CANDIDATE-2026-09-08
+Application commit:
+60564b1b49b76ce0b97e46d1de65a7325ef50ba7
+
+Defect:
+The transfer operation created the required -3 available source ledger movement but did NOT create the required +3 destination ledger movement.
+
+The transfer document, cell lot, and cell-lot timeline were created.
+
+Do NOT modify application code.
+Do NOT modify schema.
+Do NOT modify routes.
+Do NOT modify UI.
+Do NOT modify workflows.
+Do NOT reseed.
+Do NOT teardown.
+Do NOT alter the existing FAT-E2E rows.
+
+Perform READ-ONLY root-cause analysis only.
+
+Investigate:
+
+1. The exact transfer route/service used by INV-P04.
+
+2. The exact code path responsible for:
+   - source ledger movement
+   - destination ledger movement
+   - cell-lot creation/update
+
+3. Determine why the destination ledger movement was not written.
+
+4. Determine whether this is:
+   A. an application defect,
+   B. an incorrect FAT expectation,
+   C. an intentional alternate ledger model,
+   D. or another explanation.
+
+5. Inspect the actual database rows for the affected transfer:
+   Transfer:
+   2f8abd1a-8739-4bd1-84fe-bf3eb587c094
+
+   GRN:
+   56e17005-eecc-47bd-b996-a408d52e545d
+
+   Cell lot:
+   b60dea03-0067-41a3-beeb-fb4e097f1f70
+
+6. Show the exact ledger rows associated with the transfer, including:
+   - transaction ID
+   - transaction type
+   - material ID
+   - quantity
+   - stock_state
+   - source_document_type
+   - source_document_id
+   - source_line_id
+
+7. Explain how the application currently obtains the destination available quantity of 5 despite the missing +3 ledger movement.
+
+8. Check whether this behavior could affect:
+   - inventory auditability
+   - stock reconciliation
+   - material issue calculations
+   - lot traceability
+   - future transfers
+   - manufacturing consumption
+   - reports/KPIs
+
+9. Do NOT rerun INV-P04 and do not create another transfer.
+
+10. Preserve the current evidence exactly.
+
+Create/update only the FAT defect documentation if necessary.
+
+Classify the result provisionally as:
+INV-P04 — Critical/High/Medium/Low to be recommended based on actual impact.
+
+Do not patch.
+
+At the end report:
+- root cause
+- exact affected code path
+- exact database evidence
+- whether the FAT expectation is correct
+- severity recommendation
+- whether Block 3 should remain blocked
+- recommended remediation
+- whether a controlled retest will be required
+
+STOP.
