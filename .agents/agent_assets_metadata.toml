@@ -196,3 +196,17 @@ mtime_ms = 1789056580111
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/1d106f8e-0f65-4c27-b0e7-6f946e8f2c21/1f73378a-18c4-4c17-bbf3-6aa4e8bd1379"
 storage_version_token = "1789056609089177"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "FmeCPMBx0wbSWNcLzUXqD"
+uri = "file://certification/fat-evidence/fat-block-3-inv-p04-defect-investigation.md"
+type = "text"
+title = "INV-P04 defect investigation"
+description = "Read-only root-cause analysis for the Block 3 transfer-ledger discrepancy, including exact route path, database evidence, impact, severity, and remediation options."
+logical_id = "6864aa51-88d0-45be-a1a8-c8a76d4dc5b9"
+content_hash = "sha256:6952643797ee28889a3763d2f4e583bc9519951ceed4fd78bf24a0e78d0d5bb2"
+size = 10269
+mtime_ms = 1789057395974
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/6864aa51-88d0-45be-a1a8-c8a76d4dc5b9/7d8a0377-e0da-4485-a6d2-18314e533c64"
+storage_version_token = "1789057420233219"
+content_type = "text/markdown"
