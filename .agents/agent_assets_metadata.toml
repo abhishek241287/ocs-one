@@ -210,3 +210,17 @@ mtime_ms = 1789057395974
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/6864aa51-88d0-45be-a1a8-c8a76d4dc5b9/7d8a0377-e0da-4485-a6d2-18314e533c64"
 storage_version_token = "1789057420233219"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "Ltq4e5KFvhr1_SnyUzb2H"
+uri = "file://docs/architecture/task-35-transfer-destination-ledger-decision.md"
+type = "text"
+title = "Task #35 transfer destination ledger decision"
+description = "Proposed architecture decision comparing the existing single-negative-ledger model with a canonical destination representation, including downstream consumers and the required regression gate."
+logical_id = "82fcba86-f1a6-4d5e-80a0-748575b0a95b"
+content_hash = "sha256:a6c0368879868020d3ce50b81edf1370c8cf927e3a5ffb59a17f80dc341aaed9"
+size = 5997
+mtime_ms = 1789103188428
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/82fcba86-f1a6-4d5e-80a0-748575b0a95b/dc189583-7412-4f4a-8d08-29659989ffe3"
+storage_version_token = "1789103204042256"
+content_type = "text/markdown"
