@@ -312,11 +312,46 @@ async function runConcurrency(): Promise<void> {
       ...actor("operator"),
       method: "COMPOSITE",
       path: `/api/cells/matches/${FAT_IDS.cells.matchPending}/accept`,
-      http_status: 200,
+      http_status: matchOne.status,
       response_body: { simultaneous_statuses: [matchOne.status, matchTwo.status], expected: "one 200 and one 409" },
-      note: "Both concurrent accept requests returned success; the exact-one-winner invariant was not demonstrated.",
+      note: "The concurrent acceptance did not produce exactly one winner and one contention response.",
     });
   }
+
+  const matchAfterRace = await request(
+    "CONC-P02",
+    "concurrency",
+    "operator",
+    "GET",
+    `/api/cells/matches/${FAT_IDS.cells.matchPending}`,
+    { expected: 200, note: "The winning acceptance must leave the match reserved with all 16 cells reserved for it." },
+  );
+  const matchAfterBody = isRecord(matchAfterRace.body) ? matchAfterRace.body : {};
+  const acceptedCells = rowsAt(matchAfterRace.body, "batteries")
+    .flatMap((battery) => rowsAt(battery, "cells"));
+  assertCheck(
+    "CONC-P02",
+    "concurrency",
+    "operator",
+    `/api/cells/matches/${FAT_IDS.cells.matchPending}`,
+    matchAfterRace.status === 200 &&
+      matchAfterBody.status === "reserved" &&
+      acceptedCells.length === 16 &&
+      acceptedCells.every((cell) => cell.status === "reserved" && cell.matchId === FAT_IDS.cells.matchPending),
+    {
+      match_status: "reserved",
+      cell_count: 16,
+      cell_status: "reserved",
+      cell_match_id: FAT_IDS.cells.matchPending,
+    },
+    {
+      match_status: matchAfterBody.status,
+      cell_count: acceptedCells.length,
+      cell_statuses: acceptedCells.map((cell) => cell.status),
+      cell_match_ids: acceptedCells.map((cell) => cell.matchId),
+    },
+    "The exact-one-winner race must leave one reserved match owning all 16 reserved cells.",
+  );
 
   await request("CONC-N01", "concurrency", "operator", "POST", startPath(FAT_IDS.orders.clean), {
     body: { operatorName: "FAT E2E Operator", stageData: { chargerUnitId: FAT_IDS.chargers.primary } },

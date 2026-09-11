@@ -1,12 +1,12 @@
 # FAT Journey Evidence
 
-- Run: 2026-09-08T15:52:16.753Z
+- Run: 2026-09-11T13:14:18.623Z
 - Environment: http://localhost:8080
 - Dataset: FAT-E2E-
 - Frozen tag: FAT-CANDIDATE-2026-09-08
 - Frozen commit: 60564b1b49b76ce0b97e46d1de65a7325ef50ba7
 - Password evidence: omitted; supplied only through FAT_TEST_PASSWORD
-- Result: 210 PASS / 2 FAIL
+- Result: 212 PASS / 1 FAIL
 
 | Case | Area | Role | Method | Path | Status | Result |
 |---|---|---|---|---|---:|---|
@@ -167,7 +167,7 @@
 | RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/logistics` | 0 | **PASS** |
 | RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/logistics` | 0 | **PASS** |
 | RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/cells` | 0 | **PASS** |
-| RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/inventory` | 0 | **FAIL** |
+| RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/inventory` | 0 | **PASS** |
 | RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/production` | 0 | **PASS** |
 | RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/production` | 0 | **PASS** |
 | RPT-P02 | reports-reconciliation | director | ASSERT | `/api/dashboard/director` | 0 | **PASS** |
@@ -186,11 +186,12 @@
 | WAR-N01 | customer-warranty | dealer | GET | `/api/warranties` | 403 | **PASS** |
 | WAR-P01 | customer-warranty | viewer | ASSERT | `/api/warranties` | 0 | **PASS** |
 | WAR-P01 | customer-warranty | viewer | ASSERT | `/api/warranties/fa1a0000-0000-4000-8000-000000000004` | 0 | **PASS** |
-| CONC-P01 | concurrency | operator | POST | `/api/manufacturing/orders/fa180000-0000-4000-8000-000000000005/stages/charging/start` | 409 | **PASS** |
-| CONC-P01 | concurrency | operator | POST | `/api/manufacturing/orders/fa180000-0000-4000-8000-000000000004/stages/charging/start` | 200 | **PASS** |
+| CONC-P01 | concurrency | operator | POST | `/api/manufacturing/orders/fa180000-0000-4000-8000-000000000005/stages/charging/start` | 200 | **PASS** |
+| CONC-P01 | concurrency | operator | POST | `/api/manufacturing/orders/fa180000-0000-4000-8000-000000000004/stages/charging/start` | 409 | **PASS** |
 | CONC-P02 | concurrency | operator | POST | `/api/cells/matches/fa160000-0000-4000-8000-000000000003/accept` | 200 | **PASS** |
-| CONC-P02 | concurrency | operator | POST | `/api/cells/matches/fa160000-0000-4000-8000-000000000003/accept` | 200 | **PASS** |
-| CONC-P02 | concurrency | operator | COMPOSITE | `/api/cells/matches/fa160000-0000-4000-8000-000000000003/accept` | 200 | **FAIL** |
+| CONC-P02 | concurrency | operator | POST | `/api/cells/matches/fa160000-0000-4000-8000-000000000003/accept` | 409 | **PASS** |
+| CONC-P02 | concurrency | operator | GET | `/api/cells/matches/fa160000-0000-4000-8000-000000000003` | 200 | **PASS** |
+| CONC-P02 | concurrency | operator | ASSERT | `/api/cells/matches/fa160000-0000-4000-8000-000000000003` | 0 | **PASS** |
 | CONC-N01 | concurrency | operator | POST | `/api/manufacturing/orders/fa180000-0000-4000-8000-000000000001/stages/charging/start` | 409 | **PASS** |
 | CONC-P03 | concurrency | operator | POST | `/api/manufacturing/orders/fa180000-0000-4000-8000-000000000006/stages/quality_control/start` | 200 | **PASS** |
 | CONC-P03 | concurrency | operator | POST | `/api/manufacturing/orders/fa180000-0000-4000-8000-000000000006/stages/quality_control/complete` | 200 | **PASS** |
@@ -221,6 +222,6 @@
 | TRACE-N01 | traceability | supervisor | GET | `/api/products/00000000-0000-4000-8000-000000000099/genealogy` | 404 | **PASS** |
 | TRACE-N01 | traceability | supervisor | GET | `/api/products/00000000-0000-4000-8000-000000000099/events` | 404 | **PASS** |
 | TRACE-N01 | traceability | supervisor | GET | `/api/products/00000000-0000-4000-8000-000000000099/traceability` | 404 | **PASS** |
-| DATA-P01 | fixture-reset | owner | COMMAND | `pnpm cert:fat:teardown && pnpm cert:fat:verify` | 0 | **PASS** |
+| DATA-P01 | fixture-reset | owner | COMMAND | `pnpm cert:fat:teardown && pnpm cert:fat:verify` | 1 | **FAIL** |
 
 Response bodies and sanitized request bodies are in `fat-journey-evidence.json`.

@@ -219,59 +219,98 @@ router.get("/:id", async (req, res) => {
 
 // POST /cells/matches/:id/accept
 router.post("/:id/accept", async (req, res) => {
-  const [match] = await db
-    .select()
-    .from(cellMatchesTable)
-    .where(eq(cellMatchesTable.id, req.params.id));
+  // Keep the match-state check and cell reservation in one transaction. The
+  // match row is the contention point for simultaneous accepts of the same
+  // pending match; locking the cells in stable order also prevents two
+  // different pending matches from reserving the same cell.
+  const acceptance = await db.transaction(async (tx) => {
+    const [match] = await tx
+      .select()
+      .from(cellMatchesTable)
+      .where(eq(cellMatchesTable.id, req.params.id))
+      .for("update");
 
-  if (!match) {
-    res.status(404).json({ error: "Match not found" });
-    return;
-  }
+    if (!match) {
+      return { kind: "not_found" as const };
+    }
 
-  if (match.status !== "draft") {
-    res.status(409).json({ error: `Match is already ${match.status}` });
-    return;
-  }
+    if (match.status !== "draft") {
+      return {
+        kind: "conflict" as const,
+        error: `Match is already ${match.status}`,
+      };
+    }
 
-  // Get all cell IDs in this match
-  const items = await db
-    .select()
-    .from(cellMatchItemsTable)
-    .where(eq(cellMatchItemsTable.matchId, match.id));
+    const items = await tx
+      .select()
+      .from(cellMatchItemsTable)
+      .where(eq(cellMatchItemsTable.matchId, match.id));
 
-  const cellIds = items.map((i) => i.cellId);
+    const cellIds = items.map((item) => item.cellId);
+    if (cellIds.length === 0 || new Set(cellIds).size !== cellIds.length) {
+      return {
+        kind: "conflict" as const,
+        error: "Match does not contain a valid unique cell allocation",
+        cellIds,
+      };
+    }
 
-  // Check all are still approved (not already reserved)
-  const cells = await db
-    .select()
-    .from(cellsTable)
-    .where(inArray(cellsTable.id, cellIds));
+    // Lock one cell at a time in ID order. This makes the reservation safe
+    // even when separate pending matches overlap on a cell, while the match
+    // lock above serializes duplicate accepts for this match.
+    const lockedCells: CellRow[] = [];
+    for (const cellId of [...cellIds].sort()) {
+      const [cell] = await tx
+        .select()
+        .from(cellsTable)
+        .where(eq(cellsTable.id, cellId))
+        .for("update");
+      if (cell) lockedCells.push(cell);
+    }
 
-  const nonApproved = cells.filter((c) => c.status !== "approved");
-  if (nonApproved.length > 0) {
-    res.status(409).json({
-      error: `${nonApproved.length} cell(s) are no longer available`,
-      cellIds: nonApproved.map((c) => c.cellId),
-    });
-    return;
-  }
+    const cellsById = new Map(lockedCells.map((cell) => [cell.id, cell]));
+    const missingCellIds = cellIds.filter((cellId) => !cellsById.has(cellId));
+    const nonApproved = lockedCells.filter((cell) => cell.status !== "approved");
+    if (missingCellIds.length > 0 || nonApproved.length > 0) {
+      return {
+        kind: "conflict" as const,
+        error: nonApproved.length > 0
+          ? `${nonApproved.length} cell(s) are no longer available`
+          : "One or more match cells no longer exist",
+        cellIds: [
+          ...missingCellIds,
+          ...nonApproved.map((cell) => cell.cellId),
+        ],
+      };
+    }
 
-  await db.transaction(async (tx) => {
-    // Reserve all cells
     await tx
       .update(cellsTable)
       .set({ status: "reserved", matchId: match.id })
       .where(inArray(cellsTable.id, cellIds));
 
-    // Update match status
     await tx
       .update(cellMatchesTable)
       .set({ status: "reserved" })
       .where(eq(cellMatchesTable.id, match.id));
+
+    return { kind: "accepted" as const, matchId: match.id };
   });
 
-  const detail = await buildMatchDetail(match.id);
+  if (acceptance.kind === "not_found") {
+    res.status(404).json({ error: "Match not found" });
+    return;
+  }
+
+  if (acceptance.kind === "conflict") {
+    res.status(409).json({
+      error: acceptance.error,
+      ...(acceptance.cellIds ? { cellIds: acceptance.cellIds } : {}),
+    });
+    return;
+  }
+
+  const detail = await buildMatchDetail(acceptance.matchId);
   res.json(detail);
 });
 
