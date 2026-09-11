@@ -2340,6 +2340,31 @@ paths:
         "401":
           description: Not authenticated
 
+  /auth/password:
+    patch:
+      operationId: changeAuthPassword
+      tags: [auth]
+      summary: Change the authenticated user's password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PasswordChangeRequest" }
+      responses:
+        "200":
+          description: Password changed and existing sessions revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success]
+                properties:
+                  success: { type: boolean }
+        "400":
+          description: Validation error
+        "401":
+          description: Current password is incorrect or session is invalid
+
   /auth/users:
     get:
       operationId: listAuthUsers
@@ -2360,6 +2385,31 @@ paths:
                   total: { type: integer }
         "403":
           description: Director or owner access required
+
+  /auth/users/{id}:
+    patch:
+      operationId: updateAuthUser
+      tags: [auth]
+      summary: Update a user's role, active status, or password
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminUserUpdate" }
+      responses:
+        "200":
+          description: Updated user account; existing sessions are revoked when security-sensitive fields change
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserAccount" }
+        "400":
+          description: Validation error
+        "403":
+          description: Director or owner access required
+        "404":
+          description: User not found
 
   /auth/users/{id}/dealer:
     patch:
@@ -5470,6 +5520,23 @@ components:
       required: [dealerId]
       properties:
         dealerId: { type: ["string", "null"], format: uuid }
+
+    PasswordChangeRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword: { type: string, minLength: 1 }
+        newPassword: { type: string, minLength: 8 }
+
+    AdminUserUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        role:
+          type: string
+          enum: [owner, director, supervisor, operator, viewer, dealer]
+        isActive: { type: boolean }
+        password: { type: string, minLength: 8 }
 
     LoginRequest:
       type: object

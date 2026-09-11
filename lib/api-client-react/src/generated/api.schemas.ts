@@ -1850,6 +1850,32 @@ export interface UserDealerAssignment {
   dealerId: string | null;
 }
 
+export interface PasswordChangeRequest {
+  /** @minLength 1 */
+  currentPassword: string;
+  /** @minLength 8 */
+  newPassword: string;
+}
+
+export type AdminUserUpdateRole = typeof AdminUserUpdateRole[keyof typeof AdminUserUpdateRole];
+
+
+export const AdminUserUpdateRole = {
+  owner: 'owner',
+  director: 'director',
+  supervisor: 'supervisor',
+  operator: 'operator',
+  viewer: 'viewer',
+  dealer: 'dealer',
+} as const;
+
+export interface AdminUserUpdate {
+  role?: AdminUserUpdateRole;
+  isActive?: boolean;
+  /** @minLength 8 */
+  password?: string;
+}
+
 export interface LoginRequest {
   email: string;
   /** @minLength 1 */
@@ -3446,6 +3472,10 @@ export type AuthLogout200 = {
 
 export type AuthMe200 = {
   user: AuthUser;
+};
+
+export type ChangeAuthPassword200 = {
+  success: boolean;
 };
 
 export type ListAuthUsers200 = {

@@ -21,6 +21,7 @@ import type {
 
 import type {
   AddDispatchItemBody,
+  AdminUserUpdate,
   AdvanceDispatchStatusBody,
   AuthLogout200,
   AuthMe200,
@@ -56,6 +57,7 @@ import type {
   CellMatchDetail,
   CellMatchInput,
   CellMeasurement,
+  ChangeAuthPassword200,
   ChargerMaster,
   ChargerMasterInput,
   ChargerMasterUpdate,
@@ -192,6 +194,7 @@ import type {
   PackProductsInput,
   PackProductsResult,
   PackingDashboard,
+  PasswordChangeRequest,
   PatchCellLotBody,
   Product,
   ProductEventsResponse,
@@ -8829,6 +8832,76 @@ export function useAuthMe<TData = Awaited<ReturnType<typeof authMe>>, TError = E
 
 
 
+export const getChangeAuthPasswordUrl = () => {
+
+
+
+
+  return `/api/auth/password`
+}
+
+/**
+ * @summary Change the authenticated user's password
+ */
+export const changeAuthPassword = async (passwordChangeRequest: PasswordChangeRequest, options?: RequestInit): Promise<ChangeAuthPassword200> => {
+
+  return customFetch<ChangeAuthPassword200>(getChangeAuthPasswordUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(passwordChangeRequest)
+  }
+);}
+
+
+
+
+export const getChangeAuthPasswordMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeAuthPassword>>, TError,{data: BodyType<PasswordChangeRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeAuthPassword>>, TError,{data: BodyType<PasswordChangeRequest>}, TContext> => {
+
+const mutationKey = ['changeAuthPassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeAuthPassword>>, {data: BodyType<PasswordChangeRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  changeAuthPassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeAuthPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof changeAuthPassword>>>
+    export type ChangeAuthPasswordMutationBody = BodyType<PasswordChangeRequest>
+    export type ChangeAuthPasswordMutationError = ErrorType<void>
+
+    /**
+ * @summary Change the authenticated user's password
+ */
+export const useChangeAuthPassword = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeAuthPassword>>, TError,{data: BodyType<PasswordChangeRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof changeAuthPassword>>,
+        TError,
+        {data: BodyType<PasswordChangeRequest>},
+        TContext
+      > => {
+      return useMutation(getChangeAuthPasswordMutationOptions(options));
+    }
+
 export const getListAuthUsersUrl = () => {
 
 
@@ -8905,6 +8978,77 @@ export function useListAuthUsers<TData = Awaited<ReturnType<typeof listAuthUsers
 
 
 
+
+export const getUpdateAuthUserUrl = (id: string,) => {
+
+
+
+
+  return `/api/auth/users/${id}`
+}
+
+/**
+ * @summary Update a user's role, active status, or password
+ */
+export const updateAuthUser = async (id: string,
+    adminUserUpdate: AdminUserUpdate, options?: RequestInit): Promise<UserAccount> => {
+
+  return customFetch<UserAccount>(getUpdateAuthUserUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminUserUpdate)
+  }
+);}
+
+
+
+
+export const getUpdateAuthUserMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAuthUser>>, TError,{id: string;data: BodyType<AdminUserUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAuthUser>>, TError,{id: string;data: BodyType<AdminUserUpdate>}, TContext> => {
+
+const mutationKey = ['updateAuthUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAuthUser>>, {id: string;data: BodyType<AdminUserUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAuthUser(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAuthUserMutationResult = NonNullable<Awaited<ReturnType<typeof updateAuthUser>>>
+    export type UpdateAuthUserMutationBody = BodyType<AdminUserUpdate>
+    export type UpdateAuthUserMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a user's role, active status, or password
+ */
+export const useUpdateAuthUser = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAuthUser>>, TError,{id: string;data: BodyType<AdminUserUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAuthUser>>,
+        TError,
+        {id: string;data: BodyType<AdminUserUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAuthUserMutationOptions(options));
+    }
 
 export const getUpdateAuthUserDealerUrl = (id: string,) => {
 

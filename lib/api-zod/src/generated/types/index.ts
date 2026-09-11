@@ -7,6 +7,8 @@
  */
 
 export * from './addDispatchItemBody';
+export * from './adminUserUpdate';
+export * from './adminUserUpdateRole';
 export * from './advanceDispatchStatusBody';
 export * from './advanceDispatchStatusBodyStatus';
 export * from './allocatedCellItem';
@@ -67,6 +69,7 @@ export * from './cellMeasurementGrade';
 export * from './cellMeasurementMeasurementType';
 export * from './cellStatus';
 export * from './cellStockLine';
+export * from './changeAuthPassword200';
 export * from './chargerMaster';
 export * from './chargerMasterInput';
 export * from './chargerMasterUpdate';
@@ -281,6 +284,7 @@ export * from './packProductsResult';
 export * from './pageParamParameter';
 export * from './pageSizeParamParameter';
 export * from './paginationMeta';
+export * from './passwordChangeRequest';
 export * from './patchCellLotBody';
 export * from './product';
 export * from './productCategory';

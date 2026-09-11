@@ -4724,6 +4724,24 @@ export const AuthMeResponse = zod.object({
 
 
 /**
+ * @summary Change the authenticated user's password
+ */
+
+export const changeAuthPasswordBodyNewPasswordMin = 8;
+
+
+
+export const ChangeAuthPasswordBody = zod.object({
+  "currentPassword": zod.string().min(1),
+  "newPassword": zod.string().min(changeAuthPasswordBodyNewPasswordMin)
+})
+
+export const ChangeAuthPasswordResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary List user accounts for access management
  */
 export const ListAuthUsersResponse = zod.object({
@@ -4737,6 +4755,34 @@ export const ListAuthUsersResponse = zod.object({
   "createdAt": zod.coerce.date()
 })),
   "total": zod.number()
+})
+
+
+/**
+ * @summary Update a user's role, active status, or password
+ */
+export const UpdateAuthUserParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updateAuthUserBodyPasswordMin = 8;
+
+
+
+export const UpdateAuthUserBody = zod.object({
+  "role": zod.enum(['owner', 'director', 'supervisor', 'operator', 'viewer', 'dealer']).optional(),
+  "isActive": zod.boolean().optional(),
+  "password": zod.string().min(updateAuthUserBodyPasswordMin).optional()
+})
+
+export const UpdateAuthUserResponse = zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "name": zod.string(),
+  "role": zod.enum(['owner', 'director', 'supervisor', 'operator', 'viewer', 'dealer']),
+  "dealerId": zod.string().uuid().nullable(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date()
 })
 
 
