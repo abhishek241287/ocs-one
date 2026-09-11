@@ -1,26 +1,33 @@
 import { useState, useRef } from "react";
 import { useFormKeyboardNav } from "@/hooks/use-form-keyboard-nav";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Zap, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useLogin } from "@/hooks/use-auth";
+import {
+  DEALER_SESSION_CHANGED_MESSAGE,
+  DEALER_SESSION_CHANGED_REASON,
+  useLogin,
+} from "@/hooks/use-auth";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const login = useLogin();
   const formRef = useRef<HTMLFormElement>(null);
   useFormKeyboardNav({ ref: formRef, onSubmit: () => formRef.current?.requestSubmit(), autoFocusDelay: 0 });
+  const loginReason = new URLSearchParams(search).get("reason");
+  const dealerSessionChanged = loginReason === DEALER_SESSION_CHANGED_REASON;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await login.mutateAsync({ email, password });
-      setLocation("/dashboard");
+      const { user } = await login.mutateAsync({ email, password });
+      setLocation(user.role === "dealer" ? "/fulfillment/dealers" : "/dashboard");
     } catch {
       // error displayed via login.error
     }
@@ -75,6 +82,16 @@ export default function LoginPage() {
               Sign in to OCS One. Accounts are provisioned by your administrator.
             </p>
           </div>
+
+          {dealerSessionChanged && (
+            <div
+              data-testid="dealer-session-expired-message"
+              className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+              role="status"
+            >
+              {DEALER_SESSION_CHANGED_MESSAGE}
+            </div>
+          )}
 
           {login.error && (
             <div className="rounded-md bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">

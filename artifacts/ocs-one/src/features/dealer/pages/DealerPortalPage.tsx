@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppLayout from "@/layouts/AppLayout";
 import {
   useListDealers,
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Loader2, Store } from "lucide-react";
 import { ModuleHeader } from "@/components/ods";
+import { useAuth, useDealerSessionRecovery } from "@/hooks/use-auth";
 
 const statusVariant = (s?: string | null) =>
   s === "dispatched"
@@ -26,18 +27,39 @@ const statusVariant = (s?: string | null) =>
       : "outline";
 
 export default function DealerPortalPage() {
+  const { user, isLoading: authLoading } = useAuth();
   const [dealerId, setDealerId] = useState("");
+  const isDealer = user?.role === "dealer";
+  const effectiveDealerId = isDealer ? user.dealerId ?? "" : dealerId;
+  const recoverDealerSession = useDealerSessionRecovery();
 
-  const { data: dealersData } = useListDealers({ pageSize: 500 } as any);
+  const dealersQuery = useListDealers(
+    { pageSize: 500 },
+    { query: { enabled: !authLoading && !isDealer } } as any,
+  );
+  const { data: dealersData } = dealersQuery;
   const dealers = useMemo(() => dealersData?.items ?? [], [dealersData]);
 
-  const enabled = !!dealerId;
-  const { data: inv, isLoading: invLoading } = useDealerInventory(dealerId, {
+  const enabled = !!effectiveDealerId;
+  const inventoryQuery = useDealerInventory(effectiveDealerId, {
     query: { enabled },
   } as any);
-  const { data: hist, isLoading: histLoading } = useDealerDispatchHistory(dealerId, {
+  const historyQuery = useDealerDispatchHistory(effectiveDealerId, {
     query: { enabled },
   } as any);
+  const { data: inv, isLoading: invLoading } = inventoryQuery;
+  const { data: hist, isLoading: histLoading } = historyQuery;
+
+  useEffect(() => {
+    const sessionError =
+      dealersQuery.error ?? inventoryQuery.error ?? historyQuery.error;
+    if (sessionError) recoverDealerSession(sessionError);
+  }, [
+    dealersQuery.error,
+    inventoryQuery.error,
+    historyQuery.error,
+    recoverDealerSession,
+  ]);
 
   return (
     <AppLayout>
@@ -51,35 +73,45 @@ export default function DealerPortalPage() {
 
         <Card>
           <CardContent className="pt-6">
-            <div className="max-w-sm space-y-1.5">
-              <Label className="text-xs">Dealer</Label>
-              <Select value={dealerId} onValueChange={setDealerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a dealer…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dealers.length === 0 ? (
-                    <div className="px-3 py-2 text-xs text-muted-foreground">
-                      No dealers
-                    </div>
-                  ) : (
-                    dealers.map((d: any) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.dealerName} ({d.dealerCode})
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+            {isDealer ? (
+              <p className="text-sm text-muted-foreground">
+                Your dealership&apos;s current inventory and dispatch history.
+              </p>
+            ) : (
+              <div className="max-w-sm space-y-1.5">
+                <Label className="text-xs">Dealer</Label>
+                <Select value={dealerId} onValueChange={setDealerId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a dealer…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dealers.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        No dealers
+                      </div>
+                    ) : (
+                      dealers.map((d: any) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.dealerName} ({d.dealerCode})
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {!dealerId ? (
+        {!effectiveDealerId ? (
           <Card>
             <CardContent className="py-16 flex flex-col items-center text-muted-foreground">
               <Store className="h-8 w-8 mb-3 opacity-40" />
-              <p className="text-sm">Select a dealer to view inventory and dispatch history.</p>
+              <p className="text-sm">
+                {isDealer
+                  ? "Your account is not linked to a dealership."
+                  : "Select a dealer to view inventory and dispatch history."}
+              </p>
             </CardContent>
           </Card>
         ) : (

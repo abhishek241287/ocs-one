@@ -13,7 +13,8 @@
     "cert:fat:preflight": "pnpm --filter @workspace/api-server run cert:fat:preflight",
     "cert:fat:teardown": "pnpm --filter @workspace/api-server run cert:fat:teardown",
     "test:fat": "pnpm --filter @workspace/api-server run test:fat",
-    "test:fat:journey": "pnpm --filter @workspace/api-server run test:fat:journey"
+    "test:fat:journey": "pnpm --filter @workspace/api-server run test:fat:journey",
+    "test:session-relogin": "pnpm --filter @workspace/ocs-one run test:session-relogin"
   },
   "private": true,
   "devDependencies": {

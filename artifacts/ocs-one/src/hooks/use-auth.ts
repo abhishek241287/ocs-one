@@ -1,13 +1,29 @@
+import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import {
+  AUTH_KEY,
+  DEALER_SESSION_CHANGED_MESSAGE,
+  DEALER_SESSION_CHANGED_REASON,
+  isDealerSessionExpiredError,
+  recoverDealerSession,
+} from "./dealer-session";
+
+export {
+  AUTH_KEY,
+  DEALER_SESSION_CHANGED_MESSAGE,
+  DEALER_SESSION_CHANGED_REASON,
+  isDealerSessionExpiredError,
+  recoverDealerSession,
+} from "./dealer-session";
 
 export interface AuthUser {
   userId: string;
   email: string;
   name: string;
   role: "owner" | "director" | "supervisor" | "operator" | "viewer" | "dealer";
+  dealerId?: string | null;
 }
-
-const AUTH_KEY = ["auth", "me"] as const;
 
 async function fetchMe(): Promise<AuthUser | null> {
   const res = await fetch(`${import.meta.env.BASE_URL}api/auth/me`, {
@@ -32,6 +48,16 @@ export function useAuth() {
     isLoading,
     isAuthenticated: !!user,
   };
+}
+
+export function useDealerSessionRecovery() {
+  const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
+
+  return useCallback(
+    (error: unknown) => recoverDealerSession(queryClient, setLocation, error),
+    [queryClient, setLocation],
+  );
 }
 
 export function useLogin() {
