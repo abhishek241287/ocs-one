@@ -1,6 +1,6 @@
 # Task #35 — Transfer Destination Ledger Decision
 
-**Status:** Proposed decision, pending approval  
+**Status:** Approved — Option A
 **Scope:** Development architecture only  
 **FAT status:** Unchanged. Block 3 remains stopped; `INV-P04` remains a confirmed
 nonconformance under the current approved contract.
@@ -102,8 +102,9 @@ source picker report stock that has already been transferred. A carefully
 designed Option B could be valid later, but it is not a safe narrow fix for
 `INV-P04`.
 
-This is a recommendation for approval, not an authorization to change the FAT
-contract or application.
+Option A is approved for development implementation. The approved FAT contract
+language is updated in `FAT_TEST_CASES.md` and `FAT_MASTER_TEST_PLAN.md`; the
+frozen candidate and existing FAT evidence remain unchanged.
 
 ## Required implementation and regression gate after approval
 

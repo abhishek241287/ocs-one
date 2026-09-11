@@ -126,8 +126,11 @@ The full action-by-action matrix is in `FAT_ROLE_MATRIX.md`.
 The following are release-blocking FAT gates:
 
 1. Inventory is an append-only signed ledger. GRN posting creates the expected
-   transaction rows exactly once; transfers create one negative source and one
-   positive destination movement.
+   transaction rows exactly once; a Store → Cell Processing transfer creates one
+   negative source movement and an immutable `material_transfer` linked to one
+   `cell_lot` and its generated `cells`. The destination is reconciled across
+   those domains; it is not represented by a second `available` row on the
+   original GRN line.
 2. Inspection cannot be repeated for the same GRN and cannot partially cover
    pending lines.
 3. Cell grading and correction preserve the cell-lot timeline and do not

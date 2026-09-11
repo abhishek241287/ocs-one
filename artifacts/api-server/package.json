@@ -11,6 +11,7 @@
     "test:authz": "tsx src/cert/authz-suite.ts",
     "test:audit": "tsx src/cert/audit-suite.ts",
     "test:session": "tsx src/cert/session-suite.ts",
+    "test:task35-transfer-domain": "tsx src/cert/task35-transfer-domain-suite.ts",
     "test:config": "tsx src/cert/config-suite.ts",
     "cert:fat:seed": "tsx src/cert/fat-seed.ts --action=seed",
     "cert:fat:verify": "tsx src/cert/fat-seed.ts --action=verify",
