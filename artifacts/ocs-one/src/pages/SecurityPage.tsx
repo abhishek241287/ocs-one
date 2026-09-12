@@ -19,13 +19,16 @@ import {
 } from "lucide-react";
 import { OdsPageLayout, ModuleHeader } from "@/components/ods";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   useSecurityDashboard,
   type AuthzOutcome,
   type Principal,
   type SecurityEventRow,
   type DealerAssignmentChange,
+  type SecurityDashboardFilters,
 } from "@/features/developer/hooks/useSecurityDashboard";
+import { useState } from "react";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -157,9 +160,15 @@ function DealershipCell({ snapshot }: { snapshot: DealerAssignmentChange["previo
   );
 }
 
-function DealerAssignmentTable({ rows }: { rows: DealerAssignmentChange[] }) {
+function DealerAssignmentTable({
+  rows,
+  emptyLabel = "No dealer-account changes recorded.",
+}: {
+  rows: DealerAssignmentChange[];
+  emptyLabel?: string;
+}) {
   if (rows.length === 0) {
-    return <p className="text-xs text-slate-400 italic">No dealer-account changes recorded.</p>;
+    return <p className="text-xs text-slate-400 italic">{emptyLabel}</p>;
   }
   return (
     <div className="overflow-x-auto">
@@ -195,7 +204,40 @@ function DealerAssignmentTable({ rows }: { rows: DealerAssignmentChange[] }) {
 // ─── Page ──────────────────────────────────────────────────────────────────
 
 export default function SecurityPage() {
-  const { data, isLoading, isError, error, isFetching, refetch } = useSecurityDashboard();
+  const [draftFilters, setDraftFilters] = useState({
+    targetEmail: "",
+    from: "",
+    to: "",
+  });
+  const [appliedFilters, setAppliedFilters] = useState<SecurityDashboardFilters>({});
+  const [filterError, setFilterError] = useState<string | null>(null);
+  const { data, isLoading, isError, error, isFetching, refetch } = useSecurityDashboard(appliedFilters);
+  const hasDealerFilters = Boolean(
+    appliedFilters.targetEmail || appliedFilters.from || appliedFilters.to,
+  );
+
+  function applyDealerFilters(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const targetEmail = draftFilters.targetEmail.trim();
+    const from = draftFilters.from;
+    const to = draftFilters.to;
+    if (from && to && from > to) {
+      setFilterError("The start date must be on or before the end date.");
+      return;
+    }
+    setFilterError(null);
+    setAppliedFilters({
+      ...(targetEmail ? { targetEmail } : {}),
+      ...(from ? { from } : {}),
+      ...(to ? { to } : {}),
+    });
+  }
+
+  function resetDealerFilters() {
+    setDraftFilters({ targetEmail: "", from: "", to: "" });
+    setFilterError(null);
+    setAppliedFilters({});
+  }
 
   const header = (
     <ModuleHeader
@@ -367,11 +409,71 @@ export default function SecurityPage() {
               subtitle="Audited dealership assignment history — actor, target, and before/after dealership snapshots"
               right={
                 <span className={`rounded-full px-3 py-1 text-xs font-medium ${data.dealerAssignmentChanges.last7d > 0 ? "bg-sky-50 text-sky-700" : "bg-slate-100 text-slate-500"}`}>
-                  {data.dealerAssignmentChanges.last7d} in last 7 days
+                  {hasDealerFilters
+                    ? `${data.dealerAssignmentChanges.filteredCount} matching change${data.dealerAssignmentChanges.filteredCount === 1 ? "" : "s"}`
+                    : `${data.dealerAssignmentChanges.last7d} in last 7 days`}
                 </span>
               }
             >
-              <DealerAssignmentTable rows={data.dealerAssignmentChanges.recent} />
+              <form onSubmit={applyDealerFilters} className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="min-w-[220px] flex-1">
+                    <label htmlFor="dealer-history-account" className="mb-1 block text-xs font-medium text-slate-600">
+                      Target account
+                    </label>
+                    <Input
+                      id="dealer-history-account"
+                      type="email"
+                      value={draftFilters.targetEmail}
+                      onChange={(event) => setDraftFilters((current) => ({ ...current, targetEmail: event.target.value }))}
+                      placeholder="dealer@example.com"
+                      className="h-9 bg-white text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="dealer-history-from" className="mb-1 block text-xs font-medium text-slate-600">
+                      From
+                    </label>
+                    <Input
+                      id="dealer-history-from"
+                      type="date"
+                      value={draftFilters.from}
+                      onChange={(event) => setDraftFilters((current) => ({ ...current, from: event.target.value }))}
+                      className="h-9 bg-white text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="dealer-history-to" className="mb-1 block text-xs font-medium text-slate-600">
+                      To
+                    </label>
+                    <Input
+                      id="dealer-history-to"
+                      type="date"
+                      value={draftFilters.to}
+                      onChange={(event) => setDraftFilters((current) => ({ ...current, to: event.target.value }))}
+                      className="h-9 bg-white text-xs"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="submit" size="sm" disabled={isFetching}>
+                      Apply filters
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" onClick={resetDealerFilters} disabled={!hasDealerFilters && !draftFilters.targetEmail && !draftFilters.from && !draftFilters.to}>
+                      Reset
+                    </Button>
+                  </div>
+                </div>
+                {filterError && <p className="mt-2 text-xs text-red-600" role="alert">{filterError}</p>}
+              </form>
+              {isFetching && (
+                <p className="mb-3 text-xs text-sky-600">Loading dealer-account history…</p>
+              )}
+              <DealerAssignmentTable
+                rows={data.dealerAssignmentChanges.recent}
+                emptyLabel={hasDealerFilters
+                  ? "No dealer-account changes match these filters."
+                  : "No dealer-account changes recorded."}
+              />
             </SectionCard>
 
             {/* ─── 6. Permission failures (403) ─────────────────────────── */}

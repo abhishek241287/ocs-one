@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { db, usersTable, securityEventsTable } from "@workspace/db";
-import { count, desc, eq, sql, gte } from "drizzle-orm";
+import { and, count, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { requireRole } from "../../middleware/auth";
 import {
   AUDIT_MATRIX,
@@ -26,6 +26,8 @@ import {
 const router: IRouter = Router();
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type SecurityEventRow = typeof securityEventsTable.$inferSelect;
 
@@ -155,10 +157,64 @@ async function readScanSummary(): Promise<{
   }
 }
 
+function queryString(value: unknown): string | null | "invalid" {
+  if (value == null || value === "") return null;
+  if (Array.isArray(value) || typeof value !== "string") return "invalid";
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function parseDateFilter(value: unknown): string | null | "invalid" {
+  const dateString = queryString(value);
+  if (dateString === "invalid" || dateString === null) return dateString;
+  if (!DATE_ONLY_RE.test(dateString)) return "invalid";
+
+  const date = new Date(`${dateString}T00:00:00.000Z`);
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== dateString
+  ) {
+    return "invalid";
+  }
+  return dateString;
+}
+
 // ─── GET /api/developer/security — security posture dashboard (director-only) ───
-router.get("/", requireRole("director"), async (_req, res) => {
+router.get("/", requireRole("director"), async (req, res) => {
+  const targetEmail = queryString(req.query.targetEmail);
+  const from = parseDateFilter(req.query.from);
+  const to = parseDateFilter(req.query.to);
+
+  if (
+    targetEmail === "invalid" ||
+    (targetEmail !== null && !EMAIL_RE.test(targetEmail)) ||
+    from === "invalid" ||
+    to === "invalid"
+  ) {
+    res.status(400).json({
+      error: "targetEmail must be a valid email and from/to must be valid YYYY-MM-DD dates",
+    });
+    return;
+  }
+
+  if (from && to && from > to) {
+    res.status(400).json({ error: "from must be on or before to" });
+    return;
+  }
+
   const since24h = new Date(Date.now() - DAY_MS);
   const since7d = new Date(Date.now() - 7 * DAY_MS);
+  const assignmentFilterConditions = [
+    eq(securityEventsTable.eventType, DEALER_ASSIGNMENT_EVENT_TYPE),
+    ...(targetEmail ? [eq(securityEventsTable.targetEmail, targetEmail.toLowerCase())] : []),
+    ...(from ? [gte(securityEventsTable.createdAt, new Date(`${from}T00:00:00.000Z`))] : []),
+    ...(to ? [lte(securityEventsTable.createdAt, new Date(`${to}T23:59:59.999Z`))] : []),
+  ];
+  const assignmentFilterWhere = and(...assignmentFilterConditions);
+  const last7dAssignmentWhere = and(
+    ...assignmentFilterConditions,
+    gte(securityEventsTable.createdAt, since7d),
+  );
 
   const [
     usersByRoleRows,
@@ -171,6 +227,7 @@ router.get("/", requireRole("director"), async (_req, res) => {
     permissionFailuresRecent,
     auditActivityRecent,
     dealerAssignmentChangesCountRow,
+    dealerAssignmentChangesFilteredCountRow,
     dealerAssignmentChangesRecent,
     scan,
   ] = await Promise.all([
@@ -233,13 +290,15 @@ router.get("/", requireRole("director"), async (_req, res) => {
     db
       .select({ total: count() })
       .from(securityEventsTable)
-      .where(
-        sql`${securityEventsTable.eventType} = ${DEALER_ASSIGNMENT_EVENT_TYPE} AND ${securityEventsTable.createdAt} >= ${since7d}`,
-      ),
+      .where(last7dAssignmentWhere),
+    db
+      .select({ total: count() })
+      .from(securityEventsTable)
+      .where(assignmentFilterWhere),
     db
       .select()
       .from(securityEventsTable)
-      .where(eq(securityEventsTable.eventType, DEALER_ASSIGNMENT_EVENT_TYPE))
+      .where(assignmentFilterWhere)
       .orderBy(desc(securityEventsTable.createdAt))
       .limit(30),
     // 8. Scan / dependency / certification summary from disk
@@ -306,7 +365,13 @@ router.get("/", requireRole("director"), async (_req, res) => {
     // 8. Dedicated dealer-account history and count (last 7d / recent 30)
     dealerAssignmentChanges: {
       last7d: dealerAssignmentChangesCountRow[0]?.total ?? 0,
+      filteredCount: dealerAssignmentChangesFilteredCountRow[0]?.total ?? 0,
       recent: dealerAssignmentChangesRecent.map(parseDealerAssignmentChange),
+      filters: {
+        targetEmail: targetEmail?.toLowerCase() ?? null,
+        from,
+        to,
+      },
     },
 
     // 9. Event counts (histogram, 7d)
