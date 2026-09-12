@@ -9,6 +9,7 @@
  * Usage:
  *   FAT_TEST_PASSWORD='provided out of band' pnpm cert:fat:seed
  *   pnpm cert:fat:verify
+ *   pnpm cert:fat:smoke
  *   pnpm cert:fat:seed -- --action=teardown
  */
 

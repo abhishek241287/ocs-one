@@ -16,6 +16,7 @@
     "cert:fat:seed": "tsx src/cert/fat-seed.ts --action=seed",
     "cert:fat:verify": "tsx src/cert/fat-seed.ts --action=verify",
     "cert:fat:preflight": "tsx src/cert/fat-seed.ts --action=preflight",
+    "cert:fat:smoke": "FAT_READONLY_ONLY=1 tsx src/cert/fat-journey-evidence.ts",
     "cert:fat:teardown": "tsx src/cert/fat-seed.ts --action=teardown",
     "test:fat:preflight-drift": "tsx src/cert/fat-preflight-drift-suite.ts",
     "test:fat": "pnpm run cert:fat:seed && pnpm run cert:fat:verify",

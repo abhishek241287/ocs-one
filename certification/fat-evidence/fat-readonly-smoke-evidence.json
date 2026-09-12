@@ -1,0 +1,1484 @@
+{
+  "run_at": "2026-09-12T02:41:04.998Z",
+  "environment": "http://localhost:8080",
+  "dataset": "FAT-E2E-",
+  "mode": "read-only-route-smoke",
+  "frozen_tag": "FAT-CANDIDATE-2026-09-08",
+  "frozen_commit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7",
+  "password_evidence": "omitted; supplied only through FAT_TEST_PASSWORD",
+  "summary": {
+    "total": 32,
+    "passed": 32,
+    "failed": 0
+  },
+  "cases": [
+    {
+      "case_id": "SMOKE-AUTH-P01",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "owner",
+      "actor_id": "fa110000-0000-4000-8000-000000000001",
+      "actor_alias": "fat.owner@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000001",
+          "email": "fat.owner@fat.local",
+          "name": "FAT E2E Owner",
+          "role": "owner",
+          "dealerId": null
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-AUTH-P01",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000002",
+          "email": "fat.director@fat.local",
+          "name": "FAT E2E Director",
+          "role": "director",
+          "dealerId": null
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-AUTH-P01",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000003",
+          "email": "fat.supervisor@fat.local",
+          "name": "FAT E2E Supervisor",
+          "role": "supervisor",
+          "dealerId": null
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-AUTH-P01",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "actor_alias": "fat.operator@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000004",
+          "email": "fat.operator@fat.local",
+          "name": "FAT E2E Operator",
+          "role": "operator",
+          "dealerId": null
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-AUTH-P01",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000005",
+          "email": "fat.viewer@fat.local",
+          "name": "FAT E2E Viewer",
+          "role": "viewer",
+          "dealerId": null
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-AUTH-P01",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "id": "fa110000-0000-4000-8000-000000000006",
+          "email": "fat.dealer@fat.local",
+          "name": "FAT E2E Dealer",
+          "role": "dealer",
+          "dealerId": "fa120000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-AUTH-P02",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "owner",
+      "actor_id": "fa110000-0000-4000-8000-000000000001",
+      "actor_alias": "fat.owner@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "userId": "fa110000-0000-4000-8000-000000000001",
+          "email": "fat.owner@fat.local",
+          "name": "FAT E2E Owner",
+          "role": "owner",
+          "dealerId": null,
+          "sessionVersion": 0,
+          "iat": 1789180865,
+          "exp": 1789209665
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-AUTH-P02",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "owner",
+      "actor_id": "fa110000-0000-4000-8000-000000000001",
+      "actor_alias": "fat.owner@fat.local",
+      "method": "ASSERT",
+      "path": "/api/auth/me",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "id": "fa110000-0000-4000-8000-000000000001",
+          "email": "fat.owner@fat.local",
+          "role": "owner",
+          "dealerId": null
+        },
+        "actual": {
+          "userId": "fa110000-0000-4000-8000-000000000001",
+          "email": "fat.owner@fat.local",
+          "name": "FAT E2E Owner",
+          "role": "owner",
+          "dealerId": null,
+          "sessionVersion": 0,
+          "iat": 1789180865,
+          "exp": 1789209665
+        }
+      },
+      "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
+    },
+    {
+      "case_id": "SMOKE-AUTH-P02",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "userId": "fa110000-0000-4000-8000-000000000002",
+          "email": "fat.director@fat.local",
+          "name": "FAT E2E Director",
+          "role": "director",
+          "dealerId": null,
+          "sessionVersion": 0,
+          "iat": 1789180865,
+          "exp": 1789209665
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-AUTH-P02",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "director",
+      "actor_id": "fa110000-0000-4000-8000-000000000002",
+      "actor_alias": "fat.director@fat.local",
+      "method": "ASSERT",
+      "path": "/api/auth/me",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "id": "fa110000-0000-4000-8000-000000000002",
+          "email": "fat.director@fat.local",
+          "role": "director",
+          "dealerId": null
+        },
+        "actual": {
+          "userId": "fa110000-0000-4000-8000-000000000002",
+          "email": "fat.director@fat.local",
+          "name": "FAT E2E Director",
+          "role": "director",
+          "dealerId": null,
+          "sessionVersion": 0,
+          "iat": 1789180865,
+          "exp": 1789209665
+        }
+      },
+      "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
+    },
+    {
+      "case_id": "SMOKE-AUTH-P02",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "userId": "fa110000-0000-4000-8000-000000000003",
+          "email": "fat.supervisor@fat.local",
+          "name": "FAT E2E Supervisor",
+          "role": "supervisor",
+          "dealerId": null,
+          "sessionVersion": 0,
+          "iat": 1789180865,
+          "exp": 1789209665
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-AUTH-P02",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "ASSERT",
+      "path": "/api/auth/me",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "id": "fa110000-0000-4000-8000-000000000003",
+          "email": "fat.supervisor@fat.local",
+          "role": "supervisor",
+          "dealerId": null
+        },
+        "actual": {
+          "userId": "fa110000-0000-4000-8000-000000000003",
+          "email": "fat.supervisor@fat.local",
+          "name": "FAT E2E Supervisor",
+          "role": "supervisor",
+          "dealerId": null,
+          "sessionVersion": 0,
+          "iat": 1789180865,
+          "exp": 1789209665
+        }
+      },
+      "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
+    },
+    {
+      "case_id": "SMOKE-AUTH-P02",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "actor_alias": "fat.operator@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "userId": "fa110000-0000-4000-8000-000000000004",
+          "email": "fat.operator@fat.local",
+          "name": "FAT E2E Operator",
+          "role": "operator",
+          "dealerId": null,
+          "sessionVersion": 0,
+          "iat": 1789180866,
+          "exp": 1789209666
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-AUTH-P02",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "actor_alias": "fat.operator@fat.local",
+      "method": "ASSERT",
+      "path": "/api/auth/me",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "id": "fa110000-0000-4000-8000-000000000004",
+          "email": "fat.operator@fat.local",
+          "role": "operator",
+          "dealerId": null
+        },
+        "actual": {
+          "userId": "fa110000-0000-4000-8000-000000000004",
+          "email": "fat.operator@fat.local",
+          "name": "FAT E2E Operator",
+          "role": "operator",
+          "dealerId": null,
+          "sessionVersion": 0,
+          "iat": 1789180866,
+          "exp": 1789209666
+        }
+      },
+      "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
+    },
+    {
+      "case_id": "SMOKE-AUTH-P02",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "userId": "fa110000-0000-4000-8000-000000000005",
+          "email": "fat.viewer@fat.local",
+          "name": "FAT E2E Viewer",
+          "role": "viewer",
+          "dealerId": null,
+          "sessionVersion": 0,
+          "iat": 1789180866,
+          "exp": 1789209666
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-AUTH-P02",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "ASSERT",
+      "path": "/api/auth/me",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "id": "fa110000-0000-4000-8000-000000000005",
+          "email": "fat.viewer@fat.local",
+          "role": "viewer",
+          "dealerId": null
+        },
+        "actual": {
+          "userId": "fa110000-0000-4000-8000-000000000005",
+          "email": "fat.viewer@fat.local",
+          "name": "FAT E2E Viewer",
+          "role": "viewer",
+          "dealerId": null,
+          "sessionVersion": 0,
+          "iat": 1789180866,
+          "exp": 1789209666
+        }
+      },
+      "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
+    },
+    {
+      "case_id": "SMOKE-AUTH-P02",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "http_status": 200,
+      "response_body": {
+        "user": {
+          "userId": "fa110000-0000-4000-8000-000000000006",
+          "email": "fat.dealer@fat.local",
+          "name": "FAT E2E Dealer",
+          "role": "dealer",
+          "dealerId": "fa120000-0000-4000-8000-000000000001",
+          "sessionVersion": 0,
+          "iat": 1789180866,
+          "exp": 1789209666
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-AUTH-P02",
+      "area": "authentication",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "ASSERT",
+      "path": "/api/auth/me",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "id": "fa110000-0000-4000-8000-000000000006",
+          "email": "fat.dealer@fat.local",
+          "role": "dealer",
+          "dealerId": "fa120000-0000-4000-8000-000000000001"
+        },
+        "actual": {
+          "userId": "fa110000-0000-4000-8000-000000000006",
+          "email": "fat.dealer@fat.local",
+          "name": "FAT E2E Dealer",
+          "role": "dealer",
+          "dealerId": "fa120000-0000-4000-8000-000000000001",
+          "sessionVersion": 0,
+          "iat": 1789180866,
+          "exp": 1789209666
+        }
+      },
+      "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
+    },
+    {
+      "case_id": "SMOKE-PORTAL-P01",
+      "area": "dealer-portal",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "GET",
+      "path": "/api/dealers/fa120000-0000-4000-8000-000000000001/inventory",
+      "http_status": 200,
+      "response_body": {
+        "dealer": {
+          "id": "fa120000-0000-4000-8000-000000000001",
+          "dealerCode": "FAT-E2E-DLR-A",
+          "dealerName": "FAT E2E Dealer Alpha",
+          "status": "active"
+        },
+        "total": 1,
+        "items": [
+          {
+            "id": "fa190000-0000-4000-8000-000000000001",
+            "category_id": "fa130000-0000-4000-8000-000000000001",
+            "model_id": "fa130000-0000-4000-8000-000000000011",
+            "workflow_code": "FAT-E2E-BATTERY-WORKFLOW",
+            "source_production_order_id": "fa180000-0000-4000-8000-000000000001",
+            "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+            "serial_source": "OCS",
+            "qc_status": "approved",
+            "product_status": "dispatched",
+            "current_location": "FAT E2E Dealer Alpha",
+            "dealer_id": "fa120000-0000-4000-8000-000000000001",
+            "manufacturing_completed_at": "2026-09-08T11:57:12.680Z",
+            "created_at": "2026-09-08T11:57:12.704Z",
+            "updated_at": "2026-09-08T11:57:12.704Z",
+            "category_name": "FAT E2E Battery Pack",
+            "model_code": "FAT-E2E-MODEL-16S280",
+            "model_name": "FAT E2E 16S 280Ah Battery Pack",
+            "dealer_name": "FAT E2E Dealer Alpha"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SMOKE-PORTAL-P01",
+      "area": "dealer-portal",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "ASSERT",
+      "path": "/api/dealers/fa120000-0000-4000-8000-000000000001/inventory",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "total": 1,
+          "productId": "fa190000-0000-4000-8000-000000000001",
+          "dealerId": "fa120000-0000-4000-8000-000000000001"
+        },
+        "actual": {
+          "dealer": {
+            "id": "fa120000-0000-4000-8000-000000000001",
+            "dealerCode": "FAT-E2E-DLR-A",
+            "dealerName": "FAT E2E Dealer Alpha",
+            "status": "active"
+          },
+          "total": 1,
+          "items": [
+            {
+              "id": "fa190000-0000-4000-8000-000000000001",
+              "category_id": "fa130000-0000-4000-8000-000000000001",
+              "model_id": "fa130000-0000-4000-8000-000000000011",
+              "workflow_code": "FAT-E2E-BATTERY-WORKFLOW",
+              "source_production_order_id": "fa180000-0000-4000-8000-000000000001",
+              "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+              "serial_source": "OCS",
+              "qc_status": "approved",
+              "product_status": "dispatched",
+              "current_location": "FAT E2E Dealer Alpha",
+              "dealer_id": "fa120000-0000-4000-8000-000000000001",
+              "manufacturing_completed_at": "2026-09-08T11:57:12.680Z",
+              "created_at": "2026-09-08T11:57:12.704Z",
+              "updated_at": "2026-09-08T11:57:12.704Z",
+              "category_name": "FAT E2E Battery Pack",
+              "model_code": "FAT-E2E-MODEL-16S280",
+              "model_name": "FAT E2E 16S 280Ah Battery Pack",
+              "dealer_name": "FAT E2E Dealer Alpha"
+            }
+          ]
+        }
+      },
+      "note": "Dealer inventory must return only the controlled FAT product for the authenticated dealer."
+    },
+    {
+      "case_id": "SMOKE-PORTAL-P02",
+      "area": "dealer-portal",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "GET",
+      "path": "/api/dealers/fa120000-0000-4000-8000-000000000001/dispatch-history",
+      "http_status": 200,
+      "response_body": {
+        "dealer": {
+          "id": "fa120000-0000-4000-8000-000000000001",
+          "dealerCode": "FAT-E2E-DLR-A",
+          "dealerName": "FAT E2E Dealer Alpha",
+          "status": "active"
+        },
+        "total": 1,
+        "items": [
+          {
+            "event_id": "d7779470-1ff2-42ea-af58-d23d64325d18",
+            "product_id": "fa190000-0000-4000-8000-000000000001",
+            "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+            "category_name": "FAT E2E Battery Pack",
+            "model_name": "FAT E2E 16S 280Ah Battery Pack",
+            "dispatch_number": null,
+            "dispatch_date": null,
+            "invoice_number": null,
+            "dispatched_at": "2026-09-08T11:57:12.704Z",
+            "actor": "fat.director@fat.local"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SMOKE-PORTAL-P02",
+      "area": "dealer-portal",
+      "result": "PASS",
+      "role": "dealer",
+      "actor_id": "fa110000-0000-4000-8000-000000000006",
+      "actor_alias": "fat.dealer@fat.local",
+      "method": "ASSERT",
+      "path": "/api/dealers/fa120000-0000-4000-8000-000000000001/dispatch-history",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "total": 1,
+          "productId": "fa190000-0000-4000-8000-000000000001"
+        },
+        "actual": {
+          "dealer": {
+            "id": "fa120000-0000-4000-8000-000000000001",
+            "dealerCode": "FAT-E2E-DLR-A",
+            "dealerName": "FAT E2E Dealer Alpha",
+            "status": "active"
+          },
+          "total": 1,
+          "items": [
+            {
+              "event_id": "d7779470-1ff2-42ea-af58-d23d64325d18",
+              "product_id": "fa190000-0000-4000-8000-000000000001",
+              "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+              "category_name": "FAT E2E Battery Pack",
+              "model_name": "FAT E2E 16S 280Ah Battery Pack",
+              "dispatch_number": null,
+              "dispatch_date": null,
+              "invoice_number": null,
+              "dispatched_at": "2026-09-08T11:57:12.704Z",
+              "actor": "fat.director@fat.local"
+            }
+          ]
+        }
+      },
+      "note": "Dealer dispatch history must return the controlled FAT dispatch event."
+    },
+    {
+      "case_id": "SMOKE-MFG-P01",
+      "area": "manufacturing",
+      "result": "PASS",
+      "role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "actor_alias": "fat.operator@fat.local",
+      "method": "GET",
+      "path": "/api/manufacturing/orders/fa180000-0000-4000-8000-000000000001/stages",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "id": "fa180000-0000-4000-8001-000000000001",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "stageType": "cell_allocation",
+            "stageOrder": 1,
+            "status": "approved",
+            "operatorName": "fat.operator@fat.local",
+            "supervisorName": "fat.supervisor@fat.local",
+            "startedAt": "2026-09-08T11:57:12.680Z",
+            "pausedAt": null,
+            "resumedAt": null,
+            "completedAt": "2026-09-08T11:57:12.680Z",
+            "approvedAt": "2026-09-08T11:57:12.680Z",
+            "notes": "FAT-E2E-cell_allocation-fixture",
+            "photos": [],
+            "stageData": {
+              "stage": "cell_allocation",
+              "valid": true,
+              "fixture": "FAT-E2E-"
+            },
+            "createdAt": "2026-09-08T11:57:12.704Z",
+            "updatedAt": "2026-09-08T11:57:12.704Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8001-000000000002",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "stageType": "assembly",
+            "stageOrder": 2,
+            "status": "approved",
+            "operatorName": "fat.operator@fat.local",
+            "supervisorName": "fat.supervisor@fat.local",
+            "startedAt": "2026-09-08T11:57:12.680Z",
+            "pausedAt": null,
+            "resumedAt": null,
+            "completedAt": "2026-09-08T11:57:12.680Z",
+            "approvedAt": "2026-09-08T11:57:12.680Z",
+            "notes": "FAT-E2E-assembly-fixture",
+            "photos": [],
+            "stageData": {
+              "stage": "assembly",
+              "valid": true,
+              "fixture": "FAT-E2E-"
+            },
+            "createdAt": "2026-09-08T11:57:12.704Z",
+            "updatedAt": "2026-09-08T11:57:12.704Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8001-000000000003",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "stageType": "compression",
+            "stageOrder": 3,
+            "status": "approved",
+            "operatorName": "fat.operator@fat.local",
+            "supervisorName": "fat.supervisor@fat.local",
+            "startedAt": "2026-09-08T11:57:12.680Z",
+            "pausedAt": null,
+            "resumedAt": null,
+            "completedAt": "2026-09-08T11:57:12.680Z",
+            "approvedAt": "2026-09-08T11:57:12.680Z",
+            "notes": "FAT-E2E-compression-fixture",
+            "photos": [],
+            "stageData": {
+              "stage": "compression",
+              "valid": true,
+              "fixture": "FAT-E2E-"
+            },
+            "createdAt": "2026-09-08T11:57:12.704Z",
+            "updatedAt": "2026-09-08T11:57:12.704Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8001-000000000004",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "stageType": "bms_allocation",
+            "stageOrder": 4,
+            "status": "approved",
+            "operatorName": "fat.operator@fat.local",
+            "supervisorName": "fat.supervisor@fat.local",
+            "startedAt": "2026-09-08T11:57:12.680Z",
+            "pausedAt": null,
+            "resumedAt": null,
+            "completedAt": "2026-09-08T11:57:12.680Z",
+            "approvedAt": "2026-09-08T11:57:12.680Z",
+            "notes": "FAT-E2E-bms_allocation-fixture",
+            "photos": [],
+            "stageData": {
+              "stage": "bms_allocation",
+              "valid": true,
+              "fixture": "FAT-E2E-"
+            },
+            "createdAt": "2026-09-08T11:57:12.704Z",
+            "updatedAt": "2026-09-08T11:57:12.704Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8001-000000000005",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "stageType": "bms_programming",
+            "stageOrder": 5,
+            "status": "approved",
+            "operatorName": "fat.operator@fat.local",
+            "supervisorName": "fat.supervisor@fat.local",
+            "startedAt": "2026-09-08T11:57:12.680Z",
+            "pausedAt": null,
+            "resumedAt": null,
+            "completedAt": "2026-09-08T11:57:12.680Z",
+            "approvedAt": "2026-09-08T11:57:12.680Z",
+            "notes": "FAT-E2E-bms_programming-fixture",
+            "photos": [],
+            "stageData": {
+              "stage": "bms_programming",
+              "valid": true,
+              "fixture": "FAT-E2E-"
+            },
+            "createdAt": "2026-09-08T11:57:12.704Z",
+            "updatedAt": "2026-09-08T11:57:12.704Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8001-000000000006",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "stageType": "charging",
+            "stageOrder": 6,
+            "status": "approved",
+            "operatorName": "fat.operator@fat.local",
+            "supervisorName": "fat.supervisor@fat.local",
+            "startedAt": "2026-09-08T11:57:12.680Z",
+            "pausedAt": null,
+            "resumedAt": null,
+            "completedAt": "2026-09-08T11:57:12.680Z",
+            "approvedAt": "2026-09-08T11:57:12.680Z",
+            "notes": "FAT-E2E-charging-fixture",
+            "photos": [],
+            "stageData": {
+              "stage": "charging",
+              "valid": true,
+              "fixture": "FAT-E2E-"
+            },
+            "createdAt": "2026-09-08T11:57:12.704Z",
+            "updatedAt": "2026-09-08T11:57:12.704Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8001-000000000007",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "stageType": "testing",
+            "stageOrder": 7,
+            "status": "approved",
+            "operatorName": "fat.operator@fat.local",
+            "supervisorName": "fat.supervisor@fat.local",
+            "startedAt": "2026-09-08T11:57:12.680Z",
+            "pausedAt": null,
+            "resumedAt": null,
+            "completedAt": "2026-09-08T11:57:12.680Z",
+            "approvedAt": "2026-09-08T11:57:12.680Z",
+            "notes": "FAT-E2E-testing-fixture",
+            "photos": [],
+            "stageData": {
+              "stage": "testing",
+              "valid": true,
+              "fixture": "FAT-E2E-"
+            },
+            "createdAt": "2026-09-08T11:57:12.704Z",
+            "updatedAt": "2026-09-08T11:57:12.704Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8001-000000000008",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "stageType": "quality_control",
+            "stageOrder": 8,
+            "status": "approved",
+            "operatorName": "fat.operator@fat.local",
+            "supervisorName": "fat.supervisor@fat.local",
+            "startedAt": "2026-09-08T11:57:12.680Z",
+            "pausedAt": null,
+            "resumedAt": null,
+            "completedAt": "2026-09-08T11:57:12.680Z",
+            "approvedAt": "2026-09-08T11:57:12.680Z",
+            "notes": "FAT-E2E-quality_control-fixture",
+            "photos": [],
+            "stageData": {
+              "stage": "quality_control",
+              "valid": true,
+              "fixture": "FAT-E2E-"
+            },
+            "createdAt": "2026-09-08T11:57:12.704Z",
+            "updatedAt": "2026-09-08T11:57:12.704Z"
+          },
+          {
+            "id": "fa180000-0000-4000-8001-000000000009",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "stageType": "packing",
+            "stageOrder": 9,
+            "status": "approved",
+            "operatorName": "fat.operator@fat.local",
+            "supervisorName": "fat.supervisor@fat.local",
+            "startedAt": "2026-09-08T11:57:12.680Z",
+            "pausedAt": null,
+            "resumedAt": null,
+            "completedAt": "2026-09-08T11:57:12.680Z",
+            "approvedAt": "2026-09-08T11:57:12.680Z",
+            "notes": "FAT-E2E-packing-fixture",
+            "photos": [],
+            "stageData": {
+              "stage": "packing",
+              "valid": true,
+              "fixture": "FAT-E2E-"
+            },
+            "createdAt": "2026-09-08T11:57:12.704Z",
+            "updatedAt": "2026-09-08T11:57:12.704Z"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SMOKE-MFG-P01",
+      "area": "manufacturing",
+      "result": "PASS",
+      "role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "actor_alias": "fat.operator@fat.local",
+      "method": "ASSERT",
+      "path": "/api/manufacturing/orders/fa180000-0000-4000-8000-000000000001/stages",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "stageCount": 9,
+          "productionOrderId": "fa180000-0000-4000-8000-000000000001"
+        },
+        "actual": {
+          "items": [
+            {
+              "id": "fa180000-0000-4000-8001-000000000001",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "stageType": "cell_allocation",
+              "stageOrder": 1,
+              "status": "approved",
+              "operatorName": "fat.operator@fat.local",
+              "supervisorName": "fat.supervisor@fat.local",
+              "startedAt": "2026-09-08T11:57:12.680Z",
+              "pausedAt": null,
+              "resumedAt": null,
+              "completedAt": "2026-09-08T11:57:12.680Z",
+              "approvedAt": "2026-09-08T11:57:12.680Z",
+              "notes": "FAT-E2E-cell_allocation-fixture",
+              "photos": [],
+              "stageData": {
+                "stage": "cell_allocation",
+                "valid": true,
+                "fixture": "FAT-E2E-"
+              },
+              "createdAt": "2026-09-08T11:57:12.704Z",
+              "updatedAt": "2026-09-08T11:57:12.704Z"
+            },
+            {
+              "id": "fa180000-0000-4000-8001-000000000002",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "stageType": "assembly",
+              "stageOrder": 2,
+              "status": "approved",
+              "operatorName": "fat.operator@fat.local",
+              "supervisorName": "fat.supervisor@fat.local",
+              "startedAt": "2026-09-08T11:57:12.680Z",
+              "pausedAt": null,
+              "resumedAt": null,
+              "completedAt": "2026-09-08T11:57:12.680Z",
+              "approvedAt": "2026-09-08T11:57:12.680Z",
+              "notes": "FAT-E2E-assembly-fixture",
+              "photos": [],
+              "stageData": {
+                "stage": "assembly",
+                "valid": true,
+                "fixture": "FAT-E2E-"
+              },
+              "createdAt": "2026-09-08T11:57:12.704Z",
+              "updatedAt": "2026-09-08T11:57:12.704Z"
+            },
+            {
+              "id": "fa180000-0000-4000-8001-000000000003",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "stageType": "compression",
+              "stageOrder": 3,
+              "status": "approved",
+              "operatorName": "fat.operator@fat.local",
+              "supervisorName": "fat.supervisor@fat.local",
+              "startedAt": "2026-09-08T11:57:12.680Z",
+              "pausedAt": null,
+              "resumedAt": null,
+              "completedAt": "2026-09-08T11:57:12.680Z",
+              "approvedAt": "2026-09-08T11:57:12.680Z",
+              "notes": "FAT-E2E-compression-fixture",
+              "photos": [],
+              "stageData": {
+                "stage": "compression",
+                "valid": true,
+                "fixture": "FAT-E2E-"
+              },
+              "createdAt": "2026-09-08T11:57:12.704Z",
+              "updatedAt": "2026-09-08T11:57:12.704Z"
+            },
+            {
+              "id": "fa180000-0000-4000-8001-000000000004",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "stageType": "bms_allocation",
+              "stageOrder": 4,
+              "status": "approved",
+              "operatorName": "fat.operator@fat.local",
+              "supervisorName": "fat.supervisor@fat.local",
+              "startedAt": "2026-09-08T11:57:12.680Z",
+              "pausedAt": null,
+              "resumedAt": null,
+              "completedAt": "2026-09-08T11:57:12.680Z",
+              "approvedAt": "2026-09-08T11:57:12.680Z",
+              "notes": "FAT-E2E-bms_allocation-fixture",
+              "photos": [],
+              "stageData": {
+                "stage": "bms_allocation",
+                "valid": true,
+                "fixture": "FAT-E2E-"
+              },
+              "createdAt": "2026-09-08T11:57:12.704Z",
+              "updatedAt": "2026-09-08T11:57:12.704Z"
+            },
+            {
+              "id": "fa180000-0000-4000-8001-000000000005",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "stageType": "bms_programming",
+              "stageOrder": 5,
+              "status": "approved",
+              "operatorName": "fat.operator@fat.local",
+              "supervisorName": "fat.supervisor@fat.local",
+              "startedAt": "2026-09-08T11:57:12.680Z",
+              "pausedAt": null,
+              "resumedAt": null,
+              "completedAt": "2026-09-08T11:57:12.680Z",
+              "approvedAt": "2026-09-08T11:57:12.680Z",
+              "notes": "FAT-E2E-bms_programming-fixture",
+              "photos": [],
+              "stageData": {
+                "stage": "bms_programming",
+                "valid": true,
+                "fixture": "FAT-E2E-"
+              },
+              "createdAt": "2026-09-08T11:57:12.704Z",
+              "updatedAt": "2026-09-08T11:57:12.704Z"
+            },
+            {
+              "id": "fa180000-0000-4000-8001-000000000006",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "stageType": "charging",
+              "stageOrder": 6,
+              "status": "approved",
+              "operatorName": "fat.operator@fat.local",
+              "supervisorName": "fat.supervisor@fat.local",
+              "startedAt": "2026-09-08T11:57:12.680Z",
+              "pausedAt": null,
+              "resumedAt": null,
+              "completedAt": "2026-09-08T11:57:12.680Z",
+              "approvedAt": "2026-09-08T11:57:12.680Z",
+              "notes": "FAT-E2E-charging-fixture",
+              "photos": [],
+              "stageData": {
+                "stage": "charging",
+                "valid": true,
+                "fixture": "FAT-E2E-"
+              },
+              "createdAt": "2026-09-08T11:57:12.704Z",
+              "updatedAt": "2026-09-08T11:57:12.704Z"
+            },
+            {
+              "id": "fa180000-0000-4000-8001-000000000007",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "stageType": "testing",
+              "stageOrder": 7,
+              "status": "approved",
+              "operatorName": "fat.operator@fat.local",
+              "supervisorName": "fat.supervisor@fat.local",
+              "startedAt": "2026-09-08T11:57:12.680Z",
+              "pausedAt": null,
+              "resumedAt": null,
+              "completedAt": "2026-09-08T11:57:12.680Z",
+              "approvedAt": "2026-09-08T11:57:12.680Z",
+              "notes": "FAT-E2E-testing-fixture",
+              "photos": [],
+              "stageData": {
+                "stage": "testing",
+                "valid": true,
+                "fixture": "FAT-E2E-"
+              },
+              "createdAt": "2026-09-08T11:57:12.704Z",
+              "updatedAt": "2026-09-08T11:57:12.704Z"
+            },
+            {
+              "id": "fa180000-0000-4000-8001-000000000008",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "stageType": "quality_control",
+              "stageOrder": 8,
+              "status": "approved",
+              "operatorName": "fat.operator@fat.local",
+              "supervisorName": "fat.supervisor@fat.local",
+              "startedAt": "2026-09-08T11:57:12.680Z",
+              "pausedAt": null,
+              "resumedAt": null,
+              "completedAt": "2026-09-08T11:57:12.680Z",
+              "approvedAt": "2026-09-08T11:57:12.680Z",
+              "notes": "FAT-E2E-quality_control-fixture",
+              "photos": [],
+              "stageData": {
+                "stage": "quality_control",
+                "valid": true,
+                "fixture": "FAT-E2E-"
+              },
+              "createdAt": "2026-09-08T11:57:12.704Z",
+              "updatedAt": "2026-09-08T11:57:12.704Z"
+            },
+            {
+              "id": "fa180000-0000-4000-8001-000000000009",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "stageType": "packing",
+              "stageOrder": 9,
+              "status": "approved",
+              "operatorName": "fat.operator@fat.local",
+              "supervisorName": "fat.supervisor@fat.local",
+              "startedAt": "2026-09-08T11:57:12.680Z",
+              "pausedAt": null,
+              "resumedAt": null,
+              "completedAt": "2026-09-08T11:57:12.680Z",
+              "approvedAt": "2026-09-08T11:57:12.680Z",
+              "notes": "FAT-E2E-packing-fixture",
+              "photos": [],
+              "stageData": {
+                "stage": "packing",
+                "valid": true,
+                "fixture": "FAT-E2E-"
+              },
+              "createdAt": "2026-09-08T11:57:12.704Z",
+              "updatedAt": "2026-09-08T11:57:12.704Z"
+            }
+          ]
+        }
+      },
+      "note": "The manufacturing stages route must expose the complete nine-stage FAT projection."
+    },
+    {
+      "case_id": "SMOKE-MFG-P02",
+      "area": "manufacturing",
+      "result": "PASS",
+      "role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "actor_alias": "fat.operator@fat.local",
+      "method": "GET",
+      "path": "/api/manufacturing/orders/fa180000-0000-4000-8000-000000000001/genealogy",
+      "http_status": 200,
+      "response_body": {
+        "items": [
+          {
+            "id": "c772e6a6-032d-4a3f-85e7-b58637a42620",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "componentType": "CELL",
+            "componentId": "fa130000-0000-4000-8000-000000000003",
+            "componentName": "FAT E2E LiFePO4 Cell",
+            "quantity": 16,
+            "serialNumber": "FAT-E2E-CELL-001",
+            "notes": "FAT-E2E-genealogy",
+            "createdAt": "2026-09-08T11:57:12.704Z"
+          },
+          {
+            "id": "cd167086-ff90-4a7d-a804-7dd119bb9ad5",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "componentType": "BMS",
+            "componentId": "fa130000-0000-4000-8000-000000000004",
+            "componentName": "FAT E2E BMS",
+            "quantity": 1,
+            "serialNumber": "FAT-E2E-BMS-001",
+            "notes": "FAT-E2E-genealogy",
+            "createdAt": "2026-09-08T11:57:12.704Z"
+          },
+          {
+            "id": "d0863fb3-179f-425e-be0f-c542d2ea79ec",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "componentType": "CABINET",
+            "componentId": "fa130000-0000-4000-8000-000000000005",
+            "componentName": "FAT E2E Cabinet",
+            "quantity": 1,
+            "serialNumber": "FAT-E2E-CAB-001",
+            "notes": "FAT-E2E-genealogy",
+            "createdAt": "2026-09-08T11:57:12.704Z"
+          },
+          {
+            "id": "1d7285d1-731d-4b3c-a018-796f6f5c1377",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "componentType": "CONNECTOR",
+            "componentId": "fa130000-0000-4000-8000-000000000006",
+            "componentName": "FAT E2E HV Connector",
+            "quantity": 1,
+            "serialNumber": "FAT-E2E-CON-001",
+            "notes": "FAT-E2E-genealogy",
+            "createdAt": "2026-09-08T11:57:12.704Z"
+          },
+          {
+            "id": "f262b8cb-7150-48a0-8631-5b2a7eaf8561",
+            "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+            "componentType": "CABLE",
+            "componentId": "fa130000-0000-4000-8000-000000000007",
+            "componentName": "FAT E2E HV Cable",
+            "quantity": 1,
+            "serialNumber": "FAT-E2E-CABLE-001",
+            "notes": "FAT-E2E-genealogy",
+            "createdAt": "2026-09-08T11:57:12.704Z"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SMOKE-MFG-P02",
+      "area": "manufacturing",
+      "result": "PASS",
+      "role": "operator",
+      "actor_id": "fa110000-0000-4000-8000-000000000004",
+      "actor_alias": "fat.operator@fat.local",
+      "method": "ASSERT",
+      "path": "/api/manufacturing/orders/fa180000-0000-4000-8000-000000000001/genealogy",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "genealogyCount": 5,
+          "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+          "notesPrefix": "FAT-E2E-"
+        },
+        "actual": {
+          "items": [
+            {
+              "id": "c772e6a6-032d-4a3f-85e7-b58637a42620",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "componentType": "CELL",
+              "componentId": "fa130000-0000-4000-8000-000000000003",
+              "componentName": "FAT E2E LiFePO4 Cell",
+              "quantity": 16,
+              "serialNumber": "FAT-E2E-CELL-001",
+              "notes": "FAT-E2E-genealogy",
+              "createdAt": "2026-09-08T11:57:12.704Z"
+            },
+            {
+              "id": "cd167086-ff90-4a7d-a804-7dd119bb9ad5",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "componentType": "BMS",
+              "componentId": "fa130000-0000-4000-8000-000000000004",
+              "componentName": "FAT E2E BMS",
+              "quantity": 1,
+              "serialNumber": "FAT-E2E-BMS-001",
+              "notes": "FAT-E2E-genealogy",
+              "createdAt": "2026-09-08T11:57:12.704Z"
+            },
+            {
+              "id": "d0863fb3-179f-425e-be0f-c542d2ea79ec",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "componentType": "CABINET",
+              "componentId": "fa130000-0000-4000-8000-000000000005",
+              "componentName": "FAT E2E Cabinet",
+              "quantity": 1,
+              "serialNumber": "FAT-E2E-CAB-001",
+              "notes": "FAT-E2E-genealogy",
+              "createdAt": "2026-09-08T11:57:12.704Z"
+            },
+            {
+              "id": "1d7285d1-731d-4b3c-a018-796f6f5c1377",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "componentType": "CONNECTOR",
+              "componentId": "fa130000-0000-4000-8000-000000000006",
+              "componentName": "FAT E2E HV Connector",
+              "quantity": 1,
+              "serialNumber": "FAT-E2E-CON-001",
+              "notes": "FAT-E2E-genealogy",
+              "createdAt": "2026-09-08T11:57:12.704Z"
+            },
+            {
+              "id": "f262b8cb-7150-48a0-8631-5b2a7eaf8561",
+              "productionOrderId": "fa180000-0000-4000-8000-000000000001",
+              "componentType": "CABLE",
+              "componentId": "fa130000-0000-4000-8000-000000000007",
+              "componentName": "FAT E2E HV Cable",
+              "quantity": 1,
+              "serialNumber": "FAT-E2E-CABLE-001",
+              "notes": "FAT-E2E-genealogy",
+              "createdAt": "2026-09-08T11:57:12.704Z"
+            }
+          ]
+        }
+      },
+      "note": "Manufacturing genealogy must expose the five controlled FAT component records."
+    },
+    {
+      "case_id": "SMOKE-FUL-P01",
+      "area": "dispatch",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "GET",
+      "path": "/api/dispatch/fa1a0000-0000-4000-8000-000000000001",
+      "http_status": 200,
+      "response_body": {
+        "id": "fa1a0000-0000-4000-8000-000000000001",
+        "dispatch_number": "FAT-E2E-DISPATCH-001",
+        "invoice_number": "FAT-E2E-INVOICE-001",
+        "dispatch_date": "2026-09-08",
+        "dealer_id": "fa120000-0000-4000-8000-000000000001",
+        "dispatched_by": "fat.supervisor@fat.local",
+        "item_count": 1,
+        "status": "dispatched",
+        "created_at": "2026-09-08T11:57:12.704Z",
+        "dealer": {
+          "code": "FAT-E2E-DLR-A",
+          "name": "FAT E2E Dealer Alpha",
+          "address": "1 FAT E2E Industrial Estate, Bengaluru",
+          "gst_number": "29FATE2E0001Z5",
+          "contact_person": "FAT Dealer Desk",
+          "mobile": "9000000001"
+        },
+        "reversal": null,
+        "items": [
+          {
+            "id": "fa1a0000-0000-4000-8000-000000000002",
+            "product_id": "fa190000-0000-4000-8000-000000000001",
+            "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+            "product_status": "dispatched",
+            "category_name": "FAT E2E Battery Pack",
+            "model_code": "FAT-E2E-MODEL-16S280",
+            "model_name": "FAT E2E 16S 280Ah Battery Pack"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SMOKE-FUL-P01",
+      "area": "dispatch",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "ASSERT",
+      "path": "/api/dispatch/fa1a0000-0000-4000-8000-000000000001",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "dispatchId": "fa1a0000-0000-4000-8000-000000000001",
+          "dealerId": "fa120000-0000-4000-8000-000000000001",
+          "productId": "fa190000-0000-4000-8000-000000000001"
+        },
+        "actual": {
+          "id": "fa1a0000-0000-4000-8000-000000000001",
+          "dispatch_number": "FAT-E2E-DISPATCH-001",
+          "invoice_number": "FAT-E2E-INVOICE-001",
+          "dispatch_date": "2026-09-08",
+          "dealer_id": "fa120000-0000-4000-8000-000000000001",
+          "dispatched_by": "fat.supervisor@fat.local",
+          "item_count": 1,
+          "status": "dispatched",
+          "created_at": "2026-09-08T11:57:12.704Z",
+          "dealer": {
+            "code": "FAT-E2E-DLR-A",
+            "name": "FAT E2E Dealer Alpha",
+            "address": "1 FAT E2E Industrial Estate, Bengaluru",
+            "gst_number": "29FATE2E0001Z5",
+            "contact_person": "FAT Dealer Desk",
+            "mobile": "9000000001"
+          },
+          "reversal": null,
+          "items": [
+            {
+              "id": "fa1a0000-0000-4000-8000-000000000002",
+              "product_id": "fa190000-0000-4000-8000-000000000001",
+              "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+              "product_status": "dispatched",
+              "category_name": "FAT E2E Battery Pack",
+              "model_code": "FAT-E2E-MODEL-16S280",
+              "model_name": "FAT E2E 16S 280Ah Battery Pack"
+            }
+          ]
+        }
+      },
+      "note": "Dispatch detail must resolve the controlled FAT document and serialized product."
+    },
+    {
+      "case_id": "SMOKE-FUL-P02",
+      "area": "customer-warranty",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "GET",
+      "path": "/api/customers/registrations/fa1a0000-0000-4000-8000-000000000003",
+      "http_status": 200,
+      "response_body": {
+        "id": "fa1a0000-0000-4000-8000-000000000003",
+        "registration_number": "FAT-E2E-CUSTOMER-REG-001",
+        "product_id": "fa190000-0000-4000-8000-000000000001",
+        "dealer_id": "fa120000-0000-4000-8000-000000000001",
+        "customer_name": "FAT E2E Customer",
+        "mobile": "9000000099",
+        "address": "99 FAT E2E Customer Road, Bengaluru",
+        "installation_date": "2026-09-08",
+        "registered_by": "fat.supervisor@fat.local",
+        "created_at": "2026-09-08T11:57:12.704Z",
+        "updated_at": "2026-09-08T11:57:12.704Z",
+        "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+        "product_status": "dispatched",
+        "category_name": "FAT E2E Battery Pack",
+        "model_name": "FAT E2E 16S 280Ah Battery Pack",
+        "dealer_name": "FAT E2E Dealer Alpha",
+        "warranty": {
+          "id": "fa1a0000-0000-4000-8000-000000000004",
+          "warranty_number": "FAT-E2E-WARRANTY-001",
+          "product_id": "fa190000-0000-4000-8000-000000000001",
+          "registration_id": "fa1a0000-0000-4000-8000-000000000003",
+          "start_date": "2026-09-08",
+          "period_months": 60,
+          "end_date": "2031-09-08",
+          "voided_at": null,
+          "void_reason": null,
+          "voided_by": null,
+          "created_at": "2026-09-08T11:57:12.704Z",
+          "updated_at": "2026-09-08T11:57:12.704Z",
+          "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+          "customer_name": "FAT E2E Customer",
+          "category_name": "FAT E2E Battery Pack",
+          "model_name": "FAT E2E 16S 280Ah Battery Pack",
+          "status": "active"
+        }
+      }
+    },
+    {
+      "case_id": "SMOKE-FUL-P02",
+      "area": "customer-warranty",
+      "result": "PASS",
+      "role": "supervisor",
+      "actor_id": "fa110000-0000-4000-8000-000000000003",
+      "actor_alias": "fat.supervisor@fat.local",
+      "method": "ASSERT",
+      "path": "/api/customers/registrations/fa1a0000-0000-4000-8000-000000000003",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "registrationId": "fa1a0000-0000-4000-8000-000000000003",
+          "productId": "fa190000-0000-4000-8000-000000000001",
+          "dealerId": "fa120000-0000-4000-8000-000000000001"
+        },
+        "actual": {
+          "id": "fa1a0000-0000-4000-8000-000000000003",
+          "registration_number": "FAT-E2E-CUSTOMER-REG-001",
+          "product_id": "fa190000-0000-4000-8000-000000000001",
+          "dealer_id": "fa120000-0000-4000-8000-000000000001",
+          "customer_name": "FAT E2E Customer",
+          "mobile": "9000000099",
+          "address": "99 FAT E2E Customer Road, Bengaluru",
+          "installation_date": "2026-09-08",
+          "registered_by": "fat.supervisor@fat.local",
+          "created_at": "2026-09-08T11:57:12.704Z",
+          "updated_at": "2026-09-08T11:57:12.704Z",
+          "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+          "product_status": "dispatched",
+          "category_name": "FAT E2E Battery Pack",
+          "model_name": "FAT E2E 16S 280Ah Battery Pack",
+          "dealer_name": "FAT E2E Dealer Alpha",
+          "warranty": {
+            "id": "fa1a0000-0000-4000-8000-000000000004",
+            "warranty_number": "FAT-E2E-WARRANTY-001",
+            "product_id": "fa190000-0000-4000-8000-000000000001",
+            "registration_id": "fa1a0000-0000-4000-8000-000000000003",
+            "start_date": "2026-09-08",
+            "period_months": 60,
+            "end_date": "2031-09-08",
+            "voided_at": null,
+            "void_reason": null,
+            "voided_by": null,
+            "created_at": "2026-09-08T11:57:12.704Z",
+            "updated_at": "2026-09-08T11:57:12.704Z",
+            "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+            "customer_name": "FAT E2E Customer",
+            "category_name": "FAT E2E Battery Pack",
+            "model_name": "FAT E2E 16S 280Ah Battery Pack",
+            "status": "active"
+          }
+        }
+      },
+      "note": "Customer registration detail must resolve the controlled dispatched product and dealer."
+    },
+    {
+      "case_id": "SMOKE-FUL-P03",
+      "area": "customer-warranty",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "GET",
+      "path": "/api/warranties/fa1a0000-0000-4000-8000-000000000004",
+      "http_status": 200,
+      "response_body": {
+        "id": "fa1a0000-0000-4000-8000-000000000004",
+        "warranty_number": "FAT-E2E-WARRANTY-001",
+        "product_id": "fa190000-0000-4000-8000-000000000001",
+        "registration_id": "fa1a0000-0000-4000-8000-000000000003",
+        "start_date": "2026-09-08",
+        "period_months": 60,
+        "end_date": "2031-09-08",
+        "voided_at": null,
+        "void_reason": null,
+        "voided_by": null,
+        "created_at": "2026-09-08T11:57:12.704Z",
+        "updated_at": "2026-09-08T11:57:12.704Z",
+        "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+        "customer_name": "FAT E2E Customer",
+        "category_name": "FAT E2E Battery Pack",
+        "model_name": "FAT E2E 16S 280Ah Battery Pack",
+        "status": "active"
+      }
+    },
+    {
+      "case_id": "SMOKE-FUL-P03",
+      "area": "customer-warranty",
+      "result": "PASS",
+      "role": "viewer",
+      "actor_id": "fa110000-0000-4000-8000-000000000005",
+      "actor_alias": "fat.viewer@fat.local",
+      "method": "ASSERT",
+      "path": "/api/warranties/fa1a0000-0000-4000-8000-000000000004",
+      "http_status": 0,
+      "response_body": {
+        "expected": {
+          "warrantyId": "fa1a0000-0000-4000-8000-000000000004",
+          "productId": "fa190000-0000-4000-8000-000000000001",
+          "registrationId": "fa1a0000-0000-4000-8000-000000000003"
+        },
+        "actual": {
+          "id": "fa1a0000-0000-4000-8000-000000000004",
+          "warranty_number": "FAT-E2E-WARRANTY-001",
+          "product_id": "fa190000-0000-4000-8000-000000000001",
+          "registration_id": "fa1a0000-0000-4000-8000-000000000003",
+          "start_date": "2026-09-08",
+          "period_months": 60,
+          "end_date": "2031-09-08",
+          "voided_at": null,
+          "void_reason": null,
+          "voided_by": null,
+          "created_at": "2026-09-08T11:57:12.704Z",
+          "updated_at": "2026-09-08T11:57:12.704Z",
+          "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+          "customer_name": "FAT E2E Customer",
+          "category_name": "FAT E2E Battery Pack",
+          "model_name": "FAT E2E 16S 280Ah Battery Pack",
+          "status": "active"
+        }
+      },
+      "note": "Warranty detail must resolve the controlled registration and serialized product."
+    }
+  ]
+}

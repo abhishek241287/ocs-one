@@ -89,7 +89,13 @@ async function request(
   role: Role | "anonymous",
   method: string,
   path: string,
-  options: { body?: unknown; expected?: number | number[]; note?: string; cookie?: Cookie } = {},
+  options: {
+    body?: unknown;
+    expected?: number | number[];
+    note?: string;
+    cookie?: Cookie;
+    captureRequestBody?: boolean;
+  } = {},
 ): Promise<{ status: number; body: unknown; cookie?: Cookie }> {
   const cookie = options.cookie ?? (role === "anonymous" ? undefined : tokens.get(role));
   const headers: Record<string, string> = { Accept: "application/json" };
@@ -111,7 +117,9 @@ async function request(
     ...(role === "anonymous" ? { role } : actor(role)),
     method,
     path,
-    ...(options.body !== undefined ? { request_body: redact(options.body) } : {}),
+    ...(options.body !== undefined && options.captureRequestBody !== false
+      ? { request_body: redact(options.body) }
+      : {}),
     http_status: response.status,
     response_body: body,
     ...(requestId ? { request_id: requestId } : {}),
@@ -170,6 +178,7 @@ async function login(role: Role, caseId = "AUTH-P01"): Promise<void> {
   const result = await request(caseId, "authentication", role, "POST", "/api/auth/login", {
     body: { email: actorEmail(role), password: PASSWORD },
     expected: 200,
+    captureRequestBody: false,
   });
   if (result.cookie) tokens.set(role, result.cookie);
 }
@@ -221,6 +230,166 @@ async function runAuth(): Promise<void> {
     });
     await login("owner", "AUTH-P01");
   }
+}
+
+async function runReadOnlySmoke(): Promise<void> {
+  // The smoke pass deliberately authenticates every seeded role, but keeps the
+  // password and session cookie out of the evidence. Login is the only POST:
+  // every fixture/business-record check below is an explicit GET by FAT ID.
+  for (const role of roles) await login(role, "SMOKE-AUTH-P01");
+
+  for (const role of roles) {
+    const path = "/api/auth/me";
+    const me = await get("SMOKE-AUTH-P02", "authentication", role, path);
+    const user = isRecord(me) && isRecord(me.user) ? me.user : null;
+    assertCheck(
+      "SMOKE-AUTH-P02",
+      "authentication",
+      role,
+      path,
+      user?.userId === FAT_IDS.users[role] &&
+        user.email === actorEmail(role) &&
+        user.role === role &&
+        (user.dealerId ?? null) === (role === "dealer" ? FAT_IDS.dealer : null),
+      {
+        id: FAT_IDS.users[role],
+        email: actorEmail(role),
+        role,
+        dealerId: role === "dealer" ? FAT_IDS.dealer : null,
+      },
+      user,
+      "Every seeded role must authenticate and receive the expected scoped identity from /auth/me.",
+    );
+  }
+
+  const dealerInventoryPath = `/api/dealers/${FAT_IDS.dealer}/inventory`;
+  const dealerInventory = await get("SMOKE-PORTAL-P01", "dealer-portal", "dealer", dealerInventoryPath);
+  assertCheck(
+    "SMOKE-PORTAL-P01",
+    "dealer-portal",
+    "dealer",
+    dealerInventoryPath,
+    numberAt(dealerInventory, "total") === 1 &&
+      rowsAt(dealerInventory, "items")[0]?.id === FAT_IDS.products.dispatched &&
+      rowsAt(dealerInventory, "items")[0]?.dealer_id === FAT_IDS.dealer,
+    { total: 1, productId: FAT_IDS.products.dispatched, dealerId: FAT_IDS.dealer },
+    dealerInventory,
+    "Dealer inventory must return only the controlled FAT product for the authenticated dealer.",
+  );
+
+  const dealerHistoryPath = `/api/dealers/${FAT_IDS.dealer}/dispatch-history`;
+  const dealerHistory = await get("SMOKE-PORTAL-P02", "dealer-portal", "dealer", dealerHistoryPath);
+  assertCheck(
+    "SMOKE-PORTAL-P02",
+    "dealer-portal",
+    "dealer",
+    dealerHistoryPath,
+    numberAt(dealerHistory, "total") === 1 &&
+      rowsAt(dealerHistory, "items")[0]?.product_id === FAT_IDS.products.dispatched,
+    { total: 1, productId: FAT_IDS.products.dispatched },
+    dealerHistory,
+    "Dealer dispatch history must return the controlled FAT dispatch event.",
+  );
+
+  const stagesPath = `/api/manufacturing/orders/${FAT_IDS.orders.clean}/stages`;
+  const stages = await get("SMOKE-MFG-P01", "manufacturing", "operator", stagesPath);
+  const stageRows = rowsAt(stages, "items");
+  assertCheck(
+    "SMOKE-MFG-P01",
+    "manufacturing",
+    "operator",
+    stagesPath,
+    stageRows.length === 9 &&
+      stageRows.every((row) =>
+        row.productionOrderId === FAT_IDS.orders.clean &&
+        typeof row.stageType === "string" &&
+        row.stageData !== null,
+      ),
+    { stageCount: 9, productionOrderId: FAT_IDS.orders.clean },
+    stages,
+    "The manufacturing stages route must expose the complete nine-stage FAT projection.",
+  );
+
+  const genealogyPath = `/api/manufacturing/orders/${FAT_IDS.orders.clean}/genealogy`;
+  const genealogy = await get("SMOKE-MFG-P02", "manufacturing", "operator", genealogyPath);
+  const genealogyRows = rowsAt(genealogy, "items");
+  assertCheck(
+    "SMOKE-MFG-P02",
+    "manufacturing",
+    "operator",
+    genealogyPath,
+    genealogyRows.length === 5 &&
+      genealogyRows.every((row) =>
+        row.productionOrderId === FAT_IDS.orders.clean &&
+        typeof row.componentType === "string" &&
+        String(row.notes ?? "").startsWith(FAT_PREFIX),
+      ),
+    { genealogyCount: 5, productionOrderId: FAT_IDS.orders.clean, notesPrefix: FAT_PREFIX },
+    genealogy,
+    "Manufacturing genealogy must expose the five controlled FAT component records.",
+  );
+
+  const dispatchPath = `/api/dispatch/${FAT_IDS.fulfillment.dispatch}`;
+  const dispatch = await get("SMOKE-FUL-P01", "dispatch", "supervisor", dispatchPath);
+  const dispatchItems = rowsAt(dispatch, "items");
+  assertCheck(
+    "SMOKE-FUL-P01",
+    "dispatch",
+    "supervisor",
+    dispatchPath,
+    isRecord(dispatch) &&
+      dispatch.id === FAT_IDS.fulfillment.dispatch &&
+      dispatch.dealer_id === FAT_IDS.dealer &&
+      dispatchItems.length === 1 &&
+      dispatchItems[0]?.product_id === FAT_IDS.products.dispatched,
+    {
+      dispatchId: FAT_IDS.fulfillment.dispatch,
+      dealerId: FAT_IDS.dealer,
+      productId: FAT_IDS.products.dispatched,
+    },
+    dispatch,
+    "Dispatch detail must resolve the controlled FAT document and serialized product.",
+  );
+
+  const registrationPath = `/api/customers/registrations/${FAT_IDS.fulfillment.registration}`;
+  const registration = await get("SMOKE-FUL-P02", "customer-warranty", "supervisor", registrationPath);
+  assertCheck(
+    "SMOKE-FUL-P02",
+    "customer-warranty",
+    "supervisor",
+    registrationPath,
+    isRecord(registration) &&
+      registration.id === FAT_IDS.fulfillment.registration &&
+      registration.product_id === FAT_IDS.products.dispatched &&
+      registration.dealer_id === FAT_IDS.dealer,
+    {
+      registrationId: FAT_IDS.fulfillment.registration,
+      productId: FAT_IDS.products.dispatched,
+      dealerId: FAT_IDS.dealer,
+    },
+    registration,
+    "Customer registration detail must resolve the controlled dispatched product and dealer.",
+  );
+
+  const warrantyPath = `/api/warranties/${FAT_IDS.fulfillment.warranty}`;
+  const warranty = await get("SMOKE-FUL-P03", "customer-warranty", "viewer", warrantyPath);
+  assertCheck(
+    "SMOKE-FUL-P03",
+    "customer-warranty",
+    "viewer",
+    warrantyPath,
+    isRecord(warranty) &&
+      warranty.id === FAT_IDS.fulfillment.warranty &&
+      warranty.product_id === FAT_IDS.products.dispatched &&
+      warranty.registration_id === FAT_IDS.fulfillment.registration,
+    {
+      warrantyId: FAT_IDS.fulfillment.warranty,
+      productId: FAT_IDS.products.dispatched,
+      registrationId: FAT_IDS.fulfillment.registration,
+    },
+    warranty,
+    "Warranty detail must resolve the controlled registration and serialized product.",
+  );
 }
 
 async function runMasters(): Promise<void> {
@@ -576,8 +745,9 @@ async function runReportsAndDashboard(): Promise<void> {
 function markdown(): string {
   const passed = evidence.filter((item) => item.result === "PASS").length;
   const failed = evidence.length - passed;
+  const smokeOnly = process.env.FAT_READONLY_ONLY === "1";
   const lines = [
-    "# FAT Journey Evidence",
+    smokeOnly ? "# FAT Read-Only Route Smoke Evidence" : "# FAT Journey Evidence",
     "",
     `- Run: ${RUN_AT}`,
     `- Environment: ${BASE}`,
@@ -585,6 +755,7 @@ function markdown(): string {
     `- Frozen tag: ${FROZEN_TAG}`,
     `- Frozen commit: ${FROZEN_COMMIT}`,
     `- Password evidence: omitted; supplied only through FAT_TEST_PASSWORD`,
+    ...(smokeOnly ? ["- Fixture mutation: none; authenticated GET-only route checks after login"] : []),
     `- Result: ${passed} PASS / ${failed} FAIL`,
     "",
     "| Case | Area | Role | Method | Path | Status | Result |",
@@ -630,13 +801,23 @@ function resetFixture(): void {
 
 async function persistEvidence(): Promise<void> {
   const reportOnly = process.env.FAT_REPORTS_ONLY === "1";
-  const jsonName = reportOnly ? "fat-report-evidence.json" : "fat-journey-evidence.json";
-  const markdownName = reportOnly ? "fat-report-evidence.md" : "fat-journey-evidence.md";
+  const smokeOnly = process.env.FAT_READONLY_ONLY === "1";
+  const jsonName = reportOnly
+    ? "fat-report-evidence.json"
+    : smokeOnly
+      ? "fat-readonly-smoke-evidence.json"
+      : "fat-journey-evidence.json";
+  const markdownName = reportOnly
+    ? "fat-report-evidence.md"
+    : smokeOnly
+      ? "fat-readonly-smoke-evidence.md"
+      : "fat-journey-evidence.md";
   await mkdir(OUTPUT_DIR, { recursive: true });
   await writeFile(resolve(OUTPUT_DIR, jsonName), `${JSON.stringify({
     run_at: RUN_AT,
     environment: BASE,
     dataset: FAT_PREFIX,
+    mode: smokeOnly ? "read-only-route-smoke" : reportOnly ? "reports" : "full-journey",
     frozen_tag: FROZEN_TAG,
     frozen_commit: FROZEN_COMMIT,
     password_evidence: "omitted; supplied only through FAT_TEST_PASSWORD",
@@ -658,6 +839,13 @@ async function persistEvidence(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  if (process.env.FAT_READONLY_ONLY === "1") {
+    await runReadOnlySmoke();
+    await persistEvidence();
+    if (failures > 0) process.exitCode = 1;
+    return;
+  }
+
   if (process.env.FAT_REPORTS_ONLY === "1") {
     for (const role of roles) await login(role, "RPT-AUTH");
     await runReportsAndDashboard();

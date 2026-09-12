@@ -99,16 +99,24 @@ manual FAT journey:
 
 ```sh
 FAT_TEST_PASSWORD='provided out of band' pnpm cert:fat:preflight
+FAT_TEST_PASSWORD='provided out of band' pnpm cert:fat:smoke
 ```
 
-The gate is limited to the `FAT-E2E-*` fixture namespace. It checks that all
+The database preflight and authenticated route smoke are limited to the
+`FAT-E2E-*` fixture namespace. The preflight checks that all
 six role accounts can accept the seeded password, the dealer linkage is intact,
 the canonical nine-stage workflow is present, and the BOM/procurement/cell
 ledger/manufacturing genealogy/dispatch/customer-registration/warranty records
 still have the route-facing state required by FAT. It also verifies that both
 charger-race orders and the pending cell match are ready for concurrency
-coverage.
+coverage. The smoke then logs in each seeded role and performs only authenticated
+read checks for `/api/auth/me`, dealer inventory/history, manufacturing
+stages/genealogy, dispatch detail, customer registration, and warranty detail.
+It asserts the returned records use the expected FAT IDs and does not seed,
+update, delete, void, or reset fixture state.
 
-The command prints grouped pass/fail assertions and never prints the password,
-password hash, session cookie, or other credentials. A non-zero exit means the
-fixture or schema has drifted and manual FAT should not start.
+Both commands print grouped pass/fail evidence and never print the password,
+password hash, session cookie, or other credentials. A non-zero exit from either
+command means the fixture or route contract has drifted and manual FAT should
+not start. The smoke writes `fat-readonly-smoke-evidence.json` and
+`fat-readonly-smoke-evidence.md` alongside the existing FAT evidence.
