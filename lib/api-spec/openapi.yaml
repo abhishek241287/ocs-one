@@ -22,6 +22,8 @@ tags:
     description: Serialized Product (unit) operations — Unified Product Platform
   - name: inventory
     description: Inventory Platform operations — GRN receiving, workflow routing, stock ledger
+  - name: procurement
+    description: Procurement operations — purchase orders, approvals, and receipt tracking
   - name: bom
     description: MES — Bill of Materials (BOM Master) operations
   - name: material-issues
@@ -3534,6 +3536,179 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/MaterialWorkflowAssignment" }
 
+  # ─── Procurement — Purchase Orders ──────────────────────────────────────────
+  /procurement/purchase-orders:
+    get:
+      operationId: listPurchaseOrders
+      tags: [procurement]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/PurchaseOrderStatus" }
+        - name: supplier_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: List of purchase orders
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/MasterListResponse"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: "#/components/schemas/PurchaseOrder" }
+    post:
+      operationId: createPurchaseOrder
+      tags: [procurement]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseOrderInput" }
+      responses:
+        "201":
+          description: Purchase order draft created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseOrderDetail" }
+
+  /procurement/purchase-orders/{id}:
+    get:
+      operationId: getPurchaseOrder
+      tags: [procurement]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Purchase order with lines
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseOrderDetail" }
+    patch:
+      operationId: updatePurchaseOrder
+      tags: [procurement]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseOrderUpdate" }
+      responses:
+        "200":
+          description: Draft purchase order updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseOrderDetail" }
+
+  /procurement/purchase-orders/{id}/lines:
+    post:
+      operationId: addPurchaseOrderLine
+      tags: [procurement]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseOrderLineInput" }
+      responses:
+        "201":
+          description: Purchase order line added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseOrderDetail" }
+
+  /procurement/purchase-orders/{id}/lines/{lineId}:
+    patch:
+      operationId: updatePurchaseOrderLine
+      tags: [procurement]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - name: lineId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseOrderLineUpdate" }
+      responses:
+        "200":
+          description: Purchase order line updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseOrderDetail" }
+    delete:
+      operationId: deletePurchaseOrderLine
+      tags: [procurement]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - name: lineId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Purchase order line deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseOrderDetail" }
+
+  /procurement/purchase-orders/{id}/submit:
+    post:
+      operationId: submitPurchaseOrder
+      tags: [procurement]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Purchase order submitted for approval
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseOrderDetail" }
+
+  /procurement/purchase-orders/{id}/approve:
+    post:
+      operationId: approvePurchaseOrder
+      tags: [procurement]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Purchase order approved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseOrderDetail" }
+
+  /procurement/purchase-orders/{id}/cancel:
+    post:
+      operationId: cancelPurchaseOrder
+      tags: [procurement]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PurchaseOrderCancelInput" }
+      responses:
+        "200":
+          description: Purchase order cancelled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PurchaseOrderDetail" }
+
   # ─── Inventory Platform — Goods Receipt Note (GRN) ───────────────────────────
   /inventory/grns:
     get:
@@ -6425,6 +6600,119 @@ components:
         workflow_id: { type: string, format: uuid }
 
     # ─── Inventory Platform — GRN ──────────────────────────────────────────────
+    # ─── Procurement — Purchase Orders ────────────────────────────────────────
+    PurchaseOrderStatus:
+      type: string
+      enum: [draft, submitted, approved, partially_received, fully_received, closed, cancelled]
+
+    PurchaseOrderLine:
+      type: object
+      required:
+        [id, purchase_order_id, line_number, material_id, ordered_qty, received_qty, rejected_qty, cancelled_qty, open_qty, uom, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        purchase_order_id: { type: string, format: uuid }
+        line_number: { type: integer }
+        material_id: { type: string, format: uuid }
+        material_code: { type: ["string", "null"] }
+        material_name: { type: ["string", "null"] }
+        ordered_qty: { type: number }
+        received_qty: { type: number }
+        rejected_qty: { type: number }
+        cancelled_qty: { type: number }
+        open_qty: { type: number }
+        unit_price: { type: ["number", "null"] }
+        uom: { $ref: "#/components/schemas/InventoryUom" }
+        required_date: { type: ["string", "null"], format: date-time }
+        notes: { type: ["string", "null"] }
+        created_at: { type: string, format: date-time }
+
+    PurchaseOrderLineInput:
+      type: object
+      required: [material_id, ordered_qty]
+      properties:
+        material_id: { type: string, format: uuid }
+        ordered_qty: { type: number, exclusiveMinimum: 0 }
+        unit_price: { type: ["number", "null"], minimum: 0 }
+        required_date: { type: ["string", "null"], format: date-time }
+        notes: { type: ["string", "null"] }
+
+    PurchaseOrderLineUpdate:
+      type: object
+      properties:
+        material_id: { type: string, format: uuid }
+        ordered_qty: { type: number, exclusiveMinimum: 0 }
+        unit_price: { type: ["number", "null"], minimum: 0 }
+        required_date: { type: ["string", "null"], format: date-time }
+        notes: { type: ["string", "null"] }
+
+    PurchaseOrder:
+      type: object
+      required:
+        [id, po_number, supplier_id, status, currency, over_receipt_tolerance_percent, created_by, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        po_number: { type: string }
+        supplier_id: { type: string, format: uuid }
+        supplier_code: { type: ["string", "null"] }
+        supplier_name: { type: ["string", "null"] }
+        status: { $ref: "#/components/schemas/PurchaseOrderStatus" }
+        ordered_date: { type: ["string", "null"], format: date-time }
+        required_date: { type: ["string", "null"], format: date-time }
+        approved_by: { type: ["string", "null"], format: uuid }
+        approved_at: { type: ["string", "null"], format: date-time }
+        currency: { type: string }
+        total_amount: { type: ["number", "null"] }
+        terms: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        over_receipt_tolerance_percent: { type: number }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    PurchaseOrderDetail:
+      allOf:
+        - $ref: "#/components/schemas/PurchaseOrder"
+        - type: object
+          required: [lines]
+          properties:
+            lines:
+              type: array
+              items: { $ref: "#/components/schemas/PurchaseOrderLine" }
+
+    PurchaseOrderInput:
+      type: object
+      required: [supplier_id, lines]
+      properties:
+        supplier_id: { type: string, format: uuid }
+        ordered_date: { type: ["string", "null"], format: date-time }
+        required_date: { type: ["string", "null"], format: date-time }
+        currency: { type: string, minLength: 3, maxLength: 3, default: INR }
+        terms: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        over_receipt_tolerance_percent: { type: number, minimum: 0, maximum: 100, default: 5 }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/PurchaseOrderLineInput" }
+
+    PurchaseOrderUpdate:
+      type: object
+      properties:
+        supplier_id: { type: string, format: uuid }
+        ordered_date: { type: ["string", "null"], format: date-time }
+        required_date: { type: ["string", "null"], format: date-time }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        terms: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        over_receipt_tolerance_percent: { type: number, minimum: 0, maximum: 100 }
+
+    PurchaseOrderCancelInput:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1, maxLength: 1000 }
+
     GrnStatus:
       type: string
       enum: [draft, posted]
@@ -6446,6 +6734,7 @@ components:
         grn_id: { type: string, format: uuid }
         line_number: { type: integer }
         material_id: { type: string, format: uuid }
+        purchase_order_line_id: { type: ["string", "null"], format: uuid }
         # Derived read-only provenance joined from the Material Master (never stored on
         # the line). Lets the GRN view show what the material is and how it is routed.
         material_name: { type: ["string", "null"] }
@@ -6464,6 +6753,7 @@ components:
       required: [material_id, quantity_received]
       properties:
         material_id: { type: string, format: uuid }
+        purchase_order_line_id: { type: ["string", "null"], format: uuid }
         quantity_received: { type: number, exclusiveMinimum: 0 }
         supplier_lot_number: { type: ["string", "null"] }
         remarks: { type: ["string", "null"] }
@@ -6476,6 +6766,7 @@ components:
         id: { type: string, format: uuid }
         grn_number: { type: string }
         supplier_id: { type: string, format: uuid }
+        purchase_order_id: { type: ["string", "null"], format: uuid }
         received_date: { type: string }
         invoice_number: { type: ["string", "null"] }
         status: { $ref: "#/components/schemas/GrnStatus" }
@@ -6502,6 +6793,7 @@ components:
       required: [supplier_id, received_date, lines]
       properties:
         supplier_id: { type: string, format: uuid }
+        purchase_order_id: { type: ["string", "null"], format: uuid }
         received_date: { type: string }
         invoice_number: { type: ["string", "null"] }
         remarks: { type: ["string", "null"] }

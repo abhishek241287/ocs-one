@@ -13,6 +13,7 @@ import {
   Wrench,
   ChevronLeft,
   ChevronRight,
+  ShoppingCart,
   Zap,
   BookOpen,
   Cpu,
@@ -60,6 +61,12 @@ const navSections: NavSection[] = [
   {
     title: "Dashboard",
     items: [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
+  },
+  {
+    title: "Procurement",
+    items: [
+      { label: "Purchase Orders", href: "/procurement/purchase-orders", icon: ShoppingCart },
+    ],
   },
   {
     title: "Inventory",

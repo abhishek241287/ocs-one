@@ -6,14 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface GrnLineItemInput {
+export interface PurchaseOrderLineInput {
   material_id: string;
-  /** @nullable */
-  purchase_order_line_id?: string | null;
   /** @exclusiveMinimum 0 */
-  quantity_received: number;
+  ordered_qty: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  unit_price?: number | null;
   /** @nullable */
-  supplier_lot_number?: string | null;
+  required_date?: Date | null;
   /** @nullable */
-  remarks?: string | null;
+  notes?: string | null;
 }

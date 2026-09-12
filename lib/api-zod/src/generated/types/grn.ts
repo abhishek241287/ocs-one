@@ -11,6 +11,8 @@ export interface Grn {
   id: string;
   grn_number: string;
   supplier_id: string;
+  /** @nullable */
+  purchase_order_id?: string | null;
   received_date: string;
   /** @nullable */
   invoice_number?: string | null;

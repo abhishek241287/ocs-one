@@ -7197,6 +7197,537 @@ export const UpsertMaterialWorkflowAssignmentResponse = zod.object({
 })
 
 
+export const listPurchaseOrdersQueryPageDefault = 1;
+export const listPurchaseOrdersQueryPageSizeDefault = 25;
+
+export const ListPurchaseOrdersQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "page": zod.coerce.number().default(listPurchaseOrdersQueryPageDefault),
+  "pageSize": zod.coerce.number().default(listPurchaseOrdersQueryPageSizeDefault),
+  "status": zod.enum(['draft', 'submitted', 'approved', 'partially_received', 'fully_received', 'closed', 'cancelled']).optional(),
+  "supplier_id": zod.coerce.string().uuid().optional()
+})
+
+export const ListPurchaseOrdersResponse = zod.object({
+  "meta": zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "totalPages": zod.number()
+})
+}).and(zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "po_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_code": zod.string().nullish(),
+  "supplier_name": zod.string().nullish(),
+  "status": zod.enum(['draft', 'submitted', 'approved', 'partially_received', 'fully_received', 'closed', 'cancelled']),
+  "ordered_date": zod.coerce.date().nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "approved_by": zod.string().uuid().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "currency": zod.string(),
+  "total_amount": zod.number().nullish(),
+  "terms": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "over_receipt_tolerance_percent": zod.number(),
+  "created_by": zod.string().uuid(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}))
+}))
+
+
+export const createPurchaseOrderBodyCurrencyDefault = `INR`;
+export const createPurchaseOrderBodyCurrencyMin = 3;
+export const createPurchaseOrderBodyCurrencyMax = 3;
+
+export const createPurchaseOrderBodyOverReceiptTolerancePercentDefault = 5;
+export const createPurchaseOrderBodyOverReceiptTolerancePercentMin = 0;
+export const createPurchaseOrderBodyOverReceiptTolerancePercentMax = 100;
+
+export const createPurchaseOrderBodyLinesItemOrderedQtyExclusiveMin = 0;
+
+export const createPurchaseOrderBodyLinesItemUnitPriceMin = 0;
+
+
+
+
+export const CreatePurchaseOrderBody = zod.object({
+  "supplier_id": zod.string().uuid(),
+  "ordered_date": zod.coerce.date().nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "currency": zod.string().min(createPurchaseOrderBodyCurrencyMin).max(createPurchaseOrderBodyCurrencyMax).default(createPurchaseOrderBodyCurrencyDefault),
+  "terms": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "over_receipt_tolerance_percent": zod.number().min(createPurchaseOrderBodyOverReceiptTolerancePercentMin).max(createPurchaseOrderBodyOverReceiptTolerancePercentMax).default(createPurchaseOrderBodyOverReceiptTolerancePercentDefault),
+  "lines": zod.array(zod.object({
+  "material_id": zod.string().uuid(),
+  "ordered_qty": zod.number().gt(createPurchaseOrderBodyLinesItemOrderedQtyExclusiveMin),
+  "unit_price": zod.number().min(createPurchaseOrderBodyLinesItemUnitPriceMin).nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish()
+})).min(1)
+})
+
+export const CreatePurchaseOrderResponse = zod.object({
+  "id": zod.string().uuid(),
+  "po_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_code": zod.string().nullish(),
+  "supplier_name": zod.string().nullish(),
+  "status": zod.enum(['draft', 'submitted', 'approved', 'partially_received', 'fully_received', 'closed', 'cancelled']),
+  "ordered_date": zod.coerce.date().nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "approved_by": zod.string().uuid().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "currency": zod.string(),
+  "total_amount": zod.number().nullish(),
+  "terms": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "over_receipt_tolerance_percent": zod.number(),
+  "created_by": zod.string().uuid(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "ordered_qty": zod.number(),
+  "received_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "cancelled_qty": zod.number(),
+  "open_qty": zod.number(),
+  "unit_price": zod.number().nullish(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "required_date": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const GetPurchaseOrderParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetPurchaseOrderResponse = zod.object({
+  "id": zod.string().uuid(),
+  "po_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_code": zod.string().nullish(),
+  "supplier_name": zod.string().nullish(),
+  "status": zod.enum(['draft', 'submitted', 'approved', 'partially_received', 'fully_received', 'closed', 'cancelled']),
+  "ordered_date": zod.coerce.date().nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "approved_by": zod.string().uuid().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "currency": zod.string(),
+  "total_amount": zod.number().nullish(),
+  "terms": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "over_receipt_tolerance_percent": zod.number(),
+  "created_by": zod.string().uuid(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "ordered_qty": zod.number(),
+  "received_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "cancelled_qty": zod.number(),
+  "open_qty": zod.number(),
+  "unit_price": zod.number().nullish(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "required_date": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const UpdatePurchaseOrderParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updatePurchaseOrderBodyCurrencyMin = 3;
+export const updatePurchaseOrderBodyCurrencyMax = 3;
+
+export const updatePurchaseOrderBodyOverReceiptTolerancePercentMin = 0;
+export const updatePurchaseOrderBodyOverReceiptTolerancePercentMax = 100;
+
+
+
+export const UpdatePurchaseOrderBody = zod.object({
+  "supplier_id": zod.string().uuid().optional(),
+  "ordered_date": zod.coerce.date().nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "currency": zod.string().min(updatePurchaseOrderBodyCurrencyMin).max(updatePurchaseOrderBodyCurrencyMax).optional(),
+  "terms": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "over_receipt_tolerance_percent": zod.number().min(updatePurchaseOrderBodyOverReceiptTolerancePercentMin).max(updatePurchaseOrderBodyOverReceiptTolerancePercentMax).optional()
+})
+
+export const UpdatePurchaseOrderResponse = zod.object({
+  "id": zod.string().uuid(),
+  "po_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_code": zod.string().nullish(),
+  "supplier_name": zod.string().nullish(),
+  "status": zod.enum(['draft', 'submitted', 'approved', 'partially_received', 'fully_received', 'closed', 'cancelled']),
+  "ordered_date": zod.coerce.date().nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "approved_by": zod.string().uuid().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "currency": zod.string(),
+  "total_amount": zod.number().nullish(),
+  "terms": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "over_receipt_tolerance_percent": zod.number(),
+  "created_by": zod.string().uuid(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "ordered_qty": zod.number(),
+  "received_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "cancelled_qty": zod.number(),
+  "open_qty": zod.number(),
+  "unit_price": zod.number().nullish(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "required_date": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const AddPurchaseOrderLineParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const addPurchaseOrderLineBodyOrderedQtyExclusiveMin = 0;
+
+export const addPurchaseOrderLineBodyUnitPriceMin = 0;
+
+
+
+export const AddPurchaseOrderLineBody = zod.object({
+  "material_id": zod.string().uuid(),
+  "ordered_qty": zod.number().gt(addPurchaseOrderLineBodyOrderedQtyExclusiveMin),
+  "unit_price": zod.number().min(addPurchaseOrderLineBodyUnitPriceMin).nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish()
+})
+
+export const AddPurchaseOrderLineResponse = zod.object({
+  "id": zod.string().uuid(),
+  "po_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_code": zod.string().nullish(),
+  "supplier_name": zod.string().nullish(),
+  "status": zod.enum(['draft', 'submitted', 'approved', 'partially_received', 'fully_received', 'closed', 'cancelled']),
+  "ordered_date": zod.coerce.date().nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "approved_by": zod.string().uuid().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "currency": zod.string(),
+  "total_amount": zod.number().nullish(),
+  "terms": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "over_receipt_tolerance_percent": zod.number(),
+  "created_by": zod.string().uuid(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "ordered_qty": zod.number(),
+  "received_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "cancelled_qty": zod.number(),
+  "open_qty": zod.number(),
+  "unit_price": zod.number().nullish(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "required_date": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const UpdatePurchaseOrderLineParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "lineId": zod.coerce.string().uuid()
+})
+
+export const updatePurchaseOrderLineBodyOrderedQtyExclusiveMin = 0;
+
+export const updatePurchaseOrderLineBodyUnitPriceMin = 0;
+
+
+
+export const UpdatePurchaseOrderLineBody = zod.object({
+  "material_id": zod.string().uuid().optional(),
+  "ordered_qty": zod.number().gt(updatePurchaseOrderLineBodyOrderedQtyExclusiveMin).optional(),
+  "unit_price": zod.number().min(updatePurchaseOrderLineBodyUnitPriceMin).nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish()
+})
+
+export const UpdatePurchaseOrderLineResponse = zod.object({
+  "id": zod.string().uuid(),
+  "po_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_code": zod.string().nullish(),
+  "supplier_name": zod.string().nullish(),
+  "status": zod.enum(['draft', 'submitted', 'approved', 'partially_received', 'fully_received', 'closed', 'cancelled']),
+  "ordered_date": zod.coerce.date().nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "approved_by": zod.string().uuid().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "currency": zod.string(),
+  "total_amount": zod.number().nullish(),
+  "terms": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "over_receipt_tolerance_percent": zod.number(),
+  "created_by": zod.string().uuid(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "ordered_qty": zod.number(),
+  "received_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "cancelled_qty": zod.number(),
+  "open_qty": zod.number(),
+  "unit_price": zod.number().nullish(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "required_date": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const DeletePurchaseOrderLineParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "lineId": zod.coerce.string().uuid()
+})
+
+export const DeletePurchaseOrderLineResponse = zod.object({
+  "id": zod.string().uuid(),
+  "po_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_code": zod.string().nullish(),
+  "supplier_name": zod.string().nullish(),
+  "status": zod.enum(['draft', 'submitted', 'approved', 'partially_received', 'fully_received', 'closed', 'cancelled']),
+  "ordered_date": zod.coerce.date().nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "approved_by": zod.string().uuid().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "currency": zod.string(),
+  "total_amount": zod.number().nullish(),
+  "terms": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "over_receipt_tolerance_percent": zod.number(),
+  "created_by": zod.string().uuid(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "ordered_qty": zod.number(),
+  "received_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "cancelled_qty": zod.number(),
+  "open_qty": zod.number(),
+  "unit_price": zod.number().nullish(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "required_date": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const SubmitPurchaseOrderParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const SubmitPurchaseOrderResponse = zod.object({
+  "id": zod.string().uuid(),
+  "po_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_code": zod.string().nullish(),
+  "supplier_name": zod.string().nullish(),
+  "status": zod.enum(['draft', 'submitted', 'approved', 'partially_received', 'fully_received', 'closed', 'cancelled']),
+  "ordered_date": zod.coerce.date().nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "approved_by": zod.string().uuid().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "currency": zod.string(),
+  "total_amount": zod.number().nullish(),
+  "terms": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "over_receipt_tolerance_percent": zod.number(),
+  "created_by": zod.string().uuid(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "ordered_qty": zod.number(),
+  "received_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "cancelled_qty": zod.number(),
+  "open_qty": zod.number(),
+  "unit_price": zod.number().nullish(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "required_date": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const ApprovePurchaseOrderParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ApprovePurchaseOrderResponse = zod.object({
+  "id": zod.string().uuid(),
+  "po_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_code": zod.string().nullish(),
+  "supplier_name": zod.string().nullish(),
+  "status": zod.enum(['draft', 'submitted', 'approved', 'partially_received', 'fully_received', 'closed', 'cancelled']),
+  "ordered_date": zod.coerce.date().nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "approved_by": zod.string().uuid().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "currency": zod.string(),
+  "total_amount": zod.number().nullish(),
+  "terms": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "over_receipt_tolerance_percent": zod.number(),
+  "created_by": zod.string().uuid(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "ordered_qty": zod.number(),
+  "received_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "cancelled_qty": zod.number(),
+  "open_qty": zod.number(),
+  "unit_price": zod.number().nullish(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "required_date": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const CancelPurchaseOrderParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const cancelPurchaseOrderBodyReasonMax = 1000;
+
+
+
+export const CancelPurchaseOrderBody = zod.object({
+  "reason": zod.string().min(1).max(cancelPurchaseOrderBodyReasonMax)
+})
+
+export const CancelPurchaseOrderResponse = zod.object({
+  "id": zod.string().uuid(),
+  "po_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_code": zod.string().nullish(),
+  "supplier_name": zod.string().nullish(),
+  "status": zod.enum(['draft', 'submitted', 'approved', 'partially_received', 'fully_received', 'closed', 'cancelled']),
+  "ordered_date": zod.coerce.date().nullish(),
+  "required_date": zod.coerce.date().nullish(),
+  "approved_by": zod.string().uuid().nullish(),
+  "approved_at": zod.coerce.date().nullish(),
+  "currency": zod.string(),
+  "total_amount": zod.number().nullish(),
+  "terms": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "over_receipt_tolerance_percent": zod.number(),
+  "created_by": zod.string().uuid(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "ordered_qty": zod.number(),
+  "received_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "cancelled_qty": zod.number(),
+  "open_qty": zod.number(),
+  "unit_price": zod.number().nullish(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "required_date": zod.coerce.date().nullish(),
+  "notes": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
 export const listGrnsQueryPageDefault = 1;
 export const listGrnsQueryPageSizeDefault = 25;
 
@@ -7219,6 +7750,7 @@ export const ListGrnsResponse = zod.object({
   "id": zod.string().uuid(),
   "grn_number": zod.string(),
   "supplier_id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid().nullish(),
   "received_date": zod.string(),
   "invoice_number": zod.string().nullish(),
   "status": zod.enum(['draft', 'posted']),
@@ -7240,11 +7772,13 @@ export const createGrnBodyLinesItemQuantityReceivedExclusiveMin = 0;
 
 export const CreateGrnBody = zod.object({
   "supplier_id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid().nullish(),
   "received_date": zod.string(),
   "invoice_number": zod.string().nullish(),
   "remarks": zod.string().nullish(),
   "lines": zod.array(zod.object({
   "material_id": zod.string().uuid(),
+  "purchase_order_line_id": zod.string().uuid().nullish(),
   "quantity_received": zod.number().gt(createGrnBodyLinesItemQuantityReceivedExclusiveMin),
   "supplier_lot_number": zod.string().nullish(),
   "remarks": zod.string().nullish()
@@ -7255,6 +7789,7 @@ export const CreateGrnResponse = zod.object({
   "id": zod.string().uuid(),
   "grn_number": zod.string(),
   "supplier_id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid().nullish(),
   "received_date": zod.string(),
   "invoice_number": zod.string().nullish(),
   "status": zod.enum(['draft', 'posted']),
@@ -7271,6 +7806,7 @@ export const CreateGrnResponse = zod.object({
   "grn_id": zod.string().uuid(),
   "line_number": zod.number(),
   "material_id": zod.string().uuid(),
+  "purchase_order_line_id": zod.string().uuid().nullish(),
   "material_name": zod.string().nullish(),
   "material_code": zod.string().nullish(),
   "usage_type": zod.string().nullish(),
@@ -7298,6 +7834,7 @@ export const GetGrnResponse = zod.object({
   "id": zod.string().uuid(),
   "grn_number": zod.string(),
   "supplier_id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid().nullish(),
   "received_date": zod.string(),
   "invoice_number": zod.string().nullish(),
   "status": zod.enum(['draft', 'posted']),
@@ -7314,6 +7851,7 @@ export const GetGrnResponse = zod.object({
   "grn_id": zod.string().uuid(),
   "line_number": zod.number(),
   "material_id": zod.string().uuid(),
+  "purchase_order_line_id": zod.string().uuid().nullish(),
   "material_name": zod.string().nullish(),
   "material_code": zod.string().nullish(),
   "usage_type": zod.string().nullish(),
@@ -7348,6 +7886,7 @@ export const PostGrnResponse = zod.object({
   "id": zod.string().uuid(),
   "grn_number": zod.string(),
   "supplier_id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid().nullish(),
   "received_date": zod.string(),
   "invoice_number": zod.string().nullish(),
   "status": zod.enum(['draft', 'posted']),
@@ -7364,6 +7903,7 @@ export const PostGrnResponse = zod.object({
   "grn_id": zod.string().uuid(),
   "line_number": zod.number(),
   "material_id": zod.string().uuid(),
+  "purchase_order_line_id": zod.string().uuid().nullish(),
   "material_name": zod.string().nullish(),
   "material_code": zod.string().nullish(),
   "usage_type": zod.string().nullish(),

@@ -6,6 +6,10 @@ export const ROUTES = {
   login: "/login",
   dashboard: "/dashboard",
 
+  procurement: "/procurement",
+  procurementPurchaseOrders: "/procurement/purchase-orders",
+  procurementPurchaseOrderNew: "/procurement/purchase-orders/new",
+
   // Operations
   manufacturing: "/manufacturing",
   inventory: "/inventory",

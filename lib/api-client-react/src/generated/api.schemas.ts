@@ -2729,6 +2729,173 @@ export interface MaterialWorkflowAssignmentUpsert {
   workflow_id: string;
 }
 
+export type PurchaseOrderStatus = typeof PurchaseOrderStatus[keyof typeof PurchaseOrderStatus];
+
+
+export const PurchaseOrderStatus = {
+  draft: 'draft',
+  submitted: 'submitted',
+  approved: 'approved',
+  partially_received: 'partially_received',
+  fully_received: 'fully_received',
+  closed: 'closed',
+  cancelled: 'cancelled',
+} as const;
+
+export type InventoryUom = typeof InventoryUom[keyof typeof InventoryUom];
+
+
+export const InventoryUom = {
+  PCS: 'PCS',
+  KG: 'KG',
+  M: 'M',
+  L: 'L',
+  SET: 'SET',
+  ROLL: 'ROLL',
+} as const;
+
+export interface PurchaseOrderLine {
+  id: string;
+  purchase_order_id: string;
+  line_number: number;
+  material_id: string;
+  /** @nullable */
+  material_code?: string | null;
+  /** @nullable */
+  material_name?: string | null;
+  ordered_qty: number;
+  received_qty: number;
+  rejected_qty: number;
+  cancelled_qty: number;
+  open_qty: number;
+  /** @nullable */
+  unit_price?: number | null;
+  uom: InventoryUom;
+  /** @nullable */
+  required_date?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface PurchaseOrderLineInput {
+  material_id: string;
+  /** @exclusiveMinimum 0 */
+  ordered_qty: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  unit_price?: number | null;
+  /** @nullable */
+  required_date?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface PurchaseOrderLineUpdate {
+  material_id?: string;
+  /** @exclusiveMinimum 0 */
+  ordered_qty?: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  unit_price?: number | null;
+  /** @nullable */
+  required_date?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  po_number: string;
+  supplier_id: string;
+  /** @nullable */
+  supplier_code?: string | null;
+  /** @nullable */
+  supplier_name?: string | null;
+  status: PurchaseOrderStatus;
+  /** @nullable */
+  ordered_date?: string | null;
+  /** @nullable */
+  required_date?: string | null;
+  /** @nullable */
+  approved_by?: string | null;
+  /** @nullable */
+  approved_at?: string | null;
+  currency: string;
+  /** @nullable */
+  total_amount?: number | null;
+  /** @nullable */
+  terms?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  over_receipt_tolerance_percent: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PurchaseOrderDetail = PurchaseOrder & {
+  lines: PurchaseOrderLine[];
+};
+
+export interface PurchaseOrderInput {
+  supplier_id: string;
+  /** @nullable */
+  ordered_date?: string | null;
+  /** @nullable */
+  required_date?: string | null;
+  /**
+     * @minLength 3
+     * @maxLength 3
+     */
+  currency?: string;
+  /** @nullable */
+  terms?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  over_receipt_tolerance_percent?: number;
+  /** @minItems 1 */
+  lines: PurchaseOrderLineInput[];
+}
+
+export interface PurchaseOrderUpdate {
+  supplier_id?: string;
+  /** @nullable */
+  ordered_date?: string | null;
+  /** @nullable */
+  required_date?: string | null;
+  /**
+     * @minLength 3
+     * @maxLength 3
+     */
+  currency?: string;
+  /** @nullable */
+  terms?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  over_receipt_tolerance_percent?: number;
+}
+
+export interface PurchaseOrderCancelInput {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  reason: string;
+}
+
 export type GrnStatus = typeof GrnStatus[keyof typeof GrnStatus];
 
 
@@ -2750,23 +2917,13 @@ export const GrnInspectionStatus = {
   partial: 'partial',
 } as const;
 
-export type InventoryUom = typeof InventoryUom[keyof typeof InventoryUom];
-
-
-export const InventoryUom = {
-  PCS: 'PCS',
-  KG: 'KG',
-  M: 'M',
-  L: 'L',
-  SET: 'SET',
-  ROLL: 'ROLL',
-} as const;
-
 export interface GrnLineItem {
   id: string;
   grn_id: string;
   line_number: number;
   material_id: string;
+  /** @nullable */
+  purchase_order_line_id?: string | null;
   /** @nullable */
   material_name?: string | null;
   /** @nullable */
@@ -2786,6 +2943,8 @@ export interface GrnLineItem {
 
 export interface GrnLineItemInput {
   material_id: string;
+  /** @nullable */
+  purchase_order_line_id?: string | null;
   /** @exclusiveMinimum 0 */
   quantity_received: number;
   /** @nullable */
@@ -2798,6 +2957,8 @@ export interface Grn {
   id: string;
   grn_number: string;
   supplier_id: string;
+  /** @nullable */
+  purchase_order_id?: string | null;
   received_date: string;
   /** @nullable */
   invoice_number?: string | null;
@@ -2822,6 +2983,8 @@ export type GrnDetail = Grn & {
 
 export interface GrnInput {
   supplier_id: string;
+  /** @nullable */
+  purchase_order_id?: string | null;
   received_date: string;
   /** @nullable */
   invoice_number?: string | null;
@@ -3611,6 +3774,18 @@ export type ListMaterialWorkflows200 = MasterListResponse & {
 
 export type ListMaterialWorkflowAssignments200 = {
   items: MaterialWorkflowAssignment[];
+};
+
+export type ListPurchaseOrdersParams = {
+search?: SearchParamParameter;
+page?: PageParamParameter;
+pageSize?: PageSizeParamParameter;
+status?: PurchaseOrderStatus;
+supplier_id?: string;
+};
+
+export type ListPurchaseOrders200 = MasterListResponse & {
+  items?: PurchaseOrder[];
 };
 
 export type ListGrnsParams = {

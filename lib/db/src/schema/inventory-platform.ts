@@ -6,6 +6,7 @@ import {
   jsonb,
   numeric,
   pgEnum,
+  pgSequence,
   pgTable,
   text,
   timestamp,
@@ -45,6 +46,8 @@ export const poStatusEnum = pgEnum("po_status", [
   "closed",
   "cancelled",
 ]);
+
+export const purchaseOrderNumberSequence = pgSequence("po_seq");
 
 export const purchaseOrdersTable = pgTable(
   "purchase_orders",

@@ -7,6 +7,9 @@ import {
   materialWorkflowAssignmentsTable,
   materialWorkflowsTable,
   inventoryTransactionsTable,
+  purchaseOrdersTable,
+  purchaseOrderLinesTable,
+  outboxEventsTable,
 } from "@workspace/db";
 
 // ─── Inventory Platform — generic GRN posting engine ─────────────────────────
@@ -61,7 +64,18 @@ export type GrnPostResult =
   | { status: "not_found" }
   | { status: "invalid_state"; current: string }
   | { status: "no_lines" }
-  | { status: "unassigned_category"; materials: { code: string; name: string }[] };
+  | { status: "unassigned_category"; materials: { code: string; name: string }[] }
+  | { status: "po_not_receivable"; current: string }
+  | { status: "po_supplier_mismatch" }
+  | { status: "po_line_mismatch" }
+  | {
+      status: "over_receipt";
+      poLineId: string;
+      orderedQty: number;
+      receivedQty: number;
+      attemptedQty: number;
+      tolerancePercent: number;
+    };
 
 /**
  * Post a draft GRN inside the caller's transaction (atomic with the header status
@@ -77,7 +91,12 @@ export async function postGrn(
   actorId: string | null,
 ): Promise<GrnPostResult> {
   const [grn] = await tx
-    .select({ id: grnHeadersTable.id, status: grnHeadersTable.status })
+    .select({
+      id: grnHeadersTable.id,
+      status: grnHeadersTable.status,
+      supplierId: grnHeadersTable.supplierId,
+      purchaseOrderId: grnHeadersTable.purchaseOrderId,
+    })
     .from(grnHeadersTable)
     .where(eq(grnHeadersTable.id, grnId))
     .for("update")
@@ -96,6 +115,7 @@ export async function postGrn(
       materialName: materialsTable.name,
       quantityReceived: grnLineItemsTable.quantityReceived,
       uom: grnLineItemsTable.uom,
+      purchaseOrderLineId: grnLineItemsTable.purchaseOrderLineId,
       action: materialWorkflowsTable.postReceiptAction,
     })
     .from(grnLineItemsTable)
@@ -111,6 +131,95 @@ export async function postGrn(
     .where(eq(grnLineItemsTable.grnId, grnId))
     .orderBy(asc(grnLineItemsTable.lineNumber));
   if (lines.length === 0) return { status: "no_lines" };
+
+  let poReceipt:
+    | {
+        poId: string;
+        fromStatus: "approved" | "partially_received";
+        lineUpdates: Array<{ id: string; receivedQty: number; openQty: number }>;
+        nextStatus: "partially_received" | "fully_received";
+      }
+    | undefined;
+
+  if (grn.purchaseOrderId) {
+    const [po] = await tx
+      .select({
+        id: purchaseOrdersTable.id,
+        supplierId: purchaseOrdersTable.supplierId,
+        status: purchaseOrdersTable.status,
+        tolerancePercent: purchaseOrdersTable.overReceiptTolerancePercent,
+      })
+      .from(purchaseOrdersTable)
+      .where(eq(purchaseOrdersTable.id, grn.purchaseOrderId))
+      .for("update")
+      .limit(1);
+
+    if (!po || !["approved", "partially_received"].includes(po.status)) {
+      return { status: "po_not_receivable", current: po?.status ?? "missing" };
+    }
+    if (po.supplierId !== grn.supplierId) return { status: "po_supplier_mismatch" };
+    if (lines.some((line) => !line.purchaseOrderLineId)) {
+      return { status: "po_line_mismatch" };
+    }
+
+    const poLines = await tx
+      .select()
+      .from(purchaseOrderLinesTable)
+      .where(eq(purchaseOrderLinesTable.purchaseOrderId, po.id))
+      .orderBy(asc(purchaseOrderLinesTable.lineNumber))
+      .for("update");
+    const poLineById = new Map(poLines.map((line) => [line.id, line]));
+    const attemptedByLine = new Map<string, number>();
+    for (const line of lines) {
+      const poLine = poLineById.get(line.purchaseOrderLineId!);
+      if (!poLine || poLine.materialId !== line.materialId || poLine.uom !== line.uom) {
+        return { status: "po_line_mismatch" };
+      }
+      attemptedByLine.set(
+        poLine.id,
+        (attemptedByLine.get(poLine.id) ?? 0) + Number(line.quantityReceived),
+      );
+    }
+
+    const tolerancePercent = Number(po.tolerancePercent);
+    for (const [poLineId, attemptedQty] of attemptedByLine) {
+      const poLine = poLineById.get(poLineId)!;
+      const orderedQty = Number(poLine.orderedQty);
+      const receivedQty = Number(poLine.receivedQty);
+      const maxReceivable = orderedQty * (1 + tolerancePercent / 100);
+      if (receivedQty + attemptedQty > maxReceivable + 1e-9) {
+        return {
+          status: "over_receipt",
+          poLineId,
+          orderedQty,
+          receivedQty,
+          attemptedQty,
+          tolerancePercent,
+        };
+      }
+    }
+
+    const lineUpdates = poLines.map((poLine) => {
+      const receivedQty =
+        Number(poLine.receivedQty) + (attemptedByLine.get(poLine.id) ?? 0);
+      const openQty = Math.max(
+        Number(poLine.orderedQty) -
+          receivedQty -
+          Number(poLine.rejectedQty) -
+          Number(poLine.cancelledQty),
+        0,
+      );
+      return { id: poLine.id, receivedQty, openQty };
+    });
+    poReceipt = {
+      poId: po.id,
+      fromStatus: po.status as "approved" | "partially_received",
+      lineUpdates,
+      nextStatus: lineUpdates.every((line) => line.openQty <= 0)
+        ? "fully_received"
+        : "partially_received",
+    };
+  }
 
   // Mandatory workflow assignment (CTO directive — Fail Fast, Never Guess): the system
   // never assumes a default receiving path. If any material's category has no assigned
@@ -155,6 +264,39 @@ export async function postGrn(
       sourceDocumentId: grnId,
       sourceLineId: line.id,
       createdBy: actorId,
+    });
+  }
+
+  if (poReceipt) {
+    for (const line of poReceipt.lineUpdates) {
+      await tx
+        .update(purchaseOrderLinesTable)
+        .set({
+          receivedQty: String(line.receivedQty),
+          openQty: String(line.openQty),
+        })
+        .where(eq(purchaseOrderLinesTable.id, line.id));
+    }
+    await tx
+      .update(purchaseOrdersTable)
+      .set({ status: poReceipt.nextStatus, updatedAt: new Date() })
+      .where(eq(purchaseOrdersTable.id, poReceipt.poId));
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "purchase_order",
+      aggregateId: poReceipt.poId,
+      eventType: "PO_RECEIPT_RECORDED",
+      payload: {
+        purchase_order_id: poReceipt.poId,
+        grn_id: grnId,
+        from_status: poReceipt.fromStatus,
+        to_status: poReceipt.nextStatus,
+        actor_id: actorId,
+        lines: poReceipt.lineUpdates.map((line) => ({
+          purchase_order_line_id: line.id,
+          received_qty: line.receivedQty,
+          open_qty: line.openQty,
+        })),
+      },
     });
   }
 

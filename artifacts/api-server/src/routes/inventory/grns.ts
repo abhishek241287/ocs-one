@@ -7,6 +7,8 @@ import {
   grnLineItemsTable,
   materialsTable,
   inventoryTransactionsTable,
+  purchaseOrdersTable,
+  purchaseOrderLinesTable,
 } from "@workspace/db";
 import { CreateGrnBody } from "@workspace/api-zod";
 import { requireWriteRole } from "../../middleware/auth";
@@ -44,6 +46,7 @@ function serializeHeader(h: Record<string, any>) {
     id: h.id,
     grn_number: h.grnNumber,
     supplier_id: h.supplierId,
+    purchase_order_id: h.purchaseOrderId ?? null,
     invoice_number: h.invoiceNumber ?? null,
     received_date: h.receivedDate,
     status: h.status,
@@ -63,6 +66,7 @@ function serializeLine(l: Record<string, any>, e?: LineEnrichment) {
     grn_id: l.grnId,
     line_number: l.lineNumber,
     material_id: l.materialId,
+    purchase_order_line_id: l.purchaseOrderLineId ?? null,
     material_name: e?.material_name ?? null,
     material_code: e?.material_code ?? null,
     usage_type: e?.usage_type ?? null,
@@ -195,6 +199,67 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
   }
   const body = parsed.data;
 
+  if (body.purchase_order_id) {
+    const duplicateLineIds = body.lines
+      .map((line) => line.purchase_order_line_id)
+      .filter((id): id is string => Boolean(id))
+      .filter((id, index, all) => all.indexOf(id) !== index);
+    if (duplicateLineIds.length > 0) {
+      res.status(400).json({ error: "Each purchase-order line may appear only once on a GRN" });
+      return;
+    }
+
+    const [po] = await db
+      .select({
+        id: purchaseOrdersTable.id,
+        supplierId: purchaseOrdersTable.supplierId,
+        status: purchaseOrdersTable.status,
+      })
+      .from(purchaseOrdersTable)
+      .where(eq(purchaseOrdersTable.id, body.purchase_order_id))
+      .limit(1);
+    if (!po) {
+      res.status(400).json({ error: "Purchase order not found" });
+      return;
+    }
+    if (!["approved", "partially_received"].includes(po.status)) {
+      res.status(409).json({ error: `Purchase order cannot receive from status '${po.status}'` });
+      return;
+    }
+    if (po.supplierId !== body.supplier_id) {
+      res.status(400).json({ error: "GRN supplier must match the purchase-order supplier" });
+      return;
+    }
+    if (body.lines.some((line) => !line.purchase_order_line_id)) {
+      res.status(400).json({ error: "Every line on a PO-linked GRN requires purchase_order_line_id" });
+      return;
+    }
+
+    const linkedLines = await db
+      .select({
+        id: purchaseOrderLinesTable.id,
+        materialId: purchaseOrderLinesTable.materialId,
+      })
+      .from(purchaseOrderLinesTable)
+      .where(eq(purchaseOrderLinesTable.purchaseOrderId, po.id));
+    const linkedById = new Map(linkedLines.map((line) => [line.id, line]));
+    const mismatch = body.lines.find((line) => {
+      const linked = linkedById.get(line.purchase_order_line_id!);
+      return !linked || linked.materialId !== line.material_id;
+    });
+    if (mismatch) {
+      res.status(400).json({
+        error: "Each GRN material must match its referenced purchase-order line",
+      });
+      return;
+    }
+  } else if (body.lines.some((line) => line.purchase_order_line_id)) {
+    res.status(400).json({
+      error: "purchase_order_line_id requires a purchase_order_id on the GRN",
+    });
+    return;
+  }
+
   // Snapshot each line's UOM from its Material at receipt time (a later Material UOM
   // change must not rewrite GRN history). A material id that does not resolve → 400.
   const materialIds = [...new Set(body.lines.map((l) => l.material_id))];
@@ -224,6 +289,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
         .values({
           grnNumber,
           supplierId: body.supplier_id,
+          purchaseOrderId: body.purchase_order_id ?? null,
           invoiceNumber: body.invoice_number ?? null,
           receivedDate: body.received_date,
           status: "draft",
@@ -237,6 +303,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
           grnId: header.id,
           lineNumber: i + 1,
           materialId: l.material_id,
+          purchaseOrderLineId: l.purchase_order_line_id ?? null,
           quantityReceived: String(l.quantity_received),
           uom: uomById.get(l.material_id)!,
           supplierLotNumber: l.supplier_lot_number ?? null,
@@ -327,6 +394,33 @@ router.post("/:id/post", async (req: Request, res: Response): Promise<void> => {
       error:
         `Cannot post GRN: the following material(s) belong to a category with no assigned ` +
         `receiving workflow — assign a Material Workflow to each category first: ${list}`,
+    });
+    return;
+  }
+  if (result.status === "po_not_receivable") {
+    res.status(409).json({
+      error: `Purchase order cannot receive from status '${result.current}'`,
+    });
+    return;
+  }
+  if (result.status === "po_supplier_mismatch") {
+    res.status(409).json({ error: "GRN supplier does not match the purchase order" });
+    return;
+  }
+  if (result.status === "po_line_mismatch") {
+    res.status(409).json({
+      error: "GRN lines do not match their referenced purchase-order lines",
+    });
+    return;
+  }
+  if (result.status === "over_receipt") {
+    res.status(409).json({
+      error: "GRN quantity exceeds the purchase-order over-receipt tolerance",
+      purchase_order_line_id: result.poLineId,
+      ordered_qty: result.orderedQty,
+      already_received_qty: result.receivedQty,
+      attempted_qty: result.attemptedQty,
+      tolerance_percent: result.tolerancePercent,
     });
     return;
   }

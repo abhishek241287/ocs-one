@@ -31,6 +31,7 @@ import logisticsRouter from "./logistics/index";
 import dashboardRouter from "./dashboard/index";
 import reportsRouter from "./reports/index";
 import developerRouter from "./developer/index";
+import procurementRouter from "./procurement/index";
 
 const router: IRouter = Router();
 
@@ -72,6 +73,9 @@ router.use("/masters/material-workflows", materialWorkflowMasterRouter);
 
 // Inventory Platform — Goods Receipt Notes + workflow assignment routing
 router.use("/inventory", inventoryRouter);
+
+// Procurement — Phase 1 purchase orders
+router.use("/procurement/purchase-orders", procurementRouter);
 
 // Unified Product Platform — serialized Products (units)
 router.use("/products", productsRouter);

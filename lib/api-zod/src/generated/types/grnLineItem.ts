@@ -15,6 +15,8 @@ export interface GrnLineItem {
   line_number: number;
   material_id: string;
   /** @nullable */
+  purchase_order_line_id?: string | null;
+  /** @nullable */
   material_name?: string | null;
   /** @nullable */
   material_code?: string | null;

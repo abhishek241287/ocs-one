@@ -76,6 +76,10 @@ import SecurityPage from "@/pages/SecurityPage";
 import ConfigurationPage from "@/pages/ConfigurationPage";
 import UserAccountsPage from "@/pages/UserAccountsPage";
 
+import PurchaseOrderListPage from "@/features/procurement/pages/PurchaseOrderListPage";
+import PurchaseOrderCreatePage from "@/features/procurement/pages/PurchaseOrderCreatePage";
+import PurchaseOrderDetailPage from "@/features/procurement/pages/PurchaseOrderDetailPage";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -129,6 +133,14 @@ function Router() {
       <Route path="/masters/boms/:id/edit" component={BomFormPage} />
       <Route path="/masters/boms/:id" component={BomDetailPage} />
       <Route path="/masters/boms" component={BomListPage} />
+
+      {/* Procurement */}
+      <Route path="/procurement">
+        <Redirect to="/procurement/purchase-orders" />
+      </Route>
+      <Route path="/procurement/purchase-orders" component={PurchaseOrderListPage} />
+      <Route path="/procurement/purchase-orders/new" component={PurchaseOrderCreatePage} />
+      <Route path="/procurement/purchase-orders/:id" component={PurchaseOrderDetailPage} />
 
       {/* Inventory */}
       <Route path="/inventory">
