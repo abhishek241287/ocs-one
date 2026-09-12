@@ -1,0 +1,406 @@
+FINAL FULL INVENTORY MANAGEMENT REQUIREMENT — MASTER GAP-CLOSURE TASK
+
+The required target scope is now:
+
+FULL INVENTORY MANAGEMENT.
+
+Do NOT treat Battery Factory Pilot scope exclusions as exclusions from inventory management.
+
+The objective is to make the inventory module complete enough for a production ERP inventory lifecycle.
+
+Use the existing repository implementation, architecture records, database schema, routes, UI, evidence records, and previous governance decisions as the authoritative starting point.
+
+Do not silently remove, downgrade, defer, or classify an inventory capability as "commercial" merely because it was outside the earlier Battery Factory Pilot scope.
+
+Before making ANY implementation change, perform a READ-ONLY inventory-management gap analysis.
+
+Do not modify code, schema, database, workflows, evidence, task metadata, commits, or tags during this step.
+
+Do not run destructive operations.
+
+Produce a single authoritative:
+
+FULL INVENTORY MANAGEMENT MASTER REQUIREMENTS & GAP CLOSURE PLAN
+
+The analysis must cover the COMPLETE lifecycle:
+
+1. PROCUREMENT
+   - Supplier
+   - Purchase Order
+   - PO approval/status
+   - PO lines
+   - Ordered quantity
+   - Received quantity
+   - Open quantity
+   - Over-receipt control
+   - PO → GRN linkage
+
+2. RECEIVING
+   - GRN
+   - GRN lines
+   - Supplier lot
+   - Internal lot/batch creation
+   - Incoming inspection
+   - Accepted/rejected/quarantine
+   - Partial receiving
+   - Partial inspection
+   - Receiving corrections/reversals
+
+3. INVENTORY MASTER DATA
+   - Material
+   - UOM
+   - Material category
+   - Warehouse
+   - Store/location/bin
+   - Lot/batch
+   - Serial number where applicable
+   - Supplier lot
+   - Inventory status
+
+4. INVENTORY STATES
+   Explicitly define and distinguish:
+   - On Hand
+   - Available
+   - Reserved
+   - Allocated
+   - Issued
+   - WIP
+   - Consumed
+   - Returned
+   - Quarantined
+   - Scrapped
+   - Adjusted
+
+5. RESERVATION
+   - Reserve stock
+   - Release reservation
+   - Reservation ownership
+   - Order linkage
+   - Expiry/cancellation
+   - Shortage control
+   - Concurrent reservation protection
+
+6. ALLOCATION
+   - Material allocation
+   - Lot allocation
+   - Location allocation
+   - Production-order allocation
+   - FIFO/FEFO policy where applicable
+
+7. INTERNAL TRANSFERS
+   - Store → Store
+   - Warehouse → Warehouse
+   - Location → Location
+   - Store → Production/WIP
+   - Production/WIP → Store
+   - Transfer request
+   - Transfer issue
+   - Transfer receipt
+   - Transfer cancellation
+   - Transfer reversal
+   - Quantity reconciliation
+
+8. MANUFACTURING MATERIAL FLOW
+   The lifecycle must support:
+
+   Reserve
+      →
+   Issue
+      →
+   WIP
+      →
+   Consume
+      →
+   Return unused material
+      →
+   Scrap loss
+
+   Do NOT treat PRODUCTION_ISSUE alone as equivalent to complete consumption management.
+
+9. BOM CONTROL
+   - BOM revisions
+   - Approved BOM
+   - BOM effective dates
+   - Production-order BOM snapshot
+   - Immutable released BOM
+   - Quantity/UOM/scrap/yield/alternate snapshot
+   - Revision traceability
+
+10. MATERIAL ISSUE
+    - Full issue
+    - Partial issue
+    - Lot selection
+    - Location selection
+    - Reservation consumption
+    - Shortage handling
+    - Issue reversal
+    - Authorization
+
+11. CONSUMPTION
+    - Actual consumption
+    - Planned consumption
+    - Variance
+    - Over-consumption
+    - Under-consumption
+    - Production-stage linkage
+    - Material genealogy
+
+12. RETURNS
+    - Production return
+    - WIP return
+    - Unused material return
+    - Lot-aware return
+    - Location-aware return
+    - Reason
+    - Approval
+    - Reversal
+
+13. SCRAP
+    - Scrap document
+    - Scrap reason
+    - Quantity
+    - Lot/serial
+    - Production linkage
+    - Approval
+    - Ledger movement
+    - Audit trail
+
+14. INVENTORY ADJUSTMENTS
+    - Positive adjustment
+    - Negative adjustment
+    - Reason
+    - Approval
+    - Lot/location scope
+    - Audit trail
+    - Controlled authorization
+
+15. STOCK LEDGER
+    The ledger must support every inventory movement required by the lifecycle.
+
+    Identify:
+    - Every transaction type
+    - Sign convention
+    - Source document
+    - Destination
+    - Lot
+    - Location
+    - Production order
+    - User
+    - Timestamp
+    - Reversal relationship
+
+16. STOCK BALANCES
+    Required dimensions:
+    - Material
+    - Lot/batch
+    - Warehouse
+    - Location/bin
+    - Inventory state
+    - Available quantity
+    - Reserved quantity
+    - WIP quantity
+    - Scrapped quantity
+
+17. LOT/BATCH TRACEABILITY
+    Provide complete genealogy:
+
+    Supplier
+      →
+    PO
+      →
+    GRN
+      →
+    Supplier lot
+      →
+    Internal lot
+      →
+    Location
+      →
+    Reservation
+      →
+    Issue
+      →
+    WIP
+      →
+    Consumption
+      →
+    Production
+      →
+    Finished product
+
+    Include return and scrap branches.
+
+18. CELL PROCESSING
+    Preserve the existing INV-P04 / Option A design where technically appropriate, but determine exactly how cell processing integrates with the complete inventory model.
+
+    Do not assume the existing cell-lot implementation satisfies general inventory requirements.
+
+19. INVENTORY RECONCILIATION
+    Define reconciliation for:
+    - Ledger
+    - On-hand
+    - Lot balances
+    - Location balances
+    - Reservations
+    - WIP
+    - Production consumption
+    - Transfers
+    - Returns
+    - Scrap
+
+20. REPORTING
+    Inventory reporting must cover:
+    - Current stock
+    - Available stock
+    - Reserved stock
+    - Lot stock
+    - Location stock
+    - Stock movements
+    - GRN
+    - PO
+    - Issues
+    - Consumption
+    - Returns
+    - Scrap
+    - Adjustments
+    - Transfers
+    - WIP
+    - Production consumption variance
+    - Inventory valuation if already required by the repository
+    - Complete traceability
+
+21. AUDIT / AUTHORIZATION
+    Identify required authorization for:
+    - PO
+    - GRN
+    - Inspection
+    - Reservation
+    - Issue
+    - Consumption
+    - Return
+    - Scrap
+    - Adjustment
+    - Transfer
+    - Reversal
+
+22. CONCURRENCY / INTEGRITY
+    Identify race conditions and required transactional protections for:
+    - Reservation
+    - Allocation
+    - Issue
+    - Transfer
+    - Return
+    - Adjustment
+    - Scrap
+    - Concurrent production orders
+
+23. API / UI COVERAGE
+    For every capability identify:
+    - Database schema
+    - Backend service
+    - API route
+    - Validation
+    - Authorization
+    - UI
+    - Reporting
+    - Audit
+
+24. TEST / ACCEPTANCE COVERAGE
+    Define the required technical acceptance scenarios for the COMPLETE inventory lifecycle.
+
+    At minimum include:
+    - PO → GRN
+    - Partial PO receipt
+    - Over-receipt
+    - Inspection
+    - Lot creation
+    - Reservation
+    - Competing reservations
+    - Issue
+    - Partial issue
+    - WIP
+    - Consumption
+    - Consumption variance
+    - Return
+    - Scrap
+    - Adjustment
+    - Transfer
+    - Transfer reversal
+    - Concurrent operations
+    - Lot traceability
+    - Production genealogy
+    - Inventory reconciliation
+    - Reporting
+
+25. EXISTING EVIDENCE
+    Clearly classify existing evidence:
+    - Task #35
+    - Task #42
+    - corrected INV-P04
+    - historical INV-P04
+    - DATA-P01
+    - Block 3
+    - CW-07
+    - security records
+
+    Do not present narrow revision-specific evidence as proof of the complete inventory lifecycle.
+
+For every capability produce:
+
+Capability
+Current implementation
+Current evidence
+Status:
+  IMPLEMENTED AND EVIDENCED
+  IMPLEMENTED BUT UNDER-EVIDENCED
+  PARTIALLY IMPLEMENTED
+  NOT IMPLEMENTED
+
+Gap
+Risk
+Required implementation
+Required database changes
+Required API changes
+Required UI changes
+Required authorization
+Required audit controls
+Required tests
+Required evidence
+Release impact
+Dependencies
+
+Then produce:
+
+A. COMPLETE INVENTORY CAPABILITY MATRIX
+B. END-TO-END INVENTORY LIFECYCLE
+C. G2 FULL CLOSURE PLAN
+D. PO → GRN → STOCK GAP PLAN
+E. RESERVATION → ISSUE → WIP → CONSUME → RETURN → SCRAP GAP PLAN
+F. LOT/BATCH/LOCATION TRACEABILITY PLAN
+G. TRANSFER/REVERSAL PLAN
+H. BOM SNAPSHOT & PRODUCTION GENEALOGY PLAN
+I. INVENTORY REPORTING & RECONCILIATION PLAN
+J. AUTHORIZATION/AUDIT PLAN
+K. CONCURRENCY/INTEGRITY PLAN
+L. COMPLETE ACCEPTANCE/FAT PLAN
+M. RELEASE-BLOCKER MATRIX
+N. IMPLEMENTATION SEQUENCE WITH DEPENDENCIES
+O. FINAL DEFINITION OF DONE FOR "FULL INVENTORY MANAGEMENT"
+
+IMPORTANT:
+
+Do not implement anything in this task.
+
+Do not create commits or tags.
+
+Do not modify historical evidence.
+
+Do not change the existing release tag.
+
+Do not reinterpret the Battery Factory Pilot approval as Full Commercial Deployment approval.
+
+The output must explicitly state whether the current tagged release satisfies FULL INVENTORY MANAGEMENT.
+
+If it does not, identify every missing capability and classify it as a release blocker.
+
+The final result must be detailed enough that the next task can implement the missing capabilities systematically without repeatedly rediscovering the inventory requirements.
