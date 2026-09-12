@@ -1,0 +1,157 @@
+{
+  "report_type": "Task #42 isolated cell-match concurrency certification",
+  "case_id": "CONC-P02",
+  "area": "cell-match-concurrency",
+  "result": "PASS",
+  "executed_at": "2026-09-12T08:39:29.663Z",
+  "tested_revision": {
+    "head_commit": "a5e058c97e20734c1e3c0980c812eabf5c121be5",
+    "working_tree_before_execution": "clean",
+    "official_release_candidate_tag": null,
+    "implementation_file": "artifacts/api-server/src/routes/cells/matches.ts",
+    "verified_fix_commit": "83942d08848a77452a8f8f4780751e60a4779ac4",
+    "fix_verification": "The tested HEAD contains the single-winner transaction fix; the cell-match route is unchanged since the fix commit."
+  },
+  "prior_evidence": {
+    "historical_frozen_journey": {
+      "file": "certification/fat-evidence/fat-journey-evidence.json",
+      "declared_candidate_commit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7",
+      "declared_candidate_tag": "FAT-CANDIDATE-2026-09-08",
+      "historical_conc_p02_result": "PASS",
+      "preserved": true
+    },
+    "historical_defect_log": {
+      "file": "certification/fat-evidence/fat-defect-log.md",
+      "declared_frozen_commit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7",
+      "purpose": "Records the pre-fix two-success defect and the historical shared-fixture verification.",
+      "preserved": true
+    }
+  },
+  "fixture": {
+    "isolation_prefix": "TASK42-MTY4W7AV-83D0",
+    "scope": "One temporary operator, one temporary cell lot, 16 approved cells, one draft match, and 16 match items.",
+    "user_id": "a502187f-758d-4d39-a977-e3f337f3515f",
+    "lot_id": "06fa6b0d-b7c0-45da-ad68-5a89201d1b8c",
+    "match_id": "124748ef-7393-48ac-b48d-cd55771a0426",
+    "cell_count": 16,
+    "before_race": {
+      "match_status": "draft",
+      "match_item_count": 16,
+      "cells_total": 16,
+      "cells_approved": 16,
+      "cells_allocated": 0,
+      "cells_reserved": 0,
+      "cells_linked": 0,
+      "same_prefix_matches": 1,
+      "competing_items": 0,
+      "other_fixture_matches": 0
+    },
+    "isolation_assertion": "The race used the uniquely created match ID and cells; no shared FAT match, cell, product, or user was used."
+  },
+  "race": {
+    "endpoint": "/api/cells/matches/124748ef-7393-48ac-b48d-cd55771a0426/accept",
+    "requests_started_concurrently": true,
+    "overlap_observed": true,
+    "request_a": {
+      "started_at": "2026-09-12T08:39:29.662Z",
+      "finished_at": "2026-09-12T08:39:29.837Z",
+      "duration_ms": 174.73189300000013,
+      "http_status": 409,
+      "response_body": {
+        "error": "Match is already reserved"
+      },
+      "classification": "loser/conflict"
+    },
+    "request_b": {
+      "started_at": "2026-09-12T08:39:29.663Z",
+      "finished_at": "2026-09-12T08:39:29.839Z",
+      "duration_ms": 176.00002300000006,
+      "http_status": 200,
+      "response_body": {
+        "match_id": "124748ef-7393-48ac-b48d-cd55771a0426",
+        "match_status": "reserved",
+        "battery_count": 1,
+        "cell_count": 16,
+        "cell_status": "reserved",
+        "cell_match_id": "124748ef-7393-48ac-b48d-cd55771a0426"
+      },
+      "classification": "winner"
+    },
+    "exact_one_winner": true,
+    "exact_one_loser": true,
+    "no_second_successful_acceptance": true
+  },
+  "post_race_integrity": {
+    "match_status": "reserved",
+    "match_item_count": 16,
+    "fixture_cell_count": 16,
+    "reserved_cells_owned_by_match": 16,
+    "accepted_matches_owning_fixture_cells": 1,
+    "duplicate_owners": 0,
+    "orphan_items": 0,
+    "allocation_assertion": "Every fixture cell was reserved by the single winning match; no fixture cell was owned by two accepted matches."
+  },
+  "cleanup": {
+    "result": "PASS",
+    "deleted_rows": {
+      "match_items": 16,
+      "matches": 1,
+      "cells": 16,
+      "lot_events": 0,
+      "lots": 1,
+      "security_events": 1,
+      "users": 1
+    },
+    "controlled_residuals": {
+      "users": 0,
+      "lots": 0,
+      "cells": 0,
+      "matches": 0,
+      "items": 0,
+      "events": 0
+    }
+  },
+  "data_p01_after_cleanup": {
+    "command": "pnpm --filter @workspace/api-server run cert:fat:verify",
+    "exit_status": 0,
+    "state": "clean",
+    "residual_counts": {
+      "users": 0,
+      "dealers": 0,
+      "masters": 0,
+      "materials": 0,
+      "boms": 0,
+      "grns": 0,
+      "inspections": 0,
+      "transfers": 0,
+      "lots": 0,
+      "cells": 0,
+      "matches": 0,
+      "orders": 0,
+      "chargers": 0,
+      "products": 0,
+      "dispatches": 0,
+      "registrations": 0,
+      "warranties": 0
+    }
+  },
+  "namespace_isolation": {
+    "result": "PASS",
+    "before_sha256": "37a55dfb909f1e7827e63380cf14dc0ee35113218c2b0a72fad1e9e694f474f1",
+    "after_sha256": "37a55dfb909f1e7827e63380cf14dc0ee35113218c2b0a72fad1e9e694f474f1",
+    "assertion": "Non-FAT counts and identifier/marker digests were identical before fixture setup and after cleanup."
+  },
+  "evidence_boundary": {
+    "historical_evidence_modified": false,
+    "historical_journey_sha256": "98a0dfc7dded465c3d40780cf14dc0ee35113218c2b0a72fad1e9e694f474f1",
+    "historical_defect_log_sha256": "b5e17c0938cc5c84326c6b6f1080865d16b65f43dfa8dddcbe94160b79e3ebed",
+    "historical_block_3_sha256": "59fcdcb8abcfaf6563dd492622c40eba48f5a92cbc4c8bc46957861ced02b7af",
+    "new_evidence_is_separate": true
+  },
+  "final_status": {
+    "task_42_can_be_marked_pass_closed": true,
+    "block_3_run": false,
+    "full_fat_run": false,
+    "release_candidate_tag_created": false
+  }
+}
