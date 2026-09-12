@@ -393,7 +393,13 @@ router.get("/", async (req, res) => {
       inTransit: Number(logisticsStats[0]?.inTransit ?? 0),
       deliveredToday: Number(deliveredToday[0]?.count ?? 0),
       totalDealers: Number(dealerCount[0]?.total ?? 0),
-      ordersByStatus: logisticsStats[0],
+      ordersByStatus: {
+        draft: Number(logisticsStats[0]?.draft ?? 0),
+        confirmed: Number(logisticsStats[0]?.confirmed ?? 0),
+        loaded: Number(logisticsStats[0]?.loaded ?? 0),
+        inTransit: Number(logisticsStats[0]?.inTransit ?? 0),
+        delivered: Number(logisticsStats[0]?.delivered ?? 0),
+      },
     },
     cellInventory: {
       total: Number(cellStats[0]?.total ?? 0),

@@ -156,6 +156,426 @@ function rowsAt(value: unknown, path: string): Array<Record<string, unknown>> {
   return Array.isArray(result) ? result.filter(isRecord) : [];
 }
 
+type ShapeType =
+  | "object"
+  | "array"
+  | "string"
+  | "number"
+  | "boolean"
+  | "nullable-string"
+  | "nullable-number";
+
+interface ShapeRule {
+  path: string;
+  type: ShapeType;
+}
+
+interface ShapeIssue {
+  path: string;
+  observedType: string;
+  expectedType: ShapeType;
+}
+
+const shapeRules = (...rules: Array<[string, ShapeType]>): ShapeRule[] =>
+  rules.map(([path, type]) => ({ path, type }));
+
+const REPORT_RESPONSE_SHAPES: Record<string, ShapeRule[]> = {
+  "/api/reports/production": shapeRules(
+    ["filters", "object"],
+    ["filters.from", "string"],
+    ["filters.to", "string"],
+    ["filters.productId", "nullable-string"],
+    ["byDay", "array"],
+    ["byDay[].date", "string"],
+    ["byDay[].created", "number"],
+    ["byDay[].completed", "number"],
+    ["byWeek", "array"],
+    ["byWeek[].week", "string"],
+    ["byWeek[].created", "number"],
+    ["byWeek[].completed", "number"],
+    ["byMonth", "array"],
+    ["byMonth[].month", "string"],
+    ["byMonth[].created", "number"],
+    ["byMonth[].completed", "number"],
+    ["byOperator", "array"],
+    ["byOperator[].operator", "string"],
+    ["byOperator[].completed", "number"],
+    ["stageTimings", "array"],
+    ["stageTimings[].stage", "string"],
+    ["stageTimings[].avgHrs", "nullable-number"],
+    ["stageTimings[].count", "number"],
+    ["refreshedAt", "string"],
+  ),
+  "/api/reports/quality": shapeRules(
+    ["summary", "object"],
+    ["summary.totalTests", "number"],
+    ["summary.passed", "number"],
+    ["summary.failed", "number"],
+    ["summary.qcPassPct", "nullable-number"],
+    ["summary.qcRejectPct", "nullable-number"],
+    ["summary.firstPassYield", "nullable-number"],
+    ["summary.qcApprovals", "number"],
+    ["summary.qcApproved", "number"],
+    ["summary.qcRejected", "number"],
+    ["summary.qcApprovalPct", "nullable-number"],
+    ["rework", "object"],
+    ["rework.total", "number"],
+    ["rework.open", "number"],
+    ["rework.resolved", "number"],
+    ["byTestType", "array"],
+    ["byTestType[].testType", "nullable-string"],
+    ["byTestType[].total", "number"],
+    ["byTestType[].passed", "number"],
+    ["byTestType[].failed", "number"],
+    ["byTestType[].passRate", "nullable-number"],
+    ["stageRejections", "array"],
+    ["stageRejections[].stage", "string"],
+    ["stageRejections[].rejected", "number"],
+    ["topDefects", "array"],
+    ["topDefects[].reason", "string"],
+    ["topDefects[].count", "number"],
+    ["refreshedAt", "string"],
+  ),
+  "/api/reports/cells": shapeRules(
+    ["summary", "object"],
+    ["summary.total", "number"],
+    ["summary.gradeA", "number"],
+    ["summary.gradeB", "number"],
+    ["summary.gradeC", "number"],
+    ["summary.rejected", "number"],
+    ["summary.gradeAPct", "number"],
+    ["summary.gradeBPct", "number"],
+    ["summary.gradeCPct", "number"],
+    ["summary.rejectedPct", "number"],
+    ["summary.avgCapacity", "nullable-number"],
+    ["summary.avgIr", "nullable-number"],
+    ["capacityDistribution", "array"],
+    ["capacityDistribution[].bucket", "string"],
+    ["capacityDistribution[].count", "number"],
+    ["irDistribution", "array"],
+    ["irDistribution[].bucket", "string"],
+    ["irDistribution[].count", "number"],
+    ["bySupplier", "array"],
+    ["bySupplier[].supplier", "string"],
+    ["bySupplier[].total", "number"],
+    ["bySupplier[].gradeA", "number"],
+    ["bySupplier[].gradeB", "number"],
+    ["bySupplier[].gradeC", "number"],
+    ["bySupplier[].rejected", "number"],
+    ["bySupplier[].yieldPct", "number"],
+    ["bySupplier[].avgCapacity", "nullable-number"],
+    ["byLot", "array"],
+    ["byLot[].lotNumber", "string"],
+    ["byLot[].supplier", "string"],
+    ["byLot[].total", "number"],
+    ["byLot[].gradeA", "number"],
+    ["byLot[].rejected", "number"],
+    ["byLot[].yieldPct", "number"],
+    ["matchingStats", "object"],
+    ["matchingStats.total", "number"],
+    ["matchingStats.allocated", "number"],
+    ["matchingStats.reserved", "number"],
+    ["matchingStats.successPct", "nullable-number"],
+    ["refreshedAt", "string"],
+  ),
+  "/api/reports/inventory": shapeRules(
+    ["cells", "object"],
+    ["cells.total", "number"],
+    ["cells.available", "number"],
+    ["cells.allocated", "number"],
+    ["cells.inProduction", "number"],
+    ["cells.rejected", "number"],
+    ["cells.statusBreakdown", "array"],
+    ["cells.statusBreakdown[].status", "string"],
+    ["cells.statusBreakdown[].count", "number"],
+    ["cells.gradeBreakdown", "array"],
+    ["cells.gradeBreakdown[].grade", "string"],
+    ["cells.gradeBreakdown[].count", "number"],
+    ["batteries", "object"],
+    ["batteries.total", "number"],
+    ["batteries.inProgress", "number"],
+    ["batteries.completed", "number"],
+    ["batteries.readyForDispatch", "number"],
+    ["batteries.draft", "number"],
+    ["byLot", "array"],
+    ["byLot[].lotNumber", "string"],
+    ["byLot[].supplier", "string"],
+    ["byLot[].receivedAt", "string"],
+    ["byLot[].total", "number"],
+    ["byLot[].available", "number"],
+    ["byLot[].allocated", "number"],
+    ["byLot[].rejected", "number"],
+    ["byLot[].utilizationPct", "number"],
+    ["rawMaterials", "object"],
+    ["rawMaterials.byState", "array"],
+    ["rawMaterials.byState[].stock_state", "string"],
+    ["rawMaterials.byState[].total_qty", "number"],
+    ["rawMaterials.byState[].material_count", "number"],
+    ["rawMaterials.availableQty", "number"],
+    ["finishedProducts", "object"],
+    ["finishedProducts.total", "number"],
+    ["finishedProducts.available", "number"],
+    ["finishedProducts.readyForPacking", "number"],
+    ["finishedProducts.packed", "number"],
+    ["finishedProducts.dispatched", "number"],
+    ["finishedProducts.dealerStock", "number"],
+    ["finishedProducts.byStatus", "array"],
+    ["finishedProducts.byStatus[].status", "string"],
+    ["finishedProducts.byStatus[].count", "number"],
+    ["refreshedAt", "string"],
+  ),
+  "/api/reports/logistics": shapeRules(
+    ["summary", "object"],
+    ["summary.total", "number"],
+    ["summary.loadedToday", "number"],
+    ["summary.dispatchedToday", "number"],
+    ["summary.inTransit", "number"],
+    ["summary.delivered", "number"],
+    ["summary.totalBatteriesShipped", "number"],
+    ["statusFlow", "array"],
+    ["statusFlow[].status", "string"],
+    ["statusFlow[].count", "number"],
+    ["byDealer", "array"],
+    ["byDealer[].dealerName", "string"],
+    ["byDealer[].territory", "nullable-string"],
+    ["byDealer[].total", "number"],
+    ["byDealer[].delivered", "number"],
+    ["byDealer[].inTransit", "number"],
+    ["byTerritory", "array"],
+    ["byTerritory[].territory", "string"],
+    ["byTerritory[].total", "number"],
+    ["byTerritory[].delivered", "number"],
+    ["byMonth", "array"],
+    ["byMonth[].month", "string"],
+    ["byMonth[].total", "number"],
+    ["byMonth[].dispatched", "number"],
+    ["refreshedAt", "string"],
+  ),
+  "/api/reports/executive": shapeRules(
+    ["production", "object"],
+    ["production.today", "number"],
+    ["production.thisMonth", "number"],
+    ["production.total", "number"],
+    ["production.inProgress", "number"],
+    ["production.draft", "number"],
+    ["quality", "object"],
+    ["quality.qcPassPct", "nullable-number"],
+    ["quality.qcRejectPct", "nullable-number"],
+    ["quality.firstPassYield", "nullable-number"],
+    ["quality.reworkPct", "nullable-number"],
+    ["quality.openReworks", "number"],
+    ["quality.totalReworks", "number"],
+    ["timings", "object"],
+    ["timings.avgMfgHrs", "nullable-number"],
+    ["timings.avgChargingHrs", "nullable-number"],
+    ["timings.avgTestingHrs", "nullable-number"],
+    ["inventory", "object"],
+    ["inventory.totalCells", "number"],
+    ["inventory.availableCells", "number"],
+    ["inventory.allocatedCells", "number"],
+    ["inventory.gradeA", "number"],
+    ["inventory.gradeB", "number"],
+    ["inventory.gradeC", "number"],
+    ["inventory.rejected", "number"],
+    ["inventory.batteriesInProduction", "number"],
+    ["inventory.readyForDispatch", "number"],
+    ["logistics", "object"],
+    ["logistics.dispatchedToday", "number"],
+    ["logistics.inTransit", "number"],
+    ["logistics.totalShipments", "number"],
+    ["yieldPct", "nullable-number"],
+    ["refreshedAt", "string"],
+  ),
+  "/api/dashboard/director": shapeRules(
+    ["refreshedAt", "string"],
+    ["kpis", "object"],
+    ["kpis.todayTarget", "number"],
+    ["kpis.todayCompleted", "number"],
+    ["kpis.productionEfficiency", "number"],
+    ["kpis.inProgress", "number"],
+    ["kpis.qcPending", "number"],
+    ["kpis.dispatchReady", "number"],
+    ["kpis.reworkQueue", "number"],
+    ["kpis.chargerUtilization", "number"],
+    ["pipeline", "array"],
+    ["pipeline[].key", "string"],
+    ["pipeline[].label", "string"],
+    ["pipeline[].href", "string"],
+    ["pipeline[].inProgress", "number"],
+    ["pipeline[].waiting", "number"],
+    ["pipeline[].blocked", "number"],
+    ["pipeline[].completedToday", "number"],
+    ["pipeline[].health", "string"],
+    ["alerts", "array"],
+    ["alerts[].id", "string"],
+    ["alerts[].severity", "string"],
+    ["alerts[].message", "string"],
+    ["alerts[].timestamp", "string"],
+    ["recentOrders", "array"],
+    ["recentOrders[].id", "string"],
+    ["recentOrders[].orderNumber", "string"],
+    ["recentOrders[].batteryNumber", "nullable-string"],
+    ["recentOrders[].status", "string"],
+    ["recentOrders[].currentStage", "nullable-string"],
+    ["recentOrders[].priority", "nullable-string"],
+    ["recentOrders[].createdAt", "string"],
+    ["recentOrders[].updatedAt", "string"],
+    ["operatorActivity", "array"],
+    ["operatorActivity[].operatorName", "string"],
+    ["operatorActivity[].stage", "string"],
+    ["operatorActivity[].lastActivity", "string"],
+    ["operatorActivity[].batteriesCompletedToday", "number"],
+    ["equipmentStatus", "object"],
+    ["equipmentStatus.chargers", "object"],
+    ["equipmentStatus.chargers.total", "number"],
+    ["equipmentStatus.chargers.available", "number"],
+    ["equipmentStatus.chargers.busy", "number"],
+    ["equipmentStatus.chargers.maintenance", "number"],
+    ["equipmentStatus.testEquipment", "object"],
+    ["equipmentStatus.testEquipment.total", "number"],
+    ["equipmentStatus.testEquipment.available", "number"],
+    ["equipmentStatus.testEquipment.busy", "number"],
+    ["equipmentStatus.testEquipment.maintenance", "number"],
+    ["qualitySummary", "object"],
+    ["qualitySummary.passRate", "number"],
+    ["qualitySummary.rejectRate", "number"],
+    ["qualitySummary.testPassCount", "number"],
+    ["qualitySummary.testFailCount", "number"],
+    ["qualitySummary.sampleCount", "number"],
+    ["logistics", "object"],
+    ["logistics.readyForDispatch", "number"],
+    ["logistics.inTransit", "number"],
+    ["logistics.deliveredToday", "number"],
+    ["logistics.totalDealers", "number"],
+    ["logistics.ordersByStatus", "object"],
+    ["logistics.ordersByStatus.draft", "number"],
+    ["logistics.ordersByStatus.confirmed", "number"],
+    ["logistics.ordersByStatus.loaded", "number"],
+    ["logistics.ordersByStatus.inTransit", "number"],
+    ["logistics.ordersByStatus.delivered", "number"],
+    ["cellInventory", "object"],
+    ["cellInventory.total", "number"],
+    ["cellInventory.received", "number"],
+    ["cellInventory.grading", "number"],
+    ["cellInventory.approved", "number"],
+    ["cellInventory.reserved", "number"],
+    ["cellInventory.allocated", "number"],
+    ["cellInventory.rejected", "number"],
+    ["cellInventory.quarantine", "number"],
+    ["orderStats", "object"],
+    ["orderStats.total", "number"],
+    ["orderStats.inProgress", "number"],
+    ["orderStats.completed", "number"],
+    ["orderStats.draft", "number"],
+  ),
+};
+
+function observedType(value: unknown): string {
+  if (value === undefined) return "missing";
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  return typeof value;
+}
+
+function matchesShapeType(value: unknown, expected: ShapeType): boolean {
+  if (expected === "nullable-string") return value === null || typeof value === "string";
+  if (expected === "nullable-number") return value === null || typeof value === "number";
+  if (expected === "object") return isRecord(value);
+  if (expected === "array") return Array.isArray(value);
+  return typeof value === expected;
+}
+
+function validateShapePath(
+  value: unknown,
+  pathParts: string[],
+  expectedType: ShapeType,
+  concretePath = "",
+): ShapeIssue[] {
+  const [part, ...rest] = pathParts;
+  if (!part) {
+    return matchesShapeType(value, expectedType)
+      ? []
+      : [{ path: concretePath, observedType: observedType(value), expectedType }];
+  }
+
+  const isArrayPart = part.endsWith("[]");
+  const key = isArrayPart ? part.slice(0, -2) : part;
+  const childPath = concretePath ? `${concretePath}.${key}` : key;
+  const child = isRecord(value) ? value[key] : undefined;
+
+  if (isArrayPart) {
+    if (!matchesShapeType(child, "array")) {
+      return [{ path: childPath, observedType: observedType(child), expectedType: "array" }];
+    }
+    if (rest.length === 0) return [];
+    return (child as unknown[]).flatMap((item, index) =>
+      validateShapePath(item, rest, expectedType, `${childPath}[${index}]`),
+    );
+  }
+
+  if (child === undefined) {
+    return [{ path: childPath, observedType: "missing", expectedType }];
+  }
+  if (rest.length > 0) {
+    return validateShapePath(child, rest, expectedType, childPath);
+  }
+  return matchesShapeType(child, expectedType)
+    ? []
+    : [{ path: childPath, observedType: observedType(child), expectedType }];
+}
+
+function assertResponseShape(
+  caseId: string,
+  role: Role,
+  route: string,
+  body: unknown,
+): void {
+  const rules = REPORT_RESPONSE_SHAPES[route];
+  if (!rules) throw new Error(`No response shape contract registered for ${route}`);
+  const issues = rules.flatMap((rule) =>
+    validateShapePath(body, rule.path.split("."), rule.type),
+  );
+
+  if (issues.length === 0) {
+    evidence.push({
+      case_id: caseId,
+      area: "reports-shape",
+      result: "PASS",
+      ...actor(role),
+      method: "ASSERT",
+      path: route,
+      http_status: 0,
+      response_body: {
+        route,
+        checked_paths: rules.map((rule) => rule.path),
+        result: "shape-valid",
+      },
+      note: "The report response envelope and required nested fields match the FAT shape contract.",
+    });
+    return;
+  }
+
+  failures += issues.length;
+  for (const issue of issues) {
+    evidence.push({
+      case_id: caseId,
+      area: "reports-shape",
+      result: "FAIL",
+      ...actor(role),
+      method: "ASSERT",
+      path: route,
+      http_status: 0,
+      response_body: {
+        route,
+        missing_path: issue.path,
+        observed_type: issue.observedType,
+        expected_type: issue.expectedType,
+      },
+      note: "The report response shape drifted from the FAT contract.",
+    });
+  }
+}
+
 function assertCheck(
   caseId: string,
   area: string,
@@ -626,6 +1046,18 @@ async function runReportsAndDashboard(): Promise<void> {
   await get("RPT-N01", "reports", "operator", "/api/reports/executive", 403);
   await get("RPT-N01", "reports", "viewer", "/api/reports/executive", 403);
   await get("RPT-N01", "reports", "dealer", "/api/reports/executive", 403);
+
+  for (const [route, body] of [
+    ["/api/reports/executive", reportBodies.get("executive")],
+    ["/api/reports/production", reportBodies.get("production")],
+    ["/api/reports/cells", reportBodies.get("cells")],
+    ["/api/reports/quality", reportBodies.get("quality")],
+    ["/api/reports/inventory", reportBodies.get("inventory")],
+    ["/api/reports/logistics", reportBodies.get("logistics")],
+    ["/api/dashboard/director", dashboard],
+  ] as const) {
+    assertResponseShape("RPT-SHAPE", "director", route, body);
+  }
 
   const [source] = (await pool.query(`
     SELECT
