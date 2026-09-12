@@ -35,6 +35,17 @@ const RUN_AT = new Date().toISOString();
 const DATE = "2026-09-08";
 const FAT_ROLES = ["owner", "director", "supervisor", "operator", "viewer", "dealer"] as const;
 type FatRole = (typeof FAT_ROLES)[number];
+const FAT_STAGE_TYPES = [
+  "cell_allocation",
+  "assembly",
+  "compression",
+  "bms_allocation",
+  "bms_programming",
+  "charging",
+  "testing",
+  "quality_control",
+  "packing",
+];
 
 type PreflightCheck = {
   group: string;
@@ -646,17 +657,7 @@ async function seedCells(client: SqlClient): Promise<void> {
 }
 
 async function seedManufacturing(client: SqlClient): Promise<void> {
-  const stageTypes = [
-    "cell_allocation",
-    "assembly",
-    "compression",
-    "bms_allocation",
-    "bms_programming",
-    "charging",
-    "testing",
-    "quality_control",
-    "packing",
-  ];
+  const stageTypes = FAT_STAGE_TYPES;
   const orders = [
     [FAT_IDS.orders.clean, "CLEAN", "completed", "packing", FAT_IDS.cells.matchAllocated],
     [FAT_IDS.orders.packed, "PACKED", "completed", "packing", null],
@@ -1283,12 +1284,23 @@ async function preflight(): Promise<void> {
         [`${FAT_PREFIX}%`],
       )
     ).rows;
-    preflightCheck(checks, "manufacturing", "six controlled production orders exist", manufacturing.length === 6, 6, manufacturing.length);
-    preflightCheck(checks, "manufacturing", "every controlled order has nine stages", manufacturing.length === 6 && manufacturing.every((row) => Number(row.stage_count) === 9), 9, manufacturing.map((row) => `${row.order_number}:${row.stage_count}`).join(", "));
+    preflightCheck(checks, "stage", "six controlled production orders exist", manufacturing.length === 6, 6, manufacturing.length);
+    preflightCheck(checks, "stage", "every controlled order has nine stages", manufacturing.length === 6 && manufacturing.every((row) => Number(row.stage_count) === 9), 9, manufacturing.map((row) => `${row.order_number}:${row.stage_count}`).join(", "));
+    const cleanStageTypes = (
+      await query(
+        client,
+        `SELECT stage_type::text AS stage_type
+         FROM mfg_order_stages
+         WHERE production_order_id = $1
+         ORDER BY stage_order`,
+        [FAT_IDS.orders.clean],
+      )
+    ).rows.map((row) => String(row.stage_type));
+    preflightCheck(checks, "stage", "clean order has the canonical stage sequence", exactSet(cleanStageTypes, FAT_STAGE_TYPES), FAT_STAGE_TYPES, cleanStageTypes);
     const byOrderId = new Map(manufacturing.map((row) => [String(row.id), row]));
-    preflightCheck(checks, "manufacturing", "race orders are in charging and in progress",
+    preflightCheck(checks, "stage", "race orders are in charging and in progress",
       [FAT_IDS.orders.raceOne, FAT_IDS.orders.raceTwo].every((id) => byOrderId.get(id)?.current_stage === "charging" && byOrderId.get(id)?.status === "in_progress"));
-    preflightCheck(checks, "manufacturing", "clean order is complete", byOrderId.get(FAT_IDS.orders.clean)?.status === "completed", "completed", byOrderId.get(FAT_IDS.orders.clean)?.status);
+    preflightCheck(checks, "stage", "clean order is complete", byOrderId.get(FAT_IDS.orders.clean)?.status === "completed", "completed", byOrderId.get(FAT_IDS.orders.clean)?.status);
 
     const genealogy = (
       await query(
@@ -1337,7 +1349,7 @@ async function preflight(): Promise<void> {
       )
     ).rows[0] ?? {};
     const snapshot = fulfillment.dispatch_snapshot as Record<string, unknown> | null;
-    preflightCheck(checks, "fulfillment", "dispatch stores the dealer snapshot", snapshot !== null &&
+    preflightCheck(checks, "dispatch", "dispatch stores the dealer snapshot", snapshot !== null &&
       snapshot.dealer_id === FAT_IDS.dealer &&
       snapshot.dealer_code === `${FAT_PREFIX}DLR-A` &&
       snapshot.dealer_name === "FAT E2E Dealer Alpha" &&
@@ -1345,14 +1357,14 @@ async function preflight(): Promise<void> {
       snapshot.dealer_gst === "29FATE2E0001Z5" &&
       snapshot.dealer_contact === "FAT Dealer Desk" &&
       snapshot.dealer_mobile === "9000000001");
-    preflightCheck(checks, "fulfillment", "dispatch item points to the traceability product", Number(fulfillment.dispatch_item) === 1, 1, fulfillment.dispatch_item);
+    preflightCheck(checks, "dispatch", "dispatch item points to the traceability product", Number(fulfillment.dispatch_item) === 1, 1, fulfillment.dispatch_item);
     const registration = fulfillment.registration as Record<string, unknown> | null;
-    preflightCheck(checks, "fulfillment", "customer registration points to dealer product", registration !== null &&
+    preflightCheck(checks, "registration", "customer registration points to dealer product", registration !== null &&
       registration.product_id === FAT_IDS.products.dispatched &&
       registration.dealer_id === FAT_IDS.dealer &&
       registration.customer_name === "FAT E2E Customer");
     const warranty = fulfillment.warranty as Record<string, unknown> | null;
-    preflightCheck(checks, "fulfillment", "warranty points to registration and has the 60-month term", warranty !== null &&
+    preflightCheck(checks, "warranty", "warranty points to registration and has the 60-month term", warranty !== null &&
       warranty.product_id === FAT_IDS.products.dispatched &&
       warranty.registration_id === FAT_IDS.fulfillment.registration &&
       Number(warranty.period_months) === 60 &&

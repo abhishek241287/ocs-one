@@ -194,18 +194,26 @@ export async function teardownFatDataset(client: SqlClient): Promise<void> {
     `DELETE FROM mfg_production_orders WHERE order_number LIKE '${FAT_PREFIX}%'`,
     `DELETE FROM cell_match_items WHERE match_id IN (SELECT id FROM cell_matches WHERE notes LIKE '${FAT_PREFIX}%')`,
     `DELETE FROM cell_matches WHERE notes LIKE '${FAT_PREFIX}%'`,
-    `DELETE FROM cell_lot_events WHERE lot_id IN (SELECT id FROM cell_lots WHERE lot_number LIKE '${FAT_PREFIX}%')`,
-    `DELETE FROM cells WHERE cell_id LIKE '${FAT_PREFIX}%'`,
-    `DELETE FROM cell_lots WHERE lot_number LIKE '${FAT_PREFIX}%'`,
-    `DELETE FROM inventory_transactions WHERE source_document_id IN (SELECT id FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%') OR source_document_id IN (SELECT id FROM material_transfers WHERE transfer_number LIKE '${FAT_PREFIX}%') OR material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%')`,
-    `DELETE FROM incoming_inspection_lines WHERE inspection_id IN (SELECT id FROM incoming_inspections WHERE inspection_number LIKE '${FAT_PREFIX}%')`,
-    `DELETE FROM incoming_inspections WHERE inspection_number LIKE '${FAT_PREFIX}%'`,
-    `DELETE FROM material_transfers WHERE transfer_number LIKE '${FAT_PREFIX}%'`,
-    `DELETE FROM grn_line_items WHERE grn_id IN (SELECT id FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%')`,
-    `DELETE FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%'`,
-    `DELETE FROM bom_lines WHERE bom_id IN (SELECT id FROM bom_headers WHERE bom_number LIKE '${FAT_PREFIX}%')`,
-    `DELETE FROM bom_headers WHERE bom_number LIKE '${FAT_PREFIX}%'`,
-    `DELETE FROM material_workflow_assignments WHERE id IN ('${FAT_IDS.masters.assignmentCell}', '${FAT_IDS.masters.assignmentBms}')`,
+    `DELETE FROM cell_lot_events WHERE lot_id IN (SELECT id FROM cell_lots WHERE lot_number LIKE '${FAT_PREFIX}%' OR transfer_id IN (SELECT id FROM material_transfers WHERE material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%')))`,
+    `DELETE FROM cells WHERE cell_id LIKE '${FAT_PREFIX}%' OR lot_id IN (SELECT id FROM cell_lots WHERE lot_number LIKE '${FAT_PREFIX}%' OR transfer_id IN (SELECT id FROM material_transfers WHERE material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%')))`,
+    `DELETE FROM cell_lots WHERE lot_number LIKE '${FAT_PREFIX}%' OR transfer_id IN (SELECT id FROM material_transfers WHERE material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%'))`,
+    `DELETE FROM inventory_transactions WHERE source_document_id IN (SELECT id FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%' OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%')) OR source_document_id IN (SELECT id FROM material_transfers WHERE transfer_number LIKE '${FAT_PREFIX}%' OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%')) OR material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%')`,
+    `DELETE FROM incoming_inspection_lines WHERE inspection_id IN (SELECT id FROM incoming_inspections WHERE inspection_number LIKE '${FAT_PREFIX}%' OR grn_id IN (SELECT id FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%' OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%'))) OR material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%')`,
+    `DELETE FROM incoming_inspections WHERE inspection_number LIKE '${FAT_PREFIX}%' OR grn_id IN (SELECT id FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%' OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%'))`,
+    `DELETE FROM material_transfers WHERE transfer_number LIKE '${FAT_PREFIX}%' OR material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%') OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%')`,
+    // API-created document numbers are globally generated, so their dependent
+    // lines can still reference a controlled FAT material without carrying the
+    // FAT prefix themselves. Remove those dependent lines before their masters;
+    // leave the unrelated document header intact.
+    `DELETE FROM grn_line_items WHERE grn_id IN (SELECT id FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%' OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%')) OR material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%')`,
+    `DELETE FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%' OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%')`,
+    `DELETE FROM material_workflow_assignments
+     WHERE id IN ('${FAT_IDS.masters.assignmentCell}', '${FAT_IDS.masters.assignmentBms}')
+        OR category_id IN (SELECT id FROM master_material_categories WHERE code LIKE '${FAT_PREFIX}%')
+        OR workflow_id IN (SELECT id FROM material_workflows WHERE code LIKE '${FAT_PREFIX}%')`,
+    `DELETE FROM bom_lines WHERE bom_id IN (SELECT id FROM bom_headers WHERE bom_number LIKE '${FAT_PREFIX}%' OR model_id IN (SELECT id FROM master_products WHERE code LIKE '${FAT_PREFIX}%')) OR material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%')`,
+    `DELETE FROM bom_headers WHERE bom_number LIKE '${FAT_PREFIX}%' OR model_id IN (SELECT id FROM master_products WHERE code LIKE '${FAT_PREFIX}%')`,
+    `DELETE FROM material_issue_note_lines WHERE material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%')`,
     `DELETE FROM master_materials WHERE code LIKE '${FAT_PREFIX}%'`,
     `DELETE FROM master_material_categories WHERE code LIKE '${FAT_PREFIX}%'`,
     `DELETE FROM material_workflows WHERE code LIKE '${FAT_PREFIX}%'`,

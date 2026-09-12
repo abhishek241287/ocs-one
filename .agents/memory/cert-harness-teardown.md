@@ -36,3 +36,18 @@ Because Cell Grading is migrated onto the ECF, the FIRST grade of a cell appends
 cert harness that grades cells therefore creates ledger rows that must be torn down too — delete
 by `performed_by='<harness tag>'` (entity_id is `text`, so `entity_id IN (SELECT id FROM cells…)`
 fails with `text = uuid`; either cast `id::text` or just key off `performed_by`).
+
+# Generated document numbers do not prove namespace ownership
+
+Certification API journeys can create globally generated GRN, transfer, inspection, or
+workflow-assignment IDs that do not carry the harness prefix while still referencing
+prefix-owned masters. Teardown must remove dependent rows through those controlled-master
+relationships before deleting the master, while leaving unrelated document headers intact
+unless the header itself is tied to a controlled supplier/model.
+
+**Why:** prefix-only cleanup left generated rows holding foreign keys to FAT masters, so a
+subsequent seed could fail before any certification case ran.
+
+**How to apply:** for every controlled master, inspect its inbound FKs and include the
+controlled-master relationship in child cleanup; do not rely only on generated document
+number prefixes or captured IDs.
