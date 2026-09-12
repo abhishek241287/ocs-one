@@ -2,6 +2,13 @@
   "record_type": "Formal Block 3 / Task #35 disposition",
   "record_status": "PENDING_AUTHORIZED_APPROVAL",
   "recorded_at": "2026-09-12T09:04:52Z",
+  "finalization_revision": {
+    "current_head": "c08408082daf332baf86f5cefc0716b0bcf1ead4",
+    "technical_retest_revision": "ea99cec1e958b0f2e9f727b57c7904993cd6c34b",
+    "current_head_is_descendant_of_technical_retest": true,
+    "implementation_schema_workflow_changes_since_retest": false,
+    "difference_since_retest": "Evidence documentation only."
+  },
   "candidate_revision": {
     "commit": "ea99cec1e958b0f2e9f727b57c7904993cd6c34b",
     "tag": null,
@@ -76,8 +83,11 @@
   },
   "approval": {
     "status": "PENDING",
+    "required_approving_authority": "Authorized Block 3/FAT governance approver",
     "approver": null,
     "governance_authority": null,
+    "approval_date": null,
+    "final_decision": null,
     "reason": "No authorized approver or governance authority was identifiable from the repository or current task metadata; none is invented here.",
     "required_action": "An authorized governance approver must review the Option A contract, preserved historical failure, and both corrected retest records, then record approval or rejection."
   },
