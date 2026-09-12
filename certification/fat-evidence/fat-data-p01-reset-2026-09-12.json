@@ -1,0 +1,129 @@
+{
+  "report_type": "FAT DATA-P01 fixture reset verification",
+  "case_id": "DATA-P01",
+  "area": "fixture-reset",
+  "result": "PASS",
+  "executed_at": "2026-09-12T08:30:42.758Z",
+  "candidate": {
+    "commit": "57d3ce6f36276faf52d5061a79891982beaa848e",
+    "tag": null,
+    "frozen_tag": "FAT-CANDIDATE-2026-09-08",
+    "frozen_commit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7"
+  },
+  "historical_result": {
+    "source": "certification/fat-evidence/fat-journey-evidence.json",
+    "result": "FAIL",
+    "preserved": true,
+    "disposition": "Historical evidence was not edited."
+  },
+  "diagnosis": {
+    "root_cause": "The historical teardown selected grn_line_items only through FAT-prefixed GRN headers. The Block 3 run created API-generated GRN, inspection, and transfer documents whose document numbers did not carry the FAT prefix while their lines referenced controlled FAT materials and supplier.",
+    "escaped_rows": {
+      "grn_line_items": 2,
+      "incoming_inspection_lines": 2,
+      "inventory_transactions": 7,
+      "material_transfers": 1,
+      "cell_lots": 1,
+      "generated_cells": 3
+    },
+    "source_fixture": "The residue matches the controlled Block 3 records documented in fat-block-3-procurement-grn-inventory.json, including GRN-20260910-0001 and its generated inspection/transfer records."
+  },
+  "correction": {
+    "status": "Already present before this execution; no new implementation change was required.",
+    "introduced_by": "de8fc816a1ab198d3032eea1cd3d51d10ef20b58",
+    "file": "artifacts/api-server/src/cert/fat-fixture-manifest.ts",
+    "change": "Teardown follows controlled FAT material and supplier relationships for dependent GRN lines, inspection lines, inventory transactions, transfers, lots, and cells before deleting controlled masters. Unrelated document headers remain outside the deletion predicates.",
+    "safety": "No schema, foreign-key, production route, or historical evidence change was made."
+  },
+  "execution": {
+    "seed": {
+      "command": "pnpm --filter @workspace/api-server run cert:fat:seed",
+      "exit_status": 0,
+      "seeded_record_counts": {
+        "users": 6,
+        "masters": 1,
+        "materials": 2,
+        "bomLines": 2,
+        "grnLines": 2,
+        "inventoryTransactions": 12,
+        "cells": 64,
+        "stages": 54,
+        "genealogyRows": 5,
+        "traceEvents": 3
+      }
+    },
+    "teardown": {
+      "command": "pnpm --filter @workspace/api-server run cert:fat:teardown",
+      "exit_status": 0,
+      "output": "FAT dataset teardown complete; residual count is zero for FAT-E2E-"
+    },
+    "verification": {
+      "command": "pnpm --filter @workspace/api-server run cert:fat:verify",
+      "exit_status": 0,
+      "state": "clean",
+      "residual_counts": {
+        "users": 0,
+        "dealers": 0,
+        "masters": 0,
+        "materials": 0,
+        "boms": 0,
+        "grns": 0,
+        "inspections": 0,
+        "transfers": 0,
+        "lots": 0,
+        "cells": 0,
+        "matches": 0,
+        "orders": 0,
+        "chargers": 0,
+        "products": 0,
+        "dispatches": 0,
+        "registrations": 0,
+        "warranties": 0
+      }
+    }
+  },
+  "ledger_disposition": {
+    "status": "Disposed by the controlled FAT teardown.",
+    "historical_extra_rows": 7,
+    "pattern": {
+      "cell": [
+        "+8 GRN_RECEIPT",
+        "-8 INSPECTION_RELEASE",
+        "+8 INSPECTION_ACCEPT",
+        "-3 MATERIAL_TRANSFER_TO_CELL_PROCESSING"
+      ],
+      "bms": [
+        "+1 GRN_RECEIPT",
+        "-1 INSPECTION_RELEASE",
+        "+1 INSPECTION_REJECT"
+      ]
+    },
+    "post_reset_result": "No unexplained ledger rows remained in the FAT namespace; the seeded contract was removed cleanly."
+  },
+  "namespace_isolation": {
+    "status": "PASS",
+    "method": "Snapshot of non-FAT rows before teardown and after verification.",
+    "before_sha256": "37a55dfb909f1e7827e63380cf14dc0ee35113218c2b0a72fad1e9e694f474f1",
+    "after_sha256": "37a55dfb909f1e7827e63380cf14dc0ee35113218c2b0a72fad1e9e694f474f1",
+    "checked_groups": [
+      "users and master records",
+      "GRN and incoming-inspection records",
+      "inventory transactions and transfers",
+      "BOM and material-issue records",
+      "cell lots, cells, lot events, and matches",
+      "manufacturing production orders"
+    ],
+    "result": "Non-FAT counts and identifier/marker digests were identical before and after."
+  },
+  "historical_evidence_hashes": {
+    "certification/fat-evidence/fat-journey-evidence.json": "98a0dfc7dded465c3d40780c4e043d0cae8d52feed465b88a10fc0b1ccf7e4d6",
+    "certification/fat-evidence/fat-block-3-procurement-grn-inventory.json": "59fcdcb8abcfaf6563dd492622c40eba48f5a92cbc4c8bc46957861ced02b7af",
+    "certification/fat-evidence/fat-block-3-inv-p04-retest-corrected-candidate-de8fc816-2026-09-12.json": "7dbea0a06a135571239245803bce4905bc77fae44758f76e14266b38bf497218"
+  },
+  "scope_boundary": {
+    "task_42": "Not run and remains pending/blocked by existing task concurrency state.",
+    "block_3": "Not run or accepted.",
+    "full_fat": "Not run.",
+    "release_candidate": "Not designated or tagged."
+  }
+}
