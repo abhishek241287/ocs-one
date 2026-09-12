@@ -92,6 +92,181 @@ export const FAT_IDS = {
   },
 } as const;
 
+export type FatRole = "owner" | "director" | "supervisor" | "operator" | "viewer" | "dealer";
+
+export type FatFixtureContract = {
+  datasetDate: string;
+  warrantyEndDate: string;
+  roles: readonly FatRole[];
+  roleNames: Readonly<Record<FatRole, string>>;
+  stages: {
+    canonical: readonly string[];
+    perOrder: number;
+    orderCount: number;
+  };
+  ledger: {
+    cellAvailableUnits: number;
+    bmsReceivedUnits: number;
+    bmsAvailableUnits: number;
+    transactionCount: number;
+    grnLines: number;
+    inspectionCount: number;
+    inspectionLines: number;
+    transferCount: number;
+  };
+  cells: {
+    total: number;
+    acceptable: number;
+    rejected: number;
+    gradeACount: number;
+    allocated: number;
+    matchCount: number;
+    matchItems: number;
+    lotEventCount: number;
+    correctionAnchorCount: number;
+  };
+  genealogy: {
+    cleanOrderRows: number;
+    completionOrderRows: number;
+    productRows: number;
+    productEventCount: number;
+  };
+  fulfillment: {
+    dealerSnapshot: {
+      code: string;
+      name: string;
+      address: string;
+      gst: string;
+      contact: string;
+      mobile: string;
+    };
+    customerName: string;
+    dispatchItemCount: number;
+    warrantyPeriodMonths: number;
+  };
+  concurrency: {
+    chargerReadyCount: number;
+    raceOrderCount: number;
+    pendingMatchCount: number;
+    pendingMatchItems: number;
+  };
+  states: {
+    bom: string;
+    grn: string;
+    allocatedMatch: string;
+    pendingMatch: string;
+    cleanOrder: string;
+    raceOrder: string;
+    raceStage: string;
+  };
+  verification: {
+    recordCounts: Readonly<Record<string, number>>;
+  };
+};
+
+/**
+ * The executable FAT fixture contract. Seed data, the generated manifest,
+ * preflight, verification, and route evidence must derive controlled
+ * expectations from this value instead of maintaining local copies.
+ */
+export const FAT_FIXTURE_CONTRACT = {
+  datasetDate: "2026-09-08",
+  warrantyEndDate: "2031-09-08",
+  roles: ["owner", "director", "supervisor", "operator", "viewer", "dealer"],
+  roleNames: {
+    owner: "FAT E2E Owner",
+    director: "FAT E2E Director",
+    supervisor: "FAT E2E Supervisor",
+    operator: "FAT E2E Operator",
+    viewer: "FAT E2E Viewer",
+    dealer: "FAT E2E Dealer",
+  },
+  stages: {
+    canonical: [
+      "cell_allocation",
+      "assembly",
+      "compression",
+      "bms_allocation",
+      "bms_programming",
+      "charging",
+      "testing",
+      "quality_control",
+      "packing",
+    ],
+    perOrder: 9,
+    orderCount: 6,
+  },
+  ledger: {
+    cellAvailableUnits: 64,
+    bmsReceivedUnits: 2,
+    bmsAvailableUnits: 1,
+    transactionCount: 12,
+    grnLines: 2,
+    inspectionCount: 1,
+    inspectionLines: 2,
+    transferCount: 1,
+  },
+  cells: {
+    total: 64,
+    acceptable: 60,
+    rejected: 4,
+    gradeACount: 48,
+    allocated: 16,
+    matchCount: 2,
+    matchItems: 16,
+    lotEventCount: 2,
+    correctionAnchorCount: 2,
+  },
+  genealogy: {
+    cleanOrderRows: 5,
+    completionOrderRows: 1,
+    productRows: 5,
+    productEventCount: 3,
+  },
+  fulfillment: {
+    dealerSnapshot: {
+      code: `${FAT_PREFIX}DLR-A`,
+      name: "FAT E2E Dealer Alpha",
+      address: "1 FAT E2E Industrial Estate, Bengaluru",
+      gst: "29FATE2E0001Z5",
+      contact: "FAT Dealer Desk",
+      mobile: "9000000001",
+    },
+    customerName: "FAT E2E Customer",
+    dispatchItemCount: 1,
+    warrantyPeriodMonths: 60,
+  },
+  concurrency: {
+    chargerReadyCount: 1,
+    raceOrderCount: 2,
+    pendingMatchCount: 1,
+    pendingMatchItems: 16,
+  },
+  states: {
+    bom: "approved",
+    grn: "posted",
+    allocatedMatch: "allocated",
+    pendingMatch: "draft",
+    cleanOrder: "completed",
+    raceOrder: "in_progress",
+    raceStage: "charging",
+  },
+  verification: {
+    recordCounts: {
+      users: 6,
+      masters: 1,
+      materials: 2,
+      bomLines: 2,
+      grnLines: 2,
+      inventoryTransactions: 12,
+      cells: 64,
+      stages: 54,
+      genealogyRows: 5,
+      traceEvents: 3,
+    },
+  },
+} as const satisfies FatFixtureContract;
+
 export function cellId(index: number): string {
   return `FAT-E2E-CELL-${String(index).padStart(3, "0")}`;
 }

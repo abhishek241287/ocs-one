@@ -11,7 +11,13 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { pool } from "@workspace/db";
-import { actorEmail, FAT_IDS, FAT_MANIFEST_PATH, FAT_PREFIX } from "./fat-fixture-manifest";
+import {
+  actorEmail,
+  FAT_FIXTURE_CONTRACT,
+  FAT_IDS,
+  FAT_MANIFEST_PATH,
+  FAT_PREFIX,
+} from "./fat-fixture-manifest";
 
 const BASE = process.env.CERT_TARGET ?? "http://localhost:8080";
 const PASSWORD = process.env.FAT_TEST_PASSWORD;
@@ -23,7 +29,7 @@ const OUTPUT_DIR = resolve(process.env.FAT_EVIDENCE_DIR ?? "../../certification/
 const RUN_AT = new Date().toISOString();
 const FROZEN_TAG = "FAT-CANDIDATE-2026-09-08";
 const FROZEN_COMMIT = "60564b1b49b76ce0b97e46d1de65a7325ef50ba7";
-const roles = ["owner", "director", "supervisor", "operator", "viewer", "dealer"] as const;
+const roles = FAT_FIXTURE_CONTRACT.roles;
 type Role = (typeof roles)[number];
 type Cookie = string | undefined;
 
@@ -299,13 +305,13 @@ async function runReadOnlySmoke(): Promise<void> {
     "manufacturing",
     "operator",
     stagesPath,
-    stageRows.length === 9 &&
+    stageRows.length === FAT_FIXTURE_CONTRACT.stages.perOrder &&
       stageRows.every((row) =>
         row.productionOrderId === FAT_IDS.orders.clean &&
         typeof row.stageType === "string" &&
         row.stageData !== null,
       ),
-    { stageCount: 9, productionOrderId: FAT_IDS.orders.clean },
+    { stageCount: FAT_FIXTURE_CONTRACT.stages.perOrder, productionOrderId: FAT_IDS.orders.clean },
     stages,
     "The manufacturing stages route must expose the complete nine-stage FAT projection.",
   );
@@ -318,13 +324,13 @@ async function runReadOnlySmoke(): Promise<void> {
     "manufacturing",
     "operator",
     genealogyPath,
-    genealogyRows.length === 5 &&
+    genealogyRows.length === FAT_FIXTURE_CONTRACT.genealogy.cleanOrderRows &&
       genealogyRows.every((row) =>
         row.productionOrderId === FAT_IDS.orders.clean &&
         typeof row.componentType === "string" &&
         String(row.notes ?? "").startsWith(FAT_PREFIX),
       ),
-    { genealogyCount: 5, productionOrderId: FAT_IDS.orders.clean, notesPrefix: FAT_PREFIX },
+    { genealogyCount: FAT_FIXTURE_CONTRACT.genealogy.cleanOrderRows, productionOrderId: FAT_IDS.orders.clean, notesPrefix: FAT_PREFIX },
     genealogy,
     "Manufacturing genealogy must expose the five controlled FAT component records.",
   );
@@ -340,7 +346,7 @@ async function runReadOnlySmoke(): Promise<void> {
     isRecord(dispatch) &&
       dispatch.id === FAT_IDS.fulfillment.dispatch &&
       dispatch.dealer_id === FAT_IDS.dealer &&
-      dispatchItems.length === 1 &&
+    dispatchItems.length === FAT_FIXTURE_CONTRACT.fulfillment.dispatchItemCount &&
       dispatchItems[0]?.product_id === FAT_IDS.products.dispatched,
     {
       dispatchId: FAT_IDS.fulfillment.dispatch,
@@ -493,7 +499,10 @@ async function runConcurrency(): Promise<void> {
     "operator",
     "GET",
     `/api/cells/matches/${FAT_IDS.cells.matchPending}`,
-    { expected: 200, note: "The winning acceptance must leave the match reserved with all 16 cells reserved for it." },
+    {
+      expected: 200,
+      note: `The winning acceptance must leave the match reserved with all ${FAT_FIXTURE_CONTRACT.concurrency.pendingMatchItems} cells reserved for it.`,
+    },
   );
   const matchAfterBody = isRecord(matchAfterRace.body) ? matchAfterRace.body : {};
   const acceptedCells = rowsAt(matchAfterRace.body, "batteries")
@@ -505,11 +514,11 @@ async function runConcurrency(): Promise<void> {
     `/api/cells/matches/${FAT_IDS.cells.matchPending}`,
     matchAfterRace.status === 200 &&
       matchAfterBody.status === "reserved" &&
-      acceptedCells.length === 16 &&
+      acceptedCells.length === FAT_FIXTURE_CONTRACT.concurrency.pendingMatchItems &&
       acceptedCells.every((cell) => cell.status === "reserved" && cell.matchId === FAT_IDS.cells.matchPending),
     {
       match_status: "reserved",
-      cell_count: 16,
+      cell_count: FAT_FIXTURE_CONTRACT.concurrency.pendingMatchItems,
       cell_status: "reserved",
       cell_match_id: FAT_IDS.cells.matchPending,
     },
@@ -519,7 +528,7 @@ async function runConcurrency(): Promise<void> {
       cell_statuses: acceptedCells.map((cell) => cell.status),
       cell_match_ids: acceptedCells.map((cell) => cell.matchId),
     },
-    "The exact-one-winner race must leave one reserved match owning all 16 reserved cells.",
+    `The exact-one-winner race must leave one reserved match owning all ${FAT_FIXTURE_CONTRACT.concurrency.pendingMatchItems} reserved cells.`,
   );
 
   await request("CONC-N01", "concurrency", "operator", "POST", startPath(FAT_IDS.orders.clean), {
@@ -684,16 +693,17 @@ async function runReportsAndDashboard(): Promise<void> {
 
   const fixtureCellLot = rowsAt(cells, "byLot").find((row) => String(row.lotNumber ?? "").startsWith(FAT_PREFIX));
   const fixtureInventoryLot = rowsAt(inventory, "byLot").find((row) => String(row.lotNumber ?? "").startsWith(FAT_PREFIX));
-  const expectedAcceptedCells = Number(manifest.expectations.gradedAcceptableCells);
-  const expectedAllocatedCells = 16;
+  const expectedAcceptedCells = FAT_FIXTURE_CONTRACT.cells.acceptable;
+  const expectedAllocatedCells = FAT_FIXTURE_CONTRACT.cells.allocated;
   const expectedAvailableCells = expectedAcceptedCells - expectedAllocatedCells;
   assertCheck("RPT-P01", "reports-reconciliation", "director", "/api/reports/cells", fixtureCellLot?.total === manifest.recordCounts.cells &&
-    fixtureCellLot?.gradeA === 48 && fixtureCellLot?.rejected === 4,
-  { total: manifest.recordCounts.cells, gradeA: 48, rejected: 4 }, fixtureCellLot,
+    fixtureCellLot?.gradeA === FAT_FIXTURE_CONTRACT.cells.gradeACount &&
+      fixtureCellLot?.rejected === FAT_FIXTURE_CONTRACT.cells.rejected,
+  { total: manifest.recordCounts.cells, gradeA: FAT_FIXTURE_CONTRACT.cells.gradeACount, rejected: FAT_FIXTURE_CONTRACT.cells.rejected }, fixtureCellLot,
   "The FAT lot must retain the manifest cell count and controlled grading split.");
   assertCheck("RPT-P01", "reports-reconciliation", "director", "/api/reports/inventory", fixtureInventoryLot?.total === manifest.recordCounts.cells &&
-    fixtureInventoryLot?.available === expectedAvailableCells && fixtureInventoryLot?.allocated === expectedAllocatedCells && fixtureInventoryLot?.rejected === 4,
-  { total: manifest.recordCounts.cells, available: expectedAvailableCells, allocated: expectedAllocatedCells, rejected: 4 }, fixtureInventoryLot,
+    fixtureInventoryLot?.available === expectedAvailableCells && fixtureInventoryLot?.allocated === expectedAllocatedCells && fixtureInventoryLot?.rejected === FAT_FIXTURE_CONTRACT.cells.rejected,
+  { total: manifest.recordCounts.cells, available: expectedAvailableCells, allocated: expectedAllocatedCells, rejected: FAT_FIXTURE_CONTRACT.cells.rejected }, fixtureInventoryLot,
   "The inventory report must preserve the FAT lot availability projection.");
 
   const production = reportBodies.get("production");

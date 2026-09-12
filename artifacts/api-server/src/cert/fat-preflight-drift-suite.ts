@@ -14,6 +14,7 @@ import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { pool } from "@workspace/db";
 import {
+  FAT_FIXTURE_CONTRACT,
   FAT_IDS,
   FAT_PREFIX,
   assertNoResiduals,
@@ -111,9 +112,9 @@ const mutations: Mutation[] = [
     async restore(client) {
       await client.query(
         `UPDATE mfg_order_stages
-         SET stage_type = 'cell_allocation'
+         SET stage_type = $2
          WHERE production_order_id = $1 AND stage_order = 1`,
-        [FAT_IDS.orders.clean],
+        [FAT_IDS.orders.clean, FAT_FIXTURE_CONTRACT.stages.canonical[0]],
       );
     },
   },
@@ -185,7 +186,10 @@ const mutations: Mutation[] = [
       );
     },
     async restore(client) {
-      await client.query("UPDATE dispatches SET dealer_name = 'FAT E2E Dealer Alpha' WHERE id = $1", [FAT_IDS.fulfillment.dispatch]);
+      await client.query("UPDATE dispatches SET dealer_name = $2 WHERE id = $1", [
+        FAT_IDS.fulfillment.dispatch,
+        FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.name,
+      ]);
     },
   },
   {
@@ -195,7 +199,10 @@ const mutations: Mutation[] = [
       await client.query("UPDATE customer_registrations SET customer_name = 'FAT E2E Drift' WHERE id = $1", [FAT_IDS.fulfillment.registration]);
     },
     async restore(client) {
-      await client.query("UPDATE customer_registrations SET customer_name = 'FAT E2E Customer' WHERE id = $1", [FAT_IDS.fulfillment.registration]);
+      await client.query("UPDATE customer_registrations SET customer_name = $2 WHERE id = $1", [
+        FAT_IDS.fulfillment.registration,
+        FAT_FIXTURE_CONTRACT.fulfillment.customerName,
+      ]);
     },
   },
   {
@@ -205,7 +212,10 @@ const mutations: Mutation[] = [
       await client.query("UPDATE warranties SET period_months = 59 WHERE id = $1", [FAT_IDS.fulfillment.warranty]);
     },
     async restore(client) {
-      await client.query("UPDATE warranties SET period_months = 60 WHERE id = $1", [FAT_IDS.fulfillment.warranty]);
+      await client.query("UPDATE warranties SET period_months = $2 WHERE id = $1", [
+        FAT_IDS.fulfillment.warranty,
+        FAT_FIXTURE_CONTRACT.fulfillment.warrantyPeriodMonths,
+      ]);
     },
   },
   {

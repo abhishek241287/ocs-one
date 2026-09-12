@@ -12,6 +12,13 @@ Dealer is not a factory role. It may log in, read `/api/auth/me`, and read only
 its own `/api/dealers/:dealerId/inventory` and
 `/api/dealers/:dealerId/dispatch-history`.
 
+The executable FAT fixture contract is the single source of truth for the
+seeded role set and the controlled stage, ledger, genealogy, fulfillment, and
+concurrency expectations. Seed, manifest generation, verification, and
+preflight import `FAT_FIXTURE_CONTRACT` from
+`artifacts/api-server/src/cert/fat-fixture-manifest.ts`; update that contract
+when a controlled fixture expectation changes.
+
 ## 2. Major action matrix
 
 | Action family | Owner | Director | Supervisor | Operator | Viewer | Dealer |

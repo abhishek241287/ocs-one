@@ -16,6 +16,7 @@
 import bcrypt from "bcryptjs";
 import { pool } from "@workspace/db";
 import {
+  FAT_FIXTURE_CONTRACT,
   FAT_IDS,
   FAT_PREFIX,
   actorEmail,
@@ -33,20 +34,10 @@ import {
 const FROZEN_TAG = "FAT-CANDIDATE-2026-09-08";
 const FROZEN_COMMIT = "60564b1b49b76ce0b97e46d1de65a7325ef50ba7";
 const RUN_AT = new Date().toISOString();
-const DATE = "2026-09-08";
-const FAT_ROLES = ["owner", "director", "supervisor", "operator", "viewer", "dealer"] as const;
+const DATE = FAT_FIXTURE_CONTRACT.datasetDate;
+const FAT_ROLES = FAT_FIXTURE_CONTRACT.roles;
 type FatRole = (typeof FAT_ROLES)[number];
-const FAT_STAGE_TYPES = [
-  "cell_allocation",
-  "assembly",
-  "compression",
-  "bms_allocation",
-  "bms_programming",
-  "charging",
-  "testing",
-  "quality_control",
-  "packing",
-];
+const FAT_STAGE_TYPES = FAT_FIXTURE_CONTRACT.stages.canonical;
 
 type PreflightCheck = {
   group: string;
@@ -79,7 +70,7 @@ function preflightCheck(
   });
 }
 
-function exactSet(values: unknown[], expected: string[]): boolean {
+function exactSet(values: unknown[], expected: readonly string[]): boolean {
   return values.length === expected.length && values.every((value, index) => String(value) === expected[index]);
 }
 
@@ -94,12 +85,7 @@ async function seedUsers(client: SqlClient): Promise<void> {
   }
   const passwordHash = await bcrypt.hash(password, 12);
   const users = [
-    ["owner", "FAT E2E Owner", "owner", FAT_IDS.users.owner],
-    ["director", "FAT E2E Director", "director", FAT_IDS.users.director],
-    ["supervisor", "FAT E2E Supervisor", "supervisor", FAT_IDS.users.supervisor],
-    ["operator", "FAT E2E Operator", "operator", FAT_IDS.users.operator],
-    ["viewer", "FAT E2E Viewer", "viewer", FAT_IDS.users.viewer],
-    ["dealer", "FAT E2E Dealer", "dealer", FAT_IDS.users.dealer],
+    ...FAT_ROLES.map((role) => [role, FAT_FIXTURE_CONTRACT.roleNames[role], role, FAT_IDS.users[role]] as const),
   ] as const;
 
   for (const [role, name, dbRole, id] of users) {
@@ -128,12 +114,12 @@ async function seedMasters(client: SqlClient): Promise<void> {
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active')`,
     [
       FAT_IDS.dealer,
-      `${FAT_PREFIX}DLR-A`,
-      "FAT E2E Dealer Alpha",
-      "29FATE2E0001Z5",
-      "1 FAT E2E Industrial Estate, Bengaluru",
-      "FAT Dealer Desk",
-      "9000000001",
+      FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.code,
+      FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.name,
+      FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.gst,
+      FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.address,
+      FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.contact,
+      FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.mobile,
       "fat.dealer@fat.local",
       "FAT E2E Territory",
     ],
@@ -154,17 +140,7 @@ async function seedMasters(client: SqlClient): Promise<void> {
       FAT_IDS.masters.workflow,
       `${FAT_PREFIX}BATTERY-WORKFLOW`,
       "FAT E2E Nine-Stage Battery Workflow",
-      JSON.stringify([
-        "cell_allocation",
-        "assembly",
-        "compression",
-        "bms_allocation",
-        "bms_programming",
-        "charging",
-        "testing",
-        "quality_control",
-        "packing",
-      ]),
+      JSON.stringify(FAT_FIXTURE_CONTRACT.stages.canonical),
       ownerId,
     ],
   );
@@ -399,8 +375,8 @@ async function seedProcurement(client: SqlClient): Promise<void> {
       (id, grn_id, line_number, material_id, quantity_received, uom, supplier_lot_number, inspection_status, remarks)
      VALUES
       ($1, $2, 1, $3, 16, 'PCS', $4, NULL, 'Valid draft line'),
-      ($5, $6, 1, $7, 64, 'PCS', $8, 'passed', 'Cell stock for transfer and grading'),
-      ($9, $6, 2, $10, 2, 'PCS', $11, 'passed', 'BMS stock for MIN'),
+      ($5, $6, 1, $7, ${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, 'PCS', $8, 'passed', 'Cell stock for transfer and grading'),
+      ($9, $6, 2, $10, ${FAT_FIXTURE_CONTRACT.ledger.bmsReceivedUnits}, 'PCS', $11, 'passed', 'BMS stock for MIN'),
       ($12, $13, 1, $14, 1, 'PCS', $15, 'rejected', 'Rejected inspection case')`,
     [
       FAT_IDS.procurement.validDraftLine,
@@ -426,17 +402,17 @@ async function seedProcurement(client: SqlClient): Promise<void> {
       (transaction_type, material_id, quantity, uom, stock_state,
        source_document_type, source_document_id, source_line_id, created_by)
      VALUES
-      ('GRN_RECEIPT', $1, 64, 'PCS', 'inspection_pending', 'GRN', $2, $3, $4),
-      ('GRN_RECEIPT', $6, 2, 'PCS', 'inspection_pending', 'GRN', $2, $5, $4),
+      ('GRN_RECEIPT', $1, ${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, 'PCS', 'inspection_pending', 'GRN', $2, $3, $4),
+      ('GRN_RECEIPT', $6, ${FAT_FIXTURE_CONTRACT.ledger.bmsReceivedUnits}, 'PCS', 'inspection_pending', 'GRN', $2, $5, $4),
       ('GRN_RECEIPT', $6, 1, 'PCS', 'inspection_pending', 'GRN', $7, $8, $4),
-      ('INSPECTION_RELEASE', $1, -64, 'PCS', 'inspection_pending', 'INSPECTION', $9, $3, $4),
-      ('INSPECTION_ACCEPT', $1, 64, 'PCS', 'available', 'INSPECTION', $9, $3, $4),
-      ('INSPECTION_RELEASE', $6, -2, 'PCS', 'inspection_pending', 'INSPECTION', $9, $5, $4),
-      ('INSPECTION_ACCEPT', $6, 2, 'PCS', 'available', 'INSPECTION', $9, $5, $4),
+      ('INSPECTION_RELEASE', $1, -${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, 'PCS', 'inspection_pending', 'INSPECTION', $9, $3, $4),
+      ('INSPECTION_ACCEPT', $1, ${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, 'PCS', 'available', 'INSPECTION', $9, $3, $4),
+      ('INSPECTION_RELEASE', $6, -${FAT_FIXTURE_CONTRACT.ledger.bmsReceivedUnits}, 'PCS', 'inspection_pending', 'INSPECTION', $9, $5, $4),
+      ('INSPECTION_ACCEPT', $6, ${FAT_FIXTURE_CONTRACT.ledger.bmsReceivedUnits}, 'PCS', 'available', 'INSPECTION', $9, $5, $4),
       ('INSPECTION_RELEASE', $6, -1, 'PCS', 'inspection_pending', 'INSPECTION', $10, $8, $4),
       ('INSPECTION_REJECT', $6, 1, 'PCS', 'rejected', 'INSPECTION', $10, $8, $4),
-      ('MATERIAL_TRANSFER_TO_CELL_PROCESSING', $1, -64, 'PCS', 'available', 'TRANSFER', $11, $3, $4),
-      ('MATERIAL_TRANSFER_TO_CELL_PROCESSING', $1, 64, 'PCS', 'available', 'TRANSFER', $11, $3, $4),
+      ('MATERIAL_TRANSFER_TO_CELL_PROCESSING', $1, -${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, 'PCS', 'available', 'TRANSFER', $11, $3, $4),
+      ('MATERIAL_TRANSFER_TO_CELL_PROCESSING', $1, ${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, 'PCS', 'available', 'TRANSFER', $11, $3, $4),
       ('PRODUCTION_ISSUE', $6, -1, 'PCS', 'available', 'MIN', $12, $13, $4)`,
     [
       FAT_IDS.masters.materialCell,
@@ -472,8 +448,8 @@ async function seedProcurement(client: SqlClient): Promise<void> {
       (id, inspection_id, grn_line_id, grn_id, material_id, quantity_received,
        accepted_qty, rejected_qty, result, rejection_reason)
      VALUES
-      ($1, $2, $3, $4, $5, 64, 64, 0, 'passed', NULL),
-      ($6, $2, $7, $4, $8, 2, 2, 0, 'passed', NULL)`,
+      ($1, $2, $3, $4, $5, ${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, ${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, 0, 'passed', NULL),
+      ($6, $2, $7, $4, $8, ${FAT_FIXTURE_CONTRACT.ledger.bmsReceivedUnits}, ${FAT_FIXTURE_CONTRACT.ledger.bmsReceivedUnits}, 0, 'passed', NULL)`,
     [
       FAT_IDS.procurement.inspectionCellLine,
       FAT_IDS.procurement.inspection,
@@ -515,7 +491,7 @@ async function seedProcurement(client: SqlClient): Promise<void> {
     client,
     `INSERT INTO material_transfers
       (id, transfer_number, material_id, grn_id, grn_line_id, supplier_id, quantity, uom, transferred_by)
-     VALUES ($1, $2, $3, $4, $5, $6, 64, 'PCS', $7)`,
+     VALUES ($1, $2, $3, $4, $5, $6, ${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, 'PCS', $7)`,
     [
       FAT_IDS.procurement.transfer,
       `${FAT_PREFIX}TRF-CELL-001`,
@@ -536,7 +512,7 @@ async function seedCells(client: SqlClient): Promise<void> {
        lot_number, invoice_number, supplier_lot_number, date_received, quantity_received,
        received_by, remarks, status, cell_master_id, transfer_id)
      VALUES ($1, 'FAT E2E Cell and BMS Supplier', 'FAT Cell Works', 'FAT-LFP-280',
-             'LiFePO4', 280, $2, $3, $4, $5, 64, $6,
+             'LiFePO4', 280, $2, $3, $4, $5, ${FAT_FIXTURE_CONTRACT.cells.total}, $6,
              'Complete received lot for grading and matching', 'complete', $7, $8)`,
     [
       FAT_IDS.cells.lot,
@@ -549,8 +525,8 @@ async function seedCells(client: SqlClient): Promise<void> {
       FAT_IDS.procurement.transfer,
     ],
   );
-  for (let i = 1; i <= 64; i += 1) {
-    const good = i <= 60;
+  for (let i = 1; i <= FAT_FIXTURE_CONTRACT.cells.total; i += 1) {
+    const good = i <= FAT_FIXTURE_CONTRACT.cells.acceptable;
     const id = `fa160000-0000-4000-8000-${String(i).padStart(12, "0")}`;
     await query(
       client,
@@ -564,15 +540,15 @@ async function seedCells(client: SqlClient): Promise<void> {
         id,
         cellId(i),
         FAT_IDS.cells.lot,
-        good && i <= 16 ? "allocated" : good ? "approved" : "rejected",
-        good ? (i <= 48 ? "A" : "B") : "reject",
+        good && i <= FAT_FIXTURE_CONTRACT.cells.allocated ? "allocated" : good ? "approved" : "rejected",
+        good ? (i <= FAT_FIXTURE_CONTRACT.cells.gradeACount ? "A" : "B") : "reject",
         good ? 281 + (i % 3) : 240,
         good ? 0.9 + (i % 4) / 10 : 2.8,
         actorEmail("operator"),
         RUN_AT,
         good ? "Within controlled FAT grading band" : "Below capacity threshold",
-        good && i <= 16 ? FAT_IDS.cells.matchAllocated : null,
-        good && i <= 16 ? FAT_IDS.orders.clean : null,
+        good && i <= FAT_FIXTURE_CONTRACT.cells.allocated ? FAT_IDS.cells.matchAllocated : null,
+        good && i <= FAT_FIXTURE_CONTRACT.cells.allocated ? FAT_IDS.orders.clean : null,
       ],
     );
   }
@@ -585,8 +561,11 @@ async function seedCells(client: SqlClient): Promise<void> {
     [
       FAT_IDS.cells.lot,
       actorEmail("operator"),
-      JSON.stringify({ quantity: 64, source: FAT_IDS.procurement.transfer }),
-      JSON.stringify({ accepted: 60, rejected: 4 }),
+      JSON.stringify({ quantity: FAT_FIXTURE_CONTRACT.cells.total, source: FAT_IDS.procurement.transfer }),
+      JSON.stringify({
+        accepted: FAT_FIXTURE_CONTRACT.cells.acceptable,
+        rejected: FAT_FIXTURE_CONTRACT.cells.rejected,
+      }),
     ],
   );
   await query(
@@ -594,8 +573,8 @@ async function seedCells(client: SqlClient): Promise<void> {
     `INSERT INTO cell_matches
       (id, product_id, battery_model, cells_per_battery, quantity, status, match_score, created_by, notes)
      VALUES
-      ($1, $2, 'FAT E2E 16S 280Ah Battery Pack', 16, 1, 'allocated', 98.4, $3, $4),
-      ($5, $2, 'FAT E2E 16S 280Ah Battery Pack', 16, 1, 'draft', NULL, $3, $6)`,
+      ($1, $2, 'FAT E2E 16S 280Ah Battery Pack', ${FAT_FIXTURE_CONTRACT.cells.matchItems}, 1, 'allocated', 98.4, $3, $4),
+      ($5, $2, 'FAT E2E 16S 280Ah Battery Pack', ${FAT_FIXTURE_CONTRACT.cells.matchItems}, 1, 'draft', NULL, $3, $6)`,
     [
       FAT_IDS.cells.matchAllocated,
       FAT_IDS.masters.model,
@@ -605,7 +584,7 @@ async function seedCells(client: SqlClient): Promise<void> {
       `${FAT_PREFIX}MATCH-PENDING-001`,
     ],
   );
-  for (let i = 1; i <= 16; i += 1) {
+  for (let i = 1; i <= FAT_FIXTURE_CONTRACT.cells.matchItems; i += 1) {
     await query(
       client,
       `INSERT INTO cell_match_items (id, match_id, cell_id, battery_slot, position)
@@ -618,7 +597,7 @@ async function seedCells(client: SqlClient): Promise<void> {
       ],
     );
   }
-  for (let i = 17; i <= 32; i += 1) {
+  for (let i = FAT_FIXTURE_CONTRACT.cells.matchItems + 1; i <= FAT_FIXTURE_CONTRACT.cells.matchItems * 2; i += 1) {
     await query(
       client,
       `INSERT INTO cell_match_items (id, match_id, cell_id, battery_slot, position)
@@ -660,12 +639,12 @@ async function seedCells(client: SqlClient): Promise<void> {
 async function seedManufacturing(client: SqlClient): Promise<void> {
   const stageTypes = FAT_STAGE_TYPES;
   const orders = [
-    [FAT_IDS.orders.clean, "CLEAN", "completed", "packing", FAT_IDS.cells.matchAllocated],
-    [FAT_IDS.orders.packed, "PACKED", "completed", "packing", null],
-    [FAT_IDS.orders.reject, "REJECT", "in_progress", "quality_control", null],
-    [FAT_IDS.orders.raceOne, "RACE-ONE", "in_progress", "charging", null],
-    [FAT_IDS.orders.raceTwo, "RACE-TWO", "in_progress", "charging", null],
-    [FAT_IDS.orders.completion, "COMPLETE", "in_progress", "quality_control", null],
+    [FAT_IDS.orders.clean, "CLEAN", FAT_FIXTURE_CONTRACT.states.cleanOrder, "packing", FAT_IDS.cells.matchAllocated],
+    [FAT_IDS.orders.packed, "PACKED", FAT_FIXTURE_CONTRACT.states.cleanOrder, "packing", null],
+    [FAT_IDS.orders.reject, "REJECT", FAT_FIXTURE_CONTRACT.states.raceOrder, "quality_control", null],
+    [FAT_IDS.orders.raceOne, "RACE-ONE", FAT_FIXTURE_CONTRACT.states.raceOrder, FAT_FIXTURE_CONTRACT.states.raceStage, null],
+    [FAT_IDS.orders.raceTwo, "RACE-TWO", FAT_FIXTURE_CONTRACT.states.raceOrder, FAT_FIXTURE_CONTRACT.states.raceStage, null],
+    [FAT_IDS.orders.completion, "COMPLETE", FAT_FIXTURE_CONTRACT.states.raceOrder, "quality_control", null],
   ] as const;
   for (const [id, key, status, currentStage, matchId] of orders) {
     await query(
@@ -705,7 +684,7 @@ async function seedManufacturing(client: SqlClient): Promise<void> {
          VALUES ($1, $2, $3::mfg_stage_type, $4, $5::mfg_stage_status, $6, $7,
                  $8, $8, $8, $9, $10::jsonb)`,
         [
-          `fa180000-0000-4000-8001-${String((orders.indexOf(orders.find((o) => o[0] === id)!) * 9) + index + 1).padStart(12, "0")}`,
+          `fa180000-0000-4000-8001-${String((orders.indexOf(orders.find((o) => o[0] === id)!) * FAT_FIXTURE_CONTRACT.stages.perOrder) + index + 1).padStart(12, "0")}`,
           id,
           stage,
           index + 1,
@@ -877,7 +856,7 @@ async function seedFulfillment(client: SqlClient): Promise<void> {
        current_location, dealer_id, manufacturing_completed_at)
      VALUES
       ($1, $2, $3, $4, $5, $6, 'OCS', 'approved', 'dispatched',
-       'FAT E2E Dealer Alpha', $7, $8),
+       '${FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.name}', $7, $8),
       ($9, $2, $3, $4, $10, $11, 'OCS', 'approved', 'ready_for_packing',
        'FAT E2E Factory Packing', NULL, $8),
       ($12, $2, $3, $4, $13, $14, 'OCS', 'pending', 'qc_passed',
@@ -930,19 +909,19 @@ async function seedFulfillment(client: SqlClient): Promise<void> {
       (id, dispatch_number, invoice_number, dispatch_date, dealer_id, dealer_code,
        dealer_name, dealer_address, dealer_gst, dealer_contact, dealer_mobile,
        dispatched_by, item_count)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 1)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, ${FAT_FIXTURE_CONTRACT.fulfillment.dispatchItemCount})`,
     [
       FAT_IDS.fulfillment.dispatch,
       `${FAT_PREFIX}DISPATCH-001`,
       `${FAT_PREFIX}INVOICE-001`,
       DATE,
       FAT_IDS.dealer,
-      `${FAT_PREFIX}DLR-A`,
-      "FAT E2E Dealer Alpha",
-      "1 FAT E2E Industrial Estate, Bengaluru",
-      "29FATE2E0001Z5",
-      "FAT Dealer Desk",
-      "9000000001",
+      FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.code,
+      FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.name,
+      FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.address,
+      FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.gst,
+      FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.contact,
+      FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.mobile,
       actorEmail("supervisor"),
     ],
   );
@@ -962,7 +941,7 @@ async function seedFulfillment(client: SqlClient): Promise<void> {
     `INSERT INTO customer_registrations
       (id, registration_number, product_id, dealer_id, customer_name, mobile, address,
        installation_date, registered_by)
-     VALUES ($1, $2, $3, $4, 'FAT E2E Customer', '9000000099',
+     VALUES ($1, $2, $3, $4, '${FAT_FIXTURE_CONTRACT.fulfillment.customerName}', '9000000099',
              '99 FAT E2E Customer Road, Bengaluru', $5, $6)`,
     [
       FAT_IDS.fulfillment.registration,
@@ -977,7 +956,7 @@ async function seedFulfillment(client: SqlClient): Promise<void> {
     client,
     `INSERT INTO warranties
       (id, warranty_number, product_id, registration_id, start_date, period_months, end_date)
-     VALUES ($1, $2, $3, $4, $5, 60, '2031-09-08')`,
+     VALUES ($1, $2, $3, $4, $5, ${FAT_FIXTURE_CONTRACT.fulfillment.warrantyPeriodMonths}, '${FAT_FIXTURE_CONTRACT.warrantyEndDate}')`,
     [
       FAT_IDS.fulfillment.warranty,
       `${FAT_PREFIX}WARRANTY-001`,
@@ -991,7 +970,7 @@ async function seedFulfillment(client: SqlClient): Promise<void> {
     `INSERT INTO logistics_dispatch_orders
       (id, dispatch_number, dealer_id, customer_name, transporter, vehicle_number,
        driver_name, driver_mobile, dispatch_date, status, notes, created_by)
-     VALUES ($1, $2, $3, 'FAT E2E Customer', 'FAT Transport', 'KA-FAT-0001',
+     VALUES ($1, $2, $3, '${FAT_FIXTURE_CONTRACT.fulfillment.customerName}', 'FAT Transport', 'KA-FAT-0001',
              'FAT Driver', '9000000002', $4, 'delivered', 'Legacy portal history fixture', $5)`,
     [
       "fa1a0000-0000-4000-8000-000000000005",
@@ -1080,16 +1059,7 @@ async function collectManifest(client: SqlClient): Promise<Record<string, unknow
     ids,
     recordCounts,
     residualCounts: counts,
-    expectations: {
-      namedRoles: 6,
-      canonicalStagesPerOrder: 9,
-      cellCount: 64,
-      gradedAcceptableCells: 60,
-      approvedBomLines: 2,
-      chargerRaceOrders: 2,
-      downstreamTraceabilityAnchor: true,
-      existingQaFatNamespaceUntouched: true,
-    },
+    expectations: FAT_FIXTURE_CONTRACT,
   };
 }
 
@@ -1122,7 +1092,7 @@ async function preflight(): Promise<void> {
       )
     ).rows;
     const usersByEmail = new Map(userRows.map((row) => [String(row.email), row]));
-    preflightCheck(checks, "auth", "six FAT role accounts exist", userRows.length === FAT_ROLES.length, FAT_ROLES.length, userRows.length);
+    preflightCheck(checks, "auth", "all FAT role accounts exist", userRows.length === FAT_ROLES.length, FAT_ROLES.length, userRows.length);
 
     for (const role of FAT_ROLES) {
       const user = usersByEmail.get(actorEmail(role));
@@ -1173,8 +1143,7 @@ async function preflight(): Promise<void> {
     preflightCheck(checks, "masters", "product category exists and is active", Number(masters.category_count) === 1, 1, masters.category_count);
     preflightCheck(checks, "masters", "product workflow exists and is active", Number(masters.workflow_count) === 1, 1, masters.workflow_count);
     const stageSequence = Array.isArray(masters.stage_sequence) ? masters.stage_sequence : [];
-    const expectedStages = ["cell_allocation", "assembly", "compression", "bms_allocation", "bms_programming", "charging", "testing", "quality_control", "packing"];
-    preflightCheck(checks, "masters", "workflow exposes the canonical nine-stage sequence", exactSet(stageSequence, expectedStages), expectedStages, stageSequence);
+    preflightCheck(checks, "masters", "workflow exposes the canonical stage sequence", exactSet(stageSequence, FAT_FIXTURE_CONTRACT.stages.canonical), FAT_FIXTURE_CONTRACT.stages.canonical, stageSequence);
     preflightCheck(checks, "masters", "cell, BMS, model, and supplier anchors exist", [masters.model_count, masters.cell_count, masters.bms_count, masters.supplier_count].every((count) => Number(count) === 1));
 
     const bom = (
@@ -1188,8 +1157,8 @@ async function preflight(): Promise<void> {
         [FAT_IDS.bom.header, `${FAT_PREFIX}%`],
       )
     ).rows[0] ?? {};
-    preflightCheck(checks, "bom", "approved FAT BOM exists", bom.status === "approved", "approved", bom.status);
-    preflightCheck(checks, "bom", "approved FAT BOM has both component lines", Number(bom.line_count) === 2, 2, bom.line_count);
+    preflightCheck(checks, "bom", "approved FAT BOM exists", bom.status === FAT_FIXTURE_CONTRACT.states.bom, FAT_FIXTURE_CONTRACT.states.bom, bom.status);
+    preflightCheck(checks, "bom", "approved FAT BOM has both component lines", Number(bom.line_count) === FAT_FIXTURE_CONTRACT.verification.recordCounts.bomLines, FAT_FIXTURE_CONTRACT.verification.recordCounts.bomLines, bom.line_count);
 
     const procurement = (
       await query(
@@ -1203,9 +1172,9 @@ async function preflight(): Promise<void> {
         [FAT_IDS.procurement.posted, FAT_IDS.procurement.inspection, FAT_IDS.procurement.transfer, `${FAT_PREFIX}%`],
       )
     ).rows[0] ?? {};
-    preflightCheck(checks, "procurement", "posted GRN is available for the FAT path", procurement.grn_status === "posted", "posted", procurement.grn_status);
-    preflightCheck(checks, "procurement", "posted GRN has cell and BMS lines", Number(procurement.grn_lines) === 2, 2, procurement.grn_lines);
-    preflightCheck(checks, "procurement", "complete inspection and transfer anchors exist", Number(procurement.inspection_count) === 1 && Number(procurement.inspection_lines) === 2 && Number(procurement.transfer_count) === 1);
+    preflightCheck(checks, "procurement", "posted GRN is available for the FAT path", procurement.grn_status === FAT_FIXTURE_CONTRACT.states.grn, FAT_FIXTURE_CONTRACT.states.grn, procurement.grn_status);
+    preflightCheck(checks, "procurement", "posted GRN has cell and BMS lines", Number(procurement.grn_lines) === FAT_FIXTURE_CONTRACT.verification.recordCounts.grnLines, FAT_FIXTURE_CONTRACT.verification.recordCounts.grnLines, procurement.grn_lines);
+    preflightCheck(checks, "procurement", "complete inspection and transfer anchors exist", Number(procurement.inspection_count) === 1 && Number(procurement.inspection_lines) === FAT_FIXTURE_CONTRACT.verification.recordCounts.grnLines && Number(procurement.transfer_count) === 1);
 
     const cellState = (
       await query(
@@ -1223,12 +1192,12 @@ async function preflight(): Promise<void> {
         [FAT_IDS.cells.lot, FAT_IDS.cells.matchAllocated, FAT_IDS.cells.matchPending, `${FAT_PREFIX}%`],
       )
     ).rows[0] ?? {};
-    preflightCheck(checks, "cells", "controlled lot contains all 64 cells", Number(cellState.cell_count) === 64, 64, cellState.cell_count);
-    preflightCheck(checks, "cells", "controlled lot has four rejected cells", Number(cellState.rejected_count) === 4, 4, cellState.rejected_count);
-    preflightCheck(checks, "cells", "lot ledger has received and graded anchors", Number(cellState.lot_event_count) === 2, 2, cellState.lot_event_count);
-    preflightCheck(checks, "cells", "allocated and pending matches are present", Number(cellState.match_count) === 2 && Number(cellState.allocated_items) === 16 && Number(cellState.pending_items) === 16);
-    preflightCheck(checks, "cells", "match statuses are ready for the FAT paths", cellState.allocated_status === "allocated" && cellState.pending_status === "draft", "allocated + draft", `${cellState.allocated_status} + ${cellState.pending_status}`);
-    preflightCheck(checks, "cells", "correction ledger anchor is present", Number(cellState.correction_count) >= 2, "at least 2", cellState.correction_count);
+    preflightCheck(checks, "cells", "controlled lot contains all cells", Number(cellState.cell_count) === FAT_FIXTURE_CONTRACT.cells.total, FAT_FIXTURE_CONTRACT.cells.total, cellState.cell_count);
+    preflightCheck(checks, "cells", "controlled lot has all rejected cells", Number(cellState.rejected_count) === FAT_FIXTURE_CONTRACT.cells.rejected, FAT_FIXTURE_CONTRACT.cells.rejected, cellState.rejected_count);
+    preflightCheck(checks, "cells", "lot ledger has received and graded anchors", Number(cellState.lot_event_count) === FAT_FIXTURE_CONTRACT.cells.lotEventCount, FAT_FIXTURE_CONTRACT.cells.lotEventCount, cellState.lot_event_count);
+    preflightCheck(checks, "cells", "allocated and pending matches are present", Number(cellState.match_count) === FAT_FIXTURE_CONTRACT.cells.matchCount && Number(cellState.allocated_items) === FAT_FIXTURE_CONTRACT.cells.matchItems && Number(cellState.pending_items) === FAT_FIXTURE_CONTRACT.cells.matchItems);
+    preflightCheck(checks, "cells", "match statuses are ready for the FAT paths", cellState.allocated_status === FAT_FIXTURE_CONTRACT.states.allocatedMatch && cellState.pending_status === FAT_FIXTURE_CONTRACT.states.pendingMatch, `${FAT_FIXTURE_CONTRACT.states.allocatedMatch} + ${FAT_FIXTURE_CONTRACT.states.pendingMatch}`, `${cellState.allocated_status} + ${cellState.pending_status}`);
+    preflightCheck(checks, "cells", "correction ledger anchor is present", Number(cellState.correction_count) >= FAT_FIXTURE_CONTRACT.cells.correctionAnchorCount, `at least ${FAT_FIXTURE_CONTRACT.cells.correctionAnchorCount}`, cellState.correction_count);
 
     const inventory = (
       await query(
@@ -1252,8 +1221,8 @@ async function preflight(): Promise<void> {
       )
     ).rows;
     const inventoryByMaterial = new Map(inventory.map((row) => [String(row.material_id), Number(row.quantity)]));
-    preflightCheck(checks, "ledger", "cell signed-ledger projection is 64 available units", inventoryByMaterial.get(FAT_IDS.masters.materialCell) === 64, 64, inventoryByMaterial.get(FAT_IDS.masters.materialCell));
-    preflightCheck(checks, "ledger", "BMS signed-ledger projection is one available unit", inventoryByMaterial.get(FAT_IDS.masters.materialBms) === 1, 1, inventoryByMaterial.get(FAT_IDS.masters.materialBms));
+    preflightCheck(checks, "ledger", "cell signed-ledger projection has the expected available units", inventoryByMaterial.get(FAT_IDS.masters.materialCell) === FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits, FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits, inventoryByMaterial.get(FAT_IDS.masters.materialCell));
+    preflightCheck(checks, "ledger", "BMS signed-ledger projection has the expected available units", inventoryByMaterial.get(FAT_IDS.masters.materialBms) === FAT_FIXTURE_CONTRACT.ledger.bmsAvailableUnits, FAT_FIXTURE_CONTRACT.ledger.bmsAvailableUnits, inventoryByMaterial.get(FAT_IDS.masters.materialBms));
     const txCount = Number((
       await query(
         client,
@@ -1270,7 +1239,7 @@ async function preflight(): Promise<void> {
         ],
       )
     ).rows[0]?.n ?? 0);
-    preflightCheck(checks, "ledger", "controlled inventory transaction anchors are present", txCount === 12, 12, txCount);
+    preflightCheck(checks, "ledger", "controlled inventory transaction anchors are present", txCount === FAT_FIXTURE_CONTRACT.ledger.transactionCount, FAT_FIXTURE_CONTRACT.ledger.transactionCount, txCount);
 
     const manufacturing = (
       await query(
@@ -1285,8 +1254,8 @@ async function preflight(): Promise<void> {
         [`${FAT_PREFIX}%`],
       )
     ).rows;
-    preflightCheck(checks, "stage", "six controlled production orders exist", manufacturing.length === 6, 6, manufacturing.length);
-    preflightCheck(checks, "stage", "every controlled order has nine stages", manufacturing.length === 6 && manufacturing.every((row) => Number(row.stage_count) === 9), 9, manufacturing.map((row) => `${row.order_number}:${row.stage_count}`).join(", "));
+    preflightCheck(checks, "stage", "all controlled production orders exist", manufacturing.length === FAT_FIXTURE_CONTRACT.stages.orderCount, FAT_FIXTURE_CONTRACT.stages.orderCount, manufacturing.length);
+    preflightCheck(checks, "stage", "every controlled order has the expected stages", manufacturing.length === FAT_FIXTURE_CONTRACT.stages.orderCount && manufacturing.every((row) => Number(row.stage_count) === FAT_FIXTURE_CONTRACT.stages.perOrder), FAT_FIXTURE_CONTRACT.stages.perOrder, manufacturing.map((row) => `${row.order_number}:${row.stage_count}`).join(", "));
     const cleanStageTypes = (
       await query(
         client,
@@ -1299,9 +1268,9 @@ async function preflight(): Promise<void> {
     ).rows.map((row) => String(row.stage_type));
     preflightCheck(checks, "stage", "clean order has the canonical stage sequence", exactSet(cleanStageTypes, FAT_STAGE_TYPES), FAT_STAGE_TYPES, cleanStageTypes);
     const byOrderId = new Map(manufacturing.map((row) => [String(row.id), row]));
-    preflightCheck(checks, "stage", "race orders are in charging and in progress",
-      [FAT_IDS.orders.raceOne, FAT_IDS.orders.raceTwo].every((id) => byOrderId.get(id)?.current_stage === "charging" && byOrderId.get(id)?.status === "in_progress"));
-    preflightCheck(checks, "stage", "clean order is complete", byOrderId.get(FAT_IDS.orders.clean)?.status === "completed", "completed", byOrderId.get(FAT_IDS.orders.clean)?.status);
+    preflightCheck(checks, "stage", "race orders are in the concurrency-ready state",
+      [FAT_IDS.orders.raceOne, FAT_IDS.orders.raceTwo].every((id) => byOrderId.get(id)?.current_stage === FAT_FIXTURE_CONTRACT.states.raceStage && byOrderId.get(id)?.status === FAT_FIXTURE_CONTRACT.states.raceOrder));
+    preflightCheck(checks, "stage", "clean order is complete", byOrderId.get(FAT_IDS.orders.clean)?.status === FAT_FIXTURE_CONTRACT.states.cleanOrder, FAT_FIXTURE_CONTRACT.states.cleanOrder, byOrderId.get(FAT_IDS.orders.clean)?.status);
 
     const genealogy = (
       await query(
@@ -1314,24 +1283,34 @@ async function preflight(): Promise<void> {
         [FAT_IDS.orders.clean, FAT_IDS.orders.completion, FAT_IDS.products.dispatched],
       )
     ).rows[0] ?? {};
-    preflightCheck(checks, "genealogy", "clean order has component genealogy", Number(genealogy.mfg_clean) >= 5, "at least 5", genealogy.mfg_clean);
-    preflightCheck(checks, "genealogy", "completion order has a cell genealogy anchor", Number(genealogy.mfg_completion) >= 1, "at least 1", genealogy.mfg_completion);
-    preflightCheck(checks, "genealogy", "dispatched product has projected genealogy and events", Number(genealogy.product_rows) >= 5 && Number(genealogy.product_events) >= 3);
+    preflightCheck(checks, "genealogy", "clean order has component genealogy", Number(genealogy.mfg_clean) >= FAT_FIXTURE_CONTRACT.genealogy.cleanOrderRows, `at least ${FAT_FIXTURE_CONTRACT.genealogy.cleanOrderRows}`, genealogy.mfg_clean);
+    preflightCheck(checks, "genealogy", "completion order has a cell genealogy anchor", Number(genealogy.mfg_completion) >= FAT_FIXTURE_CONTRACT.genealogy.completionOrderRows, `at least ${FAT_FIXTURE_CONTRACT.genealogy.completionOrderRows}`, genealogy.mfg_completion);
+    preflightCheck(checks, "genealogy", "dispatched product has projected genealogy and events", Number(genealogy.product_rows) >= FAT_FIXTURE_CONTRACT.genealogy.productRows && Number(genealogy.product_events) >= FAT_FIXTURE_CONTRACT.genealogy.productEventCount);
 
     const concurrency = (
       await query(
         client,
         `SELECT
-           (SELECT count(*) FROM mfg_charger_units WHERE id = $1 AND charger_code LIKE $5 AND status = 'available' AND current_order_id IS NULL) AS charger_ready,
-           (SELECT count(*) FROM mfg_production_orders WHERE id IN ($2, $3) AND order_number LIKE $5 AND current_stage = 'charging' AND status = 'in_progress') AS race_orders,
-           (SELECT count(*) FROM cell_matches WHERE id = $4 AND status = 'draft' AND notes LIKE $5) AS pending_match,
+           (SELECT count(*) FROM mfg_charger_units WHERE id = $1 AND charger_code LIKE $5 AND status = $6 AND current_order_id IS NULL) AS charger_ready,
+           (SELECT count(*) FROM mfg_production_orders WHERE id IN ($2, $3) AND order_number LIKE $5 AND current_stage = $7 AND status = $8) AS race_orders,
+           (SELECT count(*) FROM cell_matches WHERE id = $4 AND status = $9 AND notes LIKE $5) AS pending_match,
            (SELECT count(*) FROM cell_match_items WHERE match_id = $4) AS pending_match_items`,
-        [FAT_IDS.chargers.primary, FAT_IDS.orders.raceOne, FAT_IDS.orders.raceTwo, FAT_IDS.cells.matchPending, `${FAT_PREFIX}%`],
+        [
+          FAT_IDS.chargers.primary,
+          FAT_IDS.orders.raceOne,
+          FAT_IDS.orders.raceTwo,
+          FAT_IDS.cells.matchPending,
+          `${FAT_PREFIX}%`,
+          "available",
+          FAT_FIXTURE_CONTRACT.states.raceStage,
+          FAT_FIXTURE_CONTRACT.states.raceOrder,
+          FAT_FIXTURE_CONTRACT.states.pendingMatch,
+        ],
       )
     ).rows[0] ?? {};
-    preflightCheck(checks, "concurrency", "one available unassigned charger is reserved for the race", Number(concurrency.charger_ready) === 1, 1, concurrency.charger_ready);
-    preflightCheck(checks, "concurrency", "both race orders are eligible", Number(concurrency.race_orders) === 2, 2, concurrency.race_orders);
-    preflightCheck(checks, "concurrency", "one pending 16-cell match is available", Number(concurrency.pending_match) === 1 && Number(concurrency.pending_match_items) === 16);
+    preflightCheck(checks, "concurrency", "one available unassigned charger is reserved for the race", Number(concurrency.charger_ready) === FAT_FIXTURE_CONTRACT.concurrency.chargerReadyCount, FAT_FIXTURE_CONTRACT.concurrency.chargerReadyCount, concurrency.charger_ready);
+    preflightCheck(checks, "concurrency", "race orders are eligible", Number(concurrency.race_orders) === FAT_FIXTURE_CONTRACT.concurrency.raceOrderCount, FAT_FIXTURE_CONTRACT.concurrency.raceOrderCount, concurrency.race_orders);
+    preflightCheck(checks, "concurrency", "pending match is available", Number(concurrency.pending_match) === FAT_FIXTURE_CONTRACT.concurrency.pendingMatchCount && Number(concurrency.pending_match_items) === FAT_FIXTURE_CONTRACT.concurrency.pendingMatchItems, `${FAT_FIXTURE_CONTRACT.concurrency.pendingMatchCount} match with ${FAT_FIXTURE_CONTRACT.concurrency.pendingMatchItems} cells`, `${concurrency.pending_match} match with ${concurrency.pending_match_items} cells`);
 
     const fulfillment = (
       await query(
@@ -1352,25 +1331,25 @@ async function preflight(): Promise<void> {
     const snapshot = fulfillment.dispatch_snapshot as Record<string, unknown> | null;
     preflightCheck(checks, "dispatch", "dispatch stores the dealer snapshot", snapshot !== null &&
       snapshot.dealer_id === FAT_IDS.dealer &&
-      snapshot.dealer_code === `${FAT_PREFIX}DLR-A` &&
-      snapshot.dealer_name === "FAT E2E Dealer Alpha" &&
-      snapshot.dealer_address === "1 FAT E2E Industrial Estate, Bengaluru" &&
-      snapshot.dealer_gst === "29FATE2E0001Z5" &&
-      snapshot.dealer_contact === "FAT Dealer Desk" &&
-      snapshot.dealer_mobile === "9000000001");
-    preflightCheck(checks, "dispatch", "dispatch item points to the traceability product", Number(fulfillment.dispatch_item) === 1, 1, fulfillment.dispatch_item);
+      snapshot.dealer_code === FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.code &&
+      snapshot.dealer_name === FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.name &&
+      snapshot.dealer_address === FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.address &&
+      snapshot.dealer_gst === FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.gst &&
+      snapshot.dealer_contact === FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.contact &&
+      snapshot.dealer_mobile === FAT_FIXTURE_CONTRACT.fulfillment.dealerSnapshot.mobile);
+    preflightCheck(checks, "dispatch", "dispatch item points to the traceability product", Number(fulfillment.dispatch_item) === FAT_FIXTURE_CONTRACT.fulfillment.dispatchItemCount, FAT_FIXTURE_CONTRACT.fulfillment.dispatchItemCount, fulfillment.dispatch_item);
     const registration = fulfillment.registration as Record<string, unknown> | null;
     preflightCheck(checks, "registration", "customer registration points to dealer product", registration !== null &&
       registration.product_id === FAT_IDS.products.dispatched &&
       registration.dealer_id === FAT_IDS.dealer &&
-      registration.customer_name === "FAT E2E Customer");
+      registration.customer_name === FAT_FIXTURE_CONTRACT.fulfillment.customerName);
     const warranty = fulfillment.warranty as Record<string, unknown> | null;
-    preflightCheck(checks, "warranty", "warranty points to registration and has the 60-month term", warranty !== null &&
+    preflightCheck(checks, "warranty", "warranty points to registration and has the controlled term", warranty !== null &&
       warranty.product_id === FAT_IDS.products.dispatched &&
       warranty.registration_id === FAT_IDS.fulfillment.registration &&
-      Number(warranty.period_months) === 60 &&
+      Number(warranty.period_months) === FAT_FIXTURE_CONTRACT.fulfillment.warrantyPeriodMonths &&
       String(warranty.start_date).startsWith(DATE) &&
-      String(warranty.end_date).startsWith("2031-09-08"));
+      String(warranty.end_date).startsWith(FAT_FIXTURE_CONTRACT.warrantyEndDate));
 
     const failed = checks.filter((check) => !check.ok);
     const groups = [...new Set(checks.map((check) => check.group))].map((group) => {
@@ -1447,18 +1426,19 @@ async function verify(): Promise<void> {
       }, null, 2));
       return;
     }
-    const required = manifest.recordCounts as Record<string, number>;
+    const required = FAT_FIXTURE_CONTRACT.verification.recordCounts;
+    const actual = manifest.recordCounts as Record<string, number>;
     const failures = [
-      ["users", required.users >= 6],
-      ["masters", required.masters >= 1],
-      ["materials", required.materials >= 2],
-      ["bomLines", required.bomLines >= 2],
-      ["grnLines", required.grnLines >= 2],
-      ["inventoryTransactions", required.inventoryTransactions >= 10],
-      ["cells", required.cells === 64],
-      ["stages", required.stages === 54],
-      ["genealogyRows", required.genealogyRows >= 5],
-      ["traceEvents", required.traceEvents >= 3],
+      ["users", actual.users >= required.users],
+      ["masters", actual.masters >= required.masters],
+      ["materials", actual.materials >= required.materials],
+      ["bomLines", actual.bomLines >= required.bomLines],
+      ["grnLines", actual.grnLines >= required.grnLines],
+      ["inventoryTransactions", actual.inventoryTransactions >= required.inventoryTransactions],
+      ["cells", actual.cells === required.cells],
+      ["stages", actual.stages === required.stages],
+      ["genealogyRows", actual.genealogyRows >= required.genealogyRows],
+      ["traceEvents", actual.traceEvents >= required.traceEvents],
     ].filter(([, ok]) => !ok);
     if (failures.length > 0) {
       throw new Error(`FAT fixture verification failed: ${JSON.stringify(failures)}`);
