@@ -1,0 +1,477 @@
+{
+  "case_id": "INV-P04",
+  "result": "RETEST PASS",
+  "retest_type": "controlled corrected-candidate retest",
+  "option": "A",
+  "candidate": {
+    "tag": null,
+    "commit": "de8fc816a1ab198d3032eea1cd3d51d10ef20b58",
+    "frozen_candidate_tag": "FAT-CANDIDATE-2026-09-08",
+    "frozen_candidate_commit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7"
+  },
+  "historical_result": {
+    "candidate_tag": "FAT-CANDIDATE-2026-09-08",
+    "candidate_commit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7",
+    "result": "FAIL",
+    "preserved": true
+  },
+  "fixture": {
+    "prefix": "IP04-MTXTDKM0-79BF51",
+    "user_id": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+    "email": "ip04-mtxtdkm0-79bf51@cert.local",
+    "supplier_id": "5c81a183-3055-4c34-8ad2-17efac48db4f",
+    "category_id": "d2a5043b-b70c-49e3-8b83-710cf943582f",
+    "cell_master_id": "e285a224-c560-45b6-aed9-bdabd08bfd90",
+    "material_id": "c1ffc3e8-9dee-4d5d-8fef-9dc3a6ac0983",
+    "grn_id": "c9efda2d-9385-44d4-81e3-f985c62ff263",
+    "grn_line_id": "f4737185-4582-464c-901d-512666cbaeba",
+    "inspection_id": "5f8b0296-2150-4a87-93fc-4a32ce1705e7",
+    "inspection_line_id": "bf1e73e9-619b-4d4b-84ab-35bbb9d1a975",
+    "supplier_lot_number": "IP04-MTXTDKM0-79BF51-SUPPLIER-LOT"
+  },
+  "api": {
+    "login": {
+      "request": {
+        "email": "ip04-mtxtdkm0-79bf51@cert.local",
+        "password": "[REDACTED]"
+      },
+      "response": {
+        "status": 200,
+        "request_id": null,
+        "body": {
+          "user": {
+            "id": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+            "email": "ip04-mtxtdkm0-79bf51@cert.local",
+            "name": "IP04-MTXTDKM0-79BF51 Supervisor",
+            "role": "supervisor",
+            "dealerId": null
+          }
+        }
+      }
+    },
+    "transfer": {
+      "request": {
+        "grn_line_id": "f4737185-4582-464c-901d-512666cbaeba",
+        "quantity": 3,
+        "received_by": "IP04-MTXTDKM0-79BF51 operator",
+        "remarks": "IP04-MTXTDKM0-79BF51 approved Option A controlled retest"
+      },
+      "response": {
+        "status": 201,
+        "request_id": null,
+        "body": {
+          "id": "6066944e-88ea-4b69-b6db-d468c721c09d",
+          "transfer_number": "TRF-20260912-000002",
+          "from_location": "STORE",
+          "to_location": "CELL_PROCESSING",
+          "material_id": "c1ffc3e8-9dee-4d5d-8fef-9dc3a6ac0983",
+          "material_code": "IP04-MTXTDKM0-79BF51-MATERIAL",
+          "material_name": "IP04-MTXTDKM0-79BF51 Cell Material",
+          "grn_id": "c9efda2d-9385-44d4-81e3-f985c62ff263",
+          "grn_number": "IP04-MTXTDKM0-79BF51-GRN",
+          "grn_line_id": "f4737185-4582-464c-901d-512666cbaeba",
+          "supplier_id": "5c81a183-3055-4c34-8ad2-17efac48db4f",
+          "supplier_name": "IP04-MTXTDKM0-79BF51 Supplier",
+          "invoice_number": "IP04-MTXTDKM0-79BF51-INVOICE",
+          "supplier_lot_number": "IP04-MTXTDKM0-79BF51-SUPPLIER-LOT",
+          "quantity": 3,
+          "uom": "PCS",
+          "transferred_by": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+          "operator_name": "IP04-MTXTDKM0-79BF51 Supervisor",
+          "created_at": "2026-09-12T03:17:04.394Z",
+          "cell_lot_id": "1c685df8-e7f6-4b31-b58b-7c341079f4b0",
+          "lot_number": "TRF-20260912-000002",
+          "remarks": "IP04-MTXTDKM0-79BF51 approved Option A controlled retest",
+          "cell_lot": {
+            "id": "1c685df8-e7f6-4b31-b58b-7c341079f4b0",
+            "supplier": "IP04-MTXTDKM0-79BF51 Supplier",
+            "manufacturer": "IP04-MTXTDKM0-79BF51 Cell Works",
+            "cellModel": "IP04-MTXTDKM0-79BF51-LFP-280",
+            "cellChemistry": "LiFePO4",
+            "nominalCapacityAh": 280,
+            "lotNumber": "TRF-20260912-000002",
+            "invoiceNumber": "IP04-MTXTDKM0-79BF51-INVOICE",
+            "supplierLotNumber": "IP04-MTXTDKM0-79BF51-SUPPLIER-LOT",
+            "dateReceived": "2026-09-12",
+            "quantityReceived": 3,
+            "receivedBy": "IP04-MTXTDKM0-79BF51 operator",
+            "remarks": "IP04-MTXTDKM0-79BF51 approved Option A controlled retest",
+            "status": "received",
+            "cellMasterId": "e285a224-c560-45b6-aed9-bdabd08bfd90",
+            "transferId": "6066944e-88ea-4b69-b6db-d468c721c09d",
+            "createdAt": "2026-09-12T03:17:04.394Z",
+            "updatedAt": "2026-09-12T03:17:04.394Z"
+          },
+          "consumed_by": []
+        }
+      }
+    }
+  },
+  "before": {
+    "available_balance": 8,
+    "ledger_rows": [
+      {
+        "id": "0e9c05d4-9962-49dc-8b66-277120d6fba4",
+        "transaction_type": "GRN_RECEIPT",
+        "material_id": "c1ffc3e8-9dee-4d5d-8fef-9dc3a6ac0983",
+        "quantity": "8.000",
+        "uom": "PCS",
+        "stock_state": "inspection_pending",
+        "source_document_type": "GRN",
+        "source_document_id": "c9efda2d-9385-44d4-81e3-f985c62ff263",
+        "source_line_id": "f4737185-4582-464c-901d-512666cbaeba",
+        "created_by": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+        "created_at": {}
+      },
+      {
+        "id": "43e42985-e225-4421-b9b5-7b72f07f2ac9",
+        "transaction_type": "INSPECTION_RELEASE",
+        "material_id": "c1ffc3e8-9dee-4d5d-8fef-9dc3a6ac0983",
+        "quantity": "-8.000",
+        "uom": "PCS",
+        "stock_state": "inspection_pending",
+        "source_document_type": "INSPECTION",
+        "source_document_id": "5f8b0296-2150-4a87-93fc-4a32ce1705e7",
+        "source_line_id": "f4737185-4582-464c-901d-512666cbaeba",
+        "created_by": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+        "created_at": {}
+      },
+      {
+        "id": "b126168f-49d8-4d21-a0cf-fb8415f70685",
+        "transaction_type": "INSPECTION_ACCEPT",
+        "material_id": "c1ffc3e8-9dee-4d5d-8fef-9dc3a6ac0983",
+        "quantity": "8.000",
+        "uom": "PCS",
+        "stock_state": "available",
+        "source_document_type": "INSPECTION",
+        "source_document_id": "5f8b0296-2150-4a87-93fc-4a32ce1705e7",
+        "source_line_id": "f4737185-4582-464c-901d-512666cbaeba",
+        "created_by": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+        "created_at": {}
+      }
+    ],
+    "destination_counts": {
+      "transfers": "0",
+      "cell_lots": "0",
+      "cells": "0"
+    }
+  },
+  "after": {
+    "ledger_rows": [
+      {
+        "id": "0e9c05d4-9962-49dc-8b66-277120d6fba4",
+        "transaction_type": "GRN_RECEIPT",
+        "material_id": "c1ffc3e8-9dee-4d5d-8fef-9dc3a6ac0983",
+        "quantity": "8.000",
+        "uom": "PCS",
+        "stock_state": "inspection_pending",
+        "source_document_type": "GRN",
+        "source_document_id": "c9efda2d-9385-44d4-81e3-f985c62ff263",
+        "source_line_id": "f4737185-4582-464c-901d-512666cbaeba",
+        "created_by": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+        "created_at": {}
+      },
+      {
+        "id": "43e42985-e225-4421-b9b5-7b72f07f2ac9",
+        "transaction_type": "INSPECTION_RELEASE",
+        "material_id": "c1ffc3e8-9dee-4d5d-8fef-9dc3a6ac0983",
+        "quantity": "-8.000",
+        "uom": "PCS",
+        "stock_state": "inspection_pending",
+        "source_document_type": "INSPECTION",
+        "source_document_id": "5f8b0296-2150-4a87-93fc-4a32ce1705e7",
+        "source_line_id": "f4737185-4582-464c-901d-512666cbaeba",
+        "created_by": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+        "created_at": {}
+      },
+      {
+        "id": "b126168f-49d8-4d21-a0cf-fb8415f70685",
+        "transaction_type": "INSPECTION_ACCEPT",
+        "material_id": "c1ffc3e8-9dee-4d5d-8fef-9dc3a6ac0983",
+        "quantity": "8.000",
+        "uom": "PCS",
+        "stock_state": "available",
+        "source_document_type": "INSPECTION",
+        "source_document_id": "5f8b0296-2150-4a87-93fc-4a32ce1705e7",
+        "source_line_id": "f4737185-4582-464c-901d-512666cbaeba",
+        "created_by": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+        "created_at": {}
+      },
+      {
+        "id": "f62d377e-eeb8-4f02-ae4a-d602345dc1f7",
+        "transaction_type": "MATERIAL_TRANSFER_TO_CELL_PROCESSING",
+        "material_id": "c1ffc3e8-9dee-4d5d-8fef-9dc3a6ac0983",
+        "quantity": "-3.000",
+        "uom": "PCS",
+        "stock_state": "available",
+        "source_document_type": "TRANSFER",
+        "source_document_id": "6066944e-88ea-4b69-b6db-d468c721c09d",
+        "source_line_id": "f4737185-4582-464c-901d-512666cbaeba",
+        "created_by": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+        "created_at": {}
+      }
+    ],
+    "transfer_rows": [
+      {
+        "row": {
+          "id": "6066944e-88ea-4b69-b6db-d468c721c09d",
+          "uom": "PCS",
+          "grn_id": "c9efda2d-9385-44d4-81e3-f985c62ff263",
+          "quantity": 3,
+          "created_at": "2026-09-12T03:17:04.394083+00:00",
+          "grn_line_id": "f4737185-4582-464c-901d-512666cbaeba",
+          "material_id": "c1ffc3e8-9dee-4d5d-8fef-9dc3a6ac0983",
+          "supplier_id": "5c81a183-3055-4c34-8ad2-17efac48db4f",
+          "to_location": "CELL_PROCESSING",
+          "from_location": "STORE",
+          "transferred_by": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+          "transfer_number": "TRF-20260912-000002"
+        }
+      }
+    ],
+    "cell_lot_rows": [
+      {
+        "row": {
+          "id": "1c685df8-e7f6-4b31-b58b-7c341079f4b0",
+          "status": "received",
+          "remarks": "IP04-MTXTDKM0-79BF51 approved Option A controlled retest",
+          "supplier": "IP04-MTXTDKM0-79BF51 Supplier",
+          "cell_model": "IP04-MTXTDKM0-79BF51-LFP-280",
+          "created_at": "2026-09-12T03:17:04.394083+00:00",
+          "lot_number": "TRF-20260912-000002",
+          "updated_at": "2026-09-12T03:17:04.394083+00:00",
+          "received_by": "IP04-MTXTDKM0-79BF51 operator",
+          "transfer_id": "6066944e-88ea-4b69-b6db-d468c721c09d",
+          "manufacturer": "IP04-MTXTDKM0-79BF51 Cell Works",
+          "date_received": "2026-09-12",
+          "cell_chemistry": "LiFePO4",
+          "cell_master_id": "e285a224-c560-45b6-aed9-bdabd08bfd90",
+          "invoice_number": "IP04-MTXTDKM0-79BF51-INVOICE",
+          "quantity_received": 3,
+          "nominal_capacity_ah": 280,
+          "supplier_lot_number": "IP04-MTXTDKM0-79BF51-SUPPLIER-LOT"
+        }
+      }
+    ],
+    "cell_rows": [
+      {
+        "row": {
+          "id": "26b0c041-352a-4fe1-83ca-d61342261dc8",
+          "grade": null,
+          "lot_id": "1c685df8-e7f6-4b31-b58b-7c341079f4b0",
+          "status": "received",
+          "cell_id": "CELL-20260912-000003",
+          "match_id": null,
+          "graded_at": null,
+          "graded_by": null,
+          "voltage_v": null,
+          "created_at": "2026-09-12T03:17:04.394083+00:00",
+          "updated_at": "2026-09-12T03:17:04.394083+00:00",
+          "capacity_ah": null,
+          "grading_notes": null,
+          "temperature_c": null,
+          "grading_machine_id": null,
+          "allocation_order_id": null,
+          "internal_resistance_mohm": null
+        }
+      },
+      {
+        "row": {
+          "id": "56b3ebce-26ed-4176-ae2d-4b59c007fddd",
+          "grade": null,
+          "lot_id": "1c685df8-e7f6-4b31-b58b-7c341079f4b0",
+          "status": "received",
+          "cell_id": "CELL-20260912-000002",
+          "match_id": null,
+          "graded_at": null,
+          "graded_by": null,
+          "voltage_v": null,
+          "created_at": "2026-09-12T03:17:04.394083+00:00",
+          "updated_at": "2026-09-12T03:17:04.394083+00:00",
+          "capacity_ah": null,
+          "grading_notes": null,
+          "temperature_c": null,
+          "grading_machine_id": null,
+          "allocation_order_id": null,
+          "internal_resistance_mohm": null
+        }
+      },
+      {
+        "row": {
+          "id": "79562fb4-0b3d-4c33-9b48-36e10abe4713",
+          "grade": null,
+          "lot_id": "1c685df8-e7f6-4b31-b58b-7c341079f4b0",
+          "status": "received",
+          "cell_id": "CELL-20260912-000001",
+          "match_id": null,
+          "graded_at": null,
+          "graded_by": null,
+          "voltage_v": null,
+          "created_at": "2026-09-12T03:17:04.394083+00:00",
+          "updated_at": "2026-09-12T03:17:04.394083+00:00",
+          "capacity_ah": null,
+          "grading_notes": null,
+          "temperature_c": null,
+          "grading_machine_id": null,
+          "allocation_order_id": null,
+          "internal_resistance_mohm": null
+        }
+      }
+    ],
+    "source_movement_rows": [
+      {
+        "id": "f62d377e-eeb8-4f02-ae4a-d602345dc1f7",
+        "transaction_type": "MATERIAL_TRANSFER_TO_CELL_PROCESSING",
+        "material_id": "c1ffc3e8-9dee-4d5d-8fef-9dc3a6ac0983",
+        "quantity": "-3.000",
+        "uom": "PCS",
+        "stock_state": "available",
+        "source_document_type": "TRANSFER",
+        "source_document_id": "6066944e-88ea-4b69-b6db-d468c721c09d",
+        "source_line_id": "f4737185-4582-464c-901d-512666cbaeba",
+        "created_by": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+        "created_at": {}
+      }
+    ],
+    "source_available_balance": 5,
+    "transfer_quantity": 3,
+    "cell_lot_quantity": 3,
+    "generated_cell_count": 3,
+    "duplicate_groups": 0,
+    "orphan_inventory_rows": 0,
+    "orphan_cell_lot_rows": 0,
+    "orphan_cell_rows": 0,
+    "supplier_lot_number": "IP04-MTXTDKM0-79BF51-SUPPLIER-LOT",
+    "supplier_lot_traceability": true
+  },
+  "audit": {
+    "security_events": [
+      {
+        "row": {
+          "id": "9364ee5c-8cc5-443a-8fd8-40d37b31d90c",
+          "ip": "127.0.0.1",
+          "path": "/api/auth/login",
+          "detail": null,
+          "method": "POST",
+          "actor_id": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+          "severity": "info",
+          "actor_role": "supervisor",
+          "created_at": "2026-09-12T03:17:04.286322+00:00",
+          "event_type": "auth.login.success",
+          "actor_email": "ip04-mtxtdkm0-79bf51@cert.local",
+          "status_code": 200,
+          "target_email": null
+        }
+      },
+      {
+        "row": {
+          "id": "385bafcc-622f-45b5-87cf-11e62b6d36c7",
+          "ip": "127.0.0.1",
+          "path": "/api/auth/login",
+          "detail": null,
+          "method": "POST",
+          "actor_id": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+          "severity": "info",
+          "actor_role": "supervisor",
+          "created_at": "2026-09-12T03:17:04.365562+00:00",
+          "event_type": "auth.login.success",
+          "actor_email": "ip04-mtxtdkm0-79bf51@cert.local",
+          "status_code": 200,
+          "target_email": null
+        }
+      },
+      {
+        "row": {
+          "id": "a32c729b-8e93-48e7-9cbb-ea95f0de8813",
+          "ip": "127.0.0.1",
+          "path": "/api/inventory/transfers",
+          "detail": "Transfer TRF-20260912-000002 created (3 cell(s) → Cell Processing, lot TRF-20260912-000002)",
+          "method": "POST",
+          "actor_id": "9d5112b9-98ce-43bc-b78b-03379aaf0ff6",
+          "severity": "info",
+          "actor_role": "supervisor",
+          "created_at": "2026-09-12T03:17:04.423897+00:00",
+          "event_type": "inventory.transfer.created",
+          "actor_email": "ip04-mtxtdkm0-79bf51@cert.local",
+          "status_code": 201,
+          "target_email": null
+        }
+      }
+    ],
+    "cell_lot_events": [
+      {
+        "row": {
+          "id": "4ccd1c06-4ed3-4147-ace5-8b860968e3cc",
+          "lot_id": "1c685df8-e7f6-4b31-b58b-7c341079f4b0",
+          "reason": null,
+          "changes": {
+            "supplier": "IP04-MTXTDKM0-79BF51 Supplier",
+            "grnNumber": "IP04-MTXTDKM0-79BF51-GRN",
+            "lotNumber": "TRF-20260912-000002",
+            "transferNumber": "TRF-20260912-000002",
+            "quantityReceived": 3
+          },
+          "event_type": "lot_received",
+          "performed_at": "2026-09-12T03:17:04.394083+00:00",
+          "performed_by": "ip04-mtxtdkm0-79bf51@cert.local"
+        }
+      },
+      {
+        "row": {
+          "id": "6045109c-82c3-44a6-bf54-c28f271f7a4e",
+          "lot_id": "1c685df8-e7f6-4b31-b58b-7c341079f4b0",
+          "reason": null,
+          "changes": {
+            "range": "CELL-20260912-000001 → CELL-20260912-000003",
+            "quantity": 3
+          },
+          "event_type": "cell_records_generated",
+          "performed_at": "2026-09-12T03:17:04.394083+00:00",
+          "performed_by": "ip04-mtxtdkm0-79bf51@cert.local"
+        }
+      }
+    ],
+    "note": "No credentials or session cookies are included; audit rows are sanitized structurally."
+  },
+  "acceptance": {
+    "exactly_one_negative_source_movement": true,
+    "transfer_quantity_3": true,
+    "exactly_one_linked_transfer": true,
+    "exactly_one_linked_cell_lot": true,
+    "generated_cells_3": true,
+    "source_available_5": true,
+    "supplier_lot_traceability_preserved": true,
+    "zero_duplicate_transaction_groups": true,
+    "zero_orphan_records": true,
+    "cross_domain_reconciliation_pass": true
+  },
+  "cleanup": {
+    "completed": true,
+    "remaining_rows": {
+      "users": "0",
+      "suppliers": "0",
+      "categories": "0",
+      "cell_masters": "0",
+      "materials": "0",
+      "grns": "0",
+      "grn_lines": "0",
+      "inspections": "0",
+      "inspection_lines": "0",
+      "inventory_rows": "0",
+      "transfers": "0",
+      "lots": "0",
+      "cells": "0",
+      "security_events": "0"
+    },
+    "clean": true
+  },
+  "repository_protection": {
+    "application_code_modified": false,
+    "schema_modified": false,
+    "routes_modified": false,
+    "ui_modified": false,
+    "workflows_modified": false,
+    "historical_block_3_evidence_modified": false,
+    "frozen_candidate_modified": false
+  }
+}
