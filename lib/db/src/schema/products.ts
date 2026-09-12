@@ -79,6 +79,11 @@ export const productsTable = pgTable(
     qcStatus: varchar("qc_status", { length: 20 }),
     productStatus: productStatusEnum("product_status").notNull().default("qc_passed"),
     currentLocation: varchar("current_location", { length: 255 }),
+    // Nullable inventory dimensions for finished-goods put-away. The existing
+    // currentLocation text remains untouched for pilot compatibility.
+    warehouseId: uuid("warehouse_id"),
+    locationId: uuid("location_id"),
+    binId: uuid("bin_id"),
     dealerId: uuid("dealer_id").references(() => logisticsDealersTable.id),
     // Manufacturing completion timestamp — written EXACTLY ONCE at Product creation
     // (the QC-PASS gate) and never updated thereafter. This is the permanent

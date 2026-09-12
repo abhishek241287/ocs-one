@@ -41,3 +41,4 @@ export * from "./customers";
 export * from "./users";
 export * from "./performance-snapshots";
 export * from "./security-events";
+export * from "./inventory-platform";

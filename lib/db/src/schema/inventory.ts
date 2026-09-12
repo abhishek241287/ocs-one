@@ -11,6 +11,7 @@ import {
   date,
   index,
   uniqueIndex,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -264,6 +265,11 @@ export const grnHeadersTable = pgTable(
     supplierId: uuid("supplier_id")
       .notNull()
       .references(() => suppliersTable.id),
+    // Nullable Phase 0 procurement/location dimensions preserve the pilot GRN
+    // creation contract until PO and put-away routes are migrated.
+    purchaseOrderId: uuid("purchase_order_id"),
+    warehouseId: uuid("warehouse_id"),
+    locationId: uuid("location_id"),
     receivedDate: date("received_date", { mode: "string" }).notNull(),
     // D1 — supplier invoice number for this receipt. Procurement data that belongs on
     // the GRN; once captured it flows automatically into downstream documents (Cell
@@ -305,6 +311,10 @@ export const grnLineItemsTable = pgTable(
     // for warranty & recall traceability (e.g. supplier flags lot 240612 as defective).
     // Flows into the Cell Lot on transfer. Nullable (not every material is lot-tracked).
     supplierLotNumber: varchar("supplier_lot_number", { length: 100 }),
+    purchaseOrderLineId: uuid("purchase_order_line_id"),
+    warehouseId: uuid("warehouse_id"),
+    locationId: uuid("location_id"),
+    binId: uuid("bin_id"),
     // Per-line — set on post from the line's workflow; NULL until posted, and NULL for
     // DIRECT_TO_INVENTORY lines (no inspection process).
     inspectionStatus: grnInspectionStatusEnum("inspection_status"),
@@ -342,6 +352,17 @@ export const inventoryTransactionTypeEnum = pgEnum("inventory_transaction_type",
   // Cells are excluded — they are consumed via MATERIAL_TRANSFER_TO_CELL_PROCESSING.
   "PRODUCTION_ISSUE",
   "PRODUCTION_ISSUE_REVERSAL",
+  // Full Inventory Management generic movements. Legacy pilot values above are
+  // retained so historical and current pilot rows remain readable.
+  "WIP_RECEIPT",
+  "CONSUMPTION",
+  "RETURN",
+  "SCRAP",
+  "TRANSFER_OUT",
+  "TRANSFER_IN",
+  "TRANSFER_REVERSAL",
+  "ADJUSTMENT_IN",
+  "ADJUSTMENT_OUT",
 ]);
 
 // Where the moved quantity sits. inspection_pending = received but awaiting Incoming
@@ -351,6 +372,12 @@ export const inventoryStockStateEnum = pgEnum("inventory_stock_state", [
   "inspection_pending",
   "available",
   "rejected",
+  "quarantined",
+  "wip",
+  "consumed",
+  "returned",
+  "scrapped",
+  "in_transit",
 ]);
 
 export const inventoryTransactionsTable = pgTable(
@@ -364,6 +391,19 @@ export const inventoryTransactionsTable = pgTable(
     quantity: numeric("quantity", { precision: 14, scale: 3 }).notNull(),
     uom: materialUomEnum("uom").notNull(),
     stockState: inventoryStockStateEnum("stock_state").notNull(),
+    // Nullable additive dimensions: old pilot movements remain valid while new
+    // workflows progressively populate lot/location/actor metadata.
+    lotId: uuid("lot_id"),
+    warehouseId: uuid("warehouse_id"),
+    locationId: uuid("location_id"),
+    binId: uuid("bin_id"),
+    productionOrderId: uuid("production_order_id"),
+    bomSnapshotId: uuid("bom_snapshot_id"),
+    reversalOfId: uuid("reversal_of_id").references(
+      (): AnyPgColumn => inventoryTransactionsTable.id,
+    ),
+    actorId: uuid("actor_id"),
+    actorName: varchar("actor_name", { length: 100 }),
     // Traceability back to the originating document + line (genealogy).
     sourceDocumentType: varchar("source_document_type", { length: 16 }).notNull(),
     sourceDocumentId: uuid("source_document_id").notNull(),
@@ -375,6 +415,20 @@ export const inventoryTransactionsTable = pgTable(
     index("inventory_transactions_material_idx").on(t.materialId),
     index("inventory_transactions_source_doc_idx").on(t.sourceDocumentId),
     index("inventory_transactions_type_idx").on(t.transactionType),
+    index("inventory_transactions_material_lot_state_idx").on(
+      t.materialId,
+      t.lotId,
+      t.stockState,
+    ),
+    index("inventory_transactions_material_location_state_idx").on(
+      t.materialId,
+      t.warehouseId,
+      t.locationId,
+      t.binId,
+      t.stockState,
+    ),
+    index("inventory_transactions_reversal_idx").on(t.reversalOfId),
+    index("inventory_transactions_production_order_idx").on(t.productionOrderId),
   ],
 );
 
@@ -491,6 +545,9 @@ export const incomingInspectionLinesTable = pgTable(
     result: incomingInspectionResultEnum("result").notNull(),
     // Required (route-enforced) whenever rejected_qty > 0 — factory traceability.
     rejectionReason: text("rejection_reason"),
+    // Nullable event number prepares line-level reinspection without changing
+    // the current one-inspection-per-GRN pilot contract.
+    inspectionEventNumber: integer("inspection_event_number"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

@@ -74,6 +74,12 @@ export const materialIssueNotesTable = pgTable(
       .references(() => bomHeadersTable.id),
     bomRevision: integer("bom_revision").notNull(),
     status: minStatusEnum("status").notNull().default("posted"),
+    // Nullable Phase 0 dimensions preserve the immutable pilot MIN contract.
+    reservationId: uuid("reservation_id"),
+    warehouseId: uuid("warehouse_id"),
+    locationId: uuid("location_id"),
+    binId: uuid("bin_id"),
+    wipInventoryId: uuid("wip_inventory_id"),
     issuedBy: uuid("issued_by"),
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -107,7 +113,9 @@ export const materialIssueNoteLinesTable = pgTable(
       .references(() => bomLinesTable.id),
     requiredQty: numeric("required_qty", { precision: 14, scale: 4 }).notNull(),
     issuedQty: numeric("issued_qty", { precision: 14, scale: 3 }).notNull(),
+    allocatedQty: numeric("allocated_qty", { precision: 14, scale: 3 }),
     uom: materialUomEnum("uom").notNull(),
+    lotId: uuid("lot_id"),
     // R2 — supplier batch/lot + originating GRN reference. Mandatory (route-enforced)
     // for traceability_required lines; captured-when-available otherwise (NULL allowed).
     grnId: uuid("grn_id"),

@@ -100,6 +100,9 @@ export const mfgProductionOrdersTable = pgTable(
     productId: uuid("product_id").references(() => masterProductsTable.id),
     cellMatchId: uuid("cell_match_id").references(() => cellMatchesTable.id),
     chargerUnitId: uuid("charger_unit_id").references(() => mfgChargerUnitsTable.id),
+    // Nullable until a production order is created through the full-inventory
+    // snapshot workflow; existing pilot orders remain valid.
+    bomSnapshotId: uuid("bom_snapshot_id"),
     factoryManager: text("factory_manager").notNull(),
     currentStage: mfgStagetypeEnum("current_stage"),
     status: mfgOrderStatusEnum("status").notNull().default("draft"),
