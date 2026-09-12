@@ -40,7 +40,7 @@ import {
   securityEventsTable,
   usersTable,
 } from "@workspace/db";
-import { and, desc, eq, gte, inArray, like } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, like } from "drizzle-orm";
 import { AUDIT_MATRIX, type AuditCheck, type AuditStore } from "../lib/audit-matrix";
 
 const BASE_URL = (process.env.CERT_BASE_URL ?? "http://localhost:80").replace(/\/$/, "");
@@ -54,6 +54,7 @@ const TEMP_PASSWORD = "SS03!Cert#Temp2026";
 const VIEWER_EMAIL = `ss03.viewer.${RUN_TAG}@cert.local`;
 const DEALER_EMAIL = `ss03.dealer.${RUN_TAG}@cert.local`;
 const CERT_DEALER_CODE = `SS03-CERT-DEALER-${RUN_TAG}`;
+const CERT_REASSIGNMENT_DEALER_CODE = `SS03-CERT-REASSIGN-${RUN_TAG}`;
 const CERT_LOT_NUMBER = `SS03-CERT-${RUN_TAG}`;
 
 type CookieJar = string | null;
@@ -127,6 +128,7 @@ const runStart = new Date();
 let certLotId = "";
 let certDealerUserId = "";
 let certDealerId = "";
+let certReassignmentDealerId = "";
 
 // ─── Semantic correctness ─────────────────────────────────────────────────────
 // Presence is not enough for an audit cert — a record with the right event type but
@@ -136,6 +138,42 @@ let certDealerId = "";
 function asObj(v: unknown): Record<string, unknown> {
   return v && typeof v === "object" ? (v as Record<string, unknown>) : {};
 }
+
+function isDealerAssignmentSnapshot(v: unknown): boolean {
+  const snapshot = asObj(v);
+  return (
+    Object.keys(snapshot).length > 0 &&
+    (typeof snapshot.id === "string" || snapshot.id === null) &&
+    (typeof snapshot.code === "string" || snapshot.code === null) &&
+    (typeof snapshot.name === "string" || snapshot.name === null)
+  );
+}
+
+function dealerAssignmentDetailProblems(row: Record<string, unknown>): string[] {
+  if (typeof row.detail !== "string" || !row.detail.trim()) {
+    return ["detail missing structured JSON"];
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(row.detail);
+  } catch {
+    return ["detail is not valid JSON"];
+  }
+
+  const detail = asObj(parsed);
+  const problems: string[] = [];
+  if (detail.kind !== "dealer_assignment") problems.push("detail.kind missing");
+  if (detail.targetEmail !== DEALER_EMAIL) problems.push("detail.targetEmail missing");
+  if (!isDealerAssignmentSnapshot(detail.previousDealership)) {
+    problems.push("detail.previousDealership missing");
+  }
+  if (!isDealerAssignmentSnapshot(detail.newDealership)) {
+    problems.push("detail.newDealership missing");
+  }
+  return problems;
+}
+
 const SEMANTIC: Record<string, (r: Record<string, unknown>) => string[]> = {
   "auth.login.success": (r) =>
     [
@@ -165,12 +203,7 @@ const SEMANTIC: Record<string, (r: Record<string, unknown>) => string[]> = {
       typeof r.path === "string" && r.path.includes("/api/auth/users/") && r.path.endsWith("/dealer")
         ? ""
         : "path≠dealer-assignment",
-      typeof r.detail === "string" && r.detail.includes(CERT_DEALER_CODE)
-        ? ""
-        : "detail missing dealer",
-      typeof r.detail === "string" && r.detail.includes(certDealerId)
-        ? ""
-        : "detail missing dealer id",
+      ...dealerAssignmentDetailProblems(r),
     ].filter(Boolean),
   "authz.denied": (r) =>
     [
@@ -272,6 +305,21 @@ async function waitForDealerAssignmentEvents(targetEmail: string, minimum: numbe
   return 0;
 }
 
+async function findDealerAssignmentEvents(targetEmail: string): Promise<Record<string, unknown>[]> {
+  const rows = await db
+    .select()
+    .from(securityEventsTable)
+    .where(
+      and(
+        eq(securityEventsTable.eventType, "user.dealer_assignment_changed"),
+        eq(securityEventsTable.targetEmail, targetEmail),
+        gte(securityEventsTable.createdAt, runStart),
+      ),
+    )
+    .orderBy(asc(securityEventsTable.createdAt));
+  return rows as Record<string, unknown>[];
+}
+
 async function findLotEvent(eventType: string): Promise<Record<string, unknown> | null> {
   const [row] = await db
     .select()
@@ -286,6 +334,7 @@ async function findLotEvent(eventType: string): Promise<Record<string, unknown> 
 async function runTriggers(directorJar: CookieJar): Promise<{
   viewerLoginRowId: string | null;
   dealerAssignmentNoOp: { ok: boolean; detail: string };
+  dealerAssignmentEventCount: number;
 }> {
   // user.created — director registers a uniquely-named viewer (always 201).
   const reg = await fetchResilient(`${BASE_URL}/api/auth/register`, {
@@ -330,9 +379,20 @@ async function runTriggers(directorJar: CookieJar): Promise<{
   if (!dealer) throw new Error("Cert dealer fixture was not created");
   certDealerId = dealer.id;
 
+  const [reassignmentDealer] = await db
+    .insert(logisticsDealersTable)
+    .values({
+      dealerCode: CERT_REASSIGNMENT_DEALER_CODE,
+      dealerName: "SS03 Reassignment Dealer",
+      status: "active",
+    })
+    .returning({ id: logisticsDealersTable.id });
+  if (!reassignmentDealer) throw new Error("Cert reassignment dealer fixture was not created");
+  certReassignmentDealerId = reassignmentDealer.id;
+
   // user.dealer_assignment_changed — director links the real dealer account to
-  // the real active dealership; the audit check below validates actor, target,
-  // path, status, dealer id, and dealer code in the persisted event.
+  // the real active dealership. The audit check below parses the persisted detail
+  // and validates both structured snapshots rather than matching display text.
   const assignment = await fetchResilient(`${BASE_URL}/api/auth/users/${certDealerUserId}/dealer`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Cookie: directorJar ?? "" },
@@ -344,14 +404,46 @@ async function runTriggers(directorJar: CookieJar): Promise<{
   await assignment.text().catch(() => undefined);
 
   // recordSecurityEvent is intentionally fire-and-forget on the request path;
-  // wait for the real assignment event before establishing the no-op baseline.
+  // wait for the real assignment event before continuing the transition sequence.
   // Without this, a fast database can make the first event appear after the
-  // no-op query and produce a false "0 → 1" failure.
-  const assignmentEventsBeforeNoOp = await waitForDealerAssignmentEvents(DEALER_EMAIL, 1);
+  // next transition query and produce a false count.
+  const assignmentEventsAfterAssignment = await waitForDealerAssignmentEvents(DEALER_EMAIL, 1);
+  if (assignmentEventsAfterAssignment !== 1) {
+    throw new Error("Dealer assignment audit event did not settle before reassignment");
+  }
+
+  const reassignment = await fetchResilient(`${BASE_URL}/api/auth/users/${certDealerUserId}/dealer`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Cookie: directorJar ?? "" },
+    body: JSON.stringify({ dealerId: certReassignmentDealerId }),
+  });
+  if (reassignment.status !== 200) {
+    throw new Error(`Dealer reassignment trigger failed: HTTP ${reassignment.status}`);
+  }
+  await reassignment.text().catch(() => undefined);
+  const assignmentEventsAfterReassignment = await waitForDealerAssignmentEvents(DEALER_EMAIL, 2);
+  if (assignmentEventsAfterReassignment !== 2) {
+    throw new Error("Dealer reassignment audit event did not settle before unlink");
+  }
+
+  const unlink = await fetchResilient(`${BASE_URL}/api/auth/users/${certDealerUserId}/dealer`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Cookie: directorJar ?? "" },
+    body: JSON.stringify({ dealerId: null }),
+  });
+  if (unlink.status !== 200) {
+    throw new Error(`Dealer unlink trigger failed: HTTP ${unlink.status}`);
+  }
+  await unlink.text().catch(() => undefined);
+  const assignmentEventsBeforeNoOp = await waitForDealerAssignmentEvents(DEALER_EMAIL, 3);
+  if (assignmentEventsBeforeNoOp !== 3) {
+    throw new Error("Dealer unlink audit event did not settle before no-op check");
+  }
+
   const noOpAssignment = await fetchResilient(`${BASE_URL}/api/auth/users/${certDealerUserId}/dealer`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Cookie: directorJar ?? "" },
-    body: JSON.stringify({ dealerId: certDealerId }),
+    body: JSON.stringify({ dealerId: null }),
   });
   const noOpStatus = noOpAssignment.status;
   await noOpAssignment.text().catch(() => undefined);
@@ -476,7 +568,11 @@ async function runTriggers(directorJar: CookieJar): Promise<{
     }
   }
 
-  return { viewerLoginRowId, dealerAssignmentNoOp };
+  return {
+    viewerLoginRowId,
+    dealerAssignmentNoOp,
+    dealerAssignmentEventCount: assignmentEventsBeforeNoOp,
+  };
 }
 
 // ─── Immutability: no application route may UPDATE/DELETE an audit table ──────
@@ -594,7 +690,7 @@ async function cleanup(): Promise<void> {
     .catch(() => undefined);
   await db
     .delete(logisticsDealersTable)
-    .where(eq(logisticsDealersTable.dealerCode, CERT_DEALER_CODE))
+    .where(inArray(logisticsDealersTable.dealerCode, [CERT_DEALER_CODE, CERT_REASSIGNMENT_DEALER_CODE]))
     .catch(() => undefined);
 }
 
@@ -629,7 +725,11 @@ async function main(): Promise<void> {
     const { jar: directorJar, status } = await login(DIRECTOR_EMAIL, DIRECTOR_PASSWORD);
     if (!directorJar) throw new Error(`Director login failed: HTTP ${status}`);
 
-    const { viewerLoginRowId, dealerAssignmentNoOp } = await runTriggers(directorJar);
+    const {
+      viewerLoginRowId,
+      dealerAssignmentNoOp,
+      dealerAssignmentEventCount,
+    } = await runTriggers(directorJar);
 
     // Snapshot two real records for the runtime immutability re-read.
     const lotReceivedRow = await findLotEvent("lot_received");
@@ -719,6 +819,19 @@ async function main(): Promise<void> {
         // actor / entity / content. A mis-attributed or malformed row fails cert.
         const semantic = SEMANTIC[check.id];
         if (semantic) missing.push(...semantic(row));
+        if (check.id === "user.dealer_assignment_changed") {
+          const transitions = await findDealerAssignmentEvents(DEALER_EMAIL);
+          if (transitions.length !== dealerAssignmentEventCount) {
+            missing.push(
+              `transition count ${transitions.length}≠${dealerAssignmentEventCount}`,
+            );
+          }
+          transitions.forEach((transition, index) => {
+            dealerAssignmentDetailProblems(transition).forEach((problem) => {
+              missing.push(`transition[${index + 1}] ${problem}`);
+            });
+          });
+        }
         // Default-mode ratelimit relies on a historical row, so it can't prove the
         // CURRENT 429 path still logs — guard that gap with a static wiring assertion.
         if (check.id === "ratelimit.exceeded" && !EXERCISE_RATELIMIT && !ratelimitWiringPresent()) {
