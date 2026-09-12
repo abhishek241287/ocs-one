@@ -224,3 +224,17 @@ mtime_ms = 1789103188428
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/82fcba86-f1a6-4d5e-80a0-748575b0a95b/dc189583-7412-4f4a-8d08-29659989ffe3"
 storage_version_token = "1789103204042256"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "XsYkNCleBq91E0ESxAGaE"
+uri = "file://docs/task-68-certification-report.md"
+type = "text"
+title = "Task #68 Certification Report"
+description = "Completed 37-point receiving, inspection, put-away, concurrency, preservation, and excluded-scope certification report."
+logical_id = "70f060d6-8414-4d25-90b7-528c90e94ae5"
+content_hash = "sha256:f1f929863db6b6ce399bd891215cd90d9f1f1d5d35151c086967a2fc7c1e3f09"
+size = 5306
+mtime_ms = 1789233413476
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/70f060d6-8414-4d25-90b7-528c90e94ae5/596a30fa-8b33-4d94-a0e4-19ba8f49e916"
+storage_version_token = "1789233433040357"
+content_type = "text/markdown"

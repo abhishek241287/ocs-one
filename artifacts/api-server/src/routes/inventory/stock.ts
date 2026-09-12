@@ -206,12 +206,12 @@ router.get("/:materialId/provenance", async (req: Request, res: Response): Promi
   const inspectionSummary = db
     .select({
       grnLineId: incomingInspectionLinesTable.grnLineId,
-      inspectionId: sql<string | null>`(array_agg(${incomingInspectionsTable.id} ORDER BY ${incomingInspectionLinesTable.createdAt} DESC))[1]`,
-      inspectionNumber: sql<string | null>`(array_agg(${incomingInspectionsTable.inspectionNumber} ORDER BY ${incomingInspectionLinesTable.createdAt} DESC))[1]`,
-      inspectorId: sql<string | null>`(array_agg(${usersTable.id} ORDER BY ${incomingInspectionLinesTable.createdAt} DESC))[1]`,
-      inspectorName: sql<string | null>`(array_agg(${usersTable.name} ORDER BY ${incomingInspectionLinesTable.createdAt} DESC))[1]`,
-      acceptedQty: sql<string>`sum(${incomingInspectionLinesTable.acceptedQty})`,
-      rejectedQty: sql<string>`sum(${incomingInspectionLinesTable.rejectedQty})`,
+      inspectionId: sql<string | null>`(array_agg(${incomingInspectionsTable.id} ORDER BY ${incomingInspectionLinesTable.createdAt} DESC))[1]`.as("inspection_id"),
+      inspectionNumber: sql<string | null>`(array_agg(${incomingInspectionsTable.inspectionNumber} ORDER BY ${incomingInspectionLinesTable.createdAt} DESC))[1]`.as("inspection_number"),
+      inspectorId: sql<string | null>`(array_agg(${usersTable.id} ORDER BY ${incomingInspectionLinesTable.createdAt} DESC))[1]`.as("inspector_id"),
+      inspectorName: sql<string | null>`(array_agg(${usersTable.name} ORDER BY ${incomingInspectionLinesTable.createdAt} DESC))[1]`.as("inspector_name"),
+      acceptedQty: sql<string>`sum(${incomingInspectionLinesTable.acceptedQty})`.as("accepted_qty"),
+      rejectedQty: sql<string>`sum(${incomingInspectionLinesTable.rejectedQty})`.as("rejected_qty"),
     })
     .from(incomingInspectionLinesTable)
     .innerJoin(
@@ -233,12 +233,12 @@ router.get("/:materialId/provenance", async (req: Request, res: Response): Promi
       received_qty: grnLineItemsTable.quantityReceived,
       uom: grnLineItemsTable.uom,
       inspection_status: grnLineItemsTable.inspectionStatus,
-       inspection_id: inspectionSummary.inspectionId,
-       inspection_number: inspectionSummary.inspectionNumber,
-       inspector_id: inspectionSummary.inspectorId,
-       inspector_name: inspectionSummary.inspectorName,
-       accepted_qty: inspectionSummary.acceptedQty,
-       rejected_qty: inspectionSummary.rejectedQty,
+       inspection_id: sql<string | null>`"inspection_summary"."inspection_id"`.as("inspection_id"),
+       inspection_number: sql<string | null>`"inspection_summary"."inspection_number"`.as("inspection_number"),
+       inspector_id: sql<string | null>`"inspection_summary"."inspector_id"`.as("inspector_id"),
+       inspector_name: sql<string | null>`"inspection_summary"."inspector_name"`.as("inspector_name"),
+       accepted_qty: sql<string | null>`"inspection_summary"."accepted_qty"`.as("accepted_qty"),
+       rejected_qty: sql<string | null>`"inspection_summary"."rejected_qty"`.as("rejected_qty"),
     })
     .from(grnLineItemsTable)
     .innerJoin(
