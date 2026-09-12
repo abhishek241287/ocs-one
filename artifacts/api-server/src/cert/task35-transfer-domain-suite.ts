@@ -273,6 +273,24 @@ async function main(): Promise<void> {
     assert(lotRow.rows[0].transfer_id === transferId, "Cell lot was not linked to the transfer");
     assert(lotRow.rows[0].supplier_lot_number === supplierLotNumber, "Supplier-lot traceability was not preserved");
 
+    // The cell lot has no grn_line_id column. Resolve it back to the source GRN
+    // line through the canonical material_transfers.transfer_id relationship.
+    const destinationBySourceLine = await client.query(
+      `SELECT l.id AS cell_lot_id, l.quantity_received, l.transfer_id,
+              l.supplier_lot_number, t.grn_line_id
+       FROM cell_lots l
+       INNER JOIN material_transfers t ON t.id = l.transfer_id
+       WHERE t.grn_line_id = $1 AND t.id = $2`,
+      [fixture.grnLineId, transferId],
+    );
+    assert(
+      destinationBySourceLine.rows.length === 1 &&
+        destinationBySourceLine.rows[0].cell_lot_id === cellLotId &&
+        destinationBySourceLine.rows[0].transfer_id === transferId &&
+        destinationBySourceLine.rows[0].grn_line_id === fixture.grnLineId,
+      "Cell-lot source-line reconciliation did not use transfer_id → material_transfers.grn_line_id",
+    );
+
     const cells = await client.query(
       `SELECT COUNT(*)::int AS count
        FROM cells
