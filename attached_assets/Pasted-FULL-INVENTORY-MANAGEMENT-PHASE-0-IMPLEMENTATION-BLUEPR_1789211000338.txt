@@ -1,0 +1,593 @@
+FULL INVENTORY MANAGEMENT — PHASE 0 IMPLEMENTATION BLUEPRINT
+The authoritative requirement baseline is FULL INVENTORY MANAGEMENT.
+The previous Battery Factory Pilot release:
+FAT-CANDIDATE-2026-09-12
+targeting:
+ea99cec1e958b0f2e9f727b57c7904993cd6c34b
+must remain treated as a Battery Factory Pilot release only.
+Do not reinterpret it as Full Inventory Management.
+IMPORTANT — THIS TASK IS PLANNING ONLY
+Do not:
+modify code
+modify database schema
+run migrations
+run tests
+run APIs
+execute workflows
+modify evidence
+modify historical records
+create commits
+create tags
+Produce only a read-only implementation blueprint.
+Objective
+Design the implementation required to take OCS One from the current inventory foundation to:
+FULL INVENTORY MANAGEMENT
+The design must cover the entire lifecycle:
+Supplier
+ ↓
+Purchase Order
+ ↓
+PO Approval
+ ↓
+Goods Receipt
+ ↓
+Partial Receipt / Open Quantity
+ ↓
+Incoming Inspection
+ ↓
+Lot / Batch Creation
+ ↓
+Warehouse
+ ↓
+Location / Bin
+ ↓
+Available Stock
+ ↓
+Reservation
+ ↓
+Allocation
+ ↓
+Issue
+ ↓
+WIP
+ ↓
+Consumption
+ ↓
+Return
+ ↓
+Scrap
+ ↓
+Adjustment
+ ↓
+Transfer / Reversal
+ ↓
+Reconciliation
+ ↓
+Reporting
+ ↓
+Complete Genealogy / Audit
+PHASE 0 — INVENTORY FOUNDATION
+First design the foundation before implementing individual workflows.
+1. Database/domain model
+Produce the proposed schema for:
+purchase_orders
+purchase_order_lines
+warehouses
+locations
+bins
+generic inventory_lots
+inventory_reservations
+reservation lines if required
+inventory_adjustments
+return_documents
+return lines
+scrap_documents
+scrap lines
+consumption_confirmations
+consumption lines
+WIP inventory representation
+transfer lifecycle entities
+transfer lines
+BOM snapshots
+any required allocation entities
+Also identify which existing tables should be:
+retained unchanged
+extended
+deprecated
+linked to the new model
+Do not implement them yet.
+2. Inventory ledger redesign
+The existing signed inventory_transactions ledger is an important foundation.
+Do not replace it casually.
+Design how it should evolve to support:
+RECEIPT
+INSPECTION_ACCEPT
+INSPECTION_REJECT
+RESERVATION
+RESERVATION_RELEASE
+ISSUE
+WIP_RECEIPT
+CONSUMPTION
+RETURN
+SCRAP
+TRANSFER_OUT
+TRANSFER_IN
+TRANSFER_REVERSAL
+ADJUSTMENT_IN
+ADJUSTMENT_OUT
+For every movement define:
+source
+destination
+material
+lot
+warehouse
+location
+bin
+quantity
+UOM
+production order
+BOM snapshot
+source document
+source line
+actor
+timestamp
+reversal reference
+reason where applicable
+Explain which fields must be mandatory for each movement type.
+3. Inventory state model
+Define the authoritative states.
+At minimum evaluate:
+ON_HAND
+AVAILABLE
+RESERVED
+QUARANTINED
+ISSUED
+WIP
+CONSUMED
+RETURNED
+SCRAPPED
+IN_TRANSIT
+REJECTED
+Explain:
+which are physical states
+which are accounting states
+which are derived projections
+whether a quantity can exist in more than one state
+how state transitions occur
+how double-counting is prevented
+This must be precise enough for implementation.
+4. Reservation architecture
+Design:
+Production Order
+      ↓
+Material Requirement
+      ↓
+Reservation
+      ↓
+Allocation
+      ↓
+Issue
+Define:
+reservation ownership
+quantity
+lot
+location
+expiration/release
+cancellation
+shortage
+concurrent reservation handling
+locking strategy
+uniqueness/invariants
+Pay particular attention to two production orders competing for the same inventory.
+5. Lot/batch architecture
+Generic lots must apply to:
+raw materials
+consumables
+packaging
+components
+production materials
+Cell lots remain a specialized production domain.
+Design:
+Supplier Lot
+      ↓
+Internal Lot
+      ↓
+Warehouse / Location / Bin
+      ↓
+Reservation
+      ↓
+Issue
+      ↓
+WIP
+      ↓
+Consumption
+      ↓
+Return / Scrap
+      ↓
+Finished Product Genealogy
+Define how supplier lot and internal lot relationships are preserved.
+6. Warehouse/location/bin architecture
+Design the hierarchy:
+Warehouse
+   ↓
+Location
+   ↓
+Bin
+Include examples such as:
+Main Store
+QC / Quarantine
+Production Store
+WIP
+Cell Processing
+Finished Goods
+Rejected
+Scrap
+Dispatch
+Define how stock is calculated at:
+warehouse
+location
+bin
+lot
+material
+state
+7. Procurement architecture
+Design the complete PO lifecycle:
+Draft
+ ↓
+Submitted
+ ↓
+Approved
+ ↓
+Partially Received
+ ↓
+Fully Received
+ ↓
+Closed
+Define:
+PO numbering
+approval
+supplier
+lines
+ordered quantity
+received quantity
+open quantity
+rejected quantity
+cancelled quantity
+over-receipt tolerance
+partial receipts
+multiple GRNs against one PO
+PO cancellation/closure
+PO → GRN traceability
+8. Receiving architecture
+Design:
+PO
+ ↓
+GRN
+ ↓
+Partial / Full Receipt
+ ↓
+Inspection
+ ↓
+Lot Creation
+ ↓
+Warehouse/Location/Bin
+Explicitly support:
+partial receipt
+multiple receipts
+partial inspection
+rejected quantity
+quarantine
+receiving correction
+receiving reversal
+over-receipt
+lot creation
+9. Manufacturing lifecycle
+This is critical.
+Do NOT treat:
+PRODUCTION_ISSUE
+as equivalent to consumption.
+Design the actual lifecycle:
+BOM Revision
+      ↓
+Immutable Order BOM Snapshot
+      ↓
+Material Requirement
+      ↓
+Reservation
+      ↓
+Lot Allocation
+      ↓
+Issue
+      ↓
+WIP
+      ↓
+Consumption Confirmation
+      ↓
+Actual-vs-Planned Variance
+      ↓
+Return unused material
+      ↓
+Scrap
+Define every state transition.
+10. BOM snapshot
+Design an immutable production-order BOM snapshot containing, as applicable:
+BOM revision
+material
+quantity
+UOM
+scrap factor
+yield
+alternates
+effective revision
+snapshot timestamp
+Once the production order is released, later BOM changes must not silently alter the order's material requirements.
+11. Return architecture
+Design general material returns.
+A return must identify:
+original issue
+production order
+material
+lot
+source WIP/location
+destination store/location/bin
+quantity
+reason
+actor
+timestamp
+authorization
+reversal/return relationship
+A MIN reversal must not be treated as equivalent to a complete material-return system.
+12. Scrap architecture
+Design:
+Production/WIP
+      ↓
+Scrap Request
+      ↓
+Authorization
+      ↓
+SCRAP ledger movement
+      ↓
+Scrap location/state
+      ↓
+Genealogy
+      ↓
+Reporting
+Define:
+scrap reason
+quantity
+material
+lot
+serial if applicable
+production order
+stage
+source location
+authorization
+audit
+reversal policy
+13. Adjustment architecture
+Design controlled positive and negative adjustments.
+Every adjustment must contain:
+material
+lot
+warehouse
+location
+bin
+quantity
+reason
+authorization
+source/count reference
+actor
+timestamp
+ledger movement
+Define who can authorize adjustments.
+14. Transfer architecture
+Replace the current narrow:
+STORE → CELL_PROCESSING
+concept with a general transfer lifecycle:
+Transfer Request
+ ↓
+Approved
+ ↓
+Issued from Source
+ ↓
+In Transit
+ ↓
+Received at Destination
+ ↓
+Reconciled
+Support:
+warehouse-to-warehouse
+location-to-location
+bin-to-bin
+store-to-production
+production-to-store
+cancellation
+rejection
+reversal
+partial receipt
+The existing Option A cell-processing flow must remain compatible and must not double-count inventory.
+15. Reconciliation
+Design automated reconciliation for:
+Ledger
+ ↕
+Stock Balance
+ ↕
+Lot Balance
+ ↕
+Location Balance
+ ↕
+Reservation
+ ↕
+WIP
+ ↕
+Consumption
+ ↕
+Transfer
+ ↕
+Return
+ ↕
+Scrap
+Identify every invariant that must always hold.
+Examples:
+Available ≤ On Hand
+Reserved ≤ Available + Reserved according to chosen accounting model
+Consumed cannot exceed issued quantity
+Returned cannot exceed issued quantity minus consumed/scrapped quantity
+Scrapped cannot exceed available WIP quantity
+Transfer destination cannot create inventory without corresponding source movement
+Use the exact accounting model you recommend rather than leaving ambiguous formulas.
+16. Complete genealogy
+Design the traceability chain:
+Supplier
+ → PO
+ → GRN
+ → Supplier Lot
+ → Internal Lot
+ → Warehouse
+ → Location
+ → Reservation
+ → Issue
+ → WIP
+ → Consumption
+ → Production Order
+ → Finished Product
+Also support:
+Return
+Scrap
+Adjustment
+Transfer
+Reversal
+The objective is to answer:
+Where did this material come from?
+and:
+Where was this material used?
+17. Reporting requirements
+Design the complete inventory reporting layer.
+At minimum:
+Stock
+on-hand
+available
+reserved
+quarantine
+WIP
+rejected
+scrap
+Lot
+lot balance
+lot movement
+supplier lot
+internal lot
+expiry where applicable
+Production
+required
+reserved
+issued
+consumed
+returned
+scrapped
+variance
+Movement
+receipt
+issue
+consumption
+return
+scrap
+adjustment
+transfer
+reversal
+Reconciliation
+ledger vs stock
+lot vs stock
+location vs stock
+reservation vs availability
+issue vs consumption
+transfer source vs destination
+18. Authorization and audit
+Define authorization requirements for every new operation:
+PO approval
+receiving correction
+reservation cancellation
+adjustment
+return
+scrap
+transfer reversal
+consumption correction
+Define durable audit requirements.
+The existing best-effort audit limitation must be addressed for Full Inventory Management.
+19. Concurrency requirements
+Explicitly design concurrency protection for:
+Two users reserving the same stock.
+Two users allocating the same lot.
+Two users issuing the same material.
+Issue and return occurring concurrently.
+Transfer and adjustment occurring concurrently.
+Scrap and consumption occurring concurrently.
+Multiple production orders competing for inventory.
+For each, specify:
+transaction boundary
+locking strategy
+uniqueness constraint
+invariant
+expected failure response
+20. Implementation dependency graph
+Produce a dependency graph showing the correct implementation sequence.
+For example:
+PHASE 0
+Ledger + dimensions + locations + lots
+          ↓
+PHASE 1
+Purchase Orders
+          ↓
+PHASE 2
+Receiving + inspection hardening
+          ↓
+PHASE 3
+Reservation + allocation
+          ↓
+PHASE 4
+Issue + WIP + consumption
+          ↓
+PHASE 5
+Returns + scrap + adjustments
+          ↓
+PHASE 6
+Transfers + reversals
+          ↓
+PHASE 7
+Genealogy + reconciliation
+          ↓
+PHASE 8
+Reporting + authorization + audit
+          ↓
+PHASE 9
+Full Inventory FAT
+Correct the sequence if the source requirements indicate a better dependency.
+21. Existing functionality that must NOT be broken
+Explicitly identify compatibility requirements for:
+existing GRN
+incoming inspection
+signed inventory ledger
+stock projection
+supplier-lot provenance
+Store → Cell Processing Option A
+cell lots
+generated cells
+Material Issue Notes
+existing Battery Factory Pilot functionality
+The new architecture must extend the system rather than accidentally breaking the existing pilot functionality.
+22. Final deliverable
+Produce these five artifacts in the response:
+A. Target architecture
+Complete Full Inventory Management architecture.
+B. Database/schema blueprint
+Every required new entity and every existing entity that must change.
+C. API/workflow blueprint
+All required operations and lifecycle transitions.
+D. Invariants and concurrency model
+Every critical inventory integrity rule.
+E. Implementation roadmap
+Phase-by-phase sequence with dependencies and acceptance criteria.
+Finally provide:
+FULL INVENTORY MANAGEMENT — IMPLEMENTATION NOT STARTED
+and a precise list of what must be built before the next Full Inventory Management FAT can begin.
+Do not perform any implementation in this task.
