@@ -19,5 +19,6 @@ export interface IncomingInspectionLine {
   result: IncomingInspectionResult;
   /** @nullable */
   rejection_reason?: string | null;
+  inspection_event_number: number;
   created_at: Date;
 }

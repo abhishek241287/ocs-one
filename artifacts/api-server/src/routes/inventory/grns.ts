@@ -9,11 +9,16 @@ import {
   inventoryTransactionsTable,
   purchaseOrdersTable,
   purchaseOrderLinesTable,
+  inventoryLotsTable,
+  warehousesTable,
+  locationsTable,
+  binsTable,
 } from "@workspace/db";
 import { CreateGrnBody } from "@workspace/api-zod";
 import { requireWriteRole } from "../../middleware/auth";
 import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
 import { postGrn } from "../../lib/grn-posting";
+import { recordInspection } from "../../lib/incoming-inspection";
 import {
   resolveLinkedMaster,
   type LinkedMasterType,
@@ -74,6 +79,10 @@ function serializeLine(l: Record<string, any>, e?: LineEnrichment) {
     quantity_received: numify(l.quantityReceived),
     uom: l.uom,
     supplier_lot_number: l.supplierLotNumber ?? null,
+    lot_id: l.lotId ?? null,
+    accepted_qty: numify(l.acceptedQty),
+    rejected_qty: numify(l.rejectedQty),
+    put_away_qty: numify(l.putAwayQty),
     inspection_status: l.inspectionStatus ?? null,
     remarks: l.remarks,
     created_at: l.createdAt,
@@ -340,6 +349,208 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 });
 
 // ─── Detail ──────────────────────────────────────────────────────────────────
+// Convenience action endpoint for receiving screens. The canonical inspection
+// document remains available at /inventory/inspections; this route accepts the same
+// line payload while deriving grn_id from the URL.
+router.post("/:id/inspect", async (req: Request, res: Response): Promise<void> => {
+  const grnId = req.params.id as string;
+  const body = req.body as {
+    lines?: Array<{
+      grn_line_id: string;
+      accepted_qty: number;
+      rejected_qty: number;
+      rejection_reason?: string | null;
+    }>;
+  };
+  if (!Array.isArray(body?.lines) || body.lines.length === 0) {
+    res.status(400).json({ error: "lines must contain at least one inspection line" });
+    return;
+  }
+
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+  const { rows } = await pool.query("SELECT nextval('incoming_inspection_seq') AS seq");
+  const inspectionNumber = `INSP-${dateStr}-${String(rows[0].seq).padStart(4, "0")}`;
+
+  const result = await db.transaction((tx) =>
+    recordInspection(
+      tx,
+      grnId,
+      inspectionNumber,
+      req.user?.userId ?? null,
+      body.lines!.map((line) => ({
+        grnLineId: line.grn_line_id,
+        acceptedQty: Number(line.accepted_qty),
+        rejectedQty: Number(line.rejected_qty),
+        rejectionReason: line.rejection_reason ?? null,
+      })),
+    ),
+  );
+
+  if (result.status === "grn_not_found") {
+    res.status(404).json({ error: "GRN not found" });
+    return;
+  }
+  if (result.status === "invalid_state") {
+    res.status(409).json({ error: `GRN cannot be inspected from status '${result.current}'` });
+    return;
+  }
+  if (result.status === "no_pending_lines") {
+    res.status(409).json({ error: "GRN has no inspection-pending lines" });
+    return;
+  }
+  if (result.status === "line_mismatch") {
+    res.status(400).json({ error: "One or more inspection lines are not pending on this GRN" });
+    return;
+  }
+  if (result.status === "invalid_line") {
+    res.status(422).json({ error: `Line ${result.grnLineId}: ${result.reason}` });
+    return;
+  }
+
+  void recordSecurityEvent({
+    eventType: "inspection.completed",
+    actorId: req.user?.userId ?? null,
+    actorEmail: req.user?.email ?? null,
+    actorRole: req.user?.role ?? null,
+    ...reqMeta(req),
+    statusCode: 201,
+    detail: `Inspection ${result.inspectionNumber} completed for GRN ${grnId} (${result.lineCount} line(s))`,
+  });
+  const detail = await readDetail(grnId);
+  res.status(201).json({ inspection_id: result.inspectionId, data: detail });
+});
+
+// Put-away changes the physical location projection only. It deliberately writes no
+// inventory ledger rows: the accepted quantity is already available stock.
+router.post("/:id/put-away", async (req: Request, res: Response): Promise<void> => {
+  const grnId = req.params.id as string;
+  const { grn_line_id: grnLineId, warehouse_id: warehouseId, location_id: locationId, bin_id: binId } =
+    (req.body ?? {}) as Record<string, string | undefined>;
+  const quantity = Number((req.body ?? {}).quantity);
+  if (!grnLineId || !warehouseId || !Number.isFinite(quantity) || quantity <= 0) {
+    res.status(400).json({ error: "grn_line_id, warehouse_id, and positive quantity are required" });
+    return;
+  }
+  if (binId && !locationId) {
+    res.status(422).json({ error: "bin_id requires location_id" });
+    return;
+  }
+
+  const outcome = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({
+        grnId: grnHeadersTable.id,
+        grnStatus: grnHeadersTable.status,
+        lineId: grnLineItemsTable.id,
+        lotId: grnLineItemsTable.lotId,
+        acceptedQty: grnLineItemsTable.acceptedQty,
+        putAwayQty: grnLineItemsTable.putAwayQty,
+      })
+      .from(grnLineItemsTable)
+      .innerJoin(grnHeadersTable, eq(grnHeadersTable.id, grnLineItemsTable.grnId))
+      .where(and(eq(grnHeadersTable.id, grnId), eq(grnLineItemsTable.id, grnLineId)))
+      .for("update")
+      .limit(1);
+    if (!row) return { status: "not_found" as const };
+    if (row.grnStatus !== "posted") return { status: "not_posted" as const };
+    if (!row.lotId) return { status: "no_lot" as const };
+
+    const [warehouse] = await tx
+      .select({ id: warehousesTable.id })
+      .from(warehousesTable)
+      .where(and(eq(warehousesTable.id, warehouseId), eq(warehousesTable.isActive, true)))
+      .limit(1);
+    if (!warehouse) return { status: "invalid_warehouse" as const };
+
+    if (locationId) {
+      const [location] = await tx
+        .select({ id: locationsTable.id })
+        .from(locationsTable)
+        .where(
+          and(
+            eq(locationsTable.id, locationId),
+            eq(locationsTable.warehouseId, warehouseId),
+            eq(locationsTable.isActive, true),
+          ),
+        )
+        .limit(1);
+      if (!location) return { status: "invalid_location" as const };
+    }
+    if (binId) {
+      const [bin] = await tx
+        .select({ id: binsTable.id })
+        .from(binsTable)
+        .where(and(eq(binsTable.id, binId), eq(binsTable.locationId, locationId!)))
+        .limit(1);
+      if (!bin) return { status: "invalid_bin" as const };
+    }
+
+    const available = Number(row.acceptedQty) - Number(row.putAwayQty);
+    if (quantity > available + 1e-9) {
+      return { status: "exceeds_available" as const, available };
+    }
+
+    await tx
+      .update(inventoryLotsTable)
+      .set({ warehouseId, locationId: locationId ?? null, binId: binId ?? null })
+      .where(eq(inventoryLotsTable.id, row.lotId));
+    await tx
+      .update(grnLineItemsTable)
+      .set({ putAwayQty: String(Number(row.putAwayQty) + quantity) })
+      .where(eq(grnLineItemsTable.id, grnLineId));
+    return {
+      status: "ok" as const,
+      lotId: row.lotId,
+      quantity,
+      warehouseId,
+      locationId: locationId ?? null,
+      binId: binId ?? null,
+    };
+  });
+
+  if (outcome.status === "not_found") {
+    res.status(404).json({ error: "GRN line not found" });
+    return;
+  }
+  if (outcome.status === "not_posted") {
+    res.status(409).json({ error: "GRN must be posted before put-away" });
+    return;
+  }
+  if (outcome.status === "no_lot") {
+    res.status(409).json({ error: "GRN line has no internal lot" });
+    return;
+  }
+  if (outcome.status === "invalid_warehouse") {
+    res.status(422).json({ error: "Invalid or inactive warehouse" });
+    return;
+  }
+  if (outcome.status === "invalid_location") {
+    res.status(422).json({ error: "Invalid or inactive location for warehouse" });
+    return;
+  }
+  if (outcome.status === "invalid_bin") {
+    res.status(422).json({ error: "Invalid bin for location" });
+    return;
+  }
+  if (outcome.status === "exceeds_available") {
+    res.status(422).json({ error: `Put-away quantity exceeds available accepted quantity (${outcome.available})` });
+    return;
+  }
+
+  res.json({
+    data: {
+      grn_id: grnId,
+      grn_line_id: grnLineId,
+      lot_id: outcome.lotId,
+      quantity: outcome.quantity,
+      warehouse_id: outcome.warehouseId,
+      location_id: outcome.locationId,
+      bin_id: outcome.binId,
+    },
+  });
+});
+
 router.get("/:id", async (req: Request, res: Response): Promise<void> => {
   const detail = await readDetail(req.params.id as string);
   if (!detail) {
@@ -414,8 +625,8 @@ router.post("/:id/post", async (req: Request, res: Response): Promise<void> => {
     return;
   }
   if (result.status === "over_receipt") {
-    res.status(409).json({
-      error: "GRN quantity exceeds the purchase-order over-receipt tolerance",
+    res.status(422).json({
+      error: "Over-receipt exceeds the purchase-order over-receipt tolerance",
       purchase_order_line_id: result.poLineId,
       ordered_qty: result.orderedQty,
       already_received_qty: result.receivedQty,

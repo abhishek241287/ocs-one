@@ -48,6 +48,7 @@ function serializeLine(l: Record<string, any>) {
     rejected_qty: numify(l.rejectedQty),
     result: l.result,
     rejection_reason: l.rejectionReason,
+    inspection_event_number: l.inspectionEventNumber,
     created_at: l.createdAt,
   };
 }
@@ -108,8 +109,7 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
 });
 
 // ─── Eligible GRNs (registered BEFORE /:id so the literal path wins) ──────────
-// A GRN is eligible for inspection when it is posted, has at least one line still
-// inspection_status='pending', and has not yet been inspected (grn unique).
+// A GRN is eligible when it is posted and has at least one line still pending.
 router.get("/eligible", async (_req: Request, res: Response): Promise<void> => {
   const rows = await db
     .select({
@@ -127,14 +127,9 @@ router.get("/eligible", async (_req: Request, res: Response): Promise<void> => {
         eq(grnLineItemsTable.inspectionStatus, "pending"),
       ),
     )
-    .leftJoin(
-      incomingInspectionsTable,
-      eq(incomingInspectionsTable.grnId, grnHeadersTable.id),
-    )
     .where(
       and(
         eq(grnHeadersTable.status, "posted"),
-        sql`${incomingInspectionsTable.id} IS NULL`,
       ),
     )
     .groupBy(
@@ -192,7 +187,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
   } catch (err: any) {
     const pgCode = err?.code ?? err?.cause?.code;
     if (pgCode === "23505") {
-      res.status(409).json({ error: "This GRN has already been inspected" });
+      res.status(409).json({ error: "Inspection event already exists for this GRN line" });
       return;
     }
     if (pgCode === "23503") {
@@ -209,9 +204,6 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     case "invalid_state":
       res.status(409).json({ error: `GRN cannot be inspected from status '${result.current}' (must be posted)` });
       return;
-    case "already_inspected":
-      res.status(409).json({ error: "This GRN has already been inspected" });
-      return;
     case "no_pending_lines":
       res.status(409).json({ error: "GRN has no inspection-pending lines" });
       return;
@@ -219,13 +211,11 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       const parts: string[] = [];
       if (result.missing.length > 0) parts.push(`missing line(s): ${result.missing.join(", ")}`);
       if (result.unexpected.length > 0) parts.push(`unexpected line(s): ${result.unexpected.join(", ")}`);
-      res.status(400).json({
-        error: `Submitted lines must exactly cover the GRN's inspection-pending lines — ${parts.join("; ")}`,
-      });
+      res.status(400).json({ error: `Invalid inspection lines — ${parts.join("; ")}` });
       return;
     }
     case "invalid_line":
-      res.status(400).json({ error: `Line ${result.grnLineId}: ${result.reason}` });
+      res.status(422).json({ error: `Line ${result.grnLineId}: ${result.reason}` });
       return;
     case "created":
       break;

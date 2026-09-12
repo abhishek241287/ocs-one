@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import assignmentsRouter from "./assignments";
 import grnsRouter from "./grns";
 import inspectionsRouter from "./inspections";
+import lotsRouter from "./lots";
 import stockRouter from "./stock";
 import transfersRouter, { cellStockRouter } from "./transfers";
 
@@ -12,6 +13,7 @@ const router: IRouter = Router();
 router.use("/material-workflow-assignments", assignmentsRouter);
 router.use("/grns", grnsRouter);
 router.use("/inspections", inspectionsRouter);
+router.use("/lots", lotsRouter);
 router.use("/stock", stockRouter);
 router.use("/cell-stock", cellStockRouter);
 router.use("/transfers", transfersRouter);

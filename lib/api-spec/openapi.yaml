@@ -3785,6 +3785,58 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/GrnDetail" }
 
+  /inventory/grns/{id}/inspect:
+    post:
+      operationId: inspectGrn
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lines]
+              properties:
+                lines:
+                  type: array
+                  minItems: 1
+                  items: { $ref: "#/components/schemas/IncomingInspectionLineInput" }
+      responses:
+        "201":
+          description: Inspection event recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [inspection_id, data]
+                properties:
+                  inspection_id: { type: string, format: uuid }
+                  data: { $ref: "#/components/schemas/GrnDetail" }
+
+  /inventory/grns/{id}/put-away:
+    post:
+      operationId: putAwayGrn
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PutAwayInput" }
+      responses:
+        "200":
+          description: Accepted quantity moved to a physical location
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/PutAwayResult" }
+
   /inventory/grns/{id}/transactions:
     get:
       operationId: listGrnTransactions
@@ -3840,6 +3892,40 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/IncomingInspectionDetail" }
+
+  /inventory/lots:
+    get:
+      operationId: listInventoryLots
+      tags: [inventory]
+      responses:
+        "200":
+          description: Internal inventory lots
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/InventoryLot" }
+
+  /inventory/lots/{id}:
+    get:
+      operationId: getInventoryLot
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Internal inventory lot
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: "#/components/schemas/InventoryLot" }
 
   /inventory/inspections/eligible:
     get:
@@ -6728,7 +6814,7 @@ components:
     GrnLineItem:
       type: object
       required:
-        [id, grn_id, line_number, material_id, quantity_received, uom, created_at]
+        [id, grn_id, line_number, material_id, quantity_received, uom, accepted_qty, rejected_qty, put_away_qty, created_at]
       properties:
         id: { type: string, format: uuid }
         grn_id: { type: string, format: uuid }
@@ -6744,6 +6830,10 @@ components:
         quantity_received: { type: number }
         uom: { $ref: "#/components/schemas/InventoryUom" }
         supplier_lot_number: { type: ["string", "null"] }
+        lot_id: { type: ["string", "null"], format: uuid }
+        accepted_qty: { type: number }
+        rejected_qty: { type: number }
+        put_away_qty: { type: number }
         inspection_status: { $ref: "#/components/schemas/GrnInspectionStatus" }
         remarks: { type: ["string", "null"] }
         created_at: { type: string, format: date-time }
@@ -6948,7 +7038,7 @@ components:
     IncomingInspectionLine:
       type: object
       required:
-        [id, inspection_id, grn_line_id, grn_id, material_id, quantity_received, accepted_qty, rejected_qty, result, created_at]
+        [id, inspection_id, grn_line_id, grn_id, material_id, quantity_received, accepted_qty, rejected_qty, result, inspection_event_number, created_at]
       properties:
         id: { type: string, format: uuid }
         inspection_id: { type: string, format: uuid }
@@ -6960,6 +7050,7 @@ components:
         rejected_qty: { type: number }
         result: { $ref: "#/components/schemas/IncomingInspectionResult" }
         rejection_reason: { type: ["string", "null"] }
+        inspection_event_number: { type: integer }
         created_at: { type: string, format: date-time }
 
     IncomingInspectionDetail:
@@ -6991,6 +7082,52 @@ components:
           type: array
           minItems: 1
           items: { $ref: "#/components/schemas/IncomingInspectionLineInput" }
+
+    PutAwayInput:
+      type: object
+      required: [grn_line_id, warehouse_id, quantity]
+      properties:
+        grn_line_id: { type: string, format: uuid }
+        warehouse_id: { type: string, format: uuid }
+        location_id: { type: ["string", "null"], format: uuid }
+        bin_id: { type: ["string", "null"], format: uuid }
+        quantity: { type: number, exclusiveMinimum: 0 }
+
+    PutAwayResult:
+      type: object
+      required: [grn_id, grn_line_id, lot_id, quantity, warehouse_id]
+      properties:
+        grn_id: { type: string, format: uuid }
+        grn_line_id: { type: string, format: uuid }
+        lot_id: { type: string, format: uuid }
+        quantity: { type: number }
+        warehouse_id: { type: string, format: uuid }
+        location_id: { type: ["string", "null"], format: uuid }
+        bin_id: { type: ["string", "null"], format: uuid }
+
+    InventoryLot:
+      type: object
+      required: [id, lot_number, material_id, status, total_received_qty, remaining_qty, uom, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        lot_number: { type: string }
+        material_id: { type: string, format: uuid }
+        material_code: { type: ["string", "null"] }
+        material_name: { type: ["string", "null"] }
+        supplier_lot_number: { type: ["string", "null"] }
+        supplier_id: { type: ["string", "null"], format: uuid }
+        grn_line_id: { type: ["string", "null"], format: uuid }
+        received_date: { type: string, format: date-time }
+        expiry_date: { type: ["string", "null"], format: date-time }
+        manufacture_date: { type: ["string", "null"], format: date-time }
+        status: { type: string, enum: [active, consumed, expired, quarantined, rejected] }
+        total_received_qty: { type: number }
+        remaining_qty: { type: number }
+        uom: { $ref: "#/components/schemas/InventoryUom" }
+        warehouse_id: { type: ["string", "null"], format: uuid }
+        location_id: { type: ["string", "null"], format: uuid }
+        bin_id: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }
 
     EligibleGrn:
       type: object

@@ -1,4 +1,4 @@
-import { eq, asc, inArray } from "drizzle-orm";
+import { eq, asc, inArray, sql } from "drizzle-orm";
 import {
   type Transaction,
   grnHeadersTable,
@@ -10,6 +10,7 @@ import {
   purchaseOrdersTable,
   purchaseOrderLinesTable,
   outboxEventsTable,
+  inventoryLotsTable,
 } from "@workspace/db";
 
 // ─── Inventory Platform — generic GRN posting engine ─────────────────────────
@@ -96,6 +97,8 @@ export async function postGrn(
       status: grnHeadersTable.status,
       supplierId: grnHeadersTable.supplierId,
       purchaseOrderId: grnHeadersTable.purchaseOrderId,
+      warehouseId: grnHeadersTable.warehouseId,
+      locationId: grnHeadersTable.locationId,
     })
     .from(grnHeadersTable)
     .where(eq(grnHeadersTable.id, grnId))
@@ -116,6 +119,8 @@ export async function postGrn(
       quantityReceived: grnLineItemsTable.quantityReceived,
       uom: grnLineItemsTable.uom,
       purchaseOrderLineId: grnLineItemsTable.purchaseOrderLineId,
+      lotId: grnLineItemsTable.lotId,
+      supplierLotNumber: grnLineItemsTable.supplierLotNumber,
       action: materialWorkflowsTable.postReceiptAction,
     })
     .from(grnLineItemsTable)
@@ -142,6 +147,12 @@ export async function postGrn(
     | undefined;
 
   if (grn.purchaseOrderId) {
+    // GRN headers are locked above, but separate draft GRNs can still race on the
+    // same PO. A transaction-scoped advisory lock gives every receiving path a
+    // deterministic serialization point before reading PO quantities.
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtext(${`purchase-order:${grn.purchaseOrderId}`}))`,
+    );
     const [po] = await tx
       .select({
         id: purchaseOrdersTable.id,
@@ -248,10 +259,41 @@ export async function postGrn(
 
   for (const line of lines) {
     const routing = resolvePostReceiptAction(line.action as PostReceiptAction);
+    const receivedQty = Number(line.quantityReceived);
+    const directToInventory = routing.inspectionStatus === null;
+    const lotSequence = await tx.execute<{ seq: string }>(
+      sql`SELECT nextval('lot_seq') AS seq`,
+    );
+    const sequence = Number(lotSequence.rows[0]?.seq);
+    if (!Number.isFinite(sequence)) {
+      throw new Error("Unable to allocate inventory lot number");
+    }
+    const now = new Date();
+    const lotDate = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, "0")}${String(now.getUTCDate()).padStart(2, "0")}`;
+    const [lot] = await tx
+      .insert(inventoryLotsTable)
+      .values({
+        lotNumber: `LOT-${lotDate}-${String(sequence).padStart(4, "0")}`,
+        materialId: line.materialId,
+        supplierLotNumber: line.supplierLotNumber,
+        supplierId: grn.supplierId,
+        grnLineId: line.id,
+        totalReceivedQty: String(receivedQty),
+        remainingQty: String(directToInventory ? receivedQty : receivedQty),
+        uom: line.uom,
+        warehouseId: grn.warehouseId,
+        locationId: grn.locationId,
+      })
+      .returning({ id: inventoryLotsTable.id });
 
     await tx
       .update(grnLineItemsTable)
-      .set({ inspectionStatus: routing.inspectionStatus })
+      .set({
+        inspectionStatus: routing.inspectionStatus,
+        lotId: lot.id,
+        acceptedQty: directToInventory ? String(receivedQty) : "0",
+        rejectedQty: "0",
+      })
       .where(eq(grnLineItemsTable.id, line.id));
 
     await tx.insert(inventoryTransactionsTable).values({
@@ -260,6 +302,9 @@ export async function postGrn(
       quantity: line.quantityReceived,
       uom: line.uom,
       stockState: routing.stockState,
+      lotId: lot.id,
+      warehouseId: grn.warehouseId,
+      locationId: grn.locationId,
       sourceDocumentType: "GRN",
       sourceDocumentId: grnId,
       sourceLineId: line.id,

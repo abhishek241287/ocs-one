@@ -200,9 +200,28 @@ router.get("/:materialId/provenance", async (req: Request, res: Response): Promi
     return;
   }
 
-  // Every posted-GRN receipt line for this material, with supplier + inspection
-  // context. One inspection per GRN (grn_id UNIQUE) and one inspection line per
-  // GRN line, so these LEFT JOINs never fan out a receipt row.
+  // Every posted-GRN receipt line for this material, with supplier + an aggregated
+  // latest inspection context. Reinspection creates multiple event rows per line,
+  // so the summary must be grouped before it is joined to the receipt projection.
+  const inspectionSummary = db
+    .select({
+      grnLineId: incomingInspectionLinesTable.grnLineId,
+      inspectionId: sql<string | null>`(array_agg(${incomingInspectionsTable.id} ORDER BY ${incomingInspectionLinesTable.createdAt} DESC))[1]`,
+      inspectionNumber: sql<string | null>`(array_agg(${incomingInspectionsTable.inspectionNumber} ORDER BY ${incomingInspectionLinesTable.createdAt} DESC))[1]`,
+      inspectorId: sql<string | null>`(array_agg(${usersTable.id} ORDER BY ${incomingInspectionLinesTable.createdAt} DESC))[1]`,
+      inspectorName: sql<string | null>`(array_agg(${usersTable.name} ORDER BY ${incomingInspectionLinesTable.createdAt} DESC))[1]`,
+      acceptedQty: sql<string>`sum(${incomingInspectionLinesTable.acceptedQty})`,
+      rejectedQty: sql<string>`sum(${incomingInspectionLinesTable.rejectedQty})`,
+    })
+    .from(incomingInspectionLinesTable)
+    .innerJoin(
+      incomingInspectionsTable,
+      eq(incomingInspectionsTable.id, incomingInspectionLinesTable.inspectionId),
+    )
+    .leftJoin(usersTable, eq(usersTable.id, incomingInspectionsTable.inspectedBy))
+    .groupBy(incomingInspectionLinesTable.grnLineId)
+    .as("inspection_summary");
+
   const receipts = await db
     .select({
       grn_id: grnHeadersTable.id,
@@ -214,12 +233,12 @@ router.get("/:materialId/provenance", async (req: Request, res: Response): Promi
       received_qty: grnLineItemsTable.quantityReceived,
       uom: grnLineItemsTable.uom,
       inspection_status: grnLineItemsTable.inspectionStatus,
-      inspection_id: incomingInspectionsTable.id,
-      inspection_number: incomingInspectionsTable.inspectionNumber,
-      inspector_id: usersTable.id,
-      inspector_name: usersTable.name,
-      accepted_qty: incomingInspectionLinesTable.acceptedQty,
-      rejected_qty: incomingInspectionLinesTable.rejectedQty,
+       inspection_id: inspectionSummary.inspectionId,
+       inspection_number: inspectionSummary.inspectionNumber,
+       inspector_id: inspectionSummary.inspectorId,
+       inspector_name: inspectionSummary.inspectorName,
+       accepted_qty: inspectionSummary.acceptedQty,
+       rejected_qty: inspectionSummary.rejectedQty,
     })
     .from(grnLineItemsTable)
     .innerJoin(
@@ -228,14 +247,9 @@ router.get("/:materialId/provenance", async (req: Request, res: Response): Promi
     )
     .innerJoin(suppliersTable, eq(suppliersTable.id, grnHeadersTable.supplierId))
     .leftJoin(
-      incomingInspectionLinesTable,
-      eq(incomingInspectionLinesTable.grnLineId, grnLineItemsTable.id),
+      inspectionSummary,
+      eq(inspectionSummary.grnLineId, grnLineItemsTable.id),
     )
-    .leftJoin(
-      incomingInspectionsTable,
-      eq(incomingInspectionsTable.id, incomingInspectionLinesTable.inspectionId),
-    )
-    .leftJoin(usersTable, eq(usersTable.id, incomingInspectionsTable.inspectedBy))
     .where(eq(grnLineItemsTable.materialId, materialId))
     .orderBy(desc(grnHeadersTable.receivedDate), desc(grnHeadersTable.grnNumber));
 

@@ -312,9 +312,13 @@ export const grnLineItemsTable = pgTable(
     // Flows into the Cell Lot on transfer. Nullable (not every material is lot-tracked).
     supplierLotNumber: varchar("supplier_lot_number", { length: 100 }),
     purchaseOrderLineId: uuid("purchase_order_line_id"),
+    lotId: uuid("lot_id"),
     warehouseId: uuid("warehouse_id"),
     locationId: uuid("location_id"),
     binId: uuid("bin_id"),
+    acceptedQty: numeric("accepted_qty", { precision: 14, scale: 3 }).notNull().default("0"),
+    rejectedQty: numeric("rejected_qty", { precision: 14, scale: 3 }).notNull().default("0"),
+    putAwayQty: numeric("put_away_qty", { precision: 14, scale: 3 }).notNull().default("0"),
     // Per-line — set on post from the line's workflow; NULL until posted, and NULL for
     // DIRECT_TO_INVENTORY lines (no inspection process).
     inspectionStatus: grnInspectionStatusEnum("inspection_status"),
@@ -509,7 +513,6 @@ export const incomingInspectionsTable = pgTable(
       .notNull(),
     grnId: uuid("grn_id")
       .notNull()
-      .unique("incoming_inspections_grn_unique")
       .references(() => grnHeadersTable.id),
     remarks: text("remarks"),
     inspectedBy: uuid("inspected_by"),
@@ -531,7 +534,6 @@ export const incomingInspectionLinesTable = pgTable(
       .references(() => incomingInspectionsTable.id, { onDelete: "cascade" }),
     grnLineId: uuid("grn_line_id")
       .notNull()
-      .unique("incoming_inspection_lines_grn_line_unique")
       .references(() => grnLineItemsTable.id),
     grnId: uuid("grn_id")
       .notNull()
@@ -547,13 +549,17 @@ export const incomingInspectionLinesTable = pgTable(
     rejectionReason: text("rejection_reason"),
     // Nullable event number prepares line-level reinspection without changing
     // the current one-inspection-per-GRN pilot contract.
-    inspectionEventNumber: integer("inspection_event_number"),
+    inspectionEventNumber: integer("inspection_event_number").notNull().default(1),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index("incoming_inspection_lines_inspection_idx").on(t.inspectionId),
     index("incoming_inspection_lines_grn_idx").on(t.grnId),
     index("incoming_inspection_lines_material_idx").on(t.materialId),
+    uniqueIndex("incoming_inspection_lines_event_unique").on(
+      t.grnLineId,
+      t.inspectionEventNumber,
+    ),
   ],
 );
 

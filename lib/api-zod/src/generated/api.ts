@@ -7819,6 +7819,10 @@ export const CreateGrnResponse = zod.object({
   "quantity_received": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
   "supplier_lot_number": zod.string().nullish(),
+  "lot_id": zod.string().uuid().nullish(),
+  "accepted_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "put_away_qty": zod.number(),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
   "created_at": zod.coerce.date()
@@ -7864,6 +7868,10 @@ export const GetGrnResponse = zod.object({
   "quantity_received": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
   "supplier_lot_number": zod.string().nullish(),
+  "lot_id": zod.string().uuid().nullish(),
+  "accepted_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "put_away_qty": zod.number(),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
   "created_at": zod.coerce.date()
@@ -7916,11 +7924,112 @@ export const PostGrnResponse = zod.object({
   "quantity_received": zod.number(),
   "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
   "supplier_lot_number": zod.string().nullish(),
+  "lot_id": zod.string().uuid().nullish(),
+  "accepted_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "put_away_qty": zod.number(),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
   "created_at": zod.coerce.date()
 }))
 }))
+
+
+export const InspectGrnParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const inspectGrnBodyLinesItemAcceptedQtyMin = 0;
+
+export const inspectGrnBodyLinesItemRejectedQtyMin = 0;
+
+
+
+
+export const InspectGrnBody = zod.object({
+  "lines": zod.array(zod.object({
+  "grn_line_id": zod.string().uuid(),
+  "accepted_qty": zod.number().min(inspectGrnBodyLinesItemAcceptedQtyMin),
+  "rejected_qty": zod.number().min(inspectGrnBodyLinesItemRejectedQtyMin),
+  "rejection_reason": zod.string().nullish()
+})).min(1)
+})
+
+export const InspectGrnResponse = zod.object({
+  "inspection_id": zod.string().uuid(),
+  "data": zod.object({
+  "id": zod.string().uuid(),
+  "grn_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "purchase_order_id": zod.string().uuid().nullish(),
+  "received_date": zod.string(),
+  "invoice_number": zod.string().nullish(),
+  "status": zod.enum(['draft', 'posted']),
+  "remarks": zod.string().nullish(),
+  "posted_at": zod.coerce.date().nullish(),
+  "posted_by": zod.string().uuid().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date()
+}).and(zod.object({
+  "lines": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "grn_id": zod.string().uuid(),
+  "line_number": zod.number(),
+  "material_id": zod.string().uuid(),
+  "purchase_order_line_id": zod.string().uuid().nullish(),
+  "material_name": zod.string().nullish(),
+  "material_code": zod.string().nullish(),
+  "usage_type": zod.string().nullish(),
+  "linked_master": zod.object({
+  "type": zod.enum(['CELL', 'BMS', 'CABLE', 'BUSBAR', 'CONNECTOR', 'CHARGER', 'CABINET']),
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string()
+}).nullish(),
+  "quantity_received": zod.number(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "supplier_lot_number": zod.string().nullish(),
+  "lot_id": zod.string().uuid().nullish(),
+  "accepted_qty": zod.number(),
+  "rejected_qty": zod.number(),
+  "put_away_qty": zod.number(),
+  "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
+  "remarks": zod.string().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+})
+
+
+export const PutAwayGrnParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const putAwayGrnBodyQuantityExclusiveMin = 0;
+
+
+
+export const PutAwayGrnBody = zod.object({
+  "grn_line_id": zod.string().uuid(),
+  "warehouse_id": zod.string().uuid(),
+  "location_id": zod.string().uuid().nullish(),
+  "bin_id": zod.string().uuid().nullish(),
+  "quantity": zod.number().gt(putAwayGrnBodyQuantityExclusiveMin)
+})
+
+export const PutAwayGrnResponse = zod.object({
+  "data": zod.object({
+  "grn_id": zod.string().uuid(),
+  "grn_line_id": zod.string().uuid(),
+  "lot_id": zod.string().uuid(),
+  "quantity": zod.number(),
+  "warehouse_id": zod.string().uuid(),
+  "location_id": zod.string().uuid().nullish(),
+  "bin_id": zod.string().uuid().nullish()
+})
+})
 
 
 export const ListGrnTransactionsParams = zod.object({
@@ -8010,9 +8119,64 @@ export const CreateInspectionResponse = zod.object({
   "rejected_qty": zod.number(),
   "result": zod.enum(['passed', 'rejected', 'partial']),
   "rejection_reason": zod.string().nullish(),
+  "inspection_event_number": zod.number(),
   "created_at": zod.coerce.date()
 }))
 }))
+
+
+export const ListInventoryLotsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "lot_number": zod.string(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "supplier_lot_number": zod.string().nullish(),
+  "supplier_id": zod.string().uuid().nullish(),
+  "grn_line_id": zod.string().uuid().nullish(),
+  "received_date": zod.coerce.date().optional(),
+  "expiry_date": zod.coerce.date().nullish(),
+  "manufacture_date": zod.coerce.date().nullish(),
+  "status": zod.enum(['active', 'consumed', 'expired', 'quarantined', 'rejected']),
+  "total_received_qty": zod.number(),
+  "remaining_qty": zod.number(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "warehouse_id": zod.string().uuid().nullish(),
+  "location_id": zod.string().uuid().nullish(),
+  "bin_id": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+}))
+})
+
+
+export const GetInventoryLotParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetInventoryLotResponse = zod.object({
+  "data": zod.object({
+  "id": zod.string().uuid(),
+  "lot_number": zod.string(),
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string().nullish(),
+  "material_name": zod.string().nullish(),
+  "supplier_lot_number": zod.string().nullish(),
+  "supplier_id": zod.string().uuid().nullish(),
+  "grn_line_id": zod.string().uuid().nullish(),
+  "received_date": zod.coerce.date().optional(),
+  "expiry_date": zod.coerce.date().nullish(),
+  "manufacture_date": zod.coerce.date().nullish(),
+  "status": zod.enum(['active', 'consumed', 'expired', 'quarantined', 'rejected']),
+  "total_received_qty": zod.number(),
+  "remaining_qty": zod.number(),
+  "uom": zod.enum(['PCS', 'KG', 'M', 'L', 'SET', 'ROLL']),
+  "warehouse_id": zod.string().uuid().nullish(),
+  "location_id": zod.string().uuid().nullish(),
+  "bin_id": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+})
+})
 
 
 export const ListEligibleGrnsResponse = zod.object({
@@ -8050,6 +8214,7 @@ export const GetInspectionResponse = zod.object({
   "rejected_qty": zod.number(),
   "result": zod.enum(['passed', 'rejected', 'partial']),
   "rejection_reason": zod.string().nullish(),
+  "inspection_event_number": zod.number(),
   "created_at": zod.coerce.date()
 }))
 }))

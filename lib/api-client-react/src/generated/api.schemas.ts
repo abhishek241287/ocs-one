@@ -2935,6 +2935,11 @@ export interface GrnLineItem {
   uom: InventoryUom;
   /** @nullable */
   supplier_lot_number?: string | null;
+  /** @nullable */
+  lot_id?: string | null;
+  accepted_qty: number;
+  rejected_qty: number;
+  put_away_qty: number;
   inspection_status?: GrnInspectionStatus | null;
   /** @nullable */
   remarks?: string | null;
@@ -3184,6 +3189,7 @@ export interface IncomingInspectionLine {
   result: IncomingInspectionResult;
   /** @nullable */
   rejection_reason?: string | null;
+  inspection_event_number: number;
   created_at: string;
 }
 
@@ -3207,6 +3213,72 @@ export interface IncomingInspectionInput {
   remarks?: string | null;
   /** @minItems 1 */
   lines: IncomingInspectionLineInput[];
+}
+
+export interface PutAwayInput {
+  grn_line_id: string;
+  warehouse_id: string;
+  /** @nullable */
+  location_id?: string | null;
+  /** @nullable */
+  bin_id?: string | null;
+  /** @exclusiveMinimum 0 */
+  quantity: number;
+}
+
+export interface PutAwayResult {
+  grn_id: string;
+  grn_line_id: string;
+  lot_id: string;
+  quantity: number;
+  warehouse_id: string;
+  /** @nullable */
+  location_id?: string | null;
+  /** @nullable */
+  bin_id?: string | null;
+}
+
+export type InventoryLotStatus = typeof InventoryLotStatus[keyof typeof InventoryLotStatus];
+
+
+export const InventoryLotStatus = {
+  active: 'active',
+  consumed: 'consumed',
+  expired: 'expired',
+  quarantined: 'quarantined',
+  rejected: 'rejected',
+} as const;
+
+export interface InventoryLot {
+  id: string;
+  lot_number: string;
+  material_id: string;
+  /** @nullable */
+  material_code?: string | null;
+  /** @nullable */
+  material_name?: string | null;
+  /** @nullable */
+  supplier_lot_number?: string | null;
+  /** @nullable */
+  supplier_id?: string | null;
+  /** @nullable */
+  grn_line_id?: string | null;
+  received_date?: string;
+  /** @nullable */
+  expiry_date?: string | null;
+  /** @nullable */
+  manufacture_date?: string | null;
+  status: InventoryLotStatus;
+  total_received_qty: number;
+  remaining_qty: number;
+  uom: InventoryUom;
+  /** @nullable */
+  warehouse_id?: string | null;
+  /** @nullable */
+  location_id?: string | null;
+  /** @nullable */
+  bin_id?: string | null;
+  created_at: string;
 }
 
 export interface EligibleGrn {
@@ -3807,6 +3879,20 @@ export type ListGrns200 = MasterListResponse & {
   items?: Grn[];
 };
 
+export type InspectGrnBody = {
+  /** @minItems 1 */
+  lines: IncomingInspectionLineInput[];
+};
+
+export type InspectGrn201 = {
+  inspection_id: string;
+  data: GrnDetail;
+};
+
+export type PutAwayGrn200 = {
+  data: PutAwayResult;
+};
+
 export type ListGrnTransactions200 = {
   items: InventoryTransaction[];
 };
@@ -3818,6 +3904,14 @@ pageSize?: PageSizeParamParameter;
 
 export type ListInspections200 = MasterListResponse & {
   items?: IncomingInspection[];
+};
+
+export type ListInventoryLots200 = {
+  items: InventoryLot[];
+};
+
+export type GetInventoryLot200 = {
+  data: InventoryLot;
 };
 
 export type ListEligibleGrns200 = {

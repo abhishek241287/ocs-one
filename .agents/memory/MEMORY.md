@@ -53,3 +53,4 @@
 - [Dealer portal routing](dealer-portal-routing.md) — portal router must be above denyDealerFactoryAccess; param guards need router.param('id') not router.use (params are undefined in router.use).
 - [Concurrency certification](concurrency-certification.md) — race certs must create ready, isolated fixtures and require exactly one winner plus the expected loser response; “at most one” can hide total failure.
 - [FAT Block 2 fixture validation](fat-block2-fixture-validation.md) — negative FK cases need explicit nonexistent IDs; disclose and remove accidental controlled rows before final totals.
+- [Receiving inspection events](receiving-inspection-events.md) — inspection is cumulative per GRN line; aggregate event rows before joining stock provenance.

@@ -48,6 +48,7 @@ export const poStatusEnum = pgEnum("po_status", [
 ]);
 
 export const purchaseOrderNumberSequence = pgSequence("po_seq");
+export const lotNumberSequence = pgSequence("lot_seq");
 
 export const purchaseOrdersTable = pgTable(
   "purchase_orders",

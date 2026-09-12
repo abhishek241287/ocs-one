@@ -9,9 +9,12 @@ import {
   useListMaterialMasters,
   useListInspections,
   useGetInspection,
+  useInspectGrn,
+  usePutAwayGrn,
   getGetGrnQueryKey,
   getListGrnTransactionsQueryKey,
   getListGrnsQueryKey,
+  getListInspectionsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +26,7 @@ import { ChevronLeft, Loader2, CheckCircle2, Trash2, Boxes } from "lucide-react"
 import { useOdsNotify } from "@/hooks/use-ods-notify";
 import { OdsStatusBadge } from "@/components/ods";
 import { Link, useParams, useLocation } from "wouter";
+import { Input } from "@/components/ui/input";
 
 const INSPECTION_COLOR: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
@@ -51,6 +55,12 @@ export default function GrnDetailPage() {
   const [, navigate] = useLocation();
   const [showPost, setShowPost] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [inspectionDraft, setInspectionDraft] = useState<Record<string, { accepted: string; rejected: string; reason: string }>>({});
+  const [putAwayLine, setPutAwayLine] = useState<any | null>(null);
+  const [putAwayQty, setPutAwayQty] = useState("");
+  const [putAwayWarehouse, setPutAwayWarehouse] = useState("");
+  const [putAwayLocation, setPutAwayLocation] = useState("");
+  const [putAwayBin, setPutAwayBin] = useState("");
 
   const { data: grn, isLoading } = useGetGrn(grnId);
   const { data: txData } = useListGrnTransactions(grnId);
@@ -58,6 +68,8 @@ export default function GrnDetailPage() {
   const { data: materials } = useListMaterialMasters({ pageSize: 500 } as any);
   const postGrn = usePostGrn();
   const deleteGrn = useDeleteGrn();
+  const inspectGrn = useInspectGrn();
+  const putAwayGrn = usePutAwayGrn();
 
   const supplierName = useMemo(() => {
     if (!grn) return "—";
@@ -112,6 +124,53 @@ export default function GrnDetailPage() {
       navigate("/inventory/grns");
     } catch (e: any) {
       notify.error(e?.data?.error ?? "Failed to delete GRN");
+    }
+  };
+
+  const handleInspect = async () => {
+    const lines = Object.entries(inspectionDraft)
+      .map(([grn_line_id, value]) => ({
+        grn_line_id,
+        accepted_qty: Number(value.accepted),
+        rejected_qty: Number(value.rejected),
+        rejection_reason: value.reason || null,
+      }))
+      .filter((line) => line.accepted_qty > 0 || line.rejected_qty > 0);
+    if (lines.length === 0) {
+      notify.error("Enter an accepted or rejected quantity for at least one pending line");
+      return;
+    }
+    try {
+      await inspectGrn.mutateAsync({ id: grnId, data: { lines } });
+      notify.success("Inspection event recorded");
+      setInspectionDraft({});
+      qc.invalidateQueries({ queryKey: getGetGrnQueryKey(grnId) });
+      qc.invalidateQueries({ queryKey: getListGrnTransactionsQueryKey(grnId) });
+      qc.invalidateQueries({ queryKey: getListInspectionsQueryKey() });
+    } catch (e: any) {
+      notify.error(e?.data?.error ?? "Failed to record inspection");
+    }
+  };
+
+  const handlePutAway = async () => {
+    if (!putAwayLine) return;
+    try {
+      await putAwayGrn.mutateAsync({
+        id: grnId,
+        data: {
+          grn_line_id: putAwayLine.id,
+          warehouse_id: putAwayWarehouse,
+          location_id: putAwayLocation || null,
+          bin_id: putAwayBin || null,
+          quantity: Number(putAwayQty),
+        },
+      });
+      notify.success("Accepted stock put away");
+      setPutAwayLine(null);
+      setPutAwayQty("");
+      qc.invalidateQueries({ queryKey: getGetGrnQueryKey(grnId) });
+    } catch (e: any) {
+      notify.error(e?.data?.error ?? "Failed to put away stock");
     }
   };
 
@@ -190,7 +249,8 @@ export default function GrnDetailPage() {
                   <th className="px-4 py-3 font-semibold">UOM</th>
                   <th className="px-4 py-3 font-semibold text-right">Accepted</th>
                   <th className="px-4 py-3 font-semibold text-right">Rejected</th>
-                  <th className="px-4 py-3 font-semibold">Inspection Status</th>
+                      <th className="px-4 py-3 font-semibold">Inspection Status</th>
+                      <th className="px-4 py-3 font-semibold">Put-away</th>
                 </tr>
               </thead>
               <tbody>
@@ -226,10 +286,10 @@ export default function GrnDetailPage() {
                       <td className="px-4 py-3 text-right font-mono">{line.quantity_received}</td>
                       <td className="px-4 py-3">{line.uom}</td>
                       <td className="px-4 py-3 text-right font-mono text-green-700">
-                        {inspLine ? inspLine.accepted_qty : "—"}
+                        {line.accepted_qty ?? (inspLine ? inspLine.accepted_qty : "—")}
                       </td>
                       <td className="px-4 py-3 text-right font-mono text-red-600">
-                        {inspLine ? inspLine.rejected_qty : "—"}
+                        {line.rejected_qty ?? (inspLine ? inspLine.rejected_qty : "—")}
                       </td>
                       <td className="px-4 py-3">
                         {insp ? (
@@ -242,6 +302,22 @@ export default function GrnDetailPage() {
                           <span className="text-xs text-muted-foreground">— (direct to inventory)</span>
                         )}
                       </td>
+                      <td className="px-4 py-3 text-xs">
+                        <div className="font-mono">{line.put_away_qty ?? 0} / {line.accepted_qty ?? 0}</div>
+                        {(line.accepted_qty ?? 0) > (line.put_away_qty ?? 0) && line.lot_id && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-1"
+                            onClick={() => {
+                              setPutAwayLine(line);
+                              setPutAwayQty(String(Number(line.accepted_qty ?? 0) - Number(line.put_away_qty ?? 0)));
+                            }}
+                          >
+                            Put away
+                          </Button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -249,6 +325,43 @@ export default function GrnDetailPage() {
             </table>
           </CardContent>
         </Card>
+
+        {grn.status === "posted" && grn.lines.some((line) => line.inspection_status === "pending") && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Record inspection event</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Inspect one or more pending lines. Partial events are allowed; accepted plus rejected cannot exceed the remaining quantity.
+              </p>
+              {grn.lines.filter((line) => line.inspection_status === "pending").map((line) => {
+                const value = inspectionDraft[line.id] ?? { accepted: "", rejected: "", reason: "" };
+                const remaining = Number(line.quantity_received) - Number(line.accepted_qty ?? 0) - Number(line.rejected_qty ?? 0);
+                return (
+                  <div key={line.id} className="grid grid-cols-1 gap-2 rounded border p-3 md:grid-cols-[1.5fr_1fr_1fr_2fr] md:items-end">
+                    <div className="text-sm">
+                      <div className="font-medium">{line.material_name ?? line.material_id}</div>
+                      <div className="text-xs text-muted-foreground">Remaining: {remaining} {line.uom}</div>
+                    </div>
+                    <label className="text-xs">Accepted
+                      <Input type="number" min="0" value={value.accepted} onChange={(e) => setInspectionDraft((current) => ({ ...current, [line.id]: { ...value, accepted: e.target.value } }))} />
+                    </label>
+                    <label className="text-xs">Rejected
+                      <Input type="number" min="0" value={value.rejected} onChange={(e) => setInspectionDraft((current) => ({ ...current, [line.id]: { ...value, rejected: e.target.value } }))} />
+                    </label>
+                    <label className="text-xs">Reason when rejected
+                      <Input value={value.reason} onChange={(e) => setInspectionDraft((current) => ({ ...current, [line.id]: { ...value, reason: e.target.value } }))} placeholder="Required for rejected quantity" />
+                    </label>
+                  </div>
+                );
+              })}
+              <Button onClick={handleInspect} disabled={inspectGrn.isPending}>
+                {inspectGrn.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}Record inspection
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Inventory transactions */}
         <Card>
@@ -339,6 +452,37 @@ export default function GrnDetailPage() {
             <Button variant="outline" onClick={() => setShowDelete(false)}>Cancel</Button>
             <Button onClick={handleDelete} disabled={deleteGrn.isPending} className="bg-red-600 hover:bg-red-700">
               {deleteGrn.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!putAwayLine} onOpenChange={(open) => !open && setPutAwayLine(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Put away accepted stock</DialogTitle>
+            <DialogDescription>
+              Physical put-away changes the lot location only; it does not create another stock movement.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <label className="text-sm">Quantity
+              <Input type="number" min="0.001" value={putAwayQty} onChange={(e) => setPutAwayQty(e.target.value)} />
+            </label>
+            <label className="text-sm">Warehouse ID
+              <Input value={putAwayWarehouse} onChange={(e) => setPutAwayWarehouse(e.target.value)} placeholder="UUID" />
+            </label>
+            <label className="text-sm">Location ID (optional)
+              <Input value={putAwayLocation} onChange={(e) => setPutAwayLocation(e.target.value)} placeholder="UUID" />
+            </label>
+            <label className="text-sm">Bin ID (optional)
+              <Input value={putAwayBin} onChange={(e) => setPutAwayBin(e.target.value)} placeholder="UUID" />
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPutAwayLine(null)}>Cancel</Button>
+            <Button onClick={handlePutAway} disabled={putAwayGrn.isPending || !putAwayWarehouse || !putAwayQty}>
+              {putAwayGrn.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}Put away
             </Button>
           </DialogFooter>
         </DialogContent>

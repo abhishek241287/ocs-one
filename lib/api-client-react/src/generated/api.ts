@@ -90,6 +90,7 @@ import type {
   GenealogyRecord,
   GetAllocatedCells200,
   GetCellLotHistory200,
+  GetInventoryLot200,
   GetOrderGenealogy200,
   GetOrderTimeline200,
   GrnDetail,
@@ -99,6 +100,8 @@ import type {
   ImportedProductResult,
   IncomingInspectionDetail,
   IncomingInspectionInput,
+  InspectGrn201,
+  InspectGrnBody,
   IssueMaterialsInput,
   ListAuthUsers200,
   ListBmsMasters200,
@@ -138,6 +141,7 @@ import type {
   ListGrnsParams,
   ListInspections200,
   ListInspectionsParams,
+  ListInventoryLots200,
   ListMaterialCategories200,
   ListMaterialCategoriesParams,
   ListMaterialMasters200,
@@ -220,6 +224,8 @@ import type {
   PurchaseOrderLineInput,
   PurchaseOrderLineUpdate,
   PurchaseOrderUpdate,
+  PutAwayGrn200,
+  PutAwayInput,
   QcApproval,
   QcApprovalInput,
   RegisterRequest,
@@ -14388,6 +14394,136 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getPostGrnMutationOptions(options));
     }
 
+export const getInspectGrnUrl = (id: string,) => {
+
+
+
+
+  return `/api/inventory/grns/${id}/inspect`
+}
+
+export const inspectGrn = async (id: string,
+    inspectGrnBody: InspectGrnBody, options?: RequestInit): Promise<InspectGrn201> => {
+
+  return customFetch<InspectGrn201>(getInspectGrnUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(inspectGrnBody)
+  }
+);}
+
+
+
+
+export const getInspectGrnMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inspectGrn>>, TError,{id: string;data: BodyType<InspectGrnBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof inspectGrn>>, TError,{id: string;data: BodyType<InspectGrnBody>}, TContext> => {
+
+const mutationKey = ['inspectGrn'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof inspectGrn>>, {id: string;data: BodyType<InspectGrnBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  inspectGrn(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InspectGrnMutationResult = NonNullable<Awaited<ReturnType<typeof inspectGrn>>>
+    export type InspectGrnMutationBody = BodyType<InspectGrnBody>
+    export type InspectGrnMutationError = ErrorType<unknown>
+
+    export const useInspectGrn = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inspectGrn>>, TError,{id: string;data: BodyType<InspectGrnBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof inspectGrn>>,
+        TError,
+        {id: string;data: BodyType<InspectGrnBody>},
+        TContext
+      > => {
+      return useMutation(getInspectGrnMutationOptions(options));
+    }
+
+export const getPutAwayGrnUrl = (id: string,) => {
+
+
+
+
+  return `/api/inventory/grns/${id}/put-away`
+}
+
+export const putAwayGrn = async (id: string,
+    putAwayInput: PutAwayInput, options?: RequestInit): Promise<PutAwayGrn200> => {
+
+  return customFetch<PutAwayGrn200>(getPutAwayGrnUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(putAwayInput)
+  }
+);}
+
+
+
+
+export const getPutAwayGrnMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putAwayGrn>>, TError,{id: string;data: BodyType<PutAwayInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putAwayGrn>>, TError,{id: string;data: BodyType<PutAwayInput>}, TContext> => {
+
+const mutationKey = ['putAwayGrn'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putAwayGrn>>, {id: string;data: BodyType<PutAwayInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  putAwayGrn(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutAwayGrnMutationResult = NonNullable<Awaited<ReturnType<typeof putAwayGrn>>>
+    export type PutAwayGrnMutationBody = BodyType<PutAwayInput>
+    export type PutAwayGrnMutationError = ErrorType<unknown>
+
+    export const usePutAwayGrn = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putAwayGrn>>, TError,{id: string;data: BodyType<PutAwayInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putAwayGrn>>,
+        TError,
+        {id: string;data: BodyType<PutAwayInput>},
+        TContext
+      > => {
+      return useMutation(getPutAwayGrnMutationOptions(options));
+    }
+
 export const getListGrnTransactionsUrl = (id: string,) => {
 
 
@@ -14600,6 +14736,148 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getCreateInspectionMutationOptions(options));
     }
+
+export const getListInventoryLotsUrl = () => {
+
+
+
+
+  return `/api/inventory/lots`
+}
+
+export const listInventoryLots = async ( options?: RequestInit): Promise<ListInventoryLots200> => {
+
+  return customFetch<ListInventoryLots200>(getListInventoryLotsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInventoryLotsQueryKey = () => {
+    return [
+    `/api/inventory/lots`
+    ] as const;
+    }
+
+
+export const getListInventoryLotsQueryOptions = <TData = Awaited<ReturnType<typeof listInventoryLots>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventoryLots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInventoryLotsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInventoryLots>>> = ({ signal }) => listInventoryLots({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInventoryLots>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInventoryLotsQueryResult = NonNullable<Awaited<ReturnType<typeof listInventoryLots>>>
+export type ListInventoryLotsQueryError = ErrorType<unknown>
+
+
+
+export function useListInventoryLots<TData = Awaited<ReturnType<typeof listInventoryLots>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventoryLots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInventoryLotsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetInventoryLotUrl = (id: string,) => {
+
+
+
+
+  return `/api/inventory/lots/${id}`
+}
+
+export const getInventoryLot = async (id: string, options?: RequestInit): Promise<GetInventoryLot200> => {
+
+  return customFetch<GetInventoryLot200>(getGetInventoryLotUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInventoryLotQueryKey = (id: string,) => {
+    return [
+    `/api/inventory/lots/${id}`
+    ] as const;
+    }
+
+
+export const getGetInventoryLotQueryOptions = <TData = Awaited<ReturnType<typeof getInventoryLot>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInventoryLot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInventoryLotQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInventoryLot>>> = ({ signal }) => getInventoryLot(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInventoryLot>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInventoryLotQueryResult = NonNullable<Awaited<ReturnType<typeof getInventoryLot>>>
+export type GetInventoryLotQueryError = ErrorType<unknown>
+
+
+
+export function useGetInventoryLot<TData = Awaited<ReturnType<typeof getInventoryLot>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInventoryLot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInventoryLotQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListEligibleGrnsUrl = () => {
 
