@@ -17,6 +17,15 @@ an immutable history, and concurrent writers must net correctly without lost upd
 - To *move* quantity between states, emit two signed rows (negative out of the old state,
   positive into the new) — e.g. inspection: `RELEASE -received @inspection_pending`,
   `ACCEPT +accepted @available`, `REJECT +rejected @rejected`. Skip zero-qty rows.
+- Store → Cell Processing transfers are the approved cross-domain exception: emit only the
+  negative source `available` row; reconcile the destination through the immutable transfer,
+  linked cell lot, and generated cells rather than adding a positive row to the source line.
+
+**Why:** cells are a separate Cell Processing stock domain. A positive `available` row on the
+original GRN line would restore transferred stock in Store projections and the transfer picker.
+
+**How to apply:** expose/read a cross-domain audit of source movement, remaining source balance,
+cell-lot quantity, and generated-cell count; do not treat the destination as raw-material stock.
 - The stock projection uses a zero-net `HAVING` filter, so a fully-released state simply
   disappears from results (don't expect a literal `0` row).
 - State guards (status checks, already-processed checks) must run inside the tx under

@@ -8,10 +8,12 @@
 import type { CellLot } from './cellLot';
 import type { MaterialTransfer } from './materialTransfer';
 import type { MaterialTransferConsumer } from './materialTransferConsumer';
+import type { MaterialTransferDestinationAudit } from './materialTransferDestinationAudit';
 
 export type MaterialTransferDetail = MaterialTransfer & ({
   /** @nullable */
   remarks?: string | null;
   cell_lot?: CellLot;
+  destination_audit?: MaterialTransferDestinationAudit;
   consumed_by?: MaterialTransferConsumer[];
 });

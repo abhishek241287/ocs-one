@@ -2908,10 +2908,38 @@ export interface MaterialTransferConsumer {
   cells_consumed: number;
 }
 
+export type MaterialTransferDestinationAuditReconciliationStatus = typeof MaterialTransferDestinationAuditReconciliationStatus[keyof typeof MaterialTransferDestinationAuditReconciliationStatus];
+
+
+export const MaterialTransferDestinationAuditReconciliationStatus = {
+  reconciled: 'reconciled',
+  mismatch: 'mismatch',
+  missing_destination: 'missing_destination',
+} as const;
+
+/**
+ * Cross-domain reconciliation for the Store ledger movement and Cell Processing destination.
+ */
+export interface MaterialTransferDestinationAudit {
+  /** Signed available-ledger movement for this transfer; normally negative. */
+  source_movement_qty: number;
+  /** Remaining available quantity on the original GRN line after this transfer. */
+  source_available_qty: number;
+  /**
+     * Cell-lot quantity represented in the Cell Processing domain.
+     * @nullable
+     */
+  destination_quantity: number | null;
+  /** Number of generated cell records linked to the destination lot. */
+  generated_cell_count: number;
+  reconciliation_status: MaterialTransferDestinationAuditReconciliationStatus;
+}
+
 export type MaterialTransferDetail = MaterialTransfer & ({
   /** @nullable */
   remarks?: string | null;
   cell_lot?: CellLot;
+  destination_audit?: MaterialTransferDestinationAudit;
   consumed_by?: MaterialTransferConsumer[];
 });
 

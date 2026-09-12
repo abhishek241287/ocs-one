@@ -7725,6 +7725,13 @@ export const CreateMaterialTransferResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).optional(),
+  "destination_audit": zod.object({
+  "source_movement_qty": zod.number().describe('Signed available-ledger movement for this transfer; normally negative.'),
+  "source_available_qty": zod.number().describe('Remaining available quantity on the original GRN line after this transfer.'),
+  "destination_quantity": zod.number().nullable().describe('Cell-lot quantity represented in the Cell Processing domain.'),
+  "generated_cell_count": zod.number().describe('Number of generated cell records linked to the destination lot.'),
+  "reconciliation_status": zod.enum(['reconciled', 'mismatch', 'missing_destination'])
+}).optional().describe('Cross-domain reconciliation for the Store ledger movement and Cell Processing destination.'),
   "consumed_by": zod.array(zod.object({
   "production_order_id": zod.string().uuid(),
   "order_number": zod.string().nullish(),
@@ -7783,6 +7790,13 @@ export const GetMaterialTransferResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).optional(),
+  "destination_audit": zod.object({
+  "source_movement_qty": zod.number().describe('Signed available-ledger movement for this transfer; normally negative.'),
+  "source_available_qty": zod.number().describe('Remaining available quantity on the original GRN line after this transfer.'),
+  "destination_quantity": zod.number().nullable().describe('Cell-lot quantity represented in the Cell Processing domain.'),
+  "generated_cell_count": zod.number().describe('Number of generated cell records linked to the destination lot.'),
+  "reconciliation_status": zod.enum(['reconciled', 'mismatch', 'missing_destination'])
+}).optional().describe('Cross-domain reconciliation for the Store ledger movement and Cell Processing destination.'),
   "consumed_by": zod.array(zod.object({
   "production_order_id": zod.string().uuid(),
   "order_number": zod.string().nullish(),

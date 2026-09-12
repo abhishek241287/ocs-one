@@ -227,6 +227,72 @@ async function main(): Promise<void> {
     assert(transfer.body?.id, "Transfer response did not contain an ID");
     transferId = transfer.body.id;
     cellLotId = transfer.body.cell_lot_id;
+    assert(
+      transfer.body.destination_audit?.source_movement_qty === -3 &&
+        transfer.body.destination_audit?.source_available_qty === 5 &&
+        transfer.body.destination_audit?.destination_quantity === 3 &&
+        transfer.body.destination_audit?.generated_cell_count === 3 &&
+        transfer.body.destination_audit?.reconciliation_status === "reconciled",
+      "Transfer response did not expose a reconciled cross-domain destination audit",
+    );
+
+    const transferDetail = await request(`/api/inventory/transfers/${transferId}`, {
+      headers: { Cookie: cookie },
+    });
+    assert(
+      transferDetail.response.status === 200 &&
+        transferDetail.body?.destination_audit?.reconciliation_status === "reconciled" &&
+        transferDetail.body?.destination_audit?.source_available_qty === 5,
+      "Transfer detail did not preserve the reconciled destination audit",
+    );
+
+    const stock = await request(
+      `/api/inventory/stock?search=${encodeURIComponent(prefix)}&stock_state=available`,
+      { headers: { Cookie: cookie } },
+    );
+    assert(
+      stock.response.status === 200 &&
+        stock.body?.items?.length === 1 &&
+        stock.body.items[0].material_id === fixture.materialId &&
+        stock.body.items[0].quantity === 5,
+      "Raw-material stock projection overstated or omitted the remaining source balance",
+    );
+
+    const provenance = await request(`/api/inventory/stock/${fixture.materialId}/provenance`, {
+      headers: { Cookie: cookie },
+    });
+    assert(
+      provenance.response.status === 200 &&
+        provenance.body?.receipts?.length === 1 &&
+        provenance.body.receipts[0].grn_line_id === fixture.grnLineId &&
+        provenance.body.receipts[0].remaining_available_qty === 5,
+      "GRN-line provenance did not reconcile to the remaining source balance",
+    );
+
+    const picker = await request(`/api/inventory/cell-stock?search=${encodeURIComponent(prefix)}`, {
+      headers: { Cookie: cookie },
+    });
+    assert(
+      picker.response.status === 200 &&
+        picker.body?.items?.length === 1 &&
+        picker.body.items[0].grn_line_id === fixture.grnLineId &&
+        picker.body.items[0].available_qty === 5,
+      "Transfer picker did not use the net source balance",
+    );
+
+    const cellInventoryReport = await request("/api/cells/reports/inventory", {
+      headers: { Cookie: cookie },
+    });
+    const reportLotRows =
+      typeof cellInventoryReport.body === "string"
+        ? cellInventoryReport.body
+            .split("\n")
+            .filter((line: string) => line.includes(transfer.body.transfer_number))
+        : [];
+    assert(
+      cellInventoryReport.response.status === 200 && reportLotRows.length === 3,
+      "Cell inventory report did not expose all destination cells",
+    );
 
     const ledger = await client.query(
       `SELECT id, transaction_type, quantity, stock_state, source_document_type,
@@ -363,6 +429,12 @@ async function main(): Promise<void> {
           transfer_quantity: 3,
           destination_quantity: 3,
           generated_cells: 3,
+          route_projections: {
+            stock_available: stock.body.items[0].quantity,
+            provenance_remaining_available: provenance.body.receipts[0].remaining_available_qty,
+            picker_available: picker.body.items[0].available_qty,
+            cell_report_rows: reportLotRows.length,
+          },
           duplicate_groups: duplicates.rows.length,
           orphan_rows: orphans.rows.length,
           supplier_lot_number: supplierLotNumber,

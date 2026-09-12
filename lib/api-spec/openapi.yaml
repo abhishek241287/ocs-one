@@ -6581,9 +6581,33 @@ components:
           properties:
             remarks: { type: ["string", "null"] }
             cell_lot: { $ref: "#/components/schemas/CellLot" }
+            destination_audit:
+              $ref: "#/components/schemas/MaterialTransferDestinationAudit"
             consumed_by:
               type: array
               items: { $ref: "#/components/schemas/MaterialTransferConsumer" }
+
+    MaterialTransferDestinationAudit:
+      type: object
+      description: Cross-domain reconciliation for the Store ledger movement and Cell Processing destination.
+      required:
+        [source_movement_qty, source_available_qty, destination_quantity, generated_cell_count, reconciliation_status]
+      properties:
+        source_movement_qty:
+          type: number
+          description: Signed available-ledger movement for this transfer; normally negative.
+        source_available_qty:
+          type: number
+          description: Remaining available quantity on the original GRN line after this transfer.
+        destination_quantity:
+          type: ["number", "null"]
+          description: Cell-lot quantity represented in the Cell Processing domain.
+        generated_cell_count:
+          type: integer
+          description: Number of generated cell records linked to the destination lot.
+        reconciliation_status:
+          type: string
+          enum: [reconciled, mismatch, missing_destination]
 
     MaterialTransferInput:
       type: object

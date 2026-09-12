@@ -1,9 +1,9 @@
 # Task #35 — Transfer Destination Ledger Decision
 
-**Status:** Approved — Option A
-**Scope:** Development architecture only  
-**FAT status:** Unchanged. Block 3 remains stopped; `INV-P04` remains a confirmed
-nonconformance under the current approved contract.
+**Status:** Approved — Option A; development implementation verified
+**Scope:** Development architecture and read-model contract
+**FAT status:** Unchanged. Block 3 remains stopped; the historical `INV-P04`
+failure remains preserved as evidence.
 
 ## Decision required
 
@@ -128,5 +128,27 @@ If Option A is approved:
 5. Only after that, create a new controlled FAT retest against the corrected
    candidate.
 
-No implementation, FAT retest, or Block 4 execution is authorized by this
-document.
+At the time of this decision, no implementation, FAT retest, or Block 4
+execution was authorized by this document. The development implementation and
+regression result are recorded below; the historical FAT evidence remains
+unchanged and a separate controlled FAT retest is still required for release
+acceptance.
+
+## Implemented development audit projection
+
+The development transfer create and detail responses now expose a
+`destination_audit` projection. It is derived at read time from the existing
+signed source ledger row, the original GRN-line balance, the linked cell lot,
+and its generated cells. It reports:
+
+- the signed source movement (expected `-transfer.quantity`);
+- the remaining available source-line balance;
+- the destination cell-lot quantity;
+- the generated-cell count; and
+- `reconciled`, `mismatch`, or `missing_destination`.
+
+This is an audit projection, not a second inventory authority. It does not add
+a positive `available` transaction, so the source balance remains `8 - 3 = 5`.
+The controlled development regression also checks the stock projection,
+GRN-line provenance, transfer picker, and cell inventory report against the
+same transfer.

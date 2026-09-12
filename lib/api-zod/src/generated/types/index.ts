@@ -258,6 +258,8 @@ export * from './materialProvenance';
 export * from './materialProvenanceReceipt';
 export * from './materialTransfer';
 export * from './materialTransferConsumer';
+export * from './materialTransferDestinationAudit';
+export * from './materialTransferDestinationAuditReconciliationStatus';
 export * from './materialTransferDetail';
 export * from './materialTransferInput';
 export * from './materialUsageType';

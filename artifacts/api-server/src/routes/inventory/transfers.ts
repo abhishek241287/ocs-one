@@ -79,10 +79,89 @@ interface TransferJoinRow {
   lotNumber: string | null;
 }
 
+type TransferDestinationAudit = {
+  source_movement_qty: number;
+  source_available_qty: number;
+  destination_quantity: number | null;
+  generated_cell_count: number;
+  reconciliation_status: "reconciled" | "mismatch" | "missing_destination";
+};
+
+async function loadTransferDestinationAudit(
+  transferId: string,
+  grnLineId: string,
+  transferQuantity: number,
+): Promise<TransferDestinationAudit> {
+  const [[sourceMovement], [sourceBalance], [cellLot]] = await Promise.all([
+    db
+      .select({
+        quantity: sql<string>`coalesce(sum(${inventoryTransactionsTable.quantity}), 0)`,
+      })
+      .from(inventoryTransactionsTable)
+      .where(
+        and(
+          eq(inventoryTransactionsTable.sourceDocumentType, "TRANSFER"),
+          eq(inventoryTransactionsTable.sourceDocumentId, transferId),
+          eq(inventoryTransactionsTable.sourceLineId, grnLineId),
+          eq(inventoryTransactionsTable.stockState, "available"),
+        ),
+      ),
+    db
+      .select({
+        quantity: sql<string>`coalesce(sum(${inventoryTransactionsTable.quantity}), 0)`,
+      })
+      .from(inventoryTransactionsTable)
+      .where(
+        and(
+          eq(inventoryTransactionsTable.sourceLineId, grnLineId),
+          eq(inventoryTransactionsTable.stockState, "available"),
+        ),
+      ),
+    db
+      .select({
+        id: cellLotsTable.id,
+        quantityReceived: cellLotsTable.quantityReceived,
+      })
+      .from(cellLotsTable)
+      .where(eq(cellLotsTable.transferId, transferId))
+      .limit(1),
+  ]);
+
+  let generatedCellCount = 0;
+  if (cellLot) {
+    const [cellCount] = await db
+      .select({ count: count() })
+      .from(cellsTable)
+      .where(eq(cellsTable.lotId, cellLot.id));
+    generatedCellCount = Number(cellCount?.count ?? 0);
+  }
+
+  const sourceMovementQty = Number(sourceMovement?.quantity ?? 0);
+  const sourceAvailableQty = Number(sourceBalance?.quantity ?? 0);
+  const destinationQuantity = cellLot ? Number(cellLot.quantityReceived) : null;
+  const reconciled =
+    sourceMovementQty === -transferQuantity &&
+    destinationQuantity === transferQuantity &&
+    generatedCellCount === transferQuantity;
+
+  return {
+    source_movement_qty: sourceMovementQty,
+    source_available_qty: sourceAvailableQty,
+    destination_quantity: destinationQuantity,
+    generated_cell_count: generatedCellCount,
+    reconciliation_status: cellLot
+      ? reconciled
+        ? "reconciled"
+        : "mismatch"
+      : "missing_destination",
+  };
+}
+
 function serializeTransfer(
   t: TransferJoinRow,
   cellLot?: Record<string, unknown>,
   consumedBy?: unknown[],
+  destinationAudit?: TransferDestinationAudit,
 ) {
   const base = {
     id: t.id,
@@ -111,9 +190,16 @@ function serializeTransfer(
   // numeric columns are JS numbers (doublePrecision / integer), so it serializes as-is.
   // The detail shape additionally carries the lot remarks (the document's remarks) and
   // the downstream consumers (production orders that later consumed these cells).
-  if (!cellLot) return base;
+  if (!cellLot && !destinationAudit) return base;
+  if (!cellLot) {
+    return {
+      ...base,
+      destination_audit: destinationAudit,
+    };
+  }
   return {
     ...base,
+    ...(destinationAudit ? { destination_audit: destinationAudit } : {}),
     remarks: (cellLot.remarks as string | null) ?? null,
     cell_lot: cellLot,
     consumed_by: consumedBy ?? [],
@@ -518,7 +604,14 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     cellLotId: outcome.lot.id,
     lotNumber: outcome.lot.lotNumber,
   } as TransferJoinRow;
-  res.status(201).json(serializeTransfer(row, outcome.lot as Record<string, unknown>, []));
+  const destinationAudit = await loadTransferDestinationAudit(
+    outcome.transfer.id,
+    body.grn_line_id,
+    qty,
+  );
+  res
+    .status(201)
+    .json(serializeTransfer(row, outcome.lot as Record<string, unknown>, [], destinationAudit));
 });
 
 // ─── GET /inventory/transfers/:id — transfer document detail ──────────────────
@@ -586,7 +679,12 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     }));
   }
 
-  res.json(serializeTransfer(row as TransferJoinRow, cellLot, consumedBy));
+  const destinationAudit = await loadTransferDestinationAudit(
+    row.id,
+    row.grnLineId,
+    Number(row.quantity),
+  );
+  res.json(serializeTransfer(row as TransferJoinRow, cellLot, consumedBy, destinationAudit));
 });
 
 export { cellStockRouter };

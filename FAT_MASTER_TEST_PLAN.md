@@ -130,7 +130,9 @@ The following are release-blocking FAT gates:
    negative source movement and an immutable `material_transfer` linked to one
    `cell_lot` and its generated `cells`. The destination is reconciled across
    those domains; it is not represented by a second `available` row on the
-   original GRN line.
+   original GRN line. Transfer create/detail responses expose the same
+   cross-domain reconciliation, and stock, provenance, picker, and cell-report
+   projections must retain the source balance and destination count.
 2. Inspection cannot be repeated for the same GRN and cannot partially cover
    pending lines.
 3. Cell grading and correction preserve the cell-lot timeline and do not
