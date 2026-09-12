@@ -5,7 +5,9 @@
  * Cell lots point to material transfers through cell_lots.transfer_id. The
  * source GRN line lives on material_transfers.grn_line_id; cell_lots does not
  * have a grn_line_id column. This check prevents future certification
- * harnesses from encoding the invalid direct column reference.
+ * harnesses from encoding invalid direct column references. Cell-lot timeline
+ * events are ordered by performed_at and id; cell_lot_events.created_at does
+ * not exist.
  */
 
 import { readdir, readFile } from "node:fs/promises";
@@ -16,6 +18,10 @@ const CERT_DIR = dirname(fileURLToPath(import.meta.url));
 const INVALID_CELL_LOT_SOURCE_PATTERNS = [
   /\bcell_lots\s*\.\s*grn_line_id\b/i,
   /\bfrom\s+cell_lots(?:\s+(?:as\s+)?[a-z_][a-z0-9_]*)?\s+where\s+(?:[a-z_][a-z0-9_]*\.)?grn_line_id\b/i,
+];
+const INVALID_CELL_LOT_EVENT_TIMESTAMP_PATTERNS = [
+  /\bcell_lot_events\s*\.\s*created_at\b/i,
+  /\bfrom\s+cell_lot_events(?:\s+(?:as\s+)?[a-z_][a-z0-9_]*)?[\s\S]{0,300}\border\s+by\s+[a-z_][a-z0-9_]*\s*\.\s*created_at\b/i,
 ];
 
 async function main(): Promise<void> {
@@ -34,7 +40,10 @@ async function main(): Promise<void> {
   for (const fileName of certificationSources) {
     const filePath = join(CERT_DIR, fileName);
     const source = await readFile(filePath, "utf8");
-    for (const pattern of INVALID_CELL_LOT_SOURCE_PATTERNS) {
+    for (const pattern of [
+      ...INVALID_CELL_LOT_SOURCE_PATTERNS,
+      ...INVALID_CELL_LOT_EVENT_TIMESTAMP_PATTERNS,
+    ]) {
       if (pattern.test(source)) {
         violations.push(`${fileName}: ${pattern}`);
       }
@@ -53,7 +62,8 @@ async function main(): Promise<void> {
         result: "PASS",
         scanned_files: certificationSources.length,
         canonical_relationship: "cell_lots.transfer_id -> material_transfers.id -> material_transfers.grn_line_id",
-        invalid_reference: "cell_lots.grn_line_id",
+        event_order: "cell_lot_events.performed_at, cell_lot_events.id",
+        invalid_references: ["cell_lots.grn_line_id", "cell_lot_events.created_at"],
       },
       null,
       2,
