@@ -148,6 +148,14 @@ Prepare a clean production order linked to:
 - Required component masters.
 - Required material stock and lots.
 
+For MAS-N04, also prepare one isolated approved BOM revision and one isolated
+production order that uses it through the Material Issue Note flow. The
+obsoletion attempt must target only this used revision; the canonical approved
+FAT BOM is a frozen comparison record and must not be used for the mutation.
+Capture the isolated BOM status and Material Issue Note count before and after
+the attempt, then remove the isolated BOM, order, issue note, ledger rows, and
+any temporary stock setup in teardown.
+
 The order must be able to progress through all nine configured stages:
 
 1. `cell_allocation`

@@ -3,8 +3,8 @@
 - System under test: FAT-CANDIDATE-2026-09-08
 - Frozen application commit: 60564b1b49b76ce0b97e46d1de65a7325ef50ba7
 - Fixture: FAT-E2E-
-- Formal request assertions: 105 PASS, 0 FAIL
-- MAS-N04 used-BOM obsoletion: DATA SETUP REQUIRED (not executed; canonical fixture preserved)
+- Formal request assertions: 106 PASS, 0 FAIL
+- MAS-N04 used-BOM obsoletion: PASS (isolated manufacturing-use fixture; canonical fixture preserved)
 
 | Case | Assertions | Pass | Fail |
 |---|---:|---:|---:|
@@ -15,6 +15,6 @@
 | MAS-N01 | 6 | 6 | 0 |
 | MAS-N02 | 6 | 6 | 0 |
 | MAS-N03 | 4 | 4 | 0 |
-| MAS-N04 | 3 | 3 | 0 |
+| MAS-N04 | 4 | 4 | 0 |
 
-Controlled record IDs and sanitized request/response/audit evidence are in [fat-block-2-masters-bom.json](fat-block-2-masters-bom.json). No application source files were modified.
+Controlled record IDs and sanitized request/response/audit evidence are in [fat-block-2-masters-bom.json](fat-block-2-masters-bom.json). The focused used-BOM run, including before/after status and database evidence, is in [fat-block-2-mas-n04-used-bom.json](fat-block-2-mas-n04-used-bom.json).

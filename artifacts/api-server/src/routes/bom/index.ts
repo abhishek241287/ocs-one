@@ -5,6 +5,7 @@ import {
   pool,
   bomHeadersTable,
   bomLinesTable,
+  materialIssueNotesTable,
   masterProductsTable,
   materialsTable,
 } from "@workspace/db";
@@ -467,6 +468,12 @@ router.post(
         .limit(1);
       if (rows.length === 0) return { kind: "not_found" as const };
       if (rows[0].status !== "approved") return { kind: "not_approved" as const };
+      const usedRows = await tx
+        .select({ id: materialIssueNotesTable.id })
+        .from(materialIssueNotesTable)
+        .where(eq(materialIssueNotesTable.bomHeaderId, id))
+        .limit(1);
+      if (usedRows.length > 0) return { kind: "used" as const };
       await tx
         .update(bomHeadersTable)
         .set({ status: "obsolete", updatedAt: new Date() })
@@ -480,6 +487,10 @@ router.post(
     }
     if (result.kind === "not_approved") {
       res.status(422).json({ error: "Only approved BOMs can be made obsolete" });
+      return;
+    }
+    if (result.kind === "used") {
+      res.status(422).json({ error: "BOMs used by production cannot be made obsolete" });
       return;
     }
 

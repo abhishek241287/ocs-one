@@ -7126,13 +7126,47 @@
         },
         "expected": 422,
         "result": "PASS"
+      },
+      {
+        "label": "used approved BOM obsoletion rejected",
+        "actor_role": "director",
+        "request": {
+          "method": "POST",
+          "path": "/api/boms/b7ab4c88-5c65-4e7a-a96f-321690c6d570/obsolete"
+        },
+        "status": 422,
+        "response": {
+          "error": "BOMs used by production cannot be made obsolete"
+        },
+        "expected": 422,
+        "result": "PASS",
+        "database_evidence": {
+          "isolated_bom_id": "b7ab4c88-5c65-4e7a-a96f-321690c6d570",
+          "production_order_id": "3f375098-c64e-421d-80b6-8d7fa504f686",
+          "material_issue_id": "b0cbe239-0435-48db-bb96-8b406aafebc2",
+          "before": {
+            "status": "approved",
+            "revision": 2,
+            "material_issue_count": 1
+          },
+          "after": {
+            "status": "approved",
+            "revision": 2,
+            "material_issue_count": 1
+          },
+          "canonical_bom_id": "fa140000-0000-4000-8000-000000000001",
+          "canonical_status_before": "approved",
+          "canonical_status_after": "approved",
+          "canonical_unchanged": true,
+          "full_run_evidence": "fat-block-2-mas-n04-used-bom.json"
+        }
       }
     ]
   },
   "observations": [
     {
       "case": "MAS-N04",
-      "detail": "A used-BOM obsoletion assertion was not executed because no isolated used-BOM fixture was created; canonical approved fixture was not mutated."
+      "detail": "Used-BOM obsoletion was executed through an isolated BOM → production order → Material Issue Note flow and rejected with HTTP 422; the canonical approved BOM remained unchanged. Full request and database evidence is in fat-block-2-mas-n04-used-bom.json."
     },
     {
       "case": "MAS-N03",
