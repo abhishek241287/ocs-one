@@ -716,6 +716,73 @@ async function runReportsAndDashboard(): Promise<void> {
     "at least 2 controlled completed orders", productionCompleted,
     "Production report completed buckets must include the two seeded completed orders.");
 
+  const reportWindow = FAT_FIXTURE_CONTRACT.reports.productionDateWindow;
+  const boundedProductionPath = `/api/reports/production?from=${encodeURIComponent(reportWindow.from)}&to=${encodeURIComponent(reportWindow.to)}`;
+  const boundedProduction = await get("RPT-P03", "reports-reconciliation", "director", boundedProductionPath);
+  const boundaryIds: string[] = [
+    reportWindow.boundaryOrders.before.id,
+    reportWindow.boundaryOrders.inside.id,
+    reportWindow.boundaryOrders.after.id,
+  ];
+  const sourceRows = (await pool.query(
+    `SELECT id, order_number, created_at, status
+       FROM mfg_production_orders
+      WHERE order_number LIKE $1
+      ORDER BY created_at, id`,
+    [`${FAT_PREFIX}%`],
+  )).rows;
+  const fromMillis = Date.parse(reportWindow.from);
+  const toMillis = Date.parse(reportWindow.to);
+  const includedRows = sourceRows.filter((row) => {
+    const createdAt = Date.parse(String(row.created_at));
+    return createdAt >= fromMillis && createdAt <= toMillis;
+  });
+  const excludedRows = sourceRows.filter((row) => !includedRows.includes(row));
+  const includedIds = includedRows.map((row) => String(row.id));
+  const excludedIds = excludedRows.map((row) => String(row.id));
+  const expectedCreated = includedRows.length;
+  const expectedCompleted = includedRows.filter((row) => row.status === "completed").length;
+  const reportTotals = (bucket: string) => ({
+    created: rowsAt(boundedProduction, bucket).reduce((sum, row) => sum + Number(row.created ?? 0), 0),
+    completed: rowsAt(boundedProduction, bucket).reduce((sum, row) => sum + Number(row.completed ?? 0), 0),
+  });
+  const expectedExcludedIds = [reportWindow.boundaryOrders.before.id, reportWindow.boundaryOrders.after.id];
+  assertCheck(
+    "RPT-P03",
+    "reports-reconciliation",
+    "director",
+    boundedProductionPath,
+    includedIds.includes(reportWindow.boundaryOrders.inside.id) &&
+      !includedIds.includes(reportWindow.boundaryOrders.before.id) &&
+      !includedIds.includes(reportWindow.boundaryOrders.after.id) &&
+      JSON.stringify(excludedIds.filter((id) => boundaryIds.includes(id)).sort()) === JSON.stringify(expectedExcludedIds.sort()) &&
+      ["byDay", "byWeek", "byMonth"].every((bucket) => {
+        const totals = reportTotals(bucket);
+        return totals.created === expectedCreated && totals.completed === expectedCompleted;
+      }),
+    {
+      window: reportWindow,
+      included_record_ids: includedIds,
+      excluded_record_ids: excludedIds,
+      totals: {
+        by_day: { created: expectedCreated, completed: expectedCompleted },
+        by_week: { created: expectedCreated, completed: expectedCompleted },
+        by_month: { created: expectedCreated, completed: expectedCompleted },
+      },
+    },
+    {
+      included_record_ids: includedIds,
+      excluded_record_ids: excludedIds,
+      totals: {
+        by_day: reportTotals("byDay"),
+        by_week: reportTotals("byWeek"),
+        by_month: reportTotals("byMonth"),
+      },
+      response: boundedProduction,
+    },
+    "Production by-day, by-week, and by-month totals must include only orders created inside the requested window; the boundary IDs make both inclusion and exclusion machine-readable.",
+  );
+
   const dashboardProductionTotal = numberAt(dashboard, "orderStats.total");
   const dashboardCellsTotal = numberAt(dashboard, "cellInventory.total");
   const dashboardChargers = numberAt(dashboard, "equipmentStatus.chargers.total");

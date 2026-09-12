@@ -78,6 +78,9 @@ export const FAT_IDS = {
     raceOne: "fa180000-0000-4000-8000-000000000004",
     raceTwo: "fa180000-0000-4000-8000-000000000005",
     completion: "fa180000-0000-4000-8000-000000000006",
+    reportBefore: "fa180000-0000-4000-8000-000000000007",
+    reportInside: "fa180000-0000-4000-8000-000000000008",
+    reportAfter: "fa180000-0000-4000-8000-000000000009",
   },
   products: {
     dispatched: "fa190000-0000-4000-8000-000000000001",
@@ -149,6 +152,17 @@ export type FatFixtureContract = {
     raceOrderCount: number;
     pendingMatchCount: number;
     pendingMatchItems: number;
+  };
+  reports: {
+    productionDateWindow: {
+      from: string;
+      to: string;
+      boundaryOrders: {
+        before: { id: string; createdAt: string };
+        inside: { id: string; createdAt: string };
+        after: { id: string; createdAt: string };
+      };
+    };
   };
   states: {
     bom: string;
@@ -241,6 +255,26 @@ export const FAT_FIXTURE_CONTRACT = {
     raceOrderCount: 2,
     pendingMatchCount: 1,
     pendingMatchItems: 16,
+  },
+  reports: {
+    productionDateWindow: {
+      from: "2026-09-08T00:00:00.000Z",
+      to: "2026-09-08T23:59:59.999Z",
+      boundaryOrders: {
+        before: {
+          id: "fa180000-0000-4000-8000-000000000007",
+          createdAt: "2026-09-07T23:59:59.999Z",
+        },
+        inside: {
+          id: "fa180000-0000-4000-8000-000000000008",
+          createdAt: "2026-09-08T12:00:00.000Z",
+        },
+        after: {
+          id: "fa180000-0000-4000-8000-000000000009",
+          createdAt: "2026-09-09T00:00:00.000Z",
+        },
+      },
+    },
   },
   states: {
     bom: "approved",

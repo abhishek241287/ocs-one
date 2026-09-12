@@ -651,9 +651,9 @@ async function seedManufacturing(client: SqlClient): Promise<void> {
       client,
       `INSERT INTO mfg_production_orders
         (id, order_number, battery_number, product_id, cell_match_id, factory_manager,
-         current_stage, status, priority, planned_start_date, planned_end_date, notes)
+         current_stage, status, priority, planned_start_date, planned_end_date, notes, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7::mfg_stage_type, $8::mfg_order_status,
-               'high', $9, $10, $11)`,
+               'high', $9, $10, $11, $12)`,
       [
         id,
         orderNumber(key),
@@ -666,6 +666,7 @@ async function seedManufacturing(client: SqlClient): Promise<void> {
         DATE,
         "2026-09-30",
         `${FAT_PREFIX} fixture order ${key}`,
+        `${DATE}T08:00:00.000Z`,
       ],
     );
     for (let index = 0; index < stageTypes.length; index += 1) {
@@ -802,6 +803,33 @@ async function seedManufacturing(client: SqlClient): Promise<void> {
         (production_order_id, component_type, component_id, component_name, quantity, serial_number, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [orderId, componentType, componentId, componentName, quantity, serial, `${FAT_PREFIX}genealogy`],
+    );
+  }
+  const reportWindow = FAT_FIXTURE_CONTRACT.reports.productionDateWindow;
+  const reportBoundaryOrders = [
+    [reportWindow.boundaryOrders.before.id, "REPORT-BEFORE", reportWindow.boundaryOrders.before.createdAt],
+    [reportWindow.boundaryOrders.inside.id, "REPORT-INSIDE", reportWindow.boundaryOrders.inside.createdAt],
+    [reportWindow.boundaryOrders.after.id, "REPORT-AFTER", reportWindow.boundaryOrders.after.createdAt],
+  ] as const;
+  for (const [id, key, createdAt] of reportBoundaryOrders) {
+    await query(
+      client,
+      `INSERT INTO mfg_production_orders
+        (id, order_number, battery_number, product_id, factory_manager,
+         current_stage, status, priority, planned_start_date, planned_end_date, notes, created_at)
+       VALUES ($1, $2, $3, $4, $5, NULL, 'completed'::mfg_order_status,
+               'medium', $6, $7, $8, $9)`,
+      [
+        id,
+        orderNumber(key),
+        batteryNumber(key),
+        FAT_IDS.masters.model,
+        "FAT E2E Report Boundary",
+        DATE,
+        DATE,
+        `${FAT_PREFIX} production report boundary ${key}`,
+        createdAt,
+      ],
     );
   }
   await query(
@@ -1029,6 +1057,9 @@ async function collectManifest(client: SqlClient): Promise<Record<string, unknow
     chargerRaceOne: FAT_IDS.orders.raceOne,
     chargerRaceTwo: FAT_IDS.orders.raceTwo,
     completionBoundaryOrder: FAT_IDS.orders.completion,
+    reportBeforeOrder: FAT_IDS.orders.reportBefore,
+    reportInsideOrder: FAT_IDS.orders.reportInside,
+    reportAfterOrder: FAT_IDS.orders.reportAfter,
     traceabilityProduct: FAT_IDS.products.dispatched,
     readyForPackingProduct: FAT_IDS.products.readyForPacking,
     nonPackableProduct: FAT_IDS.products.nonPackable,

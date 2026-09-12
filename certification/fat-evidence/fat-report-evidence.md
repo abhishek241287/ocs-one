@@ -1,12 +1,12 @@
 # FAT Journey Evidence
 
-- Run: 2026-09-08T15:55:05.189Z
+- Run: 2026-09-12T03:08:27.801Z
 - Environment: http://localhost:8080
 - Dataset: FAT-E2E-
 - Frozen tag: FAT-CANDIDATE-2026-09-08
 - Frozen commit: 60564b1b49b76ce0b97e46d1de65a7325ef50ba7
 - Password evidence: omitted; supplied only through FAT_TEST_PASSWORD
-- Result: 60 PASS / 0 FAIL
+- Result: 62 PASS / 0 FAIL
 
 | Case | Area | Role | Method | Path | Status | Result |
 |---|---|---|---|---|---:|---|
@@ -54,6 +54,8 @@
 | RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/inventory` | 0 | **PASS** |
 | RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/production` | 0 | **PASS** |
 | RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/production` | 0 | **PASS** |
+| RPT-P03 | reports-reconciliation | director | GET | `/api/reports/production?from=2026-09-08T00%3A00%3A00.000Z&to=2026-09-08T23%3A59%3A59.999Z` | 200 | **PASS** |
+| RPT-P03 | reports-reconciliation | director | ASSERT | `/api/reports/production?from=2026-09-08T00%3A00%3A00.000Z&to=2026-09-08T23%3A59%3A59.999Z` | 0 | **PASS** |
 | RPT-P02 | reports-reconciliation | director | ASSERT | `/api/dashboard/director` | 0 | **PASS** |
 | RPT-P02 | reports-reconciliation | director | ASSERT | `/api/dashboard/director` | 0 | **PASS** |
 | RPT-P02 | reports-reconciliation | director | ASSERT | `/api/dashboard/director` | 0 | **PASS** |

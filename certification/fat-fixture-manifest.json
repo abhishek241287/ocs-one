@@ -3,7 +3,7 @@
   "namespace": "FAT-E2E-",
   "frozenTag": "FAT-CANDIDATE-2026-09-08",
   "frozenCommit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7",
-  "generatedAt": "2026-09-08T15:54:42.049Z",
+  "generatedAt": "2026-09-12T03:08:22.165Z",
   "passwordEvidence": "omitted; supplied only through FAT_TEST_PASSWORD",
   "manifestPath": "/home/runner/workspace/certification/fat-fixture-manifest.json",
   "ids": {
@@ -34,6 +34,9 @@
     "chargerRaceOne": "fa180000-0000-4000-8000-000000000004",
     "chargerRaceTwo": "fa180000-0000-4000-8000-000000000005",
     "completionBoundaryOrder": "fa180000-0000-4000-8000-000000000006",
+    "reportBeforeOrder": "fa180000-0000-4000-8000-000000000007",
+    "reportInsideOrder": "fa180000-0000-4000-8000-000000000008",
+    "reportAfterOrder": "fa180000-0000-4000-8000-000000000009",
     "traceabilityProduct": "fa190000-0000-4000-8000-000000000001",
     "readyForPackingProduct": "fa190000-0000-4000-8000-000000000002",
     "nonPackableProduct": "fa190000-0000-4000-8000-000000000003",
@@ -65,7 +68,7 @@
     "lots": 1,
     "cells": 64,
     "matches": 2,
-    "orders": 6,
+    "orders": 9,
     "chargers": 3,
     "products": 3,
     "dispatches": 1,
@@ -73,13 +76,127 @@
     "warranties": 1
   },
   "expectations": {
-    "namedRoles": 6,
-    "canonicalStagesPerOrder": 9,
-    "cellCount": 64,
-    "gradedAcceptableCells": 60,
-    "approvedBomLines": 2,
-    "chargerRaceOrders": 2,
-    "downstreamTraceabilityAnchor": true,
-    "existingQaFatNamespaceUntouched": true
+    "datasetDate": "2026-09-08",
+    "warrantyEndDate": "2031-09-08",
+    "roles": [
+      "owner",
+      "director",
+      "supervisor",
+      "operator",
+      "viewer",
+      "dealer"
+    ],
+    "roleNames": {
+      "owner": "FAT E2E Owner",
+      "director": "FAT E2E Director",
+      "supervisor": "FAT E2E Supervisor",
+      "operator": "FAT E2E Operator",
+      "viewer": "FAT E2E Viewer",
+      "dealer": "FAT E2E Dealer"
+    },
+    "stages": {
+      "canonical": [
+        "cell_allocation",
+        "assembly",
+        "compression",
+        "bms_allocation",
+        "bms_programming",
+        "charging",
+        "testing",
+        "quality_control",
+        "packing"
+      ],
+      "perOrder": 9,
+      "orderCount": 6
+    },
+    "ledger": {
+      "cellAvailableUnits": 64,
+      "bmsReceivedUnits": 2,
+      "bmsAvailableUnits": 1,
+      "transactionCount": 12,
+      "grnLines": 2,
+      "inspectionCount": 1,
+      "inspectionLines": 2,
+      "transferCount": 1
+    },
+    "cells": {
+      "total": 64,
+      "acceptable": 60,
+      "rejected": 4,
+      "gradeACount": 48,
+      "allocated": 16,
+      "matchCount": 2,
+      "matchItems": 16,
+      "lotEventCount": 2,
+      "correctionAnchorCount": 2
+    },
+    "genealogy": {
+      "cleanOrderRows": 5,
+      "completionOrderRows": 1,
+      "productRows": 5,
+      "productEventCount": 3
+    },
+    "fulfillment": {
+      "dealerSnapshot": {
+        "code": "FAT-E2E-DLR-A",
+        "name": "FAT E2E Dealer Alpha",
+        "address": "1 FAT E2E Industrial Estate, Bengaluru",
+        "gst": "29FATE2E0001Z5",
+        "contact": "FAT Dealer Desk",
+        "mobile": "9000000001"
+      },
+      "customerName": "FAT E2E Customer",
+      "dispatchItemCount": 1,
+      "warrantyPeriodMonths": 60
+    },
+    "concurrency": {
+      "chargerReadyCount": 1,
+      "raceOrderCount": 2,
+      "pendingMatchCount": 1,
+      "pendingMatchItems": 16
+    },
+    "reports": {
+      "productionDateWindow": {
+        "from": "2026-09-08T00:00:00.000Z",
+        "to": "2026-09-08T23:59:59.999Z",
+        "boundaryOrders": {
+          "before": {
+            "id": "fa180000-0000-4000-8000-000000000007",
+            "createdAt": "2026-09-07T23:59:59.999Z"
+          },
+          "inside": {
+            "id": "fa180000-0000-4000-8000-000000000008",
+            "createdAt": "2026-09-08T12:00:00.000Z"
+          },
+          "after": {
+            "id": "fa180000-0000-4000-8000-000000000009",
+            "createdAt": "2026-09-09T00:00:00.000Z"
+          }
+        }
+      }
+    },
+    "states": {
+      "bom": "approved",
+      "grn": "posted",
+      "allocatedMatch": "allocated",
+      "pendingMatch": "draft",
+      "cleanOrder": "completed",
+      "raceOrder": "in_progress",
+      "raceStage": "charging"
+    },
+    "verification": {
+      "recordCounts": {
+        "users": 6,
+        "masters": 1,
+        "materials": 2,
+        "bomLines": 2,
+        "grnLines": 2,
+        "inventoryTransactions": 12,
+        "cells": 64,
+        "stages": 54,
+        "genealogyRows": 5,
+        "traceEvents": 3
+      }
+    }
   }
 }
