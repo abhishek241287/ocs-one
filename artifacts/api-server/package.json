@@ -13,6 +13,7 @@
     "test:session": "tsx src/cert/session-suite.ts",
     "test:task35-transfer-domain": "tsx src/cert/task35-transfer-domain-suite.ts",
     "test:inv-p04-evidence-harness-schema": "tsx src/cert/inv-p04-evidence-harness-schema-regression.ts",
+    "test:reports-response-shape": "tsx src/cert/reports-response-shape-contract.ts",
     "test:config": "tsx src/cert/config-suite.ts",
     "cert:fat:seed": "tsx src/cert/fat-seed.ts --action=seed",
     "cert:fat:verify": "tsx src/cert/fat-seed.ts --action=verify",
