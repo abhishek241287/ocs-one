@@ -15,6 +15,7 @@
     "test:inv-p04-evidence-harness-schema": "tsx src/cert/inv-p04-evidence-harness-schema-regression.ts",
     "test:reports-response-shape": "tsx src/cert/reports-response-shape-contract.ts",
     "test:task32-bom-obsoletion": "tsx src/cert/task32-bom-obsoletion-suite.ts",
+    "test:task54-bom-use-obsoletion": "tsx src/cert/task54-bom-use-obsoletion-concurrency-suite.ts",
     "test:config": "tsx src/cert/config-suite.ts",
     "cert:fat:seed": "tsx src/cert/fat-seed.ts --action=seed",
     "cert:fat:verify": "tsx src/cert/fat-seed.ts --action=verify",

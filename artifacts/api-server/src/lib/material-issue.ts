@@ -80,8 +80,9 @@ export interface ResolvedBom {
 export async function resolveApprovedBomRequirements(
   exec: Executor,
   modelId: string,
+  options: { lockBomHeader?: boolean } = {},
 ): Promise<ResolvedBom | null> {
-  const [bom] = await exec
+  const bomQuery = exec
     .select({
       id: bomHeadersTable.id,
       bomNumber: bomHeadersTable.bomNumber,
@@ -91,7 +92,10 @@ export async function resolveApprovedBomRequirements(
     .from(bomHeadersTable)
     .where(and(eq(bomHeadersTable.modelId, modelId), eq(bomHeadersTable.status, "approved")))
     .orderBy(desc(bomHeadersTable.revision))
-    .limit(1);
+      .limit(1);
+  const [bom] = options.lockBomHeader
+    ? await bomQuery.for("update")
+    : await bomQuery;
   if (!bom) return null;
 
   const lines = await exec
@@ -397,7 +401,10 @@ export async function issueMaterials(args: IssueMaterialsArgs): Promise<IssueOut
     (args.confirmations ?? []).map((c) => [c.sourceBomLineId, c]),
   );
 
-  const bom = await resolveApprovedBomRequirements(tx, modelId);
+  // Obsoletion locks the same BOM header row before checking material_issue_notes.
+  // Lock the selected approved BOM before resolving requirements so the full
+  // material-use transaction serializes with that lifecycle transition.
+  const bom = await resolveApprovedBomRequirements(tx, modelId, { lockBomHeader: true });
   if (!bom) return { status: "no_bom" };
   if (bom.requirements.length === 0) return { status: "no_requirements" };
 

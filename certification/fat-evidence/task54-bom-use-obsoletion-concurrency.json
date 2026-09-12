@@ -1,0 +1,109 @@
+{
+  "metadata": {
+    "case_id": "TASK-54",
+    "assertion": "BOM use and obsoletion serialize on the BOM lifecycle lock",
+    "generated_at": "2026-09-12T05:37:30.351Z",
+    "tested_revision": "a660c0ab25834c23552bd4eab30208a5705f117e",
+    "target": "http://localhost:8080",
+    "result": "PASS",
+    "failure": null
+  },
+  "sequential_mas_n04": {
+    "result": "NOT_EXECUTED_HERE",
+    "preserved_by_existing_regression": "test:task32-bom-obsoletion"
+  },
+  "race_orderings": {
+    "case_a_material_use_first": {
+      "ordering": "material_use_first",
+      "firstOperation": "material_issue",
+      "secondOperation": "obsolete",
+      "materialIssue": {
+        "status": 201,
+        "id": "ca8909fa-e00e-4aa3-ac1b-a2d9124f4122",
+        "error": null
+      },
+      "obsoletion": {
+        "status": 422,
+        "bomStatus": null,
+        "error": "BOMs used by production cannot be made obsolete"
+      },
+      "finalState": {
+        "bomStatus": "approved",
+        "materialIssueCount": 1,
+        "materialIssueLineCount": 1,
+        "inventoryMovementCount": 1,
+        "materialIssueTimelineCount": 1,
+        "minIds": [
+          "ca8909fa-e00e-4aa3-ac1b-a2d9124f4122"
+        ]
+      },
+      "assertions": {
+        "material_use_committed": true,
+        "obsoletion_rejected_as_used": true,
+        "bom_remained_approved": true,
+        "exactly_one_material_issue": true,
+        "exactly_one_material_issue_line": true,
+        "exactly_one_inventory_movement": true,
+        "exactly_one_material_issue_timeline": true,
+        "transaction_atomicity": true,
+        "forbidden_state_absent": true,
+        "cleanup_succeeded": true
+      },
+      "exactOutcome": true,
+      "forbiddenState": false,
+      "cleanup": {
+        "ok": true,
+        "error": null
+      }
+    },
+    "case_b_obsoletion_first": {
+      "ordering": "obsoletion_first",
+      "firstOperation": "obsolete",
+      "secondOperation": "material_issue",
+      "materialIssue": {
+        "status": 404,
+        "id": null,
+        "error": "No approved BOM for this order's model"
+      },
+      "obsoletion": {
+        "status": 200,
+        "bomStatus": "obsolete",
+        "error": null
+      },
+      "finalState": {
+        "bomStatus": "obsolete",
+        "materialIssueCount": 0,
+        "materialIssueLineCount": 0,
+        "inventoryMovementCount": 0,
+        "materialIssueTimelineCount": 0,
+        "minIds": []
+      },
+      "assertions": {
+        "obsoletion_committed": true,
+        "material_use_rejected": true,
+        "bom_is_obsolete": true,
+        "no_material_issue": true,
+        "no_material_issue_lines": true,
+        "no_inventory_movement": true,
+        "no_material_issue_timeline": true,
+        "transaction_atomicity": true,
+        "forbidden_state_absent": true,
+        "cleanup_succeeded": true
+      },
+      "exactOutcome": true,
+      "forbiddenState": false,
+      "cleanup": {
+        "ok": true,
+        "error": null
+      }
+    }
+  },
+  "protection": {
+    "forbidden_state": "bom_headers.status = obsolete AND material_issue_notes.bom_header_id = that BOM",
+    "prevented": true
+  },
+  "cleanup": {
+    "temporary_stock_setup_id": "f441ab34-711c-4bd0-92f6-69cc401db26f",
+    "result": "PASS"
+  }
+}
