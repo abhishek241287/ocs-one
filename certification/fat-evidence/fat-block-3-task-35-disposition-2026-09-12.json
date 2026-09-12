@@ -1,0 +1,98 @@
+{
+  "record_type": "Formal Block 3 / Task #35 disposition",
+  "record_status": "PENDING_AUTHORIZED_APPROVAL",
+  "recorded_at": "2026-09-12T09:04:52Z",
+  "candidate_revision": {
+    "commit": "ea99cec1e958b0f2e9f727b57c7904993cd6c34b",
+    "tag": null,
+    "official_release_candidate": false,
+    "descendant_of_corrected_candidate": true,
+    "corrected_candidate_commit": "de8fc816a1ab198d3032eea1cd3d51d10ef20b58"
+  },
+  "scope": {
+    "decision_scope": "INV-P04 / Task #35 only",
+    "block_context": "Block 3 procurement, GRN, incoming inspection, and inventory",
+    "included_basis": [
+      "historical frozen Block 3 evidence for the unchanged cases",
+      "approved Option A architecture decision",
+      "corrected de8fc816 engineering retest",
+      "current-revision Task #35 controlled retest"
+    ],
+    "not_executed": [
+      "full FAT",
+      "unrelated blocks",
+      "release-candidate tagging"
+    ]
+  },
+  "corrected_inv_p04_evidence": {
+    "historical_corrected_evidence_identifier": "fat-block-3-inv-p04-retest-corrected-candidate-de8fc816-2026-09-12.json",
+    "current_revision_evidence_identifier": "fat-block-3-inv-p04-retest-current-ea99cec1-2026-09-12.json",
+    "current_result": "RETEST PASS",
+    "current_evidence_summary": {
+      "source_movement": -3,
+      "source_balance": 5,
+      "transfer_count": 1,
+      "transfer_quantity": 3,
+      "linked_cell_lot_count": 1,
+      "cell_lot_quantity": 3,
+      "generated_cell_count": 3,
+      "supplier_lot_traceability": true,
+      "duplicate_groups": 0,
+      "orphan_records": 0,
+      "destination_reconciliation": "reconciled"
+    }
+  },
+  "option_a_contract": {
+    "decision_document": "docs/architecture/task-35-transfer-destination-ledger-decision.md",
+    "status": "Approved for development implementation",
+    "invariant": "transfer.quantity = cell_lot.quantity_received = generated cell count",
+    "source_authority": "Signed inventory ledger remains the Store/material source authority.",
+    "destination_authority": "Transfer, linked cell lot, generated cells, timeline, supplier-lot traceability, and downstream cell-domain links represent Cell Processing.",
+    "required_integrity": [
+      "one negative source movement",
+      "correct remaining source balance",
+      "one material transfer",
+      "one linked cell lot",
+      "generated cells equal transfer quantity",
+      "supplier-lot traceability",
+      "zero duplicate groups",
+      "zero orphan records",
+      "destination reconciliation"
+    ]
+  },
+  "historical_failure": {
+    "evidence_file": "certification/fat-evidence/fat-block-3-procurement-grn-inventory.json",
+    "frozen_candidate_tag": "FAT-CANDIDATE-2026-09-08",
+    "frozen_candidate_commit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7",
+    "status": "Historical FAIL preserved; it is not relabeled or overwritten.",
+    "failure_description": "The frozen implementation recorded the -3 source movement but did not satisfy the then-approved requirement for a positive destination ledger movement."
+  },
+  "acceptance_decision": {
+    "recommendation": "ACCEPT INV-P04 under the amended Option A contract for governance review.",
+    "formal_block_3_status": "NOT YET ACCEPTED",
+    "basis": "The current revision has a passing controlled Task #35 retest, and the prior frozen failure remains preserved as historical evidence.",
+    "additional_inv_p04_retesting_required": false,
+    "additional_block3_wide_or_release_validation": "Not covered by this record; no full FAT or unrelated block execution was performed."
+  },
+  "approval": {
+    "status": "PENDING",
+    "approver": null,
+    "governance_authority": null,
+    "reason": "No authorized approver or governance authority was identifiable from the repository or current task metadata; none is invented here.",
+    "required_action": "An authorized governance approver must review the Option A contract, preserved historical failure, and both corrected retest records, then record approval or rejection."
+  },
+  "limitations": [
+    "The current revision is not an official release candidate.",
+    "The current controlled retest is isolated to INV-P04 / Task #35.",
+    "The historical Block 3 evidence was not edited or rerun.",
+    "No full FAT was executed.",
+    "This record does not declare final release readiness."
+  ],
+  "historical_protection": {
+    "original_frozen_failure_preserved": true,
+    "frozen_block3_evidence_preserved": true,
+    "corrected_de8_evidence_preserved": true,
+    "historical_evidence_modified": false
+  },
+  "next_action": "Obtain the authorized governance approval for this disposition. Do not tag or declare release readiness from this record alone."
+}

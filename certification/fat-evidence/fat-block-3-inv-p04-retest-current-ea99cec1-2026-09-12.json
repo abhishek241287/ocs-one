@@ -1,0 +1,125 @@
+{
+  "case_id": "INV-P04",
+  "task": "Task #35",
+  "result": "RETEST PASS",
+  "retest_type": "controlled current-revision Task #35 regression",
+  "executed_at": "2026-09-12T09:04:52Z",
+  "candidate": {
+    "commit": "ea99cec1e958b0f2e9f727b57c7904993cd6c34b",
+    "tag": null,
+    "is_official_release_candidate": false,
+    "ancestry_contains_corrected_candidate": "de8fc816a1ab198d3032eea1cd3d51d10ef20b58",
+    "current_route_changes_after_corrected_candidate": "The later descendant adds the read-time destination_audit projection and current regression assertions; the core single-negative transfer creation model remains unchanged."
+  },
+  "scope": {
+    "included": [
+      "Task #35 transfer-domain regression",
+      "INV-P04 corrected Option A contract",
+      "current transfer response and detail destination_audit projection",
+      "current stock, provenance, transfer-picker, and cell-inventory projections",
+      "scoped fixture cleanup"
+    ],
+    "excluded": [
+      "Task #42",
+      "full FAT",
+      "unrelated FAT blocks",
+      "release tagging"
+    ]
+  },
+  "architecture": {
+    "option": "A",
+    "decision_file": "docs/architecture/task-35-transfer-destination-ledger-decision.md",
+    "status": "Approved for development implementation; formal FAT acceptance remains a separate governance decision.",
+    "contract": {
+      "source_ledger_movement": "Exactly one signed negative movement of -transfer.quantity from the available source balance.",
+      "destination_authority": "One material transfer, one linked cell lot, and generated cell records in the Cell Processing domain.",
+      "reconciliation": "transfer.quantity = cell_lot.quantity_received = generated cell count",
+      "source_balance": "The source available balance remains the signed source-line balance after the negative transfer movement; for this fixture, 8 - 3 = 5.",
+      "no_naive_positive_row": true
+    }
+  },
+  "fixture": {
+    "prefix": "TASK35-MTY5RTAO-9E82",
+    "transfer_id": "3f789f29-0b2a-492d-ab1a-81daf30b4405",
+    "cell_lot_id": "21bb4a18-5864-4282-88b1-b77ed0a2442e",
+    "supplier_lot_number": "TASK35-MTY5RTAO-9E82-SUPPLIER-LOT",
+    "isolated": true,
+    "used_frozen_fat_fixture": false
+  },
+  "results": {
+    "source_movement_quantity": -3,
+    "source_available_balance": 5,
+    "material_transfer_count": 1,
+    "material_transfer_quantity": 3,
+    "linked_cell_lot_count": 1,
+    "cell_lot_quantity_received": 3,
+    "generated_cell_count": 3,
+    "supplier_lot_traceability": true,
+    "duplicate_inventory_groups": 0,
+    "orphan_inventory_rows": 0,
+    "destination_reconciliation": {
+      "transfer_quantity": 3,
+      "cell_lot_quantity": 3,
+      "generated_cell_count": 3,
+      "status": "reconciled"
+    },
+    "route_projections": {
+      "stock_available": 5,
+      "provenance_remaining_available": 5,
+      "transfer_picker_available": 5,
+      "cell_inventory_report_rows": 3,
+      "transfer_create_destination_audit": "reconciled",
+      "transfer_detail_destination_audit": "reconciled"
+    }
+  },
+  "cleanup": {
+    "result": "PASS",
+    "post_cleanup_residual_check": "PASS",
+    "residuals": {
+      "users": 0,
+      "suppliers": 0,
+      "categories": 0,
+      "cell_masters": 0,
+      "materials": 0,
+      "grns": 0,
+      "grn_lines": 0,
+      "inspections": 0,
+      "inspection_lines": 0,
+      "transfers": 0,
+      "inventory_rows": 0,
+      "lots": 0,
+      "cells": 0,
+      "cell_lot_events": 0,
+      "security_events": 0
+    }
+  },
+  "historical_evidence_protection": {
+    "original_frozen_inv_p04_failure": {
+      "file": "certification/fat-evidence/fat-block-3-procurement-grn-inventory.json",
+      "result": "FAIL under the frozen pre-Option-A contract",
+      "frozen_commit": "60564b1b49b76ce0b97e46d1de65a7325ef50ba7",
+      "sha256_after_retest": "59fcdcb8abcfaf6563dd492622c40eba48f5a92cbc4c8bc46957861ced02b7af",
+      "preserved": true
+    },
+    "corrected_de8_retest": {
+      "file": "certification/fat-evidence/fat-block-3-inv-p04-retest-corrected-candidate-de8fc816-2026-09-12.json",
+      "target_commit": "de8fc816a1ab198d3032eea1cd3d51d10ef20b58",
+      "result": "RETEST PASS",
+      "sha256_after_current_retest": "7dbea0a06a135571239245803bce4905bc77fae44758f76e14266b38bf4972187",
+      "preserved": true
+    },
+    "frozen_block_3_summary": {
+      "file": "certification/fat-evidence/fat-block-3-procurement-grn-inventory.md",
+      "sha256_after_current_retest": "faccd76fb22021cc07d9bab59b9afa90232629526d7164589268a68a0f221815",
+      "preserved": true
+    }
+  },
+  "retest_decision": {
+    "old_corrected_evidence_reusable": "Yes, as engineering evidence for the core Option A transfer behavior at de8fc816; no, not alone as current-revision evidence because the descendant added the destination_audit projection.",
+    "current_revision_retest_required": true,
+    "current_revision_retest_completed": true,
+    "revision_equivalence_waiver_required": false,
+    "additional_inv_p04_retest_required": false,
+    "additional_inv_p04_retest_condition": "Required only if the relevant implementation changes again."
+  }
+}
