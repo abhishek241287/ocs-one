@@ -1,9 +1,9 @@
 {
   "record_type": "Formal Block 3 / Task #35 disposition",
-  "record_status": "PENDING_AUTHORIZED_APPROVAL",
+  "record_status": "APPROVED_BLOCK_3_RELEASE_NOT_READY",
   "recorded_at": "2026-09-12T09:04:52Z",
   "finalization_revision": {
-    "current_head": "c08408082daf332baf86f5cefc0716b0bcf1ead4",
+    "current_head": "da18e644826235e17c5baecd3bcc54975d0eaac5",
     "technical_retest_revision": "ea99cec1e958b0f2e9f727b57c7904993cd6c34b",
     "current_head_is_descendant_of_technical_retest": true,
     "implementation_schema_workflow_changes_since_retest": false,
@@ -13,12 +13,15 @@
     "commit": "ea99cec1e958b0f2e9f727b57c7904993cd6c34b",
     "tag": null,
     "official_release_candidate": false,
+    "governance_selected_candidate": true,
+    "selection_status": "SELECTED_FOR_RELEASE_REVIEW_NOT_TAGGED",
     "descendant_of_corrected_candidate": true,
     "corrected_candidate_commit": "de8fc816a1ab198d3032eea1cd3d51d10ef20b58"
   },
   "scope": {
     "decision_scope": "INV-P04 / Task #35 only",
     "block_context": "Block 3 procurement, GRN, incoming inspection, and inventory",
+    "release_scope": "Battery Factory Pilot",
     "included_basis": [
       "historical frozen Block 3 evidence for the unchanged cases",
       "approved Option A architecture decision",
@@ -75,27 +78,39 @@
     "failure_description": "The frozen implementation recorded the -3 source movement but did not satisfy the then-approved requirement for a positive destination ledger movement."
   },
   "acceptance_decision": {
-    "recommendation": "ACCEPT INV-P04 under the amended Option A contract for governance review.",
-    "formal_block_3_status": "NOT YET ACCEPTED",
+    "recommendation": "APPROVE INV-P04 under the amended Option A contract.",
+    "formal_block_3_status": "ACCEPTED",
     "basis": "The current revision has a passing controlled Task #35 retest, and the prior frozen failure remains preserved as historical evidence.",
     "additional_inv_p04_retesting_required": false,
     "additional_block3_wide_or_release_validation": "Not covered by this record; no full FAT or unrelated block execution was performed."
   },
   "approval": {
-    "status": "PENDING",
+    "status": "APPROVED",
     "required_approving_authority": "Authorized Block 3/FAT governance approver",
-    "approver": null,
-    "governance_authority": null,
-    "approval_date": null,
-    "final_decision": null,
-    "reason": "No authorized approver or governance authority was identifiable from the repository or current task metadata; none is invented here.",
-    "required_action": "An authorized governance approver must review the Option A contract, preserved historical failure, and both corrected retest records, then record approval or rejection."
+    "approver": "Abhishek",
+    "governance_authority": "Dir",
+    "approval_date": "2026-09-12",
+    "final_decision": "APPROVED_BLOCK_3_BATTERY_FACTORY_PILOT_NOT_READY",
+    "approved_basis": [
+      "amended Option A contract accepted",
+      "current Task #35 retest on ea99cec1e958b0f2e9f727b57c7904993cd6c34b accepted",
+      "revision-specific evidence carry-forward accepted",
+      "historical frozen INV-P04 failure accepted as immutable historical evidence",
+      "Task #42 evidence on a5e058c97e20734c1e3c0980c812eabf5c121be5 accepted as revision-specific carry-forward evidence",
+      "DATA-P01 reset evidence accepted"
+    ],
+    "final_release_decision": "NOT_READY",
+    "security_report_disposition": "REQUIRES_FURTHER_REVIEW",
+    "required_action": "Reconcile the historical security report and complete the remaining release-readiness governance before any release-candidate tag is created."
   },
   "limitations": [
     "The current revision is not an official release candidate.",
+    "The selected ea99cec revision is not tagged and is not authorized for release-candidate tagging.",
     "The current controlled retest is isolated to INV-P04 / Task #35.",
     "The historical Block 3 evidence was not edited or rerun.",
     "No full FAT was executed.",
+    "The final release decision is NOT READY.",
+    "The historical security report requires further review.",
     "This record does not declare final release readiness."
   ],
   "historical_protection": {
@@ -104,5 +119,13 @@
     "corrected_de8_evidence_preserved": true,
     "historical_evidence_modified": false
   },
-  "next_action": "Obtain the authorized governance approval for this disposition. Do not tag or declare release readiness from this record alone."
+  "evidence_carry_forward": {
+    "decision": "ACCEPT_CARRY_FORWARD",
+    "task35_revision": "ea99cec1e958b0f2e9f727b57c7904993cd6c34b",
+    "task42_revision": "a5e058c97e20734c1e3c0980c812eabf5c121be5",
+    "corrected_inv_p04_revision": "de8fc816a1ab198d3032eea1cd3d51d10ef20b58",
+    "data_p01_evidence": "certification/fat-evidence/fat-data-p01-reset-2026-09-12.json",
+    "provenance_rule": "Carry forward as revision-specific evidence; do not present as one historical full-FAT execution."
+  },
+  "next_action": "Review and disposition security_report.md, then complete remaining release-readiness governance. Do not tag or declare release readiness until the final release decision changes from NOT_READY."
 }
