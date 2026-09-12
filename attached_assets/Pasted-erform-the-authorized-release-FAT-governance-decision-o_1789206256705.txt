@@ -1,0 +1,28 @@
+erform the authorized release/FAT governance decision only.
+Do not run tests, APIs, database commands, migrations, resets, workflows, retests, or implementation changes. Do not create a tag yet.
+Using only the existing governance records, FAT master plan, readiness records, defect records, Block 3 disposition, and existing revision-specific evidence:
+Review and make the formal Block 3 decision under the approved Option A contract.
+Confirm that the historical frozen INV-P04 failure on 60564b1b49b76ce0b97e46d1de65a7325ef50ba7 remains immutable historical evidence and is not being relabeled.
+Review the current Task #35 retest on ea99cec1e958b0f2e9f727b57c7904993cd6c34b and Task #42 evidence on a5e058c97e20734c1e3c0980c812eabf5c121be5, and determine whether they can be carried forward as revision-specific evidence.
+Reconcile the evidence-only descendant da18e644826235e17c5baecd3bcc54975d0eaac5 and the stale current_head pointer in the Block 3 disposition record.
+Determine the intended release scope from the existing records. If the records do not authorize choosing between battery factory pilot and full commercial deployment, do not guess—state that governance must explicitly choose.
+Determine whether the existing evidence is sufficient for the selected release scope, distinguishing:
+technically passed;
+historically evidenced;
+governance-approved;
+still incomplete.
+Explicitly identify the single revision that should become the release candidate, but only if the existing governance records provide sufficient authority to select it. Otherwise, state exactly what decision is still required.
+Update only the non-historical governance/disposition record if an authorized decision has actually been made. Do not modify historical evidence or implementation files.
+Do not create a release tag.
+Do not claim FAT sign-off unless every required governance condition is actually satisfied.
+At the end, provide:
+A. Block 3 decision: APPROVED / REJECTED / PENDING AUTHORIZATION
+B. Release scope: Battery Pilot / Full Commercial / PENDING
+C. Selected release candidate: exact commit or PENDING
+D. Evidence carry-forward decision: accepted / rejected / conditional
+E. Six FAT exit criteria: PASS / FAIL / INCOMPLETE for each
+F. Remaining production blockers: distinguish demonstrated defects from scope-dependent commercial gaps
+G. Remaining FAT/governance blockers
+H. Whether a release-candidate tag is now authorized: YES / NO
+I. Exact next prompt/action required
+Important boundary: If authorized approval is not actually available in the repository/task records, do not fabricate an approver, approval date, release scope, or final decision. In that case, leave the disposition pending and tell me exactly what must be supplied by release governance.
