@@ -312,6 +312,74 @@ async function main(): Promise<void> {
       assert(lot.response.status === 200 && lot.body.data.status === "rejected", "Rejected lot did not receive rejected status");
     });
 
+    await run("CONC-02 repeated inspection is cumulative and then idempotently blocked", async () => {
+      const draft = await request("/api/inventory/grns", fixture.supervisorCookie, {
+        method: "POST",
+        body: JSON.stringify({
+          supplier_id: fixture.supplierId,
+          received_date: "2026-09-12",
+          lines: [{ material_id: fixture.materialId, quantity_received: 10 }],
+        }),
+      });
+      assert(draft.response.status === 201, "Repeated-inspection GRN draft was not created");
+      const posted = await request(`/api/inventory/grns/${draft.body.id}/post`, fixture.supervisorCookie, { method: "POST" });
+      assert(posted.response.status === 200, "Repeated-inspection GRN did not post");
+      const lineId = posted.body.lines[0].id;
+
+      const first = await request(`/api/inventory/grns/${draft.body.id}/inspect`, fixture.supervisorCookie, {
+        method: "POST",
+        body: JSON.stringify({ lines: [{ grn_line_id: lineId, accepted_qty: 5, rejected_qty: 0 }] }),
+      });
+      const second = await request(`/api/inventory/grns/${draft.body.id}/inspect`, fixture.supervisorCookie, {
+        method: "POST",
+        body: JSON.stringify({ lines: [{ grn_line_id: lineId, accepted_qty: 5, rejected_qty: 0 }] }),
+      });
+      assert(first.response.status === 201 && second.response.status === 201, "Repeated inspection events were not accepted");
+
+      const eventCount = await client.query(
+        `SELECT COUNT(*)::int AS count
+         FROM incoming_inspection_lines
+         WHERE grn_line_id = $1`,
+        [lineId],
+      );
+      assert(eventCount.rows[0].count === 2, "Repeated inspection did not create two line events");
+
+      const duplicate = await request(`/api/inventory/grns/${draft.body.id}/inspect`, fixture.supervisorCookie, {
+        method: "POST",
+        body: JSON.stringify({ lines: [{ grn_line_id: lineId, accepted_qty: 1, rejected_qty: 0 }] }),
+      });
+      assert(duplicate.response.status === 422, "Completed-line reinspection was not blocked");
+      const afterCount = await client.query(
+        `SELECT COUNT(*)::int AS count
+         FROM incoming_inspection_lines
+         WHERE grn_line_id = $1`,
+        [lineId],
+      );
+      assert(afterCount.rows[0].count === 2, "Blocked reinspection changed inspection history");
+    });
+
+    await run("CONC-03 repeated GRN posting does not create a duplicate lot", async () => {
+      const draft = await request("/api/inventory/grns", fixture.supervisorCookie, {
+        method: "POST",
+        body: JSON.stringify({
+          supplier_id: fixture.supplierId,
+          received_date: "2026-09-12",
+          lines: [{ material_id: fixture.materialId, quantity_received: 7 }],
+        }),
+      });
+      assert(draft.response.status === 201, "Duplicate-post GRN draft was not created");
+      const firstPost = await request(`/api/inventory/grns/${draft.body.id}/post`, fixture.supervisorCookie, { method: "POST" });
+      const secondPost = await request(`/api/inventory/grns/${draft.body.id}/post`, fixture.supervisorCookie, { method: "POST" });
+      assert(firstPost.response.status === 200 && secondPost.response.status === 409, "Repeated GRN post did not return the expected conflict");
+      const lotCount = await client.query(
+        `SELECT COUNT(*)::int AS count
+         FROM inventory_lots
+         WHERE grn_line_id = $1`,
+        [firstPost.body.lines[0].id],
+      );
+      assert(lotCount.rows[0].count === 1, "Repeated GRN post created a duplicate lot");
+    });
+
     console.log(JSON.stringify({ result: "PASS", cases: passed, fixture_prefix: fixture.prefix }, null, 2));
   } finally {
     await client.query("ROLLBACK").catch(() => undefined);
