@@ -429,7 +429,7 @@ router.post("/:id/allocate", async (req: Request, res: Response): Promise<void> 
       need -= take;
     }
 
-    if (need > 0 && !body.allow_partial) {
+    if (allocations.length === 0 || (need > 0 && !body.allow_partial)) {
       return { status: "insufficient" as const, unallocated: need };
     }
 
