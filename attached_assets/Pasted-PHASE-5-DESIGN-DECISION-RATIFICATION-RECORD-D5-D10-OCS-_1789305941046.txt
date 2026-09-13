@@ -1,0 +1,123 @@
+PHASE 5 — DESIGN DECISION RATIFICATION RECORD (D5–D10)
+
+OCS One · 2026-09-13 · Architect + Owner sign-off. This record MUST exist in the
+
+repo evidence area before 70-G coding (certification/fat-evidence/ or the durable
+
+memory area — Replit to place alongside prior phase records).
+
+Status: ALL RATIFIED AS PROPOSED. Governing rules below are HARD architectural
+
+rules for every Phase 5 batch; deviations require explicit re-authorization.
+
+── D5 (ratified) — Return→Phase 4 issue bridge ───────────────────────────────
+
+return_documents gains wip_issue_note_id uuid NULL → FK wip_issue_notes.
+
+Legacy original_issue_id (→ material_issue_notes / MIN) untouched.
+
+Validation: wip_issue_note_id and original_issue_id are mutually exclusive.
+
+── D6 (ratified) — Return accounting ─────────────────────────────────────────
+
+Physical return = −qty stock_state 'wip' + qty stock_state 'available'
+
+(transactionType RETURN). The ledger 'returned' stock_state is RESERVED for
+
+future customer/supplier returns and is NOT written by this flow.
+
+Returns move physical WIP only — they NEVER restore reservation allocations,
+
+NEVER touch issued/allocated arithmetic (un-issue is reversal's job, 70-D).
+
+── D7 (ratified) — Scrap accounting ──────────────────────────────────────────
+
+Physical scrap = −qty 'wip' + qty 'scrapped' (transactionType SCRAP).
+
+'scrapped' is a distinct, visible stock state (zero value, never returns to
+
+available). Never restores reservation allocations.
+
+── D8 (ratified) — Physical adjustment flow ──────────────────────────────────
+
+Domain = inventory_adjustments ONLY. State machine preserved:
+
+draft → submitted → approved → posted | rejected. Approval is a GENUINE
+
+control point (Director only). Positive = ADJUSTMENT_IN, negative =
+
+ADJUSTMENT_OUT. The consumption /adjust endpoint REMAINS ANNOTATION-ONLY
+
+(INV-P5-06 proves it physically silent). Negative-stock protection required.
+
+── D9 (ratified) — Transfer lifecycle ────────────────────────────────────────
+
+Full lifecycle on transfer_requests / transfer_lines, mounted at
+
+/transfer-requests. Lifecycle: draft → approved → issued → in_transit →
+
+received → reconciled (+ cancelled pre-issue / rejected in-transit).
+
+Partial receiving supported. Issue: available → in_transit (TRANSFER_OUT);
+
+receive: in_transit → destination available (TRANSFER_IN). The existing
+
+Option A material_transfers implementation is NOT modified (not rewritten,
+
+not re-routed, not "merged").
+
+── D10 (ratified) — Authorization matrix ─────────────────────────────────────
+
+Create / Post / Reject / Cancel: Director + Supervisor. Approve: Director only.
+
+Read: all authenticated roles. Anonymous: 401. Unauthorized writes: 403.
+
+── GOVERNING RULES (hard scope boundaries for 70-G…70-J) ──────────────────────
+
+❌ Do not rewrite Phase 4 Issue/Consumption behavior.
+
+❌ Do not make consumption adjustment physical.
+
+❌ Do not change allocated_qty semantics (cumulative; INV-P4-05).
+
+❌ Do not use returns to "un-issue" reservations.
+
+❌ Do not rewrite Option A transfers.
+
+❌ No unnecessary enum/schema changes — Phase 0 schema already supports the
+
+states (zero enum changes required in this plan).
+
+❌ Do not hide or silently repair the FAT BMS −0.500 baseline exception.
+
+❌ Dev DB only · No agent commits · No 70-K certification claims before 70-K.
+
+── CONCURRENCY RULE (applies to every physical mutation) ─────────────────────
+
+Losing requests must produce ZERO physical mutation — not merely return 409.
+
+Race matrix to evidence per batch: return↔consumption, return↔scrap,
+
+scrap↔consumption, adjustment↔adjustment, adjustment↔transfer/issue (overlap),
+
+transfer↔issue/allocate, double post, double receive, duplicate/idempotent.
+
+── INVARIANT BASELINE ────────────────────────────────────────────────────────
+
+Every batch preserves: INV-RES-01…08 · INV-P4-01…05.
+
+Phase 5 adds: INV-P5-01 return reconciliation · INV-P5-02 scrap reconciliation
+
+· INV-P5-03 adjustment reconciliation · INV-P5-04 transfer conservation ·
+
+INV-P5-05 allocation arithmetic untouched · INV-P5-06 annotation wall.
+
+Definitions: phase5_gap_report.md §4.
+
+── EXECUTION SEQUENCE ────────────────────────────────────────────────────────
+
+70-G → regression → 70-H → regression → 70-I → regression → 70-J →
+
+regression → 70-K (single final gate; only 70-K grants the Phase 5 verdict).
+
+Evidence file per batch: certification/fat-evidence/task-70-{g,h,i,j}-.md.
