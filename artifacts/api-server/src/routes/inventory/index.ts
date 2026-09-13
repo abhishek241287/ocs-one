@@ -11,6 +11,7 @@ import wipIssuesRouter from "./wip-issues";
 import wipInventoryRouter from "./wip-inventory";
 import returnsRouter from "./returns";
 import scrapRouter from "./scrap";
+import adjustmentsRouter from "./adjustments";
 
 // Inventory Platform routes. Each sub-router carries its own RBAC guard and is mounted
 // at a distinct path, so guards never shadow one another.
@@ -29,5 +30,6 @@ router.use("/wip-issues", wipIssuesRouter);
 router.use("/wip-inventory", wipInventoryRouter);
 router.use("/returns", returnsRouter);
 router.use("/scrap", scrapRouter);
+router.use("/adjustments", adjustmentsRouter);
 
 export default router;

@@ -409,9 +409,9 @@ export const inventoryTransactionsTable = pgTable(
     actorId: uuid("actor_id"),
     actorName: varchar("actor_name", { length: 100 }),
     // Traceability back to the originating document + line (genealogy).
-    sourceDocumentType: varchar("source_document_type", { length: 16 }).notNull(),
+    sourceDocumentType: varchar("source_document_type", { length: 32 }).notNull(),
     sourceDocumentId: uuid("source_document_id").notNull(),
-    sourceLineId: uuid("source_line_id").notNull(),
+    sourceLineId: uuid("source_line_id"),
     createdBy: uuid("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

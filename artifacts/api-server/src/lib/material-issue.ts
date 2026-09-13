@@ -236,7 +236,9 @@ export async function suggestFifoLots(
         ),
       )
       .groupBy(inventoryTransactionsTable.sourceLineId);
-    for (const b of balances) balByLine.set(b.sourceLineId, Number(b.available));
+    for (const b of balances) {
+      if (b.sourceLineId) balByLine.set(b.sourceLineId, Number(b.available));
+    }
   }
 
   // First (oldest) line per material with a positive available balance.

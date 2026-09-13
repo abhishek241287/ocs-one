@@ -328,7 +328,9 @@ router.get("/:materialId/provenance", async (req: Request, res: Response): Promi
       )
       .groupBy(inventoryTransactionsTable.sourceLineId);
     for (const b of balances) {
-      availableByLine.set(b.source_line_id, Number(b.available));
+      if (b.source_line_id) {
+        availableByLine.set(b.source_line_id, Number(b.available));
+      }
     }
   }
 

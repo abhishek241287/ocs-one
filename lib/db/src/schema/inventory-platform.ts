@@ -339,6 +339,9 @@ export const inventoryAdjustmentsTable = pgTable(
     reason: varchar("reason", { length: 255 }).notNull(),
     notes: text("notes"),
     countReference: varchar("count_reference", { length: 50 }),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }).unique(
+      "inventory_adjustments_idempotency_key_unique",
+    ),
     approvedBy: uuid("approved_by").references(() => usersTable.id),
     approvedAt: timestamp("approved_at", { withTimezone: true }),
     postedAt: timestamp("posted_at", { withTimezone: true }),
@@ -353,6 +356,8 @@ export const inventoryAdjustmentsTable = pgTable(
       table.locationId,
       table.binId,
     ),
+    index("idx_adjustments_status").on(table.status),
+    index("idx_adjustments_mat_wh").on(table.materialId, table.warehouseId),
     check("inventory_adjustments_quantity_positive", sql`${table.quantity} > 0`),
     check("inventory_adjustments_variance_matches_physical_system", sql`${table.variance} = ${table.physicalQty} - ${table.systemQty}`),
   ],
@@ -839,6 +844,7 @@ export const wipIssueSequence = pgSequence("wip_issue_seq");
 export const consumptionSequence = pgSequence("consumption_seq");
 export const returnNumberSequence = pgSequence("return_seq");
 export const scrapNumberSequence = pgSequence("scrap_seq");
+export const adjustmentNumberSequence = pgSequence("adjustment_seq");
 
 export const wipIssueNotesTable = pgTable(
   "wip_issue_notes",
