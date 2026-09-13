@@ -141,10 +141,10 @@ router.post(
         res.status(422).json({ error: "Lot does not match material" });
         return;
       }
-      if (lot.warehouseId && lot.warehouseId !== body.warehouse_id) {
-        res.status(422).json({ error: "Lot does not belong to warehouse" });
-        return;
-      }
+      // A lot's warehouse is receipt provenance, not its current location.
+      // Transfers move the signed ledger balance without rewriting the lot
+      // header, so location validation is performed against the ledger at
+      // post time rather than this immutable receipt attribute.
     }
 
     const systemQty = await availableAt(
@@ -402,7 +402,6 @@ router.post(
           if (
             !lot ||
             lot.materialId !== document.materialId ||
-            (lot.warehouseId && lot.warehouseId !== document.warehouseId) ||
             !lot.grnLineId
           ) {
             return { status: "source_unavailable" as const };

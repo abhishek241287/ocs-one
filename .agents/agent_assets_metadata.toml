@@ -268,3 +268,17 @@ mtime_ms = 1789318673115
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/97453bb0-84e4-4ac9-8243-f61dee7e3566/84da8215-df61-497a-896c-5927bef93ecb"
 storage_version_token = "1789318708506563"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "f0yarU1OpeXAarJls9_zX"
+uri = "file://certification/fat-evidence/task-70-k-phase5-final-gate-2026-09-13.md"
+type = "text"
+title = "Task 70-K Phase 5 Final Gate Evidence"
+description = "Phase 5 certification results, invariant SQL coverage, regression gates, route/schema checks, residue checks, and the documented release-blocking FAT exceptions."
+logical_id = "633112a5-c421-40aa-a7e4-2edd9f3de030"
+content_hash = "sha256:7f4df1ef35ec231dda088c7f8dae74ad0133e85f44d8949e02b51921562621ba"
+size = 5944
+mtime_ms = 1789320831418
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/633112a5-c421-40aa-a7e4-2edd9f3de030/df672c66-cb12-4dc6-b548-13c3ed3ebca0"
+storage_version_token = "1789320845011488"
+content_type = "text/markdown"
