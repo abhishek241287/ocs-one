@@ -87,6 +87,8 @@ and available-ledger fixtures. The following direct outcomes were captured:
 - Draft adjustment and second adjustment: both `409`.
 - Authorization: operator write `403`, viewer write `403`, anonymous write
   `401`, viewer read `200`.
+- Adjustment authorization: operator adjust `403`, viewer adjust `403`, and
+  anonymous adjust `401`.
 - MIN smoke: `200`.
 - Residue after teardown: notes `0`, reservations `0`, confirmations `0`, lots
   `0`.
@@ -95,3 +97,7 @@ The rerun made no application edits. Library and API typechecks passed again.
 The enum push and API restart had already completed successfully before the
 focused journey; no generated API, frontend, 70-B, MIN, GRN, transfer, or stock
 files were changed.
+
+The one reporting-SQL alias error encountered during verification was in the
+temporary harness (`transaction_type` needed the `inventory_transactions`
+alias); it was corrected in the harness and was not an application defect.
