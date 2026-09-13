@@ -378,6 +378,10 @@ export const returnDocumentsTable = pgTable(
       .references(() => materialsTable.id),
     lotId: uuid("lot_id").references(() => inventoryLotsTable.id),
     originalIssueId: uuid("original_issue_id").references(() => materialIssueNotesTable.id),
+    wipIssueNoteId: uuid("wip_issue_note_id").references(() => wipIssueNotesTable.id),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }).unique(
+      "return_documents_idempotency_key_unique",
+    ),
     sourceWarehouseId: uuid("source_warehouse_id")
       .notNull()
       .references(() => warehousesTable.id),
@@ -401,6 +405,10 @@ export const returnDocumentsTable = pgTable(
   (table) => [
     index("return_documents_order_idx").on(table.productionOrderId),
     check("return_documents_quantity_positive", sql`${table.quantity} > 0`),
+    check(
+      "return_documents_issue_source_exclusive",
+      sql`NOT (${table.originalIssueId} IS NOT NULL AND ${table.wipIssueNoteId} IS NOT NULL)`,
+    ),
   ],
 );
 
@@ -825,6 +833,7 @@ export const wipIssueStatusEnum = pgEnum("wip_issue_status", [
 
 export const wipIssueSequence = pgSequence("wip_issue_seq");
 export const consumptionSequence = pgSequence("consumption_seq");
+export const returnNumberSequence = pgSequence("return_seq");
 
 export const wipIssueNotesTable = pgTable(
   "wip_issue_notes",

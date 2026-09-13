@@ -66,3 +66,15 @@ residual-count assertion.
 and documents → masters → locations → warehouses), then assert zero fixture rows. For global
 ledger hygiene checks, distinguish pre-existing baseline rows from rows involving the current
 fixture IDs and disclose the baseline instead of silently filtering it.
+
+# Normalize PostgreSQL aggregate values in harness assertions
+
+`pg` returns `count(*)` and many `numeric` expressions as strings unless the query explicitly
+casts them. Certification assertions must normalize these values before comparing them with
+numbers.
+
+**Why:** a correct route can produce a false red when a harness compares `"1"` with `1`; this
+occurred in the first 70-G runner pass.
+
+**How to apply:** cast numeric SQL expressions when practical, and use `Number(...)` at the
+assertion boundary for counts, quantities, and reconciliation totals.

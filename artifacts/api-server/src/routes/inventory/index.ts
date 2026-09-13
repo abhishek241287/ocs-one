@@ -9,6 +9,7 @@ import stockRouter from "./stock";
 import transfersRouter, { cellStockRouter } from "./transfers";
 import wipIssuesRouter from "./wip-issues";
 import wipInventoryRouter from "./wip-inventory";
+import returnsRouter from "./returns";
 
 // Inventory Platform routes. Each sub-router carries its own RBAC guard and is mounted
 // at a distinct path, so guards never shadow one another.
@@ -25,5 +26,6 @@ router.use("/cell-stock", cellStockRouter);
 router.use("/transfers", transfersRouter);
 router.use("/wip-issues", wipIssuesRouter);
 router.use("/wip-inventory", wipInventoryRouter);
+router.use("/returns", returnsRouter);
 
 export default router;
