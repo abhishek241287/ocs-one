@@ -1,0 +1,222 @@
+BATCH 70-E — Read Projections (WIP visibility on the read paths)
+
+Task #70 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Depends on: 70-A…70-D (D certified this report). READ-ONLY batch: zero physical
+
+mutation paths; nothing here changes accounting.
+
+---------------------------------------------------------------------------
+
+CONTENTS
+
+1. Stock projection: ADD wip_qty to GET /api/inventory/stock (available-state
+
+rows; same additive pattern as reserved_qty from 69-F). Semantics:
+
+wip_qty = Σ ledger 'wip' for the material (physical stock currently issued
+
+to production). available_for_use semantics UNCHANGED (it already nets
+
+reservations only — wip is physically moved, not reserved).
+
+2. Order-level WIP view: GET /api/inventory/wip-inventory with filters
+
+production_order_id / material_id / status → wip_inventory rows joined to
+
+material + lot for display, {items, meta} house shape.
+
+3. Reservation issued breakdown: ALREADY COMPLETE — GET /reservations/:id
+
+returns issued_qty + allocations[] with per-row status (active/issued);
+
+INV-P4-05 is derivable from the existing payload. No change to the
+
+certified Task #69 file. (Recorded so 70-F asserts it client-side.)
+
+---------------------------------------------------------------------------
+
+FILES (exactly three):
+
+1. artifacts/api-server/src/routes/inventory/stock.ts          — MODIFY (additive)
+
+2. artifacts/api-server/src/routes/inventory/wip-inventory.ts  — NEW
+
+3. artifacts/api-server/src/routes/inventory/index.ts          — MODIFY (2 lines)
+
+---------------------------------------------------------------------------
+
+FILE 1 — stock.ts  (ADDITIVE ONLY — same discipline as 69-F; do not alter
+
+existing fields/filters; merge, don't rewrite; ADJUST to actual mapper vars)
+
+(a) Ensure inventoryTransactionsTable is imported (it already is for the main
+
+projection) — the wip subquery reuses it:
+
+// Task #70: physical WIP per material (Σ ledger 'wip').
+const wipRows = await db
+.select({
+material_id: inventoryTransactionsTable.materialId,
+wip_qty: sql`coalesce(sum(${inventoryTransactionsTable.quantity}), 0)`,
+})
+.from(inventoryTransactionsTable)
+.where(eq(inventoryTransactionsTable.stockState, "wip"))
+.groupBy(inventoryTransactionsTable.materialId);
+const wipByMaterial = new Map(wipRows.map((r) => [r.material_id, Number(r.wip_qty)]));
+
+(b) In the items mapper, alongside reserved_qty (69-F) ADD:
+
+wip_qty: wipByMaterial.get() ?? 0,
+
+// ADJUST: apply on 'available' state rows (same placement as reserved_qty);
+
+// if the projection emits per-state rows, also expose wip_qty on the
+
+// 'wip' state row itself (where it equals the row quantity) for consumers
+
+// that filter by state.
+
+---------------------------------------------------------------------------
+
+FILE 2 — CREATE artifacts/api-server/src/routes/inventory/wip-inventory.ts
+
+import { Router, type IRouter, type Request, type Response } from "express";
+import { eq, and, asc, count, sql } from "drizzle-orm";
+import {
+db,
+wipInventoryTable,
+materialsTable,
+inventoryLotsTable,
+} from "@workspace/db";
+import { requireAuth } from "../../middleware/auth";
+
+const router: IRouter = Router();
+// Read-only: any authenticated factory role (viewer included) — no requireWriteRole.
+router.use(requireAuth);
+
+function numify(v: unknown): unknown {
+return typeof v === "string" && /^-?\d+(\.\d+)?/.test(v) ? Number(v) : v;
+}
+
+router.get("/", async (req: Request, res: Response): Promise => {
+const q = req.query as Record<string, string | undefined>;
+const page = Math.max(parseInt(q.page || "1", 10) || 1, 1);
+const pageSize = Math.min(Math.max(parseInt(q.pageSize || "25", 10) || 25, 1), 200);
+const offset = (page - 1) * pageSize;
+
+const conds = [
+q.production_order_id ? eq(wipInventoryTable.productionOrderId, q.production_order_id) : undefined,
+q.material_id ? eq(wipInventoryTable.materialId, q.material_id) : undefined,
+q.status ? eq(wipInventoryTable.status, q.status) : undefined,
+].filter(Boolean) as any[];
+
+const where = conds.length ? and(...conds) : undefined;
+const [t] = await db.select({ count: count() }).from(wipInventoryTable).where(where);
+const rows = await db
+.select({
+wip: wipInventoryTable,
+materialCode: materialsTable.code,
+materialName: materialsTable.name,
+lotNumber: inventoryLotsTable.lotNumber,
+})
+.from(wipInventoryTable)
+.innerJoin(materialsTable, eq(materialsTable.id, wipInventoryTable.materialId))
+.innerJoin(inventoryLotsTable, eq(inventoryLotsTable.id, wipInventoryTable.lotId))
+.where(where)
+.orderBy(asc(wipInventoryTable.createdAt))
+.limit(pageSize)
+.offset(offset);
+
+const total = Number(t?.count ?? 0);
+res.json({
+items: rows.map(({ wip: w, materialCode, materialName, lotNumber }) => ({
+id: w.id,
+production_order_id: w.productionOrderId,
+material_id: w.materialId,
+material_code: materialCode,
+material_name: materialName,
+lot_id: w.lotId,
+lot_number: lotNumber,
+warehouse_id: w.warehouseId,
+location_id: w.locationId,
+issued_qty: numify(w.issuedQty),
+consumed_qty: numify(w.consumedQty),
+returned_qty: numify(w.returnedQty),
+scrapped_qty: numify(w.scrappedQty),
+remaining_qty: numify(w.remainingQty),
+uom: w.uom,
+status: w.status,
+wip_issue_note_id: w.wipIssueNoteId ?? null,
+issue_id: w.issueId ?? null,
+created_at: w.createdAt,
+})),
+meta: { total, page, pageSize, totalPages: Math.ceil(total / pageSize) },
+});
+});
+
+export default router;
+
+---------------------------------------------------------------------------
+
+FILE 3 — routes/inventory/index.ts: ADD
+
+import wipInventoryRouter from "./wip-inventory";
+
+router.use("/wip-inventory", wipInventoryRouter);
+
+---------------------------------------------------------------------------
+
+VERIFICATION (fixtures: material with 50 issued to WIP, 20 consumed)
+
+pnpm run typecheck:libs && pnpm run typecheck     # exit 0
+
+# 1. Stock: GET /inventory/stock?search=CODE → wip_qty 50 on the available row
+
+#    (and equals row quantity on the wip state row if per-state projection).
+
+# 2. WIP view: GET /inventory/wip-inventory?production_order_id=PO → rows with
+
+#    material_code/lot_number resolved; remaining 30 after consumption; filters
+
+#    material_id and status work; {items, meta} shape.
+
+# 3. Reservation detail unchanged: issued_qty + allocations[] statuses present
+
+#    (INV-P4-05 derivable; assert client-side in 70-F).
+
+# 4. Reads write nothing: ledger/outbox counts unchanged; viewer 200; anon 401.
+
+# 5. Regression: test:reservation 15/15; MIN smoke; stock.ts pre-existing
+
+#    fields/filters behave identically for materials with no wip.
+
+# 6. git diff --stat = three files only.
+
+WHAT MUST NOT BE CHANGED:
+
+❌ No accounting/mutation paths; no edits to issue/consumption/reversal routes,
+
+MIN, Task #69 create/allocate/release/cancel, GRN/transfer.
+
+❌ generated/api.ts; frontend; no commit; dev DB only.
+
+RISK: Low. Pure reads + one additive projection field.
+
+NEXT: After evidence, Kimi prepares BATCH 70-F — the single comprehensive Phase 4
+
+certification gate: functional (issue partial/full/lot/reservation interaction,
+
+consumption partial/full, variance, invalid transitions, retry/idempotency),
+
+concurrency (competing reservations→issue, concurrent issue, concurrent
+
+consumption, double-submit, transfer-interaction, issue↔consumption race),
+
+accounting (INV-RES-01…08 + INV-P4-01…05 + ledger reconciliation + lot-level +
+
+WIP + reservation reconciliation + no duplicate accounting), security (401/403/
+
+role matrix/audit), and full regression (Task #67 procurement, #68 receiving,
+
+#69 reservation, Option A, MIN, configuration).

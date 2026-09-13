@@ -171,6 +171,21 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     reservedRows.map((row) => [row.material_id, Number(row.reserved_qty)]),
   );
 
+  // Task #70-E: physical WIP per material is projected from the signed ledger.
+  // This is deliberately separate from reserved_qty: WIP has already moved
+  // physically into production, while reservations remain a metadata overlay.
+  const wipRows = await db
+    .select({
+      material_id: inventoryTransactionsTable.materialId,
+      wip_qty: sql<string>`coalesce(sum(${inventoryTransactionsTable.quantity}), 0)`,
+    })
+    .from(inventoryTransactionsTable)
+    .where(eq(inventoryTransactionsTable.stockState, "wip"))
+    .groupBy(inventoryTransactionsTable.materialId);
+  const wipByMaterial = new Map(
+    wipRows.map((row) => [row.material_id, Number(row.wip_qty)]),
+  );
+
   res.json({
     items: rows.map((r) => ({
       material_id: r.material_id,
@@ -188,6 +203,12 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
         r.stock_state === "available"
           ? reservedByMaterial.get(r.material_id) ?? 0
           : 0,
+      wip_qty:
+        r.stock_state === "available"
+          ? wipByMaterial.get(r.material_id) ?? 0
+          : r.stock_state === "wip"
+            ? Number(r.quantity)
+            : 0,
       available_for_use:
         r.stock_state === "available"
           ? Math.max(
