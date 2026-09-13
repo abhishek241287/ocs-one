@@ -10,12 +10,16 @@ import {
   materialsTable,
   mfgProductionOrdersTable,
   outboxEventsTable,
+  wipInventoryTable,
+  wipIssueLinesTable,
+  wipIssueNotesTable,
   pool,
 } from "@workspace/db";
 import {
   AllocateReservationBody,
   CancelReservationBody,
   CreateReservationBody,
+  IssueReservationBody,
 } from "@workspace/api-zod";
 import { requireWriteRole } from "../../middleware/auth";
 import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
@@ -825,6 +829,432 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       released_at: allocation.releasedAt ?? null,
     })),
   });
+});
+
+// ─── Issue-to-WIP helpers ────────────────────────────────────────────────────
+function todayDateStr(): string {
+  const n = new Date();
+  return `${n.getUTCFullYear()}${String(n.getUTCMonth() + 1).padStart(2, "0")}${String(n.getUTCDate()).padStart(2, "0")}`;
+}
+
+function serializeIssueNote(
+  note: Record<string, any>,
+  lines: Array<Record<string, any>>,
+): Record<string, unknown> {
+  return {
+    id: note.id,
+    issue_number: note.issueNumber,
+    reservation_id: note.reservationId,
+    production_order_id: note.productionOrderId,
+    status: note.status,
+    issued_by: note.issuedBy,
+    notes: note.notes ?? null,
+    created_at: note.createdAt,
+    lines: lines.map((line) => ({
+      id: line.id,
+      reservation_allocation_id: line.reservationAllocationId,
+      lot_id: line.lotId,
+      quantity: numify(line.quantity),
+      uom: line.uom,
+    })),
+  };
+}
+
+function nextIssuedStatus(reserved: number, issued: number): "partially_issued" | "fully_issued" {
+  return issued >= reserved ? "fully_issued" : "partially_issued";
+}
+
+// ─── POST /inventory/reservations/:id/issue ──────────────────────────────────
+router.post("/:id/issue", async (req: Request, res: Response): Promise<void> => {
+  const parsed = IssueReservationBody.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const body = parsed.data;
+  const actorId = req.user!.userId;
+  const actorName = req.user?.email ?? null;
+  const idempotencyKey = (req.header("idempotency-key") ?? "").slice(0, 100) || null;
+
+  if (idempotencyKey) {
+    const [existing] = await db
+      .select()
+      .from(wipIssueNotesTable)
+      .where(eq(wipIssueNotesTable.idempotencyKey, idempotencyKey))
+      .limit(1);
+    if (existing) {
+      const lines = await db
+        .select()
+        .from(wipIssueLinesTable)
+        .where(eq(wipIssueLinesTable.wipIssueNoteId, existing.id));
+      res
+        .status(200)
+        .json(serializeIssueNote(existing as Record<string, any>, lines as Array<Record<string, any>>));
+      return;
+    }
+  }
+
+  const { rows } = await pool.query("SELECT nextval('wip_issue_seq') AS seq");
+  const issueNumber = `ISS-${todayDateStr()}-${String(rows[0].seq).padStart(4, "0")}`;
+
+  const outcome = await db.transaction(async (tx) => {
+    const [reservation] = await tx
+      .select()
+      .from(inventoryReservationsTable)
+      .where(eq(inventoryReservationsTable.id, req.params.id as string))
+      .for("update")
+      .limit(1);
+
+    if (!reservation) return { status: "not_found" as const };
+
+    if (
+      reservation.expiresAt &&
+      new Date(reservation.expiresAt) < new Date() &&
+      ["active", "partially_allocated", "fully_allocated", "partially_issued"].includes(
+        reservation.status,
+      )
+    ) {
+      await tx
+        .update(inventoryReservationsTable)
+        .set({ status: "expired" })
+        .where(eq(inventoryReservationsTable.id, reservation.id));
+      return { status: "expired" as const };
+    }
+
+    if (!["partially_allocated", "fully_allocated", "partially_issued"].includes(reservation.status)) {
+      return { status: "invalid_state" as const, current: reservation.status };
+    }
+
+    const reserved = Number(reservation.reservedQty);
+    const allocated = Number(reservation.allocatedQty);
+    const issued = Number(reservation.issuedQty);
+    const issuable = allocated - issued;
+    if (issuable <= 0) return { status: "nothing" as const };
+
+    let need = body.quantity ?? issuable;
+    if (need > issuable) {
+      if (!body.allow_partial) return { status: "exceeds" as const, issuable };
+      need = issuable;
+    }
+
+    if (body.lot_id) {
+      const [lot] = await tx
+        .select({ id: inventoryLotsTable.id })
+        .from(inventoryLotsTable)
+        .where(eq(inventoryLotsTable.id, body.lot_id))
+        .limit(1);
+      if (!lot) return { status: "bad_lot" as const };
+    }
+
+    const allocationConditions = [
+      eq(inventoryReservationAllocationsTable.reservationId, reservation.id),
+      eq(inventoryReservationAllocationsTable.status, "active"),
+    ];
+    if (body.lot_id) {
+      allocationConditions.push(eq(inventoryReservationAllocationsTable.lotId, body.lot_id));
+    }
+
+    const allocations = await tx
+      .select({
+        allocation: inventoryReservationAllocationsTable,
+        lot: inventoryLotsTable,
+      })
+      .from(inventoryReservationAllocationsTable)
+      .innerJoin(
+        inventoryLotsTable,
+        eq(inventoryLotsTable.id, inventoryReservationAllocationsTable.lotId),
+      )
+      .where(and(...allocationConditions))
+      .orderBy(
+        asc(inventoryLotsTable.receivedDate),
+        asc(inventoryLotsTable.lotNumber),
+        asc(inventoryReservationAllocationsTable.createdAt),
+      )
+      .for("update");
+
+    if (!allocations.length) return { status: "no_alloc" as const };
+
+    const [note] = await tx
+      .insert(wipIssueNotesTable)
+      .values({
+        issueNumber,
+        reservationId: reservation.id,
+        productionOrderId: reservation.productionOrderId,
+        status: "fully_issued",
+        issuedBy: actorId,
+        notes: body.notes ?? null,
+        idempotencyKey,
+      })
+      .returning();
+
+    const issueLines: Array<{
+      lineId: string;
+      lotId: string;
+      grnLineId: string;
+      qty: number;
+    }> = [];
+    const perLot = new Map<string, { lot: typeof allocations[number]["lot"]; qty: number }>();
+    let remaining = need;
+
+    for (const { allocation, lot } of allocations) {
+      if (remaining <= 0) break;
+      if (!lot.grnLineId || !lot.warehouseId) continue;
+
+      // Transfers lock the same GRN line. Lock it once, in allocation order.
+      await tx
+        .select({ id: grnLineItemsTable.id })
+        .from(grnLineItemsTable)
+        .where(eq(grnLineItemsTable.id, lot.grnLineId))
+        .for("update")
+        .limit(1);
+
+      const [balance] = await tx
+        .select({
+          sum: sql<string>`coalesce(sum(${inventoryTransactionsTable.quantity}), 0)`,
+        })
+        .from(inventoryTransactionsTable)
+        .where(
+          and(
+            eq(inventoryTransactionsTable.sourceLineId, lot.grnLineId),
+            eq(inventoryTransactionsTable.stockState, "available"),
+          ),
+        );
+      const physicalAvailable = Number(balance?.sum ?? 0);
+      const alreadyMoving = issueLines
+        .filter((line) => line.grnLineId === lot.grnLineId)
+        .reduce((sum, line) => sum + line.qty, 0);
+      const allowed = Math.min(
+        remaining,
+        Number(allocation.quantity),
+        Math.max(physicalAvailable - alreadyMoving, 0),
+      );
+      if (allowed <= 0) continue;
+      remaining -= allowed;
+
+      let issuedAllocationId = allocation.id;
+      if (allowed < Number(allocation.quantity)) {
+        await tx
+          .update(inventoryReservationAllocationsTable)
+          .set({ quantity: String(Number(allocation.quantity) - allowed) })
+          .where(eq(inventoryReservationAllocationsTable.id, allocation.id));
+        const [issuedSlice] = await tx
+          .insert(inventoryReservationAllocationsTable)
+          .values({
+            reservationId: reservation.id,
+            lotId: allocation.lotId,
+            quantity: String(allowed),
+            status: "issued",
+          })
+          .returning();
+        issuedAllocationId = issuedSlice.id;
+      } else {
+        await tx
+          .update(inventoryReservationAllocationsTable)
+          .set({ status: "issued" })
+          .where(eq(inventoryReservationAllocationsTable.id, allocation.id));
+      }
+
+      const [line] = await tx
+        .insert(wipIssueLinesTable)
+        .values({
+          wipIssueNoteId: note.id,
+          reservationAllocationId: issuedAllocationId,
+          lotId: allocation.lotId,
+          quantity: String(allowed),
+          uom: reservation.uom,
+        })
+        .returning();
+      issueLines.push({
+        lineId: line.id,
+        lotId: allocation.lotId,
+        grnLineId: lot.grnLineId,
+        qty: allowed,
+      });
+
+      const lotTotal = perLot.get(allocation.lotId) ?? { lot, qty: 0 };
+      lotTotal.qty += allowed;
+      perLot.set(allocation.lotId, lotTotal);
+    }
+
+    const totalIssued = issueLines.reduce((sum, line) => sum + line.qty, 0);
+    if (totalIssued <= 0) return { status: "phys_unavailable" as const };
+    if (remaining > 0 && !body.allow_partial) {
+      return { status: "insufficient" as const, unissued: remaining };
+    }
+
+    for (const { lot, qty } of perLot.values()) {
+      if (!lot.grnLineId || !lot.warehouseId) continue;
+
+      const ledgerBase = {
+        materialId: reservation.materialId,
+        uom: reservation.uom,
+        sourceDocumentType: "wip_issue_note",
+        sourceDocumentId: note.id,
+        sourceLineId: lot.grnLineId,
+        lotId: lot.id,
+        warehouseId: lot.warehouseId,
+        locationId: lot.locationId,
+        binId: lot.binId,
+        productionOrderId: reservation.productionOrderId,
+        actorId,
+        actorName,
+        createdBy: actorId,
+      } as const;
+
+      await tx.insert(inventoryTransactionsTable).values({
+        ...ledgerBase,
+        quantity: String(-qty),
+        stockState: "available",
+        transactionType: "PRODUCTION_ISSUE",
+      });
+      await tx.insert(inventoryTransactionsTable).values({
+        ...ledgerBase,
+        quantity: String(qty),
+        stockState: "wip",
+        transactionType: "WIP_RECEIPT",
+      });
+
+      await tx.insert(wipInventoryTable).values({
+        productionOrderId: reservation.productionOrderId,
+        materialId: reservation.materialId,
+        lotId: lot.id,
+        wipIssueNoteId: note.id,
+        warehouseId: lot.warehouseId,
+        locationId: lot.locationId,
+        issuedQty: String(qty),
+        consumedQty: "0",
+        returnedQty: "0",
+        scrappedQty: "0",
+        remainingQty: String(qty),
+        uom: reservation.uom,
+        status: "active",
+      });
+    }
+
+    const newIssued = issued + totalIssued;
+    const [updatedReservation] = await tx
+      .update(inventoryReservationsTable)
+      .set({
+        issuedQty: String(newIssued),
+        status: nextIssuedStatus(reserved, newIssued),
+      })
+      .where(eq(inventoryReservationsTable.id, reservation.id))
+      .returning();
+
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "wip_issue_note",
+      aggregateId: note.id,
+      eventType: "WIP_ISSUE_CREATED",
+      payload: {
+        issue_number: issueNumber,
+        reservation_id: reservation.id,
+        reservation_number: reservation.reservationNumber,
+        production_order_id: reservation.productionOrderId,
+        lines: issueLines.map((line) => ({
+          lot_id: line.lotId,
+          quantity: line.qty,
+        })),
+        total_issued: totalIssued,
+        actor_id: actorId,
+      },
+    });
+
+    const lines = await tx
+      .select()
+      .from(wipIssueLinesTable)
+      .where(eq(wipIssueLinesTable.wipIssueNoteId, note.id));
+    return {
+      status: "ok" as const,
+      note,
+      lines,
+      reservation: updatedReservation,
+    };
+  });
+
+  if (outcome.status === "not_found") {
+    res.status(404).json({ error: "Reservation not found" });
+    return;
+  }
+  if (outcome.status === "expired") {
+    res.status(409).json({ error: "Reservation has expired" });
+    return;
+  }
+  if (outcome.status === "invalid_state") {
+    res
+      .status(409)
+      .json({ error: `Reservation cannot be issued from status '${outcome.current}'` });
+    return;
+  }
+  if (outcome.status === "nothing") {
+    res.status(422).json({ error: "Nothing left to issue" });
+    return;
+  }
+  if (outcome.status === "exceeds") {
+    res.status(409).json({
+      error: "ISSUE_EXCEEDS_ALLOCATED",
+      details: { issuable: outcome.issuable },
+    });
+    return;
+  }
+  if (outcome.status === "bad_lot") {
+    res.status(422).json({ error: "Unknown lot id" });
+    return;
+  }
+  if (outcome.status === "no_alloc") {
+    res.status(409).json({ error: "No active allocation on the requested lot" });
+    return;
+  }
+  if (outcome.status === "phys_unavailable") {
+    res.status(409).json({ error: "PHYSICAL_STOCK_UNAVAILABLE" });
+    return;
+  }
+  if (outcome.status === "insufficient") {
+    res.status(409).json({
+      error: "INSUFFICIENT_ALLOCATED",
+      details: { unissued: outcome.unissued },
+    });
+    return;
+  }
+
+  void recordSecurityEvent({
+    eventType: "wip.issue_created",
+    actorId,
+    actorEmail: req.user?.email ?? null,
+    actorRole: req.user?.role ?? null,
+    ...reqMeta(req),
+    statusCode: 201,
+    detail: `WIP issue ${outcome.note.issueNumber} from reservation ${outcome.reservation.reservationNumber}: ${outcome.lines.length} lot line(s)`,
+  });
+
+  res
+    .status(201)
+    .json(
+      serializeIssueNote(
+        outcome.note as Record<string, any>,
+        outcome.lines as Array<Record<string, any>>,
+      ),
+    );
+});
+
+// ─── GET /inventory/reservations/:id/issues ──────────────────────────────────
+router.get("/:id/issues", async (req: Request, res: Response): Promise<void> => {
+  const notes = await db
+    .select()
+    .from(wipIssueNotesTable)
+    .where(eq(wipIssueNotesTable.reservationId, req.params.id as string))
+    .orderBy(asc(wipIssueNotesTable.createdAt));
+
+  const items: Array<Record<string, unknown>> = [];
+  for (const note of notes) {
+    const lines = await db
+      .select()
+      .from(wipIssueLinesTable)
+      .where(eq(wipIssueLinesTable.wipIssueNoteId, note.id));
+    items.push(serializeIssueNote(note as Record<string, any>, lines as Array<Record<string, any>>));
+  }
+
+  res.json({ items, meta: { total: items.length } });
 });
 
 export default router;

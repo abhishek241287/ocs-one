@@ -55,3 +55,4 @@
 - [FAT Block 2 fixture validation](fat-block2-fixture-validation.md) — negative FK cases need explicit nonexistent IDs; disclose and remove accidental controlled rows before final totals.
 - [Receiving inspection events](receiving-inspection-events.md) — inspection is cumulative per GRN line; aggregate event rows before joining stock provenance.
 - [Drizzle sequence push prompts](drizzle-sequence-push-prompts.md) — new pgSequence objects need a TTY rename/create choice; --force does not bypass it in drizzle-kit 0.31.
+- [Reservation issue accounting](reservation-issue-accounting.md) — allocated_qty is cumulative; issue advances issued_qty while allocation rows track the active remainder.

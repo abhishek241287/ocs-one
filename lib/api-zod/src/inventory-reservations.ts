@@ -32,3 +32,11 @@ export const ReservationIdParams = zod.object({
   id: zod.coerce.string().uuid(),
 });
 export type ReservationIdParams = zod.infer<typeof ReservationIdParams>;
+
+export const IssueReservationBody = zod.object({
+  quantity: zod.coerce.number().positive().optional(),
+  lot_id: zod.string().uuid().optional(),
+  allow_partial: zod.boolean().default(false),
+  notes: zod.string().max(500).nullish(),
+});
+export type IssueReservationBody = zod.infer<typeof IssueReservationBody>;

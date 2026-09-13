@@ -841,6 +841,9 @@ export const wipIssueNotesTable = pgTable(
       .notNull()
       .references(() => usersTable.id),
     notes: text("notes"),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }).unique(
+      "wip_issue_notes_idempotency_key_unique",
+    ),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
