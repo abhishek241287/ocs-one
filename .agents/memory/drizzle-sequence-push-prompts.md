@@ -14,5 +14,7 @@ damage an existing sequence.
 
 **How to apply:** Query `information_schema.sequences` first, capture the exact Drizzle
 prompt through a temporary pseudo-terminal, and automate only the confirmed
-create-sequence selection. Verify the resulting table, enum, sequence, indexes,
-constraints, and foreign keys afterward.
+create-sequence selection. In this workspace, `script` plus piped newline/carriage-return
+input did not drive the raw-key selector; if PTY automation still blocks, use equivalent
+idempotent development DDL rather than choosing a rename. Verify the resulting table,
+enum, sequence, indexes, constraints, and foreign keys afterward.
