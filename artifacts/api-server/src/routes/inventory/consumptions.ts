@@ -1,10 +1,11 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import {
   bomSnapshotLinesTable,
   bomSnapshotsTable,
   consumptionConfirmationsTable,
   db,
+  inventoryLotsTable,
   inventoryTransactionsTable,
   materialsTable,
   mfgProductionOrdersTable,
@@ -123,9 +124,9 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 
   // Explicit input wins; otherwise use the BOM snapshot; otherwise a zero
   // variance default of actual quantity.
-  const planned = body.planned_qty ?? snapshotLine
-    ? body.planned_qty ?? Number(snapshotLine?.plannedQty ?? body.actual_qty)
-    : body.actual_qty;
+  const planned =
+    body.planned_qty ??
+    (snapshotLine ? Number(snapshotLine.plannedQty) : body.actual_qty);
 
   const sequenceRows = await pool.query<{ seq: string }>(
     "SELECT nextval('consumption_seq') AS seq",
@@ -214,6 +215,25 @@ router.post("/:id/confirm", async (req: Request, res: Response): Promise<void> =
       .orderBy(asc(wipInventoryTable.createdAt), asc(wipInventoryTable.id))
       .for("update");
 
+    const lotIds = wipRows
+      .map((row) => row.lotId)
+      .filter((lotId): lotId is string => Boolean(lotId));
+    const lots = lotIds.length
+      ? await tx
+          .select()
+          .from(inventoryLotsTable)
+          .where(inArray(inventoryLotsTable.id, lotIds))
+      : [];
+    const lotsById = new Map(lots.map((lot) => [lot.id, lot]));
+
+    if (
+      wipRows.some(
+        (row) => !row.lotId || !lotsById.get(row.lotId)?.grnLineId,
+      )
+    ) {
+      return { status: "invalid_wip_source" as const };
+    }
+
     const totalRemaining = wipRows.reduce(
       (sum, row) => sum + Number(row.remainingQty),
       0,
@@ -227,16 +247,18 @@ router.post("/:id/confirm", async (req: Request, res: Response): Promise<void> =
     }
 
     let remaining = actual;
-    for (const row of wipRows) {
+    for (const wip of wipRows) {
       if (remaining <= 0) break;
 
-      const take = Math.min(remaining, Number(row.remainingQty));
-      const consumed = Number(row.consumedQty) + take;
+      const lot = lotsById.get(wip.lotId!)!;
+      const take = Math.min(remaining, Number(wip.remainingQty));
+      const sourceLineId = lot.grnLineId!;
+      const consumed = Number(wip.consumedQty) + take;
       const left =
-        Number(row.issuedQty) -
+        Number(wip.issuedQty) -
         consumed -
-        Number(row.returnedQty) -
-        Number(row.scrappedQty);
+        Number(wip.returnedQty) -
+        Number(wip.scrappedQty);
 
       await tx
         .update(wipInventoryTable)
@@ -246,19 +268,20 @@ router.post("/:id/confirm", async (req: Request, res: Response): Promise<void> =
           status: left <= 0 ? "fully_consumed" : "partially_consumed",
           updatedAt: new Date(),
         })
-        .where(eq(wipInventoryTable.id, row.id));
+        .where(eq(wipInventoryTable.id, wip.id));
 
       await tx.insert(inventoryTransactionsTable).values({
         materialId: confirmation.materialId,
         quantity: String(-take),
-        uom: row.uom,
+        uom: wip.uom,
         stockState: "wip",
         transactionType: "CONSUMPTION",
-        sourceDocumentType: "consumption_confirmation",
+        sourceDocumentType: "CONSUMPTION",
         sourceDocumentId: confirmation.id,
-        lotId: row.lotId,
-        warehouseId: row.warehouseId,
-        locationId: row.locationId,
+        sourceLineId,
+        lotId: wip.lotId,
+        warehouseId: wip.warehouseId,
+        locationId: wip.locationId,
         productionOrderId: confirmation.productionOrderId,
         actorId,
         actorName,
@@ -313,6 +336,13 @@ router.post("/:id/confirm", async (req: Request, res: Response): Promise<void> =
         actual: outcome.actual,
         total_remaining: outcome.totalRemaining,
       },
+    });
+    return;
+  }
+  if (outcome.status === "invalid_wip_source") {
+    res.status(409).json({
+      error: "WIP_SOURCE_LINE_UNAVAILABLE",
+      details: { message: "WIP rows must retain their source GRN line" },
     });
     return;
   }
