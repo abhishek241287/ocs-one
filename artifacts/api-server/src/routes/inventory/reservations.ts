@@ -899,6 +899,34 @@ router.post("/:id/issue", async (req: Request, res: Response): Promise<void> => 
   const issueNumber = `ISS-${todayDateStr()}-${String(rows[0].seq).padStart(4, "0")}`;
 
   const outcome = await db.transaction(async (tx) => {
+    // Serialize all requests sharing an idempotency key before the lookup and
+    // insert. The reservation lock alone is insufficient when the same key is
+    // submitted against different reservations.
+    if (idempotencyKey) {
+      await tx.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtext(${`wip-issue-idempotency:${idempotencyKey}`}))`,
+      );
+    }
+
+    if (idempotencyKey) {
+      const [existing] = await tx
+        .select()
+        .from(wipIssueNotesTable)
+        .where(eq(wipIssueNotesTable.idempotencyKey, idempotencyKey))
+        .limit(1);
+      if (existing) {
+        const lines = await tx
+          .select()
+          .from(wipIssueLinesTable)
+          .where(eq(wipIssueLinesTable.wipIssueNoteId, existing.id));
+        return {
+          status: "replay" as const,
+          note: existing,
+          lines,
+        };
+      }
+    }
+
     const [reservation] = await tx
       .select()
       .from(inventoryReservationsTable)
@@ -1171,6 +1199,18 @@ router.post("/:id/issue", async (req: Request, res: Response): Promise<void> => 
       reservation: updatedReservation,
     };
   });
+
+  if (outcome.status === "replay") {
+    res
+      .status(200)
+      .json(
+        serializeIssueNote(
+          outcome.note as Record<string, any>,
+          outcome.lines as Array<Record<string, any>>,
+        ),
+      );
+    return;
+  }
 
   if (outcome.status === "not_found") {
     res.status(404).json({ error: "Reservation not found" });

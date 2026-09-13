@@ -56,3 +56,4 @@
 - [Receiving inspection events](receiving-inspection-events.md) — inspection is cumulative per GRN line; aggregate event rows before joining stock provenance.
 - [Drizzle sequence push prompts](drizzle-sequence-push-prompts.md) — new pgSequence objects need a TTY rename/create choice; --force does not bypass it in drizzle-kit 0.31.
 - [Reservation issue accounting](reservation-issue-accounting.md) — allocated_qty is cumulative; issue advances issued_qty while allocation rows track the active remainder.
+- [WIP issue idempotency race](wip-idempotency-race.md) — lock and recheck the key inside the transaction so same-key losers replay instead of hitting uniqueness errors.
