@@ -17,6 +17,7 @@
     "test:reservation": "tsx src/cert/reservation-suite.ts",
     "test:phase4-wip": "tsx src/cert/phase4-wip-consumption-suite.ts",
     "test:task70-g-returns": "tsx src/cert/task70-g-returns-suite.ts",
+    "test:task70-h-scrap": "tsx src/cert/task70-h-scrap-suite.ts",
     "test:inv-p04-evidence-harness-schema": "tsx src/cert/inv-p04-evidence-harness-schema-regression.ts",
     "test:reports-response-shape": "tsx src/cert/reports-response-shape-contract.ts",
     "test:task32-bom-obsoletion": "tsx src/cert/task32-bom-obsoletion-suite.ts",
