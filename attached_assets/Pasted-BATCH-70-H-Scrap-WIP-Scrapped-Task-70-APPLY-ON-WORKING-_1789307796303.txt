@@ -1,0 +1,461 @@
+BATCH 70-H — Scrap (WIP → Scrapped)
+
+Task #70 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Ratified: D7 (−wip/+scrapped; 'scrapped' distinct visible state; never
+
+un-issues), D10 (approve=director only), all governing rules. 70-G certified.
+
+---------------------------------------------------------------------------
+
+PHYSICAL MODEL (D7)
+
+POST (only physical op): −qty ledger 'wip' +qty ledger 'scrapped', type SCRAP,
+
+per wip-row with that row's lot/source dims. wip scrappedQty += take,
+
+remaining recalculated (existing CHECK), status fully_consumed at 0 (shared
+
+terminal). 'scrapped' stock stays visible in projections (wip_qty-style
+
+scrapped state) at zero value; it NEVER returns to available.
+
+Flow: draft → approved → posted | rejected. Source warehouse derived from
+
+the wip rows (never client-supplied), same as 70-G.
+
+NO issue-note bridge column (unlike returns/D5): scrap spans all of a
+
+(PO, material[, lot])'s wip rows — same granularity as consumption (70-C).
+
+Locks/idempotency: identical discipline to 70-G — document FOR UPDATE →
+
+wip rows FOR UPDATE (createdAt order; SAME surface consumption locks) →
+
+ledger; Idempotency-Key via in-tx advisory lock ('scrap-idem:') +
+
+unique column + dual-shape 23505 fallback; NO pre-tx lookup.
+
+Races: scrap↔consumption, scrap↔return (70-G) serialize on wip rows;
+
+loser 409, ZERO mutation.
+
+---------------------------------------------------------------------------
+
+FILES (four):
+
+1. lib/db/src/schema/inventory-platform.ts — MODIFY (1 column) + push
+
+2. lib/api-zod/src/inventory-scrap.ts — NEW (+1 export line in index.ts)
+
+3. artifacts/api-server/src/routes/inventory/scrap.ts — NEW
+
+4. artifacts/api-server/src/routes/inventory/index.ts — MODIFY (2 lines)
+
+---------------------------------------------------------------------------
+
+FILE 1 — inventory-platform.ts, inside scrapDocumentsTable add:
+
+idempotencyKey: varchar("idempotency_key", { length: 100 }).unique("scrap_documents_idempotency_key_unique"),
+
+APPEND:
+
+export const scrapNumberSequence = pgSequence("scrap_seq");
+
+VERIFY + supplement (push-extra SQL) if absent:
+
+CREATE INDEX IF NOT EXISTS idx_scrap_documents_po_status ON scrap_documents (production_order_id, status);
+
+Push (pseudo-TTY for the sequence per recorded caveat).
+
+---------------------------------------------------------------------------
+
+FILE 2 — CREATE lib/api-zod/src/inventory-scrap.ts:
+
+/
+- Task 70-H — Scrap request schemas (hand-written, orval-drift tracked).
+- Physical WIP → scrapped movement. See phase5 decision D7.
+ /
+import * as zod from "zod";
+
+export const CreateScrapBody = zod.object({
+production_order_id: zod.string().uuid(),
+material_id: zod.string().uuid(),
+quantity: zod.coerce.number().positive(),
+reason: zod.string().min(1).max(255),
+lot_id: zod.string().uuid().optional(),          // restrict scrap to one lot's wip
+stage_id: zod.string().uuid().optional(),        // optional manufacturing stage attribution
+serial_number: zod.string().max(100).nullish(),  // optional serialized-unit attribution
+notes: zod.string().max(500).nullish(),
+});
+export type CreateScrapBody = zod.infer;
+
+export const ApproveScrapBody = zod.object({});
+export type ApproveScrapBody = zod.infer;
+
+export const RejectScrapBody = zod.object({
+reason: zod.string().min(1).max(255),
+});
+export type RejectScrapBody = zod.infer;
+
+index.ts: ADD  export * from "./inventory-scrap";
+
+---------------------------------------------------------------------------
+
+FILE 3 — CREATE artifacts/api-server/src/routes/inventory/scrap.ts
+
+(Skeleton identical to 70-G returns.ts — same helpers, same flow, same
+
+idempotency discipline. Key differences called out inline.)
+
+import { Router, type IRouter, type Request, type Response } from "express";
+import { eq, and, asc, count, sql } from "drizzle-orm";
+import {
+db, pool,
+scrapDocumentsTable,
+wipInventoryTable,
+inventoryLotsTable,
+inventoryTransactionsTable,
+materialsTable,
+mfgProductionOrdersTable,
+outboxEventsTable,
+} from "@workspace/db";
+import { CreateScrapBody, ApproveScrapBody, RejectScrapBody } from "@workspace/api-zod";
+import { requireAuth, requireWriteRole } from "../../middleware/auth";
+import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
+
+const router: IRouter = Router();
+router.use(requireAuth);
+
+function numify(v: unknown): unknown {
+return typeof v === "string" && /^-?\d+(\.\d+)?/.test(v) ? Number(v) : v;
+}
+function todayDateStr(): string {
+const n = new Date();
+return `${n.getUTCFullYear()}${String(n.getUTCMonth() + 1).padStart(2, "0")}${String(n.getUTCDate()).padStart(2, "0")}`;
+}
+function serializeScrap(r: Record<string, any>) {
+return {
+id: r.id, scrap_number: r.scrapNumber,
+production_order_id: r.productionOrderId, material_id: r.materialId,
+lot_id: r.lotId ?? null, stage_id: r.stageId ?? null,
+serial_number: r.serialNumber ?? null,
+source_warehouse_id: r.sourceWarehouseId,
+source_location_id: r.sourceLocationId ?? null,
+quantity: numify(r.quantity), uom: r.uom,
+reason: r.reason, notes: r.notes ?? null, status: r.status,
+approved_by: r.approvedBy ?? null, approved_at: r.approvedAt ?? null,
+posted_by: r.postedBy ?? null, posted_at: r.postedAt ?? null,
+created_by: r.createdBy, created_at: r.createdAt,
+};
+}
+
+// ─── Create draft ────────────────────────────────────────────────────────────
+router.post("/", requireWriteRole("supervisor", "director"), async (req: Request, res: Response): Promise => {
+const parsed = CreateScrapBody.safeParse(req.body);
+if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+const b = parsed.data;
+const actorId = req.user?.userId ?? null;
+
+const [po] = await db.select({ id: mfgProductionOrdersTable.id }).from(mfgProductionOrdersTable)
+.where(eq(mfgProductionOrdersTable.id, b.production_order_id)).limit(1);
+if (!po) { res.status(400).json({ error: "Unknown production order id" }); return; }
+const [mat] = await db.select({ id: materialsTable.id, uom: materialsTable.uom }).from(materialsTable)
+.where(eq(materialsTable.id, b.material_id)).limit(1);
+if (!mat) { res.status(400).json({ error: "Unknown material id" }); return; }
+
+// Source warehouse/location derived from the (PO, material[, lot]) wip rows.
+const wipConds = [
+eq(wipInventoryTable.productionOrderId, b.production_order_id),
+eq(wipInventoryTable.materialId, b.material_id),
+];
+if (b.lot_id) wipConds.push(eq(wipInventoryTable.lotId, b.lot_id));
+const wipRows = await db.select({
+wh: wipInventoryTable.warehouseId, loc: wipInventoryTable.locationId,
+}).from(wipInventoryTable).where(and(...wipConds));
+if (!wipRows.length) { res.status(422).json({ error: "No WIP found for this production order/material/lot" }); return; }
+const whs = [...new Set(wipRows.map((w) => w.wh))];
+if (whs.length !== 1) { res.status(422).json({ error: "WIP spans multiple source warehouses; narrow by lot" }); return; }
+const locs = [...new Set(wipRows.map((w) => w.loc))];
+const sourceLoc = locs.length === 1 ? locs[0] : null;
+
+const { rows } = await pool.query("SELECT nextval('scrap_seq') AS seq");
+const scrapNumber = `SCR-${todayDateStr()}-${String(rows[0].seq).padStart(4, "0")}`;
+
+const [created] = await db.insert(scrapDocumentsTable).values({
+scrapNumber,
+productionOrderId: b.production_order_id,
+materialId: b.material_id,
+lotId: b.lot_id ?? null,
+stageId: b.stage_id ?? null,
+serialNumber: b.serial_number ?? null,
+sourceWarehouseId: whs[0],
+sourceLocationId: sourceLoc,
+quantity: String(b.quantity),
+uom: mat.uom,
+reason: b.reason,
+notes: b.notes ?? null,
+status: "draft",
+createdBy: actorId,
+}).returning();
+
+void recordSecurityEvent({
+eventType: "scrap.draft_created", actorId, actorEmail: req.user?.email ?? null,
+actorRole: req.user?.role ?? null, ...reqMeta(req), statusCode: 201,
+detail: `Scrap draft ${scrapNumber} qty ${b.quantity}`,
+});
+res.status(201).json(serializeScrap(created as Record<string, any>));
+});
+
+// ─── Approve (director only, D10) ───────────────────────────────────────────
+router.post("/:id/approve", requireWriteRole("director"), async (req: Request, res: Response): Promise => {
+const parsed = ApproveScrapBody.safeParse(req.body ?? {});
+if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+const actorId = req.user?.userId ?? null;
+const outcome = await db.transaction(async (tx) => {
+const [r] = await tx.select().from(scrapDocumentsTable)
+.where(eq(scrapDocumentsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (r.status !== "draft") return { status: "invalid_state" as const, current: r.status };
+const [u] = await tx.update(scrapDocumentsTable).set({
+status: "approved", approvedBy: actorId, approvedAt: new Date(),
+}).where(eq(scrapDocumentsTable.id, r.id)).returning();
+return { status: "ok" as const, updated: u };
+});
+if (outcome.status === "not_found") { res.status(404).json({ error: "Scrap not found" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Scrap cannot be approved from status '${outcome.current}'` }); return; }
+res.json(serializeScrap(outcome.updated as Record<string, any>));
+});
+
+// ─── Reject ─────────────────────────────────────────────────────────────────
+router.post("/:id/reject", requireWriteRole("supervisor", "director"), async (req: Request, res: Response): Promise => {
+const parsed = RejectScrapBody.safeParse(req.body);
+if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+const outcome = await db.transaction(async (tx) => {
+const [r] = await tx.select().from(scrapDocumentsTable)
+.where(eq(scrapDocumentsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (!["draft", "approved"].includes(r.status)) return { status: "invalid_state" as const, current: r.status };
+const [u] = await tx.update(scrapDocumentsTable).set({ status: "rejected" })
+.where(eq(scrapDocumentsTable.id, r.id)).returning();
+return { status: "ok" as const, updated: u };
+});
+if (outcome.status === "not_found") { res.status(404).json({ error: "Scrap not found" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Scrap cannot be rejected from status '${outcome.current}'` }); return; }
+res.json(serializeScrap(outcome.updated as Record<string, any>));
+});
+
+// ─── Post (PHYSICAL: −wip / +scrapped) ──────────────────────────────────────
+router.post("/:id/post", requireWriteRole("supervisor", "director"), async (req: Request, res: Response): Promise => {
+const actorId = req.user?.userId ?? null;
+const idemKey = (req.header("idempotency-key") ?? "").slice(0, 100) || null;
+
+const outcome = await db.transaction(async (tx) => {
+if (idemKey) {
+await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`scrap-idem:{idemKey}`}))`);
+const [replay] = await tx.select().from(scrapDocumentsTable)
+.where(eq(scrapDocumentsTable.idempotencyKey, idemKey)).limit(1);
+if (replay) return { status: "replay" as const, doc: replay };
+}
+const [r] = await tx.select().from(scrapDocumentsTable)
+.where(eq(scrapDocumentsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (r.status === "posted") return { status: "already" as const };
+if (r.status !== "approved") return { status: "invalid_state" as const, current: r.status };
+
+    const qty = Number(r.quantity);
+    const wipConds = [
+      eq(wipInventoryTable.productionOrderId, r.productionOrderId),
+      eq(wipInventoryTable.materialId, r.materialId),
+      sql`${wipInventoryTable.status} IN ('active','partially_consumed')`,
+      sql`${wipInventoryTable.remainingQty}::numeric > 0`,
+    ];
+    if (r.lotId) wipConds.push(eq(wipInventoryTable.lotId, r.lotId));
+    const wipRows = await tx.select().from(wipInventoryTable)
+      .where(and(...wipConds)).orderBy(asc(wipInventoryTable.createdAt)).for("update");
+
+    const totalRemaining = wipRows.reduce((s, w) => s + Number(w.remainingQty), 0);
+    if (qty > totalRemaining) return { status: "over_scrap" as const, totalRemaining };
+
+    let remaining = qty;
+    for (const w of wipRows) {
+      if (remaining <= 0) break;
+      const take = Math.min(remaining, Number(w.remainingQty));
+      const scrapped = Number(w.scrappedQty) + take;
+      const left = Number(w.issuedQty) - Number(w.consumedQty) - Number(w.returnedQty) - scrapped;
+      const [lot] = await tx.select().from(inventoryLotsTable)
+        .where(eq(inventoryLotsTable.id, w.lotId)).limit(1);
+      await tx.update(wipInventoryTable).set({
+        scrappedQty: String(scrapped),
+        remainingQty: String(left),
+        status: left <= 0 ? "fully_consumed" : "partially_consumed",
+      }).where(eq(wipInventoryTable.id, w.id));
+      // D7: −wip (source dims) / +scrapped (same dims). Zero-value visible state.
+      await tx.insert(inventoryTransactionsTable).values({
+        materialId: r.materialId, quantity: String(-take), uom: r.uom,
+        stockState: "wip", transactionType: "SCRAP",
+        sourceDocumentType: "scrap_document", sourceDocumentId: r.id,
+        sourceLineId: lot?.grnLineId ?? null,
+        lotId: w.lotId, warehouseId: w.warehouseId, locationId: w.locationId,
+        productionOrderId: r.productionOrderId, actorId, actorName: req.user?.email ?? null,
+      });
+      await tx.insert(inventoryTransactionsTable).values({
+        materialId: r.materialId, quantity: String(take), uom: r.uom,
+        stockState: "scrapped", transactionType: "SCRAP",
+        sourceDocumentType: "scrap_document", sourceDocumentId: r.id,
+        sourceLineId: lot?.grnLineId ?? null,
+        lotId: w.lotId, warehouseId: w.warehouseId, locationId: w.locationId,
+        productionOrderId: r.productionOrderId, actorId, actorName: req.user?.email ?? null,
+      });
+      remaining -= take;
+    }
+
+    const [updated] = await tx.update(scrapDocumentsTable).set({
+      status: "posted", postedBy: actorId, postedAt: new Date(),
+      idempotencyKey: idemKey,
+    }).where(eq(scrapDocumentsTable.id, r.id)).returning();
+
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "scrap_document", aggregateId: r.id,
+      eventType: "SCRAP_POSTED",
+      payload: {
+        scrap_number: r.scrapNumber, production_order_id: r.productionOrderId,
+        material_id: r.materialId, lot_id: r.lotId, quantity: qty, actor_id: actorId,
+      },
+    });
+    return { status: "ok" as const, doc: updated };
+
+});
+
+if (outcome.status === "not_found") { res.status(404).json({ error: "Scrap not found" }); return; }
+if (outcome.status === "already") { res.status(409).json({ error: "Scrap is already posted" }); return; }
+if (outcome.status === "replay") { res.status(200).json(serializeScrap(outcome.doc as Record<string, any>)); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Scrap cannot be posted from status '${outcome.current}'` }); return; }
+if (outcome.status === "over_scrap") {
+res.status(409).json({ error: "OVER_SCRAP", details: { requested: undefined, total_remaining: outcome.totalRemaining } }); return;
+}
+
+void recordSecurityEvent({
+eventType: "scrap.posted", actorId, actorEmail: req.user?.email ?? null,
+actorRole: req.user?.role ?? null, ...reqMeta(req), statusCode: 200,
+detail: `Scrap ${outcome.doc.scrapNumber} posted (−wip/+scrapped)`,
+});
+res.json(serializeScrap(outcome.doc as Record<string, any>));
+});
+
+// ─── Reads ───────────────────────────────────────────────────────────────────
+router.get("/", async (req: Request, res: Response): Promise => {
+const q = req.query as Record<string, string | undefined>;
+const conds = [
+q.production_order_id ? eq(scrapDocumentsTable.productionOrderId, q.production_order_id) : undefined,
+q.material_id ? eq(scrapDocumentsTable.materialId, q.material_id) : undefined,
+q.status ? eq(scrapDocumentsTable.status, q.status) : undefined,
+].filter(Boolean) as any[];
+const where = conds.length ? and(...conds) : undefined;
+const [t] = await db.select({ count: count() }).from(scrapDocumentsTable).where(where);
+const rows = await db.select().from(scrapDocumentsTable).where(where)
+.orderBy(asc(scrapDocumentsTable.createdAt)).limit(200);
+res.json({ items: rows.map((r) => serializeScrap(r as Record<string, any>)), meta: { total: Number(t?.count ?? 0) } });
+});
+router.get("/:id", async (req: Request, res: Response): Promise => {
+const [r] = await db.select().from(scrapDocumentsTable)
+.where(eq(scrapDocumentsTable.id, req.params.id as string)).limit(1);
+if (!r) { res.status(404).json({ error: "Scrap not found" }); return; }
+res.json(serializeScrap(r as Record<string, any>));
+});
+
+export default router;
+
+---------------------------------------------------------------------------
+
+FILE 4 — routes/inventory/index.ts: ADD
+
+import scrapRouter from "./scrap";
+
+router.use("/scrap", scrapRouter);
+
+---------------------------------------------------------------------------
+
+⚠ Defense in depth (same as 70-G): route error boundary maps
+
+err?.code === "23505" || err?.cause?.code === "23505" on the idempotency
+
+column → fetch by key → 200 replay.
+
+VERIFICATION (fixtures: material 50 → issue 30)
+
+1. Flow draft→approve(director)→post: ledger −10 wip / +10 scrapped (SCRAP,
+
+source dims both rows); wip scrappedQty 10, remaining 20; one SCRAP_POSTED.
+
+2. D7/governing: reservation byte-identical (INV-P4-05 zero mismatch).
+
+3. Supervisor approve → 403; post by operator/viewer → 403; anon 401.
+
+4. Post unapproved → 409; reject draft → 200; post rejected → 409.
+
+5. Over-scrap → 409 OVER_SCRAP, zero mutation. Post after full consumption
+
+(remaining 0) → 409, zero mutation.
+
+6. Idempotency: same-key concurrent posts → 1×200 + 1×200 replay, exactly
+
+one ledger pair + one outbox.
+
+7. Race scrap↔consumption on same wip: 1×success/1×409, loser zero mutation.
+
+8. INV-P5-02 SQL (below) zero mismatches; scrapped state visible in stock
+
+projection (stock_state=scrapped row = scrapped total).
+
+9. Regression: full §10 list (Tasks 67/68/69, Phase4 suite 17/17, Phase4
+
+invariants 15/15, Option A, MIN, SS-02/03/04, FAT smoke 32/32).
+
+10. Zero residue; evidence certification/fat-evidence/task-70-h-scrap-2026-09-13.md.
+
+INV-P5-02 SQL (0 rows expected):
+
+SELECT w.production_order_id, w.material_id, w.lot_id,
+
+SUM(w.scrapped_qty)::numeric AS wip_scrapped,
+
+(SELECT COALESCE(SUM(-it.quantity),0)::numeric FROM inventory_transactions it
+
+WHERE it.transaction_type='SCRAP' AND it.stock_state='wip'
+
+AND it.production_order_id=w.production_order_id
+
+AND it.material_id=w.material_id AND it.lot_id=w.lot_id) AS ledger_scrapped
+
+FROM wip_inventory w WHERE w.scrapped_qty::numeric > 0
+
+GROUP BY 1,2,3
+
+HAVING SUM(w.scrapped_qty)::numeric <> (
+
+SELECT COALESCE(SUM(-it.quantity),0)::numeric FROM inventory_transactions it
+
+WHERE it.transaction_type='SCRAP' AND it.stock_state='wip'
+
+AND it.production_order_id=w.production_order_id
+
+AND it.material_id=w.material_id AND it.lot_id=w.lot_id);
+
+WHAT MUST NOT BE CHANGED:
+
+❌ No edits to returns (70-G), Phase 4 routes, consumption /adjust,
+
+reservation arithmetic (D7), Option A, MIN. FAT BMS exception untouched.
+
+❌ generated/api.ts; frontend; no commit; dev DB only.
+
+RISK: Medium — same profile as 70-G (certified): proven wip locking, real
+
+approval gate, TOCTOU-hardened idempotency, shared terminal status math.
+
+NEXT: After evidence, Kimi certifies 70-H and prepares 70-I (Physical
+
+adjustments: inventory_adjustments state machine draft→submitted→approved→
+
+posted|rejected, ADJUSTMENT_IN/OUT, negative-stock protection).

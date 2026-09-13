@@ -431,6 +431,9 @@ export const scrapDocumentsTable = pgTable(
       .notNull()
       .references(() => materialsTable.id),
     lotId: uuid("lot_id").references(() => inventoryLotsTable.id),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }).unique(
+      "scrap_documents_idempotency_key_unique",
+    ),
     serialNumber: varchar("serial_number", { length: 100 }),
     stageId: uuid("stage_id").references(() => mfgOrderStagesTable.id),
     sourceWarehouseId: uuid("source_warehouse_id")
@@ -451,6 +454,7 @@ export const scrapDocumentsTable = pgTable(
   },
   (table) => [
     index("scrap_documents_order_idx").on(table.productionOrderId),
+    index("idx_scrap_documents_po_status").on(table.productionOrderId, table.status),
     check("scrap_documents_quantity_positive", sql`${table.quantity} > 0`),
   ],
 );
@@ -834,6 +838,7 @@ export const wipIssueStatusEnum = pgEnum("wip_issue_status", [
 export const wipIssueSequence = pgSequence("wip_issue_seq");
 export const consumptionSequence = pgSequence("consumption_seq");
 export const returnNumberSequence = pgSequence("return_seq");
+export const scrapNumberSequence = pgSequence("scrap_seq");
 
 export const wipIssueNotesTable = pgTable(
   "wip_issue_notes",
