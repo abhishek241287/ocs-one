@@ -1,0 +1,455 @@
+PHASE 4 — WIP / ISSUE-TO-WIP / CONSUMPTION
+
+REPOSITORY & SCHEMA GAP REPORT + PROPOSED BATCH PLAN
+
+OCS One · 2026-09-13 · READ-ONLY AUDIT — no files were modified.
+
+Baseline: Task #69 certified (RES-01…15 = 15/15, INV-RES-01…08 = 0 rows, full
+
+regression green) in the working tree. NOTE: GitHub HEAD predates the 69 batches;
+
+module audit below is from GitHub HEAD (pre-existing modules unchanged by 69).
+
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 1 — WHAT WAS INSPECTED (files read this audit)
+
+═══════════════════════════════════════════════════════════════════════════
+
+lib/db/src/schema/inventory-platform.ts  (Phase 0 full-inventory schema)
+
+lib/db/src/schema/material-issue.ts      (MIN schema)
+
+lib/db/src/schema/inventory.ts           (ledger + GRN core)
+
+lib/db/src/schema/manufacturing.ts       (orders + stages)
+
+routes/index.ts, routes/inventory/index.ts, routes/inventory/{grns,transfers,stock,lots}.ts,
+
+routes/manufacturing/index.ts, routes/manufacturing/material-issues.ts
+
+lib/grn-posting.ts, lib/security-events.ts, api-server/package.json
+
++ certified Task #69 working-tree state (batches 69-A…69-G, Kimi-authored).
+
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 2A — EXISTING CAPABILITIES
+
+═══════════════════════════════════════════════════════════════════════════
+
+| Capability                                   | Exists? | Location                                             | Reusable? |
+
+|----------------------------------------------|---------|------------------------------------------------------|-----------|
+
+| Signed inventory ledger (append-only)        | YES     | inventory_transactions + idx (material/lot/state,    | YES — the ONLY accounting source |
+
+|                                              |         | material/wh/loc/bin/state)                           |           |
+
+| Ledger stock_state 'wip' & 'consumed'        | YES     | stockState enum (quarantined/wip/consumed/returned/  | YES — writers missing |
+
+|                                              |         | scrapped/in_transit)                                 |           |
+
+| Ledger transaction types incl.               | YES     | transactionType enum (PRODUCTION_ISSUE,              | YES — writers missing |
+
+| PRODUCTION_ISSUE / WIP_RECEIPT / CONSUMPTION |         | PRODUCTION_ISSUE_REVERSAL, WIP_RECEIPT, CONSUMPTION…) |           |
+
+| Ledger dims: lotId/warehouseId/locationId/   | YES     | inventory_transactions columns (nullable, additive)  | YES — issue/consumption must populate |
+
+| binId/productionOrderId                      |         |                                                      |           |
+
+| wip_inventory table                          | YES     | inventory-platform.ts (status active/                | YES — currently UNWRITTEN by any route |
+
+|                                              |         | partially_consumed/fully_consumed; remainingQty      |           |
+
+|                                              |         | CHECK = issued−consumed−returned−scrapped;           |           |
+
+|                                              |         | unique (PO, material, lot, issue))                   |           |
+
+| consumption_confirmations table              | YES     | inventory-platform.ts (plannedQty/actualQty/         | YES — currently UNWRITTEN |
+
+|                                              |         | varianceQty CHECK variance=actual−planned;           |           |
+
+|                                              |         | status draft/confirmed/adjusted/rejected;            |           |
+
+|                                              |         | confirmedBy NOT NULL)                                |           |
+
+| bom_snapshots + lines (per PO)               | YES     | inventory-platform.ts (unique per PO)                | YES — planned-qty source for variance |
+
+| MIN (Material Issue Note) module             | YES     | routes/manufacturing/orders/:id/material-issues +    | YES — but BEHAVIOR IS FROZEN (regression) |
+
+|                                              |         | lib/material-issue.ts                                |           |
+
+| MIN characteristics                            | —       | BOM-driven; FULL quantity only ("partial or short    | N/A — see conflicts |
+
+|                                              |         | issue is not supported" → 422); one active MIN per   |           |
+
+|                                              |         | order (409); GRN-line + supplier-lot-string aware,   |           |
+
+|                                              |         | NOT inventory_lots-aware; stock nets by MATERIAL     |           |
+
+|                                              |         | (schema comment); order-row FOR UPDATE double-issue  |           |
+
+|                                              |         | guard; reversal endpoint (mandatory reason)          |           |
+
+| Reservation / allocation engine (Task #69)   | YES     | routes/inventory/reservations.ts (certified)         | YES — issue consumes its allocations |
+
+| Reservation issuedQty + issued enum states     | YES     | inventory_reservations (column + states pre-built    | YES — no writer yet; Phase 4 is the writer |
+
+|                                              |         | by Phase 0)                                          |           |
+
+| Allocation evidence rows (lot-level)           | YES     | inventory_reservation_allocations (69-A)             | YES — must grow an 'issued' state |
+
+| Transactional outbox                           | YES     | outbox_events (house pattern since Task #68)         | YES |
+
+| RBAC (six roles) + requireWriteRole            | YES     | middleware/auth.ts                                   | YES |
+
+| Store→Cell transfer (Option A)                 | YES     | routes/inventory/transfers.ts — locks GRN LINE       | YES — untouched; issue must share its line lock |
+
+|                                              |         | FOR UPDATE, decrements line-level available          |           |
+
+| Cert suites (authz/audit/config/procurement/   | YES     | src/cert/.ts (tsx against running server)           | YES |
+
+| receiving/transfer-domain/FAT)                 |         |                                                      |           |
+
+| WIP / consumption ROUTES                       | NO      | none mounted anywhere (verified route tree)          | — build new |
+
+| wip_inventory / consumption_confirmations      | NO      | tables exist but no route writes them                | — build writers |
+
+| writers                                        |         |                                                      |           |
+
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 2B — REQUIRED PHASE 4 CAPABILITIES:  EXISTS / PARTIAL / MISSING / CONFLICT
+
+═══════════════════════════════════════════════════════════════════════════
+
+Issue-to-WIP .................. PARTIAL (MIN issues to PO but: full-only, material-
+
+level netting, no WIP record, no reservation link)
+
+WIP stock/state ............... PARTIAL (schema complete; zero writers)
+
+Consumption confirmation ...... MISSING (schema complete; zero writers)
+
+Consumption qty validation .... PARTIAL (CHECKs + confirmedBy NOT NULL exist;
+
+enforcement logic missing)
+
+Consumption variance .......... PARTIAL (varianceQty column + CHECK exist; no writer)
+
+Partial issue ................. CONFLICT (MIN explicitly rejects partial issue;
+
+MIN is frozen → Phase 4 needs a SEPARATE issue path)
+
+Lot-aware issue ............... PARTIAL (MIN is GRN-line/supplier-lot-string aware;
+
+Phase 4 requirement is inventory_lots-aware with
+
+warehouse/location attribution)
+
+Reservation interaction ....... MISSING (issuedQty/issued states have no writer;
+
+no allocation→issue consumption)
+
+Concurrency ................... PARTIAL (order-lock in MIN; material/lot/line locks
+
+in Task #69; issue must COMPOSE all three)
+
+Ledger accounting ............. PARTIAL (types/states exist; issue must write
+
+−available/+wip; consumption −wip)
+
+Audit/outbox .................. EXISTS (house pattern)
+
+RBAC .......................... EXISTS
+
+Reversal/correction ........... PARTIAL (MIN reversal exists for MIN only;
+
+issue-reversal & consumption-adjustment paths missing;
+
+confirmations.status 'adjusted' exists)
+
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 2C — PROPOSED LIFECYCLE (state transitions)
+
+═══════════════════════════════════════════════════════════════════════════
+
+inventory_reservations:      active → partially_allocated → fully_allocated
+
+↓ issue (partial or full)
+
+partially_issued → fully_issued
+
+↓ consumption (of the issued qty)
+
+(terminal for Task scope; release-after-partial-issue
+
+releases only the still-allocated remainder)
+
+inventory_reservation_allocations: active → issued  (per issued lot quantity)
+
+inventory_transactions (stock_state): available −qty │ +qty wip   ← ISSUE (physical move)
+
+wip        −qty            ← CONSUMPTION (physical use)
+
+wip_inventory:  upsert per (PO, material, lot, issue-doc): issuedQty ↑, then
+
+consumedQty ↑; remainingQty via CHECK; status active →
+
+partially_consumed → fully_consumed.
+
+consumption_confirmations: draft → confirmed (planned vs actual → varianceQty),
+
+or → rejected; 'adjusted' reserved for post-hoc correction.
+
+THE ONLY OPERATIONS THAT CHANGE PHYSICAL INVENTORY: ISSUE (available→wip) and
+
+CONSUMPTION (wip destroyed into the product). Reservation/allocation alone
+
+never do (certified Task #69 rule, unchanged).
+
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 2D — ACCOUNTING MODEL
+
+═══════════════════════════════════════════════════════════════════════════
+
+ISSUE (from a reservation, lot-forced by allocation):
+
+• ledger: −qty stock_state='available', +qty stock_state='wip' — BOTH keyed to
+
+the lot's GRN line dims (lotId/warehouseId/locationId/binId) + productionOrderId
+
++ source_document (issue doc). No net material change; state migration only.
+
+• reservation: allocatedQty −= qty; issuedQty += qty; status → partially_issued/
+
+fully_issued (existing CHECK reserved ≥ allocated ≥ issued enforced by DB).
+
+• allocations: consumed rows flip active → 'issued' (partial issue splits the row).
+
+• wip_inventory: upsert (PO, material, lot, issue-doc) issuedQty += qty.
+
+CONSUMPTION (confirm actual use):
+
+• ledger: −qty stock_state='wip' (wip decreases; consumed stock leaves inventory —
+
+the product is tracked by the mfg order, not material stock).
+
+• wip_inventory: consumedQty += qty (CHECK keeps remaining consistent).
+
+• consumption_confirmations: actualQty recorded vs bom snapshot plannedQty;
+
+varianceQty = actual − planned (DB CHECK).
+
+TRANSFERS: not involved in issue/consumption (Option A untouched). Transfers move
+
+available→cell-processing; issue moves available→wip. Both lock GRN lines.
+
+LOTS: preserved end-to-end — every ledger row and wip row carries lotId; lot.status
+
+never mutated by issue/consumption (a lot is 'consumed' only via lots lifecycle).
+
+RESERVATIONS: issue consumes allocations (allocated→issued); release-after-partial-
+
+issue releases only the non-issued remainder; cancel-after-issue rejected once
+
+issuedQty > 0 (or cancels remainder only — decision flagged below).
+
+CONSISTENCY: available(material) = Σ ledger 'available'; reserved = Σ holding
+
+reservations; wip(material) = Σ ledger 'wip'; invariant: available + wip +
+
+consumed-never-negative, and issued(reservation) ≤ allocated ≤ reserved always.
+
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 2E — CONCURRENCY MODEL (reuse existing locks; nothing new invented)
+
+═══════════════════════════════════════════════════════════════════════════
+
+ISSUE:  1) inventory_reservations row FOR UPDATE (serializes vs release/cancel/
+
+concurrent issues on the same reservation)
+
+2) allocation rows of that reservation, GRN-line order (deterministic —
+
+same order Task #69 allocate uses) → lot rows FOR UPDATE
+
+3) each GRN line FOR UPDATE — THE SAME LOCK OBJECT transfers.ts takes,
+
+so issue vs transfer is serialized (transfer locks one line only →
+
+no deadlock cycle possible)
+
+CONSUMPTION: wip_inventory row FOR UPDATE (unique PO+material+lot+issue) —
+
+serializes concurrent consumption; issue upserts the same row under
+
+the reservation lock, so issue-vs-consumption on one row is ordered.
+
+RESERVATION INTERACTION: release/cancel also take the reservation row lock
+
+FIRST → issue vs release/cancel fully ordered. Material-level create
+
+advisory lock (Task #69) is unaffected (issue never changes reserved).
+
+IDEMPOTENCY: state machine + row locks give at-most-once per transition;
+
+a retried issue re-reads the locked reservation and 409s on
+
+over-issue instead of double-writing.
+
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 2F — SCHEMA DELTA (proposal — NO changes during this audit)
+
+═══════════════════════════════════════════════════════════════════════════
+
+1. reservation_allocation_status enum: ADD 'issued'  — allocation rows must leave
+
+'active' when consumed by issue, else INV-RES-04 double-counts held stock.
+
+(Only certified-artifact touch; proven dependency.)
+
+Optional: issuedAt timestamp column on allocations (evidence).
+
+2. wip_inventory.issue_id: CONFIRM nullability. If NOT NULL FK→material_issue_notes,
+
+either (a) make it nullable + add wip_issue_note_id FK → new Phase 4 issue-doc
+
+table, or (b) new issue-doc table and keep issue_id only for legacy MIN links.
+
+RECOMMENDED (a) — one new table, no MIN surgery:
+
+wip_issue_notes (id, issue_number from wip_issue_seq, reservation_id FK,
+
+production_order_id FK, status active/fully_issued/reversed, issued_by,
+
+notes, created_at) + wip_issue_lines (id, wip_issue_note_id, reservation
+
+allocation_id, lot_id, quantity, uom) + UNIQUE reservation+lot on lines.
+
+3. Sequence: wip_issue_seq (ISS-YYYYMMDD-NNNN); consumption_seq (CC-… for
+
+consumption_confirmations.confirmation_number which is unique NOT NULL).
+
+4. Indexes: wip_inventory (production_order_id, status), (material_id, status);
+
+consumption_confirmations (production_order_id, status);
+
+inventory_transactions (production_order_id, stock_state) for WIP reconciliation.
+
+5. consumption_confirmations: usable as-is; optional reservation_id column for
+
+traceability (defer unless certification requires it).
+
+No other tables change. inventory_reservations / MIN / GRN / lots untouched.
+
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 3 — RISKS (identified, not yet solved)
+
+═══════════════════════════════════════════════════════════════════════════
+
+R1 Double issue of the same allocation          → allocation flip to 'issued' under row lock
+
+R2 Issue > allocated/reserved                   → reserved ≥ allocated ≥ issued CHECK + app guard
+
+R3 Issue > physically available                 → line ledger re-read under GRN-line lock
+
+R4 Lot mismatch (issue from wrong lot)          → allocations bind lot; forced-lot validated
+
+R5 Consumption > issued                         → wip CHECK + remaining validation under row lock
+
+R6 Concurrent issue race                        → reservation row lock
+
+R7 Concurrent consumption race                  → wip row lock
+
+R8 Ledger duplication (double submit)           → state machine + locks; retries idempotent-by-state
+
+R9 Negative stock                               → DB CHECKs (wip remaining) + invariant SQL
+
+R10 Reservation inconsistent after issue        → allocated/issued moves are one tx with outbox
+
+R11 Wrong lot/location attribution              → dims copied from allocation's lot, never client-free
+
+R12 Transfer↔issue deadlock                     → analyzed: none possible (transfers lock 1 line)
+
+R13 Retry/idempotency                           → at-most-once by state; optional idempotency_key later
+
+R14 Audit/outbox tx consistency                 → outbox insert inside same tx (house pattern)
+
+R15 MIN regression                              → MIN untouched; new flow lives beside it
+
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 4 — PROPOSED IMPLEMENTATION BATCHES (logical units, one final cert gate)
+
+═══════════════════════════════════════════════════════════════════════════
+
+70-A  Schema/domain foundation: enum value 'issued', wip_issue_notes/lines
+
+(+ sequences + indexes), wip_inventory link resolution. Typecheck+push.
+
+70-B  Issue-to-WIP: POST /api/inventory/reservations/:id/issue (partial, full,
+
+forced-lot from allocation), ledger −available/+wip, allocation→issued,
+
+reservation issued states, wip_inventory upsert, outbox. + GET issue reads.
+
+70-C  Consumption: consumption_confirmations create-draft + confirm flow,
+
+planned (BOM snapshot) vs actual, variance CHECK enforced, ledger −wip,
+
+wip consumedQty/status, outbox.
+
+70-D  Variance / reconciliation / reversal: variance views, issue reversal
+
+(wip→available, allocations issued→active, reservation restore),
+
+consumption adjustment (status 'adjusted') — minimal per requirement.
+
+70-E  Read projections: stock projection +wip_qty/+wip_for_use, order-level WIP
+
+view, reservation detail with issued breakdown.
+
+70-F  COMPREHENSIVE Phase 4 certification (single gate, per your testing policy):
+
+functional (issue partial/full/lot/reservation-interaction/consumption
+
+partial/full/variance/invalid transitions/retry), concurrency (competing
+
+reservations→issue, concurrent issue, concurrent consumption, double-submit,
+
+transfer-interaction), accounting (signed-ledger reconciliation, no duplicate
+
+accounting, no negative balances, lot-level, WIP, reservation reconciliation),
+
+security (401/403/role matrix/audit), regression (Task #67/68/69 suites,
+
+Option A, MIN smoke — NOTE: no dedicated MIN suite exists; 70-F must include
+
+MIN behavior smoke checks), configuration.
+
+Testing policy honored: typecheck/build sanity during batches; ONE cert gate at 70-F.
+
+═══════════════════════════════════════════════════════════════════════════
+
+DECISIONS REQUESTED FROM YOU BEFORE 70-A
+
+═══════════════════════════════════════════════════════════════════════════
+
+D1  Confirm new issue-doc tables beside MIN (recommended) vs extending MIN.
+
+D2  Consumption ledger: −wip rows only (recommended) vs +consumed positive rows.
+
+D3  Cancel-after-partial-issue: reject once issuedQty>0 (recommended) vs
+
+cancel-remainder semantics.
+
+D4  Confirm adding 'issued' to reservation_allocation_status (touches the
+
+certified Task #69 artifact minimally — proven Phase 4 dependency).
