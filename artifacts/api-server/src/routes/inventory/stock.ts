@@ -9,6 +9,7 @@ import {
   suppliersTable,
   incomingInspectionsTable,
   incomingInspectionLinesTable,
+  inventoryReservationsTable,
   usersTable,
 } from "@workspace/db";
 import { requireWriteRole } from "../../middleware/auth";
@@ -148,6 +149,28 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     }
   }
 
+  // Task #69: reservation holds per material (holding statuses mirror the
+  // reservation creation guard). Released, cancelled, and expired holds are
+  // intentionally excluded from this read-time stock overlay.
+  const HOLDING_STATUSES_FOR_STOCK = [
+    "active",
+    "partially_allocated",
+    "fully_allocated",
+    "partially_issued",
+    "fully_issued",
+  ] as const;
+  const reservedRows = await db
+    .select({
+      material_id: inventoryReservationsTable.materialId,
+      reserved_qty: sql`coalesce(sum(${inventoryReservationsTable.reservedQty}), 0)`,
+    })
+    .from(inventoryReservationsTable)
+    .where(inArray(inventoryReservationsTable.status, [...HOLDING_STATUSES_FOR_STOCK]))
+    .groupBy(inventoryReservationsTable.materialId);
+  const reservedByMaterial = new Map(
+    reservedRows.map((row) => [row.material_id, Number(row.reserved_qty)]),
+  );
+
   res.json({
     items: rows.map((r) => ({
       material_id: r.material_id,
@@ -161,6 +184,17 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
       uom: r.uom,
       stock_state: r.stock_state,
       quantity: Number(r.quantity),
+      reserved_qty:
+        r.stock_state === "available"
+          ? reservedByMaterial.get(r.material_id) ?? 0
+          : 0,
+      available_for_use:
+        r.stock_state === "available"
+          ? Math.max(
+              0,
+              Number(r.quantity) - (reservedByMaterial.get(r.material_id) ?? 0),
+            )
+          : 0,
     })),
     meta: {
       total,

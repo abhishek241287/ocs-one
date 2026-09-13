@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import {
   db,
   grnLineItemsTable,
@@ -727,6 +727,104 @@ router.post("/:id/cancel", async (req: Request, res: Response): Promise<void> =>
   });
 
   res.json(serializeReservation(outcome.updated as Record<string, any>));
+});
+
+// ─── GET /inventory/reservations ─────────────────────────────────────────────
+router.get("/", async (req: Request, res: Response): Promise<void> => {
+  const query = req.query as Record<string, string | undefined>;
+  const page = Math.max(parseInt(query.page || "1", 10) || 1, 1);
+  const pageSize = Math.min(
+    Math.max(parseInt(query.pageSize || "25", 10) || 25, 1),
+    200,
+  );
+  const offset = (page - 1) * pageSize;
+
+  const conditions = [
+    query.production_order_id
+      ? eq(inventoryReservationsTable.productionOrderId, query.production_order_id)
+      : undefined,
+    query.material_id
+      ? eq(inventoryReservationsTable.materialId, query.material_id)
+      : undefined,
+    query.status
+      ? eq(inventoryReservationsTable.status, query.status as any)
+      : undefined,
+  ].filter(Boolean) as any[];
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const [totalResult] = await db
+    .select({ count: count() })
+    .from(inventoryReservationsTable)
+    .where(where);
+  const rows = await db
+    .select()
+    .from(inventoryReservationsTable)
+    .where(where)
+    .limit(pageSize)
+    .offset(offset)
+    .orderBy(asc(inventoryReservationsTable.createdAt));
+
+  const total = Number(totalResult?.count ?? 0);
+  res.json({
+    items: rows.map((row) => serializeReservation(row as Record<string, any>)),
+    meta: {
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    },
+  });
+});
+
+// ─── GET /inventory/reservations/:id ─────────────────────────────────────────
+router.get("/:id", async (req: Request, res: Response): Promise<void> => {
+  const [reservation] = await db
+    .select()
+    .from(inventoryReservationsTable)
+    .where(eq(inventoryReservationsTable.id, req.params.id as string))
+    .limit(1);
+
+  if (!reservation) {
+    res.status(404).json({ error: "Reservation not found" });
+    return;
+  }
+
+  const allocations = await db
+    .select({
+      id: inventoryReservationAllocationsTable.id,
+      lotId: inventoryReservationAllocationsTable.lotId,
+      lotNumber: inventoryLotsTable.lotNumber,
+      warehouseId: inventoryLotsTable.warehouseId,
+      locationId: inventoryLotsTable.locationId,
+      binId: inventoryLotsTable.binId,
+      quantity: inventoryReservationAllocationsTable.quantity,
+      status: inventoryReservationAllocationsTable.status,
+      createdAt: inventoryReservationAllocationsTable.createdAt,
+      releasedAt: inventoryReservationAllocationsTable.releasedAt,
+    })
+    .from(inventoryReservationAllocationsTable)
+    .innerJoin(
+      inventoryLotsTable,
+      eq(inventoryLotsTable.id, inventoryReservationAllocationsTable.lotId),
+    )
+    .where(eq(inventoryReservationAllocationsTable.reservationId, reservation.id))
+    .orderBy(asc(inventoryReservationAllocationsTable.createdAt));
+
+  res.json({
+    ...serializeReservation(reservation as Record<string, any>),
+    allocations: allocations.map((allocation) => ({
+      id: allocation.id,
+      lot_id: allocation.lotId,
+      lot_number: allocation.lotNumber,
+      warehouse_id: allocation.warehouseId,
+      location_id: allocation.locationId,
+      bin_id: allocation.binId,
+      quantity: numify(allocation.quantity),
+      status: allocation.status,
+      created_at: allocation.createdAt,
+      released_at: allocation.releasedAt ?? null,
+    })),
+  });
 });
 
 export default router;
