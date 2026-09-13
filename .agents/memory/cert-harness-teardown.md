@@ -51,3 +51,18 @@ subsequent seed could fail before any certification case ran.
 **How to apply:** for every controlled master, inspect its inbound FKs and include the
 controlled-master relationship in child cleanup; do not rely only on generated document
 number prefixes or captured IDs.
+
+# WIP issue teardown ordering and baseline hygiene
+
+For WIP certification fixtures, delete `wip_inventory` rows before deleting their referenced
+`wip_issue_notes`; issue-note deletion otherwise fails on the WIP foreign key. Create warehouse
+and location fixtures with the same stable prefix as lots/GRNs and include them in the final
+residual-count assertion.
+
+**Why:** a failed run can leave otherwise unreferenced warehouse/location rows, and the first
+70-F run exposed that note-first cleanup leaves the whole transaction rolled back.
+
+**How to apply:** use leaf-to-root cleanup (`wip_inventory` → issue lines/notes → reservations
+and documents → masters → locations → warehouses), then assert zero fixture rows. For global
+ledger hygiene checks, distinguish pre-existing baseline rows from rows involving the current
+fixture IDs and disclose the baseline instead of silently filtering it.
