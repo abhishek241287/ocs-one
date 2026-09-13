@@ -22,3 +22,27 @@
   the same run also reports unrelated ledger drift. The CONC-P02 records pass,
   but the full FAT run is not a clean sign-off until that fixture issue is fixed.
 - **Password evidence:** Omitted.
+
+## Task 70-F Gap-Closure Note — WIP issue idempotency TOCTOU
+
+- **Status:** Issue discovered and fixed during certification; 70-B remains
+  uncertified pending formal sign-off.
+- **Affected path:** `POST /api/inventory/reservations/:id/issue`
+- **Finding:** The idempotency-key lookup ran before the transaction. Two
+  concurrent requests carrying the same new key could both miss the lookup,
+  then race to insert. The unique constraint preserved the data invariant, but
+  the losing request returned a raw `409` instead of a successful replay.
+- **Resolution:** Removed the pre-transaction lookup. The transaction now takes
+  `pg_advisory_xact_lock(hashtext(\`wip-issue-idem:${idempotencyKey}\`))` for
+  keyed requests, rechecks the existing note under the lock, and returns the
+  existing note as a replay. A residual PostgreSQL `23505` fallback handles both
+  direct `err.code` and Drizzle-wrapped `err.cause.code` forms.
+- **Verification:** Same-key concurrency returned one `201` and one `200` for
+  the same issue ID, with exactly one issue note, one issue line, one
+  `-available`/`+wip` ledger pair, and one `WIP_ISSUE_CREATED` outbox event.
+  Different-key concurrency returned two independent `201` responses.
+- **Regression:** Partial issue, sequential replay, `409` over-issue,
+  WIP/ledger/allocation/outbox projections, and `409` cancel-after-issue all
+  passed. Task 69 remained `15/15` passing.
+- **Scope:** No MIN, Task 69 reservation logic, GRN, transfer, stock,
+  generated API, frontend, or package files changed. No 70-C work started.
