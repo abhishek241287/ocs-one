@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-09-13T16:12:32.129Z",
+  "run_at": "2026-09-13T16:57:11.820Z",
   "environment": "http://localhost:8080",
   "dataset": "FAT-E2E-",
   "mode": "read-only-route-smoke",
@@ -150,8 +150,8 @@
           "role": "owner",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789315952,
-          "exp": 1789344752
+          "iat": 1789318632,
+          "exp": 1789347432
         }
       }
     },
@@ -179,8 +179,8 @@
           "role": "owner",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789315952,
-          "exp": 1789344752
+          "iat": 1789318632,
+          "exp": 1789347432
         }
       },
       "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
@@ -203,8 +203,8 @@
           "role": "director",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789315952,
-          "exp": 1789344752
+          "iat": 1789318632,
+          "exp": 1789347432
         }
       }
     },
@@ -232,8 +232,8 @@
           "role": "director",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789315952,
-          "exp": 1789344752
+          "iat": 1789318632,
+          "exp": 1789347432
         }
       },
       "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
@@ -256,8 +256,8 @@
           "role": "supervisor",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789315952,
-          "exp": 1789344752
+          "iat": 1789318632,
+          "exp": 1789347432
         }
       }
     },
@@ -285,8 +285,8 @@
           "role": "supervisor",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789315952,
-          "exp": 1789344752
+          "iat": 1789318632,
+          "exp": 1789347432
         }
       },
       "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
@@ -309,8 +309,8 @@
           "role": "operator",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789315953,
-          "exp": 1789344753
+          "iat": 1789318632,
+          "exp": 1789347432
         }
       }
     },
@@ -338,8 +338,8 @@
           "role": "operator",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789315953,
-          "exp": 1789344753
+          "iat": 1789318632,
+          "exp": 1789347432
         }
       },
       "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
@@ -362,8 +362,8 @@
           "role": "viewer",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789315953,
-          "exp": 1789344753
+          "iat": 1789318633,
+          "exp": 1789347433
         }
       }
     },
@@ -391,8 +391,8 @@
           "role": "viewer",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789315953,
-          "exp": 1789344753
+          "iat": 1789318633,
+          "exp": 1789347433
         }
       },
       "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
@@ -415,8 +415,8 @@
           "role": "dealer",
           "dealerId": "fa120000-0000-4000-8000-000000000001",
           "sessionVersion": 0,
-          "iat": 1789315953,
-          "exp": 1789344753
+          "iat": 1789318633,
+          "exp": 1789347433
         }
       }
     },
@@ -444,8 +444,8 @@
           "role": "dealer",
           "dealerId": "fa120000-0000-4000-8000-000000000001",
           "sessionVersion": 0,
-          "iat": 1789315953,
-          "exp": 1789344753
+          "iat": 1789318633,
+          "exp": 1789347433
         }
       },
       "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."

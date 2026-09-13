@@ -245,6 +245,7 @@ uri = "file://certification/fat-evidence/task-70-h-scrap-2026-09-13.md"
 type = "text"
 title = "Task 70-H Scrap Certification Evidence"
 description = "Development-only evidence for the WIP scrap workflow: focused 10/10 suite, regression results, race/idempotency checks, disclosed -0.500 baseline, and zero-residue verification."
+logical_id = "88c710fb-d489-4e9a-abd5-585f189a1119"
 
 [[outputs]]
 id = "nNlvecKagGHhBdEc4unFj"
@@ -252,3 +253,18 @@ uri = "file://certification/fat-evidence/task-70-i-adjustments-2026-09-13.md"
 type = "text"
 title = "Task 70-I Physical Adjustment Certification Evidence"
 description = "Development-only evidence for physical inventory adjustments: 11/11 focused checks, signed ledger and race/idempotency results, INV-P5-03 and INV-P5-06, full regression results, and the disclosed -0.500 baseline."
+logical_id = "003b3ffb-103b-4a11-aa15-4071ae17bcb9"
+
+[[outputs]]
+id = "OeBGavdwE1YJw_UBUulOS"
+uri = "file://certification/fat-evidence/task-70-j-transfer-lifecycle-2026-09-13.md"
+type = "text"
+title = "Task 70-J transfer lifecycle evidence"
+description = "Development implementation and certification evidence for the full transfer-request lifecycle."
+logical_id = "97453bb0-84e4-4ac9-8243-f61dee7e3566"
+content_hash = "sha256:f3afa9a76c27c6faa0f1ca58658482eaaa13c3ad244e073f2e8c69645181956b"
+size = 4309
+mtime_ms = 1789318673115
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/97453bb0-84e4-4ac9-8243-f61dee7e3566/84da8215-df61-497a-896c-5927bef93ecb"
+storage_version_token = "1789318708506563"
+content_type = "text/markdown"

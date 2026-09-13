@@ -61,3 +61,4 @@
 - [FAT WIP issue fixtures](fat-wip-issue-fixtures.md) — FAT seed may have stock ledger rows without lots/warehouses; issue tests need an explicit source-lot fixture.
 - [Scrap workflow guard](scrap-workflow.md) — allow exhausted-scope drafts; authoritative post-time locking rejects them with zero mutation.
 - [Physical adjustment ledger boundary](physical-adjustments.md) — warehouse positives may be null-lot/null-source-line; negatives require lot + GRN-line locking.
+- [Transfer lifecycle invariants](transfer-lifecycle-invariants.md) — issue/receive share one idempotency column via phase prefixes; rejected requests need terminal conservation handling.
