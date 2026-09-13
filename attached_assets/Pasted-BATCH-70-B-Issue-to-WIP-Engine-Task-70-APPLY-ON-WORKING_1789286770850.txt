@@ -1,0 +1,488 @@
+BATCH 70-B — Issue-to-WIP Engine
+
+Task #70 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Depends on: 70-A v2 (certified: wip_issue_notes/lines, 'issued' enum, identity unique).
+
+Ratified decisions in force: D1 (separate flow, MIN frozen), D2 (−wip consumption),
+
+D3 (cancel-after-issue auto-rejected — FREE: Task #69 state machine already excludes
+
+issued states from CANCELLABLE_STATUSES; no Task #69 logic change needed), D4 done.
+
+---------------------------------------------------------------------------
+
+ACCOUNTING + CONCURRENCY MODEL (from the approved gap report)
+
+• Ledger per issue line: −qty stock_state='available' AND +qty stock_state='wip',
+
+both keyed to the lot's GRN line (source_line_id) with lot/warehouse/location/
+
+bin dims + production_order_id. transactionType: PRODUCTION_ISSUE for the
+
+−available row; WIP_RECEIPT for the +wip row (ADJUST: if WIP_RECEIPT is reserved
+
+elsewhere, use PRODUCTION_ISSUE for both — semantics identical, source_document
+
+type distinguishes). Source document: 'wip_issue_note'.
+
+• Reservation: allocatedQty −= issued, issuedQty += issued (DB CHECK
+
+reserved ≥ allocated ≥ issued enforced); status → partially_issued / fully_issued.
+
+• Allocations: consumed rows flip active → 'issued'; partial issue SPLITS the row
+
+(active remainder stays, issued slice becomes its own evidence row).
+
+• wip_inventory: one row per (note, lot); issuedQty=remainingQty=take; status active.
+
+• Locks (deterministic order): reservation FOR UPDATE → allocation rows FOR UPDATE
+
+(lot received_date/lot_number order) → each GRN line FOR UPDATE on first visit
+
+(SAME object transfers lock; transfers lock one line only ⇒ no deadlock cycle).
+
+• Idempotency: optional Idempotency-Key header → unique column; retry returns the
+
+original note (200) and writes nothing. Without the key, row locks + state
+
+machine give at-most-once per transition (double-submit → 409, never double-ledger).
+
+INVARIANT EVOLUTION (flagged for 70-F): after issue, stock legitimately sits in
+
+wip, so the Task #69 invariant generalizes:
+
+INV-P4-01: SUM(reserved, holding statuses) ≤ SUM(available + wip) per material.
+
+(INV-RES-01 remains true for never-issued materials; 70-F asserts both.)
+
+---------------------------------------------------------------------------
+
+FILES (exactly three):
+
+1. lib/db/src/schema/inventory-platform.ts — MODIFY (one column on wip_issue_notes)
+
+2. lib/api-zod/src/inventory-reservations.ts — MODIFY (add IssueReservationBody)
+
+3. artifacts/api-server/src/routes/inventory/reservations.ts — MODIFY (imports + 2 routes)
+
+---------------------------------------------------------------------------
+
+FILE 1 — inventory-platform.ts: inside wipIssueNotesTable columns ADD:
+
+idempotencyKey: varchar("idempotency_key", { length: 100 }).unique("wip_issue_notes_idempotency_key_unique"),
+
+(nullable; PG unique allows multiple NULLs → plain unique() is sufficient, no raw SQL)
+
+Then: pnpm --filter @workspace/db run push (column add only; expect no TTY prompt —
+
+no enum/sequence involved. If a prompt appears anyway, use pseudo-TTY per caveat.)
+
+---------------------------------------------------------------------------
+
+FILE 2 — lib/api-zod/src/inventory-reservations.ts: APPEND:
+
+export const IssueReservationBody = zod.object({
+
+quantity: zod.coerce.number().positive().optional(), // default: full issuable remainder (allocated − issued)
+
+lot_id: zod.string().uuid().optional(),              // force issue from a specific allocated lot
+
+allow_partial: zod.boolean().default(false),         // cap at issuable instead of failing
+
+notes: zod.string().max(500).nullish(),
+
+});
+
+export type IssueReservationBody = zod.infer;
+
+---------------------------------------------------------------------------
+
+FILE 3 — reservations.ts
+
+(a) EXTEND "@workspace/db" import with:
+
+wipIssueNotesTable, wipIssueLinesTable, wipInventoryTable,
+
+(verify exact wipInventory export name in inventory-platform.ts; it is the
+
+Phase 0 table — ADJUST name if exported differently)
+
+EXTEND "@workspace/api-zod" import with IssueReservationBody.
+
+(b) APPEND at END of file (before export default router):
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+function todayDateStr(): string {
+const n = new Date();
+return `${n.getUTCFullYear()}${String(n.getUTCMonth() + 1).padStart(2, "0")}${String(n.getUTCDate()).padStart(2, "0")}`;
+}
+
+function serializeIssueNote(n: Record<string, any>, lines: Array<Record<string, any>>) {
+return {
+id: n.id,
+issue_number: n.issueNumber,
+reservation_id: n.reservationId,
+production_order_id: n.productionOrderId,
+status: n.status,
+issued_by: n.issuedBy,
+notes: n.notes ?? null,
+created_at: n.createdAt,
+lines: lines.map((l) => ({
+id: l.id,
+reservation_allocation_id: l.reservationAllocationId,
+lot_id: l.lotId,
+quantity: numify(l.quantity),
+uom: l.uom,
+})),
+};
+}
+
+function nextIssuedStatus(reserved: number, issued: number): string {
+return issued >= reserved ? "fully_issued" : "partially_issued";
+}
+
+// ─── Issue-to-WIP ────────────────────────────────────────────────────────────
+router.post("/:id/issue", async (req: Request, res: Response): Promise => {
+const parsed = IssueReservationBody.safeParse(req.body ?? {});
+if (!parsed.success) {
+res.status(400).json({ error: parsed.error.message });
+return;
+}
+const body = parsed.data;
+const actorId = req.user?.userId ?? null;
+const idemKey = (req.header("idempotency-key") ?? "").slice(0, 100) || null;
+
+// Idempotent replay: same key → original note, nothing written.
+if (idemKey) {
+const [existing] = await db
+.select()
+.from(wipIssueNotesTable)
+.where(eq(wipIssueNotesTable.idempotencyKey, idemKey))
+.limit(1);
+if (existing) {
+const lines = await db.select().from(wipIssueLinesTable)
+.where(eq(wipIssueLinesTable.wipIssueNoteId, existing.id));
+res.status(200).json(serializeIssueNote(existing as Record<string, any>, lines as Array<Record<string, any>>));
+return;
+}
+}
+
+const dateStr = todayDateStr();
+const { rows } = await pool.query("SELECT nextval('wip_issue_seq') AS seq");
+const issueNumber = `ISS-${dateStr}-${String(rows[0].seq).padStart(4, "0")}`;
+
+const outcome = await db.transaction(async (tx) => {
+const [reservation] = await tx
+.select()
+.from(inventoryReservationsTable)
+.where(eq(inventoryReservationsTable.id, req.params.id as string))
+.for("update")
+.limit(1);
+if (!reservation) return { status: "not_found" as const };
+if (
+reservation.expiresAt &&
+new Date(reservation.expiresAt) < new Date() &&
+["active", "partially_allocated", "fully_allocated", "partially_issued"].includes(reservation.status)
+) {
+await tx.update(inventoryReservationsTable).set({ status: "expired" })
+.where(eq(inventoryReservationsTable.id, reservation.id));
+return { status: "expired" as const };
+}
+if (!["partially_allocated", "fully_allocated", "partially_issued"].includes(reservation.status)) {
+return { status: "invalid_state" as const, current: reservation.status };
+}
+
+    const reserved = Number(reservation.reservedQty);
+    const allocated = Number(reservation.allocatedQty);
+    const issued = Number(reservation.issuedQty);
+    const issuable = allocated - issued; // issued consumes allocated
+    if (issuable <= 0) return { status: "nothing" as const };
+    let need = body.quantity ?? issuable;
+    if (need > issuable) {
+      if (!body.allow_partial) return { status: "exceeds" as const, issuable };
+      need = issuable;
+    }
+
+    if (body.lot_id) {
+      const chk = await tx.select({ id: inventoryLotsTable.id })
+        .from(inventoryLotsTable)
+        .where(eq(inventoryLotsTable.id, body.lot_id)).limit(1);
+      if (!chk.length) return { status: "bad_lot" as const };
+    }
+
+    // Active allocations of THIS reservation, deterministic lot order (same order
+    // family as allocate → deadlock-free between concurrent issuers).
+    const allocConds = [
+      eq(inventoryReservationAllocationsTable.reservationId, reservation.id),
+      eq(inventoryReservationAllocationsTable.status, "active"),
+    ];
+    if (body.lot_id) allocConds.push(eq(inventoryReservationAllocationsTable.lotId, body.lot_id));
+    const allocs = await tx
+      .select({
+        alloc: inventoryReservationAllocationsTable,
+        lot: inventoryLotsTable,
+      })
+      .from(inventoryReservationAllocationsTable)
+      .innerJoin(inventoryLotsTable, eq(inventoryLotsTable.id, inventoryReservationAllocationsTable.lotId))
+      .where(and(...allocConds))
+      .orderBy(asc(inventoryLotsTable.receivedDate), asc(inventoryLotsTable.lotNumber),
+               asc(inventoryReservationAllocationsTable.createdAt))
+      .for("update");
+
+    if (!allocs.length) return { status: "no_alloc" as const };
+
+    const [note] = await tx.insert(wipIssueNotesTable).values({
+      issueNumber,
+      reservationId: reservation.id,
+      productionOrderId: reservation.productionOrderId,
+      status: "fully_issued", // the issue is complete at creation; 'reversed' arrives in 70-D
+      issuedBy: actorId,
+      notes: body.notes ?? null,
+      idempotencyKey: idemKey,
+    }).returning();
+
+    const lineIds: Array<{ lineId: string; lotId: string; grnLineId: string; qty: number }> = [];
+    const perLot = new Map<string, { lot: any; qty: number }>();
+    let remaining = need;
+
+    for (const { alloc, lot } of allocs) {
+      if (remaining <= 0) break;
+      // Serialize against transfers: lock the lot's GRN line FOR UPDATE (first visit).
+      await tx.select({ id: grnLineItemsTable.id }).from(grnLineItemsTable)
+        .where(eq(grnLineItemsTable.id, lot.grnLineId)).for("update").limit(1);
+      const take = Math.min(remaining, Number(alloc.quantity));
+      // Re-validate physical availability under the line lock (transfer may have
+      // consumed stock between allocate and issue).
+      const [bal] = await tx
+        .select({ sum: sql<string>`coalesce(sum(${inventoryTransactionsTable.quantity}), 0)` })
+        .from(inventoryTransactionsTable)
+        .where(and(
+          eq(inventoryTransactionsTable.sourceLineId, lot.grnLineId),
+          eq(inventoryTransactionsTable.stockState, "available"),
+        ));
+      const physAvail = Number(bal.sum);
+      const alreadyMoving = lineIds.filter((l) => l.grnLineId === lot.grnLineId)
+        .reduce((s, l) => s + l.qty, 0);
+      const allowed = Math.min(take, Math.max(physAvail - alreadyMoving, 0));
+      if (allowed <= 0) continue;
+      remaining -= allowed;
+
+      // Allocation evidence: split or flip.
+      let issuedAllocId = alloc.id;
+      if (allowed < Number(alloc.quantity)) {
+        await tx.update(inventoryReservationAllocationsTable)
+          .set({ quantity: String(Number(alloc.quantity) - allowed) })
+          .where(eq(inventoryReservationAllocationsTable.id, alloc.id));
+        const [slice] = await tx.insert(inventoryReservationAllocationsTable).values({
+          reservationId: reservation.id,
+          lotId: alloc.lotId,
+          quantity: String(allowed),
+          status: "issued",
+        }).returning();
+        issuedAllocId = slice.id;
+      } else {
+        await tx.update(inventoryReservationAllocationsTable)
+          .set({ status: "issued" })
+          .where(eq(inventoryReservationAllocationsTable.id, alloc.id));
+      }
+
+      const [line] = await tx.insert(wipIssueLinesTable).values({
+        wipIssueNoteId: note.id,
+        reservationAllocationId: issuedAllocId,
+        lotId: alloc.lotId,
+        quantity: String(allowed),
+        uom: reservation.uom,
+      }).returning();
+      lineIds.push({ lineId: line.id, lotId: alloc.lotId, grnLineId: lot.grnLineId, qty: allowed });
+      const acc = perLot.get(alloc.lotId) ?? { lot, qty: 0 };
+      acc.qty += allowed;
+      perLot.set(alloc.lotId, acc);
+    }
+
+    const totalIssued = lineIds.reduce((s, l) => s + l.qty, 0);
+    if (totalIssued <= 0) return { status: "phys_unavailable" as const };
+    if (remaining > 0 && !body.allow_partial) {
+      return { status: "insufficient" as const, unissued: remaining };
+    }
+
+    // Ledger: available −qty, wip +qty, per lot dims.
+    for (const { lot, qty } of perLot.values()) {
+      await tx.insert(inventoryTransactionsTable).values({
+        materialId: reservation.materialId,
+        quantity: String(-qty),
+        uom: reservation.uom,
+        stockState: "available",
+        transactionType: "PRODUCTION_ISSUE",
+        sourceDocumentType: "wip_issue_note",
+        sourceDocumentId: note.id,
+        sourceLineId: lot.grnLineId,
+        lotId: lot.id,
+        warehouseId: lot.warehouseId,
+        locationId: lot.locationId,
+        binId: lot.binId,
+        productionOrderId: reservation.productionOrderId,
+        actorId,
+        actorName: req.user?.email ?? null,
+      });
+      await tx.insert(inventoryTransactionsTable).values({
+        materialId: reservation.materialId,
+        quantity: String(qty),
+        uom: reservation.uom,
+        stockState: "wip",
+        transactionType: "WIP_RECEIPT",
+        sourceDocumentType: "wip_issue_note",
+        sourceDocumentId: note.id,
+        sourceLineId: lot.grnLineId,
+        lotId: lot.id,
+        warehouseId: lot.warehouseId,
+        locationId: lot.locationId,
+        binId: lot.binId,
+        productionOrderId: reservation.productionOrderId,
+        actorId,
+        actorName: req.user?.email ?? null,
+      });
+      // wip_inventory: fresh row per (note, lot) under the 70-A identity unique.
+      await tx.insert(wipInventoryTable).values({
+        productionOrderId: reservation.productionOrderId,
+        materialId: reservation.materialId,
+        lotId: lot.id,
+        wipIssueNoteId: note.id,
+        warehouseId: lot.warehouseId,
+        locationId: lot.locationId,
+        issuedQty: String(qty),
+        consumedQty: "0",
+        returnedQty: "0",
+        scrappedQty: "0",
+        remainingQty: String(qty),
+        uom: reservation.uom,
+        status: "active",
+      });
+    }
+
+    const newIssued = issued + totalIssued;
+    const newAllocated = allocated - totalIssued;
+    const [updatedRes] = await tx.update(inventoryReservationsTable)
+      .set({
+        issuedQty: String(newIssued),
+        allocatedQty: String(newAllocated),
+        status: nextIssuedStatus(reserved, newIssued),
+      })
+      .where(eq(inventoryReservationsTable.id, reservation.id))
+      .returning();
+
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "wip_issue_note",
+      aggregateId: note.id,
+      eventType: "WIP_ISSUE_CREATED",
+      payload: {
+        issue_number: issueNumber,
+        reservation_id: reservation.id,
+        reservation_number: reservation.reservationNumber,
+        production_order_id: reservation.productionOrderId,
+        lines: lineIds.map((l) => ({ lot_id: l.lotId, quantity: l.qty })),
+        total_issued: totalIssued,
+        actor_id: actorId,
+      },
+    });
+
+    const lines = await tx.select().from(wipIssueLinesTable)
+      .where(eq(wipIssueLinesTable.wipIssueNoteId, note.id));
+    return { status: "ok" as const, note, lines, reservation: updatedRes };
+
+});
+
+if (outcome.status === "not_found") { res.status(404).json({ error: "Reservation not found" }); return; }
+if (outcome.status === "expired") { res.status(409).json({ error: "Reservation has expired" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Reservation cannot be issued from status '${outcome.current}'` }); return; }
+if (outcome.status === "nothing") { res.status(422).json({ error: "Nothing left to issue" }); return; }
+if (outcome.status === "exceeds") { res.status(409).json({ error: "ISSUE_EXCEEDS_ALLOCATED", details: { issuable: outcome.issuable } }); return; }
+if (outcome.status === "bad_lot") { res.status(422).json({ error: "Unknown lot id" }); return; }
+if (outcome.status === "no_alloc") { res.status(409).json({ error: "No active allocation on the requested lot" }); return; }
+if (outcome.status === "phys_unavailable") { res.status(409).json({ error: "PHYSICAL_STOCK_UNAVAILABLE" }); return; }
+if (outcome.status === "insufficient") { res.status(409).json({ error: "INSUFFICIENT_ALLOCATED", details: { unissued: outcome.unissued } }); return; }
+
+void recordSecurityEvent({
+eventType: "wip.issue_created",
+actorId,
+actorEmail: req.user?.email ?? null,
+actorRole: req.user?.role ?? null,
+...reqMeta(req),
+statusCode: 201,
+detail: `WIP issue ${outcome.note.issueNumber} from reservation ${outcome.reservation.reservationNumber}: ${outcome.lines.length} lot line(s)`,
+});
+
+res.status(201).json(serializeIssueNote(outcome.note as Record<string, any>, outcome.lines as Array<Record<string, any>>));
+});
+
+// ─── Issues of a reservation (read) ──────────────────────────────────────────
+router.get("/:id/issues", async (req: Request, res: Response): Promise => {
+const notes = await db.select().from(wipIssueNotesTable)
+.where(eq(wipIssueNotesTable.reservationId, req.params.id as string))
+.orderBy(asc(wipIssueNotesTable.createdAt));
+const items = [] as Array<Record<string, any>>;
+for (const n of notes) {
+const lines = await db.select().from(wipIssueLinesTable)
+.where(eq(wipIssueLinesTable.wipIssueNoteId, n.id));
+items.push(serializeIssueNote(n as Record<string, any>, lines as Array<Record<string, any>>));
+}
+res.json({ items, meta: { total: items.length } });
+});
+
+---------------------------------------------------------------------------
+
+VERIFICATION (dev server; BASE/TOKEN; MAT with 100 available; RID reservation)
+
+pnpm run typecheck:libs && pnpm run typecheck     # exit 0
+
+# 1. reserve 100, allocate 100, then issue 30 → 201, note ISS-…, 1 line;
+
+#    reservation allocated 70 / issued 30 / partially_issued.
+
+# 2. Ledger moved: stock available 70, wip 30 (stock API stock_state=wip);
+
+#    ledger rows carry lot_id + production_order_id dims.
+
+# 3. Allocations: active remainder 70 + issued slice row (30, status issued).
+
+# 4. wip_inventory: one row (note, lot), issued=remaining=30, status active.
+
+# 5. Idempotency: repeat POST with SAME Idempotency-Key header → 200 SAME
+
+#    note id, no new ledger rows/outbox events.
+
+# 6. Over-issue (quantity > remainder, no allow_partial) → 409 ISSUE_EXCEEDS_ALLOCATED.
+
+# 7. Issue from 'active' (unallocated) reservation → 409.
+
+# 8. Forced lot_id works; unknown lot → 422.
+
+# 9. Concurrency: two parallel issue calls on same reservation → serialized;
+
+#    sum issued ≤ allocated; no double ledger rows.
+
+# 10. Cancel/release after partial issue → 409 (D3; state machine unchanged).
+
+# 11. Outbox: WIP_ISSUE_CREATED row(s) in same-tx evidence.
+
+# 12. MIN regression: existing MIN create/reversal smoke → unchanged.
+
+# 13. Task #69 regression: pnpm --filter @workspace/api-server run test:reservation → 15/15.
+
+WHAT MUST NOT BE CHANGED:
+
+❌ No MIN (material-issues.) edits; no changes to Task #69 create/allocate/
+
+release/cancel logic (D3 confirmed free); no GRN/transfer/stock edits.
+
+❌ generated/api.ts; frontend; no commit; dev DB only.
+
+RISK: Medium-high (first physical-stock-moving endpoint of Phase 4). Mitigations:
+
+certified lock order, physical availability re-read under the shared line lock,
+
+allocation split evidence, DB CHECKs, idempotency key, at-most-once by state.
+
+NEXT: After verification (esp. #5 idempotency, #9 concurrency, #13 regression),
+
+Kimi prepares BATCH 70-C — Consumption (consumption_confirmations flow + −wip).
