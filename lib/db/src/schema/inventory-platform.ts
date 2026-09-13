@@ -566,6 +566,7 @@ export const wipInventoryTable = pgTable(
       .references(() => materialsTable.id),
     lotId: uuid("lot_id").references(() => inventoryLotsTable.id),
     issueId: uuid("issue_id").references(() => materialIssueNotesTable.id),
+    wipIssueNoteId: uuid("wip_issue_note_id").references(() => wipIssueNotesTable.id),
     warehouseId: uuid("warehouse_id")
       .notNull()
       .references(() => warehousesTable.id),
@@ -777,6 +778,7 @@ export const reservationNumberSequence = pgSequence("res_seq");
 
 export const reservationAllocationStatusEnum = pgEnum("reservation_allocation_status", [
   "active",
+  "issued",
   "released",
   "cancelled",
 ]);
@@ -807,3 +809,75 @@ export type InventoryReservationAllocation =
   typeof inventoryReservationAllocationsTable.$inferSelect;
 export type InsertInventoryReservationAllocation =
   typeof inventoryReservationAllocationsTable.$inferInsert;
+
+// ─── Task #70 — WIP Issue Documents (Issue-to-WIP) ──────────────────────────
+// Separate from material_issue_notes (MIN): MIN is BOM-driven, full-quantity-only,
+// material-level, and regression-frozen. These tables power the reservation-driven,
+// lot-aware, partial-capable issue flow. One note = one issue operation against one
+// reservation; lines bind exact allocation rows (evidence) + lots.
+
+export const wipIssueStatusEnum = pgEnum("wip_issue_status", [
+  "active",
+  "fully_issued",
+  "reversed",
+]);
+
+export const wipIssueSequence = pgSequence("wip_issue_seq");
+export const consumptionSequence = pgSequence("consumption_seq");
+
+export const wipIssueNotesTable = pgTable(
+  "wip_issue_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    issueNumber: varchar("issue_number", { length: 50 }).unique().notNull(),
+    reservationId: uuid("reservation_id")
+      .notNull()
+      .references(() => inventoryReservationsTable.id),
+    productionOrderId: uuid("production_order_id")
+      .notNull()
+      .references(() => mfgProductionOrdersTable.id),
+    status: wipIssueStatusEnum("status").notNull().default("active"),
+    issuedBy: uuid("issued_by")
+      .notNull()
+      .references(() => usersTable.id),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("wip_issue_notes_res_idx").on(table.reservationId),
+    index("wip_issue_notes_po_idx").on(table.productionOrderId, table.status),
+  ],
+);
+
+export const wipIssueLinesTable = pgTable(
+  "wip_issue_lines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    wipIssueNoteId: uuid("wip_issue_note_id")
+      .notNull()
+      .references(() => wipIssueNotesTable.id),
+    reservationAllocationId: uuid("reservation_allocation_id")
+      .notNull()
+      .references(() => inventoryReservationAllocationsTable.id),
+    lotId: uuid("lot_id")
+      .notNull()
+      .references(() => inventoryLotsTable.id),
+    quantity: numeric("quantity", { precision: 14, scale: 3 }).notNull(),
+    uom: materialUomEnum("uom").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("wip_issue_lines_note_idx").on(table.wipIssueNoteId),
+    index("wip_issue_lines_lot_idx").on(table.lotId),
+    check("wip_issue_lines_quantity_positive", sql`${table.quantity} > 0`),
+  ],
+);
+
+export type WipIssueNote = typeof wipIssueNotesTable.$inferSelect;
+export type InsertWipIssueNote = typeof wipIssueNotesTable.$inferInsert;
+export type WipIssueLine = typeof wipIssueLinesTable.$inferSelect;
+export type InsertWipIssueLine = typeof wipIssueLinesTable.$inferInsert;
