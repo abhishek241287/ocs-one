@@ -1,0 +1,274 @@
+BATCH 69-E — Release + Cancel endpoints (lifecycle restore)
+
+Task #69 — micro-batch 5 of 7 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Depends on: 69-A/B/C/D (all certified).
+
+---------------------------------------------------------------------------
+
+FACTS THIS BATCH IS BUILT ON (verified in code)
+
+- inventory_reservations already has released_at, cancelled_at, cancelled_by,
+
+cancellation_reason columns — no schema change needed.
+
+- Reservable-quantity restore is DERIVED, not written: create's materialReserved
+
+sums only holding statuses; allocate's lineHeld sums only 'active' allocations.
+
+Flipping allocations to released/cancelled + status to released/cancelled
+
+therefore restores reservable quantity with ZERO ledger writes.
+
+- House rule: cancel is IDEMPOTENT (repeat cancel → 200, same body); release is
+
+NOT idempotent (double-release → 409 INVALID_STATE) — deterministic lifecycle.
+
+- Lazy expiry applies before both (same rule as allocate, batch 69-D).
+
+- issued_qty is untouched (no issue routes exist — Issue-to-WIP is out of scope).
+
+---------------------------------------------------------------------------
+
+FILES (exactly one):
+
+artifacts/api-server/src/routes/inventory/reservations.ts  — MODIFY (import + append)
+
+---------------------------------------------------------------------------
+
+CHANGE (a) — extend the "@workspace/api-zod" import to:
+
+import { CreateReservationBody, AllocateReservationBody, CancelReservationBody } from "@workspace/api-zod";
+
+CHANGE (b) — APPEND at the END of the file (before export default router):
+
+// ─── Release ─────────────────────────────────────────────────────────────────
+router.post("/:id/release", async (req: Request, res: Response): Promise => {
+const actorId = req.user?.userId ?? null;
+const outcome = await db.transaction(async (tx) => {
+const [reservation] = await tx
+.select()
+.from(inventoryReservationsTable)
+.where(eq(inventoryReservationsTable.id, req.params.id as string))
+.for("update")
+.limit(1);
+if (!reservation) return { status: "not_found" as const };
+// Lazy expiry (same rule as allocate).
+if (
+reservation.expiresAt &&
+new Date(reservation.expiresAt) < new Date() &&
+["active", "partially_allocated", "fully_allocated"].includes(reservation.status)
+) {
+await tx
+.update(inventoryReservationsTable)
+.set({ status: "expired" })
+.where(eq(inventoryReservationsTable.id, reservation.id));
+return { status: "expired" as const };
+}
+if (!["active", "partially_allocated", "fully_allocated"].includes(reservation.status)) {
+return { status: "invalid_state" as const, current: reservation.status };
+}
+
+    // Restore reservable quantity: deactivate allocation rows. Physical stock is
+    // NEVER touched — no ledger rows are written here.
+    await tx
+      .update(inventoryReservationAllocationsTable)
+      .set({ status: "released", releasedAt: new Date() })
+      .where(
+        and(
+          eq(inventoryReservationAllocationsTable.reservationId, reservation.id),
+          eq(inventoryReservationAllocationsTable.status, "active"),
+        ),
+      );
+
+    const [updated] = await tx
+      .update(inventoryReservationsTable)
+      .set({ status: "released", releasedAt: new Date() })
+      .where(eq(inventoryReservationsTable.id, reservation.id))
+      .returning();
+
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "inventory_reservation",
+      aggregateId: reservation.id,
+      eventType: "RESERVATION_RELEASED",
+      payload: {
+        reservation_number: reservation.reservationNumber,
+        released_reserved_qty: Number(reservation.reservedQty),
+        released_allocated_qty: Number(reservation.allocatedQty),
+        actor_id: actorId,
+      },
+    });
+
+    return { status: "ok" as const, updated };
+
+});
+
+if (outcome.status === "not_found") { res.status(404).json({ error: "Reservation not found" }); return; }
+if (outcome.status === "expired") { res.status(409).json({ error: "Reservation has expired" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Reservation cannot be released from status '${outcome.current}'` }); return; }
+
+void recordSecurityEvent({
+eventType: "reservation.released",
+actorId,
+actorEmail: req.user?.email ?? null,
+actorRole: req.user?.role ?? null,
+...reqMeta(req),
+statusCode: 200,
+detail: `Reservation ${outcome.updated.reservationNumber} released`,
+});
+
+res.json(serializeReservation(outcome.updated as Record<string, any>));
+});
+
+// ─── Cancel ──────────────────────────────────────────────────────────────────
+router.post("/:id/cancel", async (req: Request, res: Response): Promise => {
+const parsed = CancelReservationBody.safeParse(req.body);
+if (!parsed.success) {
+res.status(400).json({ error: parsed.error.message });
+return;
+}
+const actorId = req.user?.userId ?? null;
+
+const outcome = await db.transaction(async (tx) => {
+const [reservation] = await tx
+.select()
+.from(inventoryReservationsTable)
+.where(eq(inventoryReservationsTable.id, req.params.id as string))
+.for("update")
+.limit(1);
+if (!reservation) return { status: "not_found" as const };
+// Idempotent cancel: repeating an already-terminal cancel returns the same body.
+if (reservation.status === "cancelled") return { status: "ok" as const, updated: reservation };
+if (
+reservation.expiresAt &&
+new Date(reservation.expiresAt) < new Date() &&
+["active", "partially_allocated", "fully_allocated"].includes(reservation.status)
+) {
+await tx
+.update(inventoryReservationsTable)
+.set({ status: "expired" })
+.where(eq(inventoryReservationsTable.id, reservation.id));
+return { status: "expired" as const };
+}
+if (!["active", "partially_allocated", "fully_allocated"].includes(reservation.status)) {
+return { status: "invalid_state" as const, current: reservation.status };
+}
+
+    await tx
+      .update(inventoryReservationAllocationsTable)
+      .set({ status: "cancelled", releasedAt: new Date() })
+      .where(
+        and(
+          eq(inventoryReservationAllocationsTable.reservationId, reservation.id),
+          eq(inventoryReservationAllocationsTable.status, "active"),
+        ),
+      );
+
+    const [updated] = await tx
+      .update(inventoryReservationsTable)
+      .set({
+        status: "cancelled",
+        cancelledAt: new Date(),
+        cancelledBy: actorId,
+        cancellationReason: parsed.data.reason,
+      })
+      .where(eq(inventoryReservationsTable.id, reservation.id))
+      .returning();
+
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "inventory_reservation",
+      aggregateId: reservation.id,
+      eventType: "RESERVATION_CANCELLED",
+      payload: {
+        reservation_number: reservation.reservationNumber,
+        reason: parsed.data.reason,
+        actor_id: actorId,
+      },
+    });
+
+    return { status: "ok" as const, updated };
+
+});
+
+if (outcome.status === "not_found") { res.status(404).json({ error: "Reservation not found" }); return; }
+if (outcome.status === "expired") { res.status(409).json({ error: "Reservation has expired" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Reservation cannot be cancelled from status '${outcome.current}'` }); return; }
+
+void recordSecurityEvent({
+eventType: "reservation.cancelled",
+actorId,
+actorEmail: req.user?.email ?? null,
+actorRole: req.user?.role ?? null,
+...reqMeta(req),
+statusCode: 200,
+detail: `Reservation ${outcome.updated.reservationNumber} cancelled: ${parsed.data.reason}`,
+});
+
+res.json(serializeReservation(outcome.updated as Record<string, any>));
+});
+
+---------------------------------------------------------------------------
+
+VERIFICATION (dev server running; BASE/TOKEN as before)
+
+pnpm run typecheck:libs && pnpm run typecheck        # both exit 0
+
+# 1. Release happy path: create+allocate a reservation, then release →
+
+#    expect 200, status "released"; then a NEW reservation of the same qty
+
+#    succeeds immediately (reservable quantity restored — no ledger writes).
+
+# 2. Double-release → expect 409 (release is NOT idempotent).
+
+# 3. Allocate-after-release → expect 409 (invalid lifecycle transition).
+
+# 4. Cancel without reason → expect 400. Cancel with reason → 200,
+
+#    status "cancelled", cancellation_reason stored, cancelled_by = actor.
+
+# 5. Repeat cancel → expect 200 with SAME body (idempotent).
+
+# 6. Allocations of a released reservation are status "released"; of a
+
+#    cancelled reservation, status "cancelled" (verify via psql):
+
+psql "DATABASE_URL" -c "SELECT status, count() FROM inventory_reservation_allocations
+
+GROUP BY status;"
+
+# 7. Outbox evidence:
+
+psql "DATABASE_URL" -c "SELECT event_type, payload FROM outbox_events
+
+WHERE event_type IN ('RESERVATION_RELEASED','RESERVATION_CANCELLED')
+
+ORDER BY created_at DESC LIMIT 4;"
+
+# 8. Ledger unchanged (release/cancel write no ledger rows):
+
+#    inventory_transactions row count identical before/after.
+
+# 9. Auth: operator/viewer POST → 403; no token → 401.
+
+EXPECTED RESULTS: all above; git diff --stat shows only reservations.ts.
+
+WHAT MUST NOT BE CHANGED:
+
+❌ No list/detail routes yet (69-F). No schema changes. No edits to
+
+grns.ts / transfers.ts / lots.ts / stock.ts / material-issue.
+
+❌ generated/api.ts untouched; no frontend; no package.json; no commit.
+
+RISK: Low. Pure state flips on rows already locked FOR UPDATE; restore semantics
+
+are derived from existing sum queries (no new accounting). Idempotency and
+
+invalid-transition behavior are explicitly specified above.
+
+NEXT: After Replit reports results, Kimi prepares BATCH 69-F —
+
+GET list/detail + additive reserved_qty / available_for_use on the stock
+
+projection (read-path integration with Task #68 balances).

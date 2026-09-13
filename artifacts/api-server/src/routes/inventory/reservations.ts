@@ -12,7 +12,11 @@ import {
   outboxEventsTable,
   pool,
 } from "@workspace/db";
-import { AllocateReservationBody, CreateReservationBody } from "@workspace/api-zod";
+import {
+  AllocateReservationBody,
+  CancelReservationBody,
+  CreateReservationBody,
+} from "@workspace/api-zod";
 import { requireWriteRole } from "../../middleware/auth";
 import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
 
@@ -528,6 +532,201 @@ router.post("/:id/allocate", async (req: Request, res: Response): Promise<void> 
       status: "active",
     })),
   });
+});
+
+// ─── POST /inventory/reservations/:id/release ────────────────────────────────
+router.post("/:id/release", async (req: Request, res: Response): Promise<void> => {
+  const actorId = req.user?.userId ?? null;
+
+  const outcome = await db.transaction(async (tx) => {
+    const [reservation] = await tx
+      .select()
+      .from(inventoryReservationsTable)
+      .where(eq(inventoryReservationsTable.id, req.params.id as string))
+      .for("update")
+      .limit(1);
+
+    if (!reservation) return { status: "not_found" as const };
+
+    if (
+      reservation.expiresAt &&
+      new Date(reservation.expiresAt) < new Date() &&
+      ["active", "partially_allocated", "fully_allocated"].includes(reservation.status)
+    ) {
+      await tx
+        .update(inventoryReservationsTable)
+        .set({ status: "expired" })
+        .where(eq(inventoryReservationsTable.id, reservation.id));
+      return { status: "expired" as const };
+    }
+
+    if (!["active", "partially_allocated", "fully_allocated"].includes(reservation.status)) {
+      return { status: "invalid_state" as const, current: reservation.status };
+    }
+
+    const releasedAt = new Date();
+    await tx
+      .update(inventoryReservationAllocationsTable)
+      .set({ status: "released", releasedAt })
+      .where(
+        and(
+          eq(inventoryReservationAllocationsTable.reservationId, reservation.id),
+          eq(inventoryReservationAllocationsTable.status, "active"),
+        ),
+      );
+
+    const [updated] = await tx
+      .update(inventoryReservationsTable)
+      .set({ status: "released", releasedAt })
+      .where(eq(inventoryReservationsTable.id, reservation.id))
+      .returning();
+
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "inventory_reservation",
+      aggregateId: reservation.id,
+      eventType: "RESERVATION_RELEASED",
+      payload: {
+        reservation_number: reservation.reservationNumber,
+        released_reserved_qty: Number(reservation.reservedQty),
+        released_allocated_qty: Number(reservation.allocatedQty),
+        actor_id: actorId,
+      },
+    });
+
+    return { status: "ok" as const, updated };
+  });
+
+  if (outcome.status === "not_found") {
+    res.status(404).json({ error: "Reservation not found" });
+    return;
+  }
+  if (outcome.status === "expired") {
+    res.status(409).json({ error: "Reservation has expired" });
+    return;
+  }
+  if (outcome.status === "invalid_state") {
+    res
+      .status(409)
+      .json({ error: `Reservation cannot be released from status '${outcome.current}'` });
+    return;
+  }
+
+  void recordSecurityEvent({
+    eventType: "reservation.released",
+    actorId,
+    actorEmail: req.user?.email ?? null,
+    actorRole: req.user?.role ?? null,
+    ...reqMeta(req),
+    statusCode: 200,
+    detail: `Reservation ${outcome.updated.reservationNumber} released`,
+  });
+
+  res.json(serializeReservation(outcome.updated as Record<string, any>));
+});
+
+// ─── POST /inventory/reservations/:id/cancel ─────────────────────────────────
+router.post("/:id/cancel", async (req: Request, res: Response): Promise<void> => {
+  const parsed = CancelReservationBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const actorId = req.user?.userId ?? null;
+
+  const outcome = await db.transaction(async (tx) => {
+    const [reservation] = await tx
+      .select()
+      .from(inventoryReservationsTable)
+      .where(eq(inventoryReservationsTable.id, req.params.id as string))
+      .for("update")
+      .limit(1);
+
+    if (!reservation) return { status: "not_found" as const };
+
+    // Cancellation is intentionally idempotent: return the original projection
+    // and do not append duplicate allocation or outbox state.
+    if (reservation.status === "cancelled") {
+      return { status: "ok" as const, updated: reservation };
+    }
+
+    if (
+      reservation.expiresAt &&
+      new Date(reservation.expiresAt) < new Date() &&
+      ["active", "partially_allocated", "fully_allocated"].includes(reservation.status)
+    ) {
+      await tx
+        .update(inventoryReservationsTable)
+        .set({ status: "expired" })
+        .where(eq(inventoryReservationsTable.id, reservation.id));
+      return { status: "expired" as const };
+    }
+
+    if (!["active", "partially_allocated", "fully_allocated"].includes(reservation.status)) {
+      return { status: "invalid_state" as const, current: reservation.status };
+    }
+
+    const cancelledAt = new Date();
+    await tx
+      .update(inventoryReservationAllocationsTable)
+      .set({ status: "cancelled", releasedAt: cancelledAt })
+      .where(
+        and(
+          eq(inventoryReservationAllocationsTable.reservationId, reservation.id),
+          eq(inventoryReservationAllocationsTable.status, "active"),
+        ),
+      );
+
+    const [updated] = await tx
+      .update(inventoryReservationsTable)
+      .set({
+        status: "cancelled",
+        cancelledAt,
+        cancelledBy: actorId,
+        cancellationReason: parsed.data.reason,
+      })
+      .where(eq(inventoryReservationsTable.id, reservation.id))
+      .returning();
+
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "inventory_reservation",
+      aggregateId: reservation.id,
+      eventType: "RESERVATION_CANCELLED",
+      payload: {
+        reservation_number: reservation.reservationNumber,
+        reason: parsed.data.reason,
+        actor_id: actorId,
+      },
+    });
+
+    return { status: "ok" as const, updated };
+  });
+
+  if (outcome.status === "not_found") {
+    res.status(404).json({ error: "Reservation not found" });
+    return;
+  }
+  if (outcome.status === "expired") {
+    res.status(409).json({ error: "Reservation has expired" });
+    return;
+  }
+  if (outcome.status === "invalid_state") {
+    res
+      .status(409)
+      .json({ error: `Reservation cannot be cancelled from status '${outcome.current}'` });
+    return;
+  }
+
+  void recordSecurityEvent({
+    eventType: "reservation.cancelled",
+    actorId,
+    actorEmail: req.user?.email ?? null,
+    actorRole: req.user?.role ?? null,
+    ...reqMeta(req),
+    statusCode: 200,
+    detail: `Reservation ${outcome.updated.reservationNumber} cancelled: ${parsed.data.reason}`,
+  });
+
+  res.json(serializeReservation(outcome.updated as Record<string, any>));
 });
 
 export default router;
