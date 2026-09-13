@@ -238,3 +238,10 @@ mtime_ms = 1789233413476
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/70f060d6-8414-4d25-90b7-528c90e94ae5/596a30fa-8b33-4d94-a0e4-19ba8f49e916"
 storage_version_token = "1789233433040357"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "SSqJDqCi97bQf4V-vYFwy"
+uri = "file://certification/fat-evidence/task-70-h-scrap-2026-09-13.md"
+type = "text"
+title = "Task 70-H Scrap Certification Evidence"
+description = "Development-only evidence for the WIP scrap workflow: focused 10/10 suite, regression results, race/idempotency checks, disclosed -0.500 baseline, and zero-residue verification."
