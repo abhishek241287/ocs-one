@@ -15,3 +15,14 @@ the invariant even though the allocation rows and physical stock are valid.
 **How to apply:** Compute issuable quantity as `allocated_qty - issued_qty`, split
 or flip allocation evidence rows, and leave cumulative `allocated_qty` unchanged
 when posting each issue.
+
+For reversal, the durable projection invariant is:
+`SUM(active allocation quantities) = allocated_qty - issued_qty`, and
+`SUM(issued allocation quantities) = issued_qty`.
+
+**Why:** This connects the Task 69 allocation evidence rows to the Phase 4
+movement columns and proves that reversal restores the exact active hold rather
+than merely making the reservation status look allocated.
+
+**How to apply:** Assert both equalities after every reversal and after any
+future issue/reversal sequence; record this as `INV-P4-05`.

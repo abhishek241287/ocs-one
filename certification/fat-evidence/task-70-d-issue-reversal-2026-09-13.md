@@ -13,6 +13,9 @@
 - `allocated_qty` is cumulative in the live schema, so reversal decrements only
   `issued_qty`; it does not increase `allocated_qty`. This preserves
   `reserved_qty >= allocated_qty >= issued_qty`.
+- `INV-P4-05` requires, per reservation,
+  `SUM(active allocation quantities) = allocated_qty - issued_qty` and
+  `SUM(issued allocation quantities) = issued_qty`.
 - Reversed WIP rows set `status = reversed`, `issued_qty = 0`, and
   `remaining_qty = 0`, while the immutable ledger retains the original issue and
   compensating history.
@@ -41,6 +44,9 @@
   `PRODUCTION_ISSUE_REVERSAL -1 wip` and `PRODUCTION_ISSUE_REVERSAL +1 available`.
 - Reversed WIP rows ended with `issued_qty = 0` and `remaining_qty = 0`.
 - Reversed allocations returned to `active`.
+- `INV-P4-05` spot check on the successful parallel-reversal winner:
+  active allocation sum `1` = `allocated_qty 1 - issued_qty 0`, and issued
+  allocation sum `0` = `issued_qty 0`.
 - The adjustment confirmation had one physical ledger row before and after
   adjustment; adjustment added no ledger row.
 - Outbox contained one `WIP_ISSUE_REVERSED` per successful reversal and one

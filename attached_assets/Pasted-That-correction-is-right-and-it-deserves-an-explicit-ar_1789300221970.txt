@@ -1,0 +1,19 @@
+That correction is right, and it deserves an explicit architect sign-off because it touches the certified arithmetic: in the model Replit implemented and certified for 70-B,  allocated_qty  is cumulative (the final evidence showed  allocated 100 / issued 80  after two notes — allocated was never decremented). Under that model the system invariant is:
+Σ active allocation rows =  allocated_qty − issued_qty 
+which holds at every step (fully allocated: 100 − 0 = 100 active; after issuing 80: 100 − 80 = 20 active ✓, matching the recorded evidence exactly). My 70-D pseudocode incremented  allocated_qty  on reversal — that was written under the non-cumulative assumption and would have double-counted. Decrementing  issued_qty  only is the correct mirror: it restores the reservation to allocated state, keeps the DB CHECK ( reserved ≥ allocated ≥ issued ) satisfied, and restores exactly the active-hold quantity.
+So: accepted, and thank the reviewer. One derived assertion to add to the 70-D verification list — after reversal, spot-check that Σ active allocations for the reservation == allocated_qty − issued_qty (this becomes INV-P4-05 in the 70-F invariant set):
+INV-P4-05: per reservation: Σ(active allocation quantities) =  allocated_qty − issued_qty ; and Σ(issued-slice quantities) =  issued_qty .
+That invariant ties the Task #69 evidence rows and the Phase 4 movement columns together permanently.
+Proceed with the typecheck → push (TTY caveat for the enum ADD VALUE) → restart → evidence journey. What I need back for certification:
+1. 
+Reverse happy path: reservation back to  fully_allocated , allocations active, ledger  −wip/+available  pairs typed  PRODUCTION_ISSUE_REVERSAL , wip rows  reversed  with remaining 0, INV-P4-05 equality holds
+2. 
+Reverse-after-consumption → 409; double-reverse → 409; parallel double-submit → 1×200/1×409
+3. 
+Post-reversal re-issue cycle works on the same reservation (loop closed)
+4. 
+Adjust:  confirmed → adjusted  annotation-only (zero ledger rows), adjust-on-draft → 409, second adjust → 409
+5. 
+INV-P4-01/03 spot checks after reversal
+6. 
+Authz matrix,  test:reservation  15/15, MIN smoke, and  git diff --stat  scope
