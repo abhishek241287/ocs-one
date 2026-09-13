@@ -3,6 +3,7 @@ import assignmentsRouter from "./assignments";
 import grnsRouter from "./grns";
 import inspectionsRouter from "./inspections";
 import lotsRouter from "./lots";
+import reservationsRouter from "./reservations";
 import stockRouter from "./stock";
 import transfersRouter, { cellStockRouter } from "./transfers";
 
@@ -14,6 +15,7 @@ router.use("/material-workflow-assignments", assignmentsRouter);
 router.use("/grns", grnsRouter);
 router.use("/inspections", inspectionsRouter);
 router.use("/lots", lotsRouter);
+router.use("/reservations", reservationsRouter);
 router.use("/stock", stockRouter);
 router.use("/cell-stock", cellStockRouter);
 router.use("/transfers", transfersRouter);
