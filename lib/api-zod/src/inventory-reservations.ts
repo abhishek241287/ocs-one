@@ -19,6 +19,7 @@ export const AllocateReservationBody = zod.object({
   quantity: zod.coerce.number().positive().optional(),
   lot_id: zod.string().uuid().optional(),
   allow_partial: zod.boolean().default(false),
+  strategy: zod.enum(["FIFO", "FEFO"]).default("FIFO"),
 });
 export type AllocateReservationBody = zod.infer<typeof AllocateReservationBody>;
 
