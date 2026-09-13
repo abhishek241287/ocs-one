@@ -1,0 +1,550 @@
+BATCH 70-I — Physical Inventory Adjustments (separate domain; count-style)
+
+Task #70 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Ratified: D8 (inventory_adjustments ONLY; draft→submitted→approved→posted|
+
+rejected; approval genuine/director-only; ADJUSTMENT_IN/OUT; annotation wall
+
+untouched), D10, all governing rules. 70-G/70-H certified.
+
+---------------------------------------------------------------------------
+
+NUMERIC MODEL (uses every Phase 0 column coherently)
+
+Client supplies: type (positive|negative), quantity (the movement amount),
+
+dims (lot? — REQUIRED for negative; optional for positive), warehouse
+
+(NOT NULL), location?, bin?, reason, count_reference?.
+
+Draft samples: systemQty = Σ ledger 'available' at the dims (at draft time).
+
+Derived: physicalQty = systemQty + quantity (positive) | systemQty − quantity
+
+(negative); variance = physical − system (DB CHECK) = ±quantity by construction.
+
+Post writes: ADJUSTMENT_IN +qty 'available' (positive) / ADJUSTMENT_OUT
+
+−qty 'available' (negative), dims from the document; source_line_id = the
+
+lot's GRN line when lot-scoped, else NULL (warehouse-level positive adds are
+
+the only NULL-lot case — un-lotted available stock, allocatable only after a
+
+future lotting step; documented).
+
+NEGATIVE-STOCK ARCHITECTURE (the important call): NEGATIVE adjustments MUST
+
+be lot-scoped (422 otherwise). Rationale: lot-scoped negatives take the lot +
+
+GRN-line FOR UPDATE — the SAME lock object transfers/allocate/issue hold —
+
+so adjustment↔transfer/issue races on real stock are serialized. A
+
+warehouse-level negative cannot exclude concurrent line-keyed consumers
+
+without locking every line; forbidding it closes that hole by construction.
+
+Negative protection: quantity ≤ available re-validated UNDER the locks at
+
+post (draft-time sampling is informational only).
+
+IDEMPOTENCY: Idempotency-Key on POST; in-tx advisory lock ('adjust-idem:')
+
++ unique column + dual-shape 23505 fallback; no pre-tx lookup (70-B pattern).
+
+LOCKS at post: document FOR UPDATE → [lot FOR UPDATE → GRN line FOR UPDATE]
+
+(negative, lot-scoped) or material-advisory 'reservation-material:' +
+
+warehouse dims re-read (positive warehouse-level — additive only, no
+
+oversell direction) → ledger. adjustment↔adjustment same lot serializes on
+
+the lot row: loser 409, ZERO mutation.
+
+---------------------------------------------------------------------------
+
+FILES (four):
+
+1. lib/db/src/schema/inventory-platform.ts — MODIFY (1 column) + push
+
+2. lib/api-zod/src/inventory-adjustments.ts — NEW (+1 export line)
+
+3. artifacts/api-server/src/routes/inventory/adjustments.ts — NEW
+
+4. artifacts/api-server/src/routes/inventory/index.ts — MODIFY (2 lines)
+
+---------------------------------------------------------------------------
+
+FILE 1 — inventory-platform.ts, inside inventoryAdjustmentsTable add:
+
+idempotencyKey: varchar("idempotency_key", { length: 100 }).unique("inventory_adjustments_idempotency_key_unique"),
+
+APPEND:
+
+export const adjustmentNumberSequence = pgSequence("adjustment_seq");
+
+Supplement if absent: CREATE INDEX IF NOT EXISTS idx_adjustments_status ON inventory_adjustments (status);
+
+CREATE INDEX IF NOT EXISTS idx_adjustments_mat_wh ON inventory_adjustments (material_id, warehouse_id);
+
+Push (pseudo-TTY for the sequence).
+
+---------------------------------------------------------------------------
+
+FILE 2 — CREATE lib/api-zod/src/inventory-adjustments.ts:
+
+/
+- Task 70-I — Physical adjustment schemas (hand-written, orval-drift tracked).
+- Separate domain from consumption /adjust (annotation-only). See decision D8.
+ /
+import * as zod from "zod";
+
+export const CreateAdjustmentBody = zod.object({
+material_id: zod.string().uuid(),
+warehouse_id: zod.string().uuid(),
+location_id: zod.string().uuid().optional(),
+bin_id: zod.string().uuid().optional(),
+lot_id: zod.string().uuid().optional(),      // REQUIRED when type=negative (enforced in route)
+type: zod.enum(["positive", "negative"]),
+quantity: zod.coerce.number().positive(),
+reason: zod.string().min(1).max(255),
+count_reference: zod.string().max(100).nullish(),
+notes: zod.string().max(500).nullish(),
+});
+export type CreateAdjustmentBody = zod.infer;
+
+export const SubmitAdjustmentBody = zod.object({});
+export type SubmitAdjustmentBody = zod.infer;
+
+export const ApproveAdjustmentBody = zod.object({});
+export type ApproveAdjustmentBody = zod.infer;
+
+export const RejectAdjustmentBody = zod.object({
+reason: zod.string().min(1).max(255),
+});
+export type RejectAdjustmentBody = zod.infer;
+
+index.ts: ADD  export * from "./inventory-adjustments";
+
+---------------------------------------------------------------------------
+
+FILE 3 — CREATE artifacts/api-server/src/routes/inventory/adjustments.ts
+
+import { Router, type IRouter, type Request, type Response } from "express";
+import { eq, and, asc, count, sql } from "drizzle-orm";
+import {
+db, pool,
+inventoryAdjustmentsTable,
+inventoryTransactionsTable,
+inventoryLotsTable,
+grnLineItemsTable,
+materialsTable,
+warehousesTable,
+outboxEventsTable,
+} from "@workspace/db";
+import {
+CreateAdjustmentBody, SubmitAdjustmentBody,
+ApproveAdjustmentBody, RejectAdjustmentBody,
+} from "@workspace/api-zod";
+import { requireAuth, requireWriteRole } from "../../middleware/auth";
+import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
+
+const router: IRouter = Router();
+router.use(requireAuth);
+
+function numify(v: unknown): unknown {
+return typeof v === "string" && /^-?\d+(\.\d+)?/.test(v) ? Number(v) : v;
+}
+function todayDateStr(): string {
+const n = new Date();
+return `${n.getUTCFullYear()}${String(n.getUTCMonth() + 1).padStart(2, "0")}${String(n.getUTCDate()).padStart(2, "0")}`;
+}
+function serializeAdjustment(r: Record<string, any>) {
+return {
+id: r.id, adjustment_number: r.adjustmentNumber,
+material_id: r.materialId, lot_id: r.lotId ?? null,
+warehouse_id: r.warehouseId, location_id: r.locationId ?? null, bin_id: r.binId ?? null,
+type: r.type, quantity: numify(r.quantity), uom: r.uom,
+system_qty: numify(r.systemQty), physical_qty: numify(r.physicalQty), variance: numify(r.variance),
+reason: r.reason, count_reference: r.countReference ?? null, notes: r.notes ?? null,
+status: r.status,
+approved_by: r.approvedBy ?? null, approved_at: r.approvedAt ?? null,
+posted_by: r.postedBy ?? null, posted_at: r.postedAt ?? null,
+created_by: r.createdBy, created_at: r.createdAt,
+};
+}
+
+async function availableAt(materialId: string, wh: string, loc?: string | null, lotId?: string | null): Promise {
+const conds = [
+eq(inventoryTransactionsTable.materialId, materialId),
+eq(inventoryTransactionsTable.stockState, "available"),
+eq(inventoryTransactionsTable.warehouseId, wh),
+];
+if (loc) conds.push(eq(inventoryTransactionsTable.locationId, loc));
+if (lotId) conds.push(eq(inventoryTransactionsTable.lotId, lotId));
+const [row] = await db.select({ sum: sql`coalesce(sum(${inventoryTransactionsTable.quantity}), 0)` })
+.from(inventoryTransactionsTable).where(and(...conds));
+return Number(row.sum);
+}
+
+// ─── Create draft (samples systemQty at dims) ───────────────────────────────
+router.post("/", requireWriteRole("supervisor", "director"), async (req: Request, res: Response): Promise => {
+const parsed = CreateAdjustmentBody.safeParse(req.body);
+if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+const b = parsed.data;
+const actorId = req.user?.userId ?? null;
+
+if (b.type === "negative" && !b.lot_id) {
+res.status(422).json({ error: "NEGATIVE_ADJUSTMENT_REQUIRES_LOT",
+details: "Negative adjustments must be lot-scoped so stock can be locked against concurrent movements" });
+return;
+}
+const [mat] = await db.select({ id: materialsTable.id, uom: materialsTable.uom }).from(materialsTable)
+.where(eq(materialsTable.id, b.material_id)).limit(1);
+if (!mat) { res.status(400).json({ error: "Unknown material id" }); return; }
+const [wh] = await db.select({ id: warehousesTable.id }).from(warehousesTable)
+.where(eq(warehousesTable.id, b.warehouse_id)).limit(1);
+if (!wh) { res.status(400).json({ error: "Unknown warehouse id" }); return; }
+if (b.lot_id) {
+const [lot] = await db.select({ materialId: inventoryLotsTable.materialId })
+.from(inventoryLotsTable).where(eq(inventoryLotsTable.id, b.lot_id)).limit(1);
+if (!lot || lot.materialId !== b.material_id) { res.status(422).json({ error: "Lot does not match material" }); return; }
+}
+
+const system = await availableAt(b.material_id, b.warehouse_id, b.location_id ?? null, b.lot_id ?? null);
+const physical = b.type === "positive" ? system + b.quantity : system - b.quantity;
+const { rows } = await pool.query("SELECT nextval('adjustment_seq') AS seq");
+const adjustmentNumber = `ADJ-${todayDateStr()}-${String(rows[0].seq).padStart(4, "0")}`;
+
+const [created] = await db.insert(inventoryAdjustmentsTable).values({
+adjustmentNumber,
+type: b.type,
+status: "draft",
+materialId: b.material_id,
+lotId: b.lot_id ?? null,
+warehouseId: b.warehouse_id,
+locationId: b.location_id ?? null,
+binId: b.bin_id ?? null,
+quantity: String(b.quantity),
+uom: mat.uom,
+systemQty: String(system),
+physicalQty: String(physical),
+variance: String(physical - system),   // CHECK satisfied by construction
+reason: b.reason,
+notes: b.notes ?? null,
+countReference: b.count_reference ?? null,
+createdBy: actorId,
+}).returning();
+
+void recordSecurityEvent({
+eventType: "adjustment.draft_created", actorId, actorEmail: req.user?.email ?? null,
+actorRole: req.user?.role ?? null, ...reqMeta(req), statusCode: 201,
+detail: `Adjustment draft ${adjustmentNumber} ${b.type} ${b.quantity} (system ${system})`,
+});
+res.status(201).json(serializeAdjustment(created as Record<string, any>));
+});
+
+// ─── Submit / Approve (director only) / Reject ──────────────────────────────
+function simpleTransition(allowed: string[], next: string, extra: Record<string, any> = {}) {
+return async (req: Request, res: Response): Promise => {
+const actorId = req.user?.userId ?? null;
+const outcome = await db.transaction(async (tx) => {
+const [r] = await tx.select().from(inventoryAdjustmentsTable)
+.where(eq(inventoryAdjustmentsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (!allowed.includes(r.status)) return { status: "invalid_state" as const, current: r.status };
+const [u] = await tx.update(inventoryAdjustmentsTable).set({ ...nextFields(next), ...extra })
+.where(eq(inventoryAdjustmentsTable.id, r.id)).returning();
+return { status: "ok" as const, updated: u };
+});
+if (outcome.status === "not_found") { res.status(404).json({ error: "Adjustment not found" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Adjustment cannot transition from status '${outcome.current}'` }); return; }
+res.json(serializeAdjustment(outcome.updated as Record<string, any>));
+};
+}
+function nextFields(status: string): Record<string, any> {
+return status === "submitted" ? { status: "submitted" }
+: status === "approved" ? { status: "approved", approvedBy: undefined, approvedAt: undefined }
+: { status };
+}
+router.post("/:id/submit", requireWriteRole("supervisor", "director"), SubmitAdjustmentBody safeParse wrapper
+// NOTE to implementer: wrap with SubmitAdjustmentBody.safeParse like 70-G/H.
+, simpleTransition(["draft"], "submitted"));
+router.post("/:id/approve", requireWriteRole("director"), / ApproveAdjustmentBody.safeParse /
+async (req: Request, res: Response): Promise => {
+const actorId = req.user?.userId ?? null;
+const outcome = await db.transaction(async (tx) => {
+const [r] = await tx.select().from(inventoryAdjustmentsTable)
+.where(eq(inventoryAdjustmentsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (r.status !== "submitted") return { status: "invalid_state" as const, current: r.status };
+const [u] = await tx.update(inventoryAdjustmentsTable).set({
+status: "approved", approvedBy: actorId, approvedAt: new Date(),
+}).where(eq(inventoryAdjustmentsTable.id, r.id)).returning();
+return { status: "ok" as const, updated: u };
+});
+if (outcome.status === "not_found") { res.status(404).json({ error: "Adjustment not found" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Adjustment cannot be approved from status '${outcome.current}'` }); return; }
+res.json(serializeAdjustment(outcome.updated as Record<string, any>));
+});
+router.post("/:id/reject", requireWriteRole("supervisor", "director"), async (req: Request, res: Response): Promise => {
+const parsed = RejectAdjustmentBody.safeParse(req.body);
+if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+const outcome = await db.transaction(async (tx) => {
+const [r] = await tx.select().from(inventoryAdjustmentsTable)
+.where(eq(inventoryAdjustmentsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (!["draft", "submitted", "approved"].includes(r.status)) return { status: "invalid_state" as const, current: r.status };
+const [u] = await tx.update(inventoryAdjustmentsTable).set({ status: "rejected" })
+.where(eq(inventoryAdjustmentsTable.id, r.id)).returning();
+return { status: "ok" as const, updated: u };
+});
+if (outcome.status === "not_found") { res.status(404).json({ error: "Adjustment not found" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Adjustment cannot be rejected from status '${outcome.current}'` }); return; }
+res.json(serializeAdjustment(outcome.updated as Record<string, any>));
+});
+
+// ─── Post (PHYSICAL: ADJUSTMENT_IN / ADJUSTMENT_OUT) ────────────────────────
+router.post("/:id/post", requireWriteRole("supervisor", "director"), async (req: Request, res: Response): Promise => {
+const actorId = req.user?.userId ?? null;
+const idemKey = (req.header("idempotency-key") ?? "").slice(0, 100) || null;
+
+const outcome = await db.transaction(async (tx) => {
+if (idemKey) {
+await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`adjust-idem:{idemKey}`}))`);
+const [replay] = await tx.select().from(inventoryAdjustmentsTable)
+.where(eq(inventoryAdjustmentsTable.idempotencyKey, idemKey)).limit(1);
+if (replay) return { status: "replay" as const, doc: replay };
+}
+const [r] = await tx.select().from(inventoryAdjustmentsTable)
+.where(eq(inventoryAdjustmentsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (r.status === "posted") return { status: "already" as const };
+if (r.status !== "approved") return { status: "invalid_state" as const, current: r.status };
+
+    const qty = Number(r.quantity);
+    let sourceLineId: string | null = null;
+
+    if (r.type === "negative") {
+      if (!r.lotId) return { status: "no_lot" as const };          // invariant re-check
+      const [lot] = await tx.select().from(inventoryLotsTable)
+        .where(eq(inventoryLotsTable.id, r.lotId)).for("update").limit(1);
+      await tx.select({ id: grnLineItemsTable.id }).from(grnLineItemsTable)
+        .where(eq(grnLineItemsTable.id, lot.grnLineId)).for("update").limit(1);
+      sourceLineId = lot.grnLineId;
+      const [bal] = await tx
+        .select({ sum: sql<string>`coalesce(sum(${inventoryTransactionsTable.quantity}), 0)` })
+        .from(inventoryTransactionsTable)
+        .where(and(
+          eq(inventoryTransactionsTable.materialId, r.materialId),
+          eq(inventoryTransactionsTable.stockState, "available"),
+          eq(inventoryTransactionsTable.warehouseId, r.warehouseId),
+          eq(inventoryTransactionsTable.lotId, r.lotId),
+        ));
+      if (qty > Number(bal.sum)) return { status: "negative_stock" as const, available: Number(bal.sum) };
+    } else if (!r.lotId) {
+      // Warehouse-level positive: additive only; material-advisory for
+      // cross-operation ordering; no oversell direction exists.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`reservation-material:${r.materialId}`}))`);
+    } else {
+      const [lot] = await tx.select().from(inventoryLotsTable)
+        .where(eq(inventoryLotsTable.id, r.lotId)).for("update").limit(1);
+      sourceLineId = lot.grnLineId;
+    }
+
+    await tx.insert(inventoryTransactionsTable).values({
+      materialId: r.materialId,
+      quantity: r.type === "positive" ? String(qty) : String(-qty),
+      uom: r.uom,
+      stockState: "available",
+      transactionType: r.type === "positive" ? "ADJUSTMENT_IN" : "ADJUSTMENT_OUT",
+      sourceDocumentType: "inventory_adjustment",
+      sourceDocumentId: r.id,
+      sourceLineId,
+      lotId: r.lotId,
+      warehouseId: r.warehouseId,
+      locationId: r.locationId,
+      binId: r.binId,
+      actorId,
+      actorName: req.user?.email ?? null,
+    });
+
+    const [updated] = await tx.update(inventoryAdjustmentsTable).set({
+      status: "posted", postedBy: actorId, postedAt: new Date(),
+      idempotencyKey: idemKey,
+    }).where(eq(inventoryAdjustmentsTable.id, r.id)).returning();
+
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "inventory_adjustment", aggregateId: r.id,
+      eventType: "ADJUSTMENT_POSTED",
+      payload: {
+        adjustment_number: r.adjustmentNumber, type: r.type, quantity: qty,
+        material_id: r.materialId, lot_id: r.lotId, warehouse_id: r.warehouseId,
+        system_qty: Number(r.systemQty), physical_qty: Number(r.physicalQty),
+        actor_id: actorId,
+      },
+    });
+    return { status: "ok" as const, doc: updated };
+
+});
+
+if (outcome.status === "not_found") { res.status(404).json({ error: "Adjustment not found" }); return; }
+if (outcome.status === "already") { res.status(409).json({ error: "Adjustment is already posted" }); return; }
+if (outcome.status === "replay") { res.status(200).json(serializeAdjustment(outcome.doc as Record<string, any>)); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Adjustment cannot be posted from status '${outcome.current}'` }); return; }
+if (outcome.status === "no_lot") { res.status(422).json({ error: "NEGATIVE_ADJUSTMENT_REQUIRES_LOT" }); return; }
+if (outcome.status === "negative_stock") {
+res.status(409).json({ error: "NEGATIVE_STOCK_PREVENTED", details: { requested: undefined, available: outcome.available } }); return;
+}
+
+void recordSecurityEvent({
+eventType: "adjustment.posted", actorId, actorEmail: req.user?.email ?? null,
+actorRole: req.user?.role ?? null, ...reqMeta(req), statusCode: 200,
+detail: `Adjustment ${outcome.doc.adjustmentNumber} posted (${outcome.doc.type} ${outcome.doc.quantity})`,
+});
+res.json(serializeAdjustment(outcome.doc as Record<string, any>));
+});
+
+// ─── Reads ───────────────────────────────────────────────────────────────────
+router.get("/", async (req: Request, res: Response): Promise => {
+const q = req.query as Record<string, string | undefined>;
+const conds = [
+q.material_id ? eq(inventoryAdjustmentsTable.materialId, q.material_id) : undefined,
+q.warehouse_id ? eq(inventoryAdjustmentsTable.warehouseId, q.warehouse_id) : undefined,
+q.status ? eq(inventoryAdjustmentsTable.status, q.status) : undefined,
+].filter(Boolean) as any[];
+const where = conds.length ? and(...conds) : undefined;
+const [t] = await db.select({ count: count() }).from(inventoryAdjustmentsTable).where(where);
+const rows = await db.select().from(inventoryAdjustmentsTable).where(where)
+.orderBy(asc(inventoryAdjustmentsTable.createdAt)).limit(200);
+res.json({ items: rows.map((r) => serializeAdjustment(r as Record<string, any>)), meta: { total: Number(t?.count ?? 0) } });
+});
+router.get("/:id", async (req: Request, res: Response): Promise {
+const [r] = await db.select().from(inventoryAdjustmentsTable)
+.where(eq(inventoryAdjustmentsTable.id, req.params.id as string)).limit(1);
+if (!r) { res.status(404).json({ error: "Adjustment not found" }); return; }
+res.json(serializeAdjustment(r as Record<string, any>));
+});
+
+export default router;
+
+---------------------------------------------------------------------------
+
+FILE 4 — routes/inventory/index.ts: ADD
+
+import adjustmentsRouter from "./adjustments";
+
+router.use("/adjustments", adjustmentsRouter);
+
+⚠ IMPLEMENTER CLEANUP: the submit route above shows a pseudo-middleware sketch
+
+("SubmitAdjustmentBody safeParse wrapper") — implement it as a proper handler
+
+(parse, then simpleTransition(["draft"], "submitted")); delete nextFields()
+
+(approve sets its own fields inline; the helper's approvedBy:undefined is a
+
+bug if used). Do not ship the sketch literally.
+
+---------------------------------------------------------------------------
+
+VERIFICATION (fixtures: material 40 in warehouse W; lot L)
+
+1. Positive lot-scoped: draft(system 40)→submit→approve(director)→post:
+
+ledger +5 'available' ADJUSTMENT_IN (lot dims); variance = +5; one outbox.
+
+2. Negative lot-scoped −10: post → −10 ADJUSTMENT_OUT; stock available 35→25.
+
+3. Negative without lot at create → 422 NEGATIVE_ADJUSTMENT_REQUIRES_LOT.
+
+4. Negative over available (qty 999) → post 409 NEGATIVE_STOCK_PREVENTED,
+
+zero mutation. (Draft still creatable — post is authoritative.)
+
+5. Warehouse-level positive (no lot) → post +qty with null lot; stock
+
+available increases; documented un-lotted state.
+
+6. Idempotency: same-key concurrent posts → 1 post + 1 replay, exactly one
+
+ledger row + one outbox.
+
+7. adjustment↔adjustment same lot (two negatives racing) → 1×success/1×409,
+
+loser zero mutation.
+
+8. adjustment↔transfer/issue overlap (negative on a lot whose stock a
+
+transfer is moving) → serialized; afterwards no negative balances.
+
+9. Authz: supervisor approve → 403; operator/viewer writes 403; anon 401;
+
+viewer reads 200. Submit from draft by supervisor → 200.
+
+10. INV-P5-03 SQL (below) zero mismatches; INV-P5-06: consumption /adjust
+
+still writes zero ledger rows; full §10 regression; zero residue;
+
+evidence certification/fat-evidence/task-70-i-adjustments-2026-09-13.md.
+
+INV-P5-03 SQL (0 rows expected):
+
+-- every posted adjustment has exactly one ledger row of matching sign/type
+
+SELECT a.id FROM inventory_adjustments a
+
+WHERE a.status = 'posted' AND (
+
+(SELECT count() FROM inventory_transactions it
+
+WHERE it.source_document_type='inventory_adjustment' AND it.source_document_id=a.id) != 1
+
+OR (SELECT count() FROM inventory_transactions it
+
+WHERE it.source_document_type='inventory_adjustment' AND it.source_document_id=a.id
+
+AND it.transaction_type = CASE WHEN a.type='positive' THEN 'ADJUSTMENT_IN' ELSE 'ADJUSTMENT_OUT' END
+
+AND ((a.type='positive' AND it.quantity::numeric > 0) OR (a.type='negative' AND it.quantity::numeric < 0))) != 1
+
+);
+
+-- no ledger adjustment rows without a posted adjustment (annotation wall)
+
+SELECT it.id FROM inventory_transactions it
+
+WHERE it.source_document_type='inventory_adjustment'
+
+AND NOT EXISTS (SELECT 1 FROM inventory_adjustments a
+
+WHERE a.id = it.source_document_id AND a.status='posted');
+
+-- no negative available at (material, warehouse)
+
+SELECT material_id, warehouse_id, SUM(quantity)::numeric FROM inventory_transactions
+
+WHERE stock_state='available' GROUP BY material_id, warehouse_id HAVING SUM(quantity) < 0;
+
+WHAT MUST NOT BE CHANGED:
+
+❌ No edits to consumption /adjust (annotation-only), Phase 4 routes,
+
+returns/scrap arithmetic, reservations, Option A, MIN. FAT BMS untouched.
+
+❌ generated/api.ts; frontend; no commit; dev DB only.
+
+RISK: Medium-high (first ledger-writing flow outside the WIP chain). Closed by:
+
+lot-required negatives (hole-by-construction), under-lock re-validation,
+
+genuine approval gate, TOCTOU-hardened idempotency, INV-P5-03 wall queries.
+
+NEXT: After evidence, Kimi certifies 70-I and prepares 70-J (Full transfer
+
+lifecycle on transfer_requests/lines: draft→approved→issued→in_transit→
+
+received→reconciled, partial receiving, in-transit accounting, INV-P5-04).
