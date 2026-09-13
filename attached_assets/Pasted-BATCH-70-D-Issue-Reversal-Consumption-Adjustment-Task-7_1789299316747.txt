@@ -1,0 +1,435 @@
+BATCH 70-D — Issue Reversal & Consumption Adjustment
+
+Task #70 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Depends on: 70-A/B/C (B certified; C certified this report).
+
+Purpose: make the issued/consumed lifecycle recoverable. After 70-B, a
+
+partially_issued reservation was a one-way door (release/cancel both 409);
+
+after 70-D it is reversible. Adjustment is ANNOTATION-ONLY by design (below).
+
+---------------------------------------------------------------------------
+
+DECISIONS
+
+• Reversal granularity: FULL note only. Partial reversal of an issue note is
+
+out of scope (splitting ledger pairs adds risk with no current requirement).
+
+• Reversal precondition: every wip row of the note must be UNCONSUMED
+
+(remaining == issued). If anything was consumed/returned/scrapped → 409
+
+WIP_PARTIALLY_CONSUMED (reverse the consumption first — future scope).
+
+• Adjustment: changes NO physical quantity. It marks a confirmed confirmation
+
+'adjusted' + records the correction reason (compensating-ledger numeric
+
+re-adjustment is deliberately out of Phase 4 scope; documented).
+
+---------------------------------------------------------------------------
+
+SCHEMA MICRO-DELTA (FILE 1) — then `pnpm --filter @workspace/db run push`
+
+(enum ADD VALUE hits the recorded TTY caveat — pseudo-TTY)
+
+a) wipInventory status enum: ADD "reversed" (row fully undone; excluded from
+
+all remaining/invariant sums; INV-P4-03 filters active/partially_consumed
+
+only, so reversed rows drop out of both sides consistently since reversal
+
+also zeroes the ledger wip it owned).
+
+b) wipIssueNotesTable: ADD three columns:
+
+reversedAt:   timestamp("reversed_at", { withTimezone: true }),
+
+reversedBy:   uuid("reversed_by"),
+
+reversalReason: text("reversal_reason"),
+
+---------------------------------------------------------------------------
+
+FILES (five):
+
+1. lib/db/src/schema/inventory-platform.ts                       — MODIFY (delta above)
+
+2. lib/api-zod/src/inventory-wip-issues.ts                       — NEW
+
+3. lib/api-zod/src/inventory-consumptions.ts                     — MODIFY (append)
+
+4. artifacts/api-server/src/routes/inventory/wip-issues.ts       — NEW
+
+5. artifacts/api-server/src/routes/inventory/{consumptions.ts,index.ts} — MODIFY
+
+---------------------------------------------------------------------------
+
+FILE 2 — CREATE lib/api-zod/src/inventory-wip-issues.ts:
+
+import * as zod from "zod";
+
+export const ReverseWipIssueBody = zod.object({
+
+reason: zod.string().min(1).max(255),
+
+});
+
+export type ReverseWipIssueBody = zod.infer;
+
+In lib/api-zod/src/index.ts ADD:  export * from "./inventory-wip-issues";
+
+FILE 3 — APPEND to lib/api-zod/src/inventory-consumptions.ts:
+
+export const AdjustConsumptionBody = zod.object({
+
+reason: zod.string().min(1).max(255),
+
+});
+
+export type AdjustConsumptionBody = zod.infer;
+
+---------------------------------------------------------------------------
+
+FILE 4 — CREATE artifacts/api-server/src/routes/inventory/wip-issues.ts
+
+import { Router, type IRouter, type Request, type Response } from "express";
+import { eq, asc, and, sql } from "drizzle-orm";
+import {
+db,
+wipIssueNotesTable,
+wipIssueLinesTable,
+wipInventoryTable,
+inventoryReservationAllocationsTable,
+inventoryReservationsTable,
+inventoryTransactionsTable,
+inventoryLotsTable,
+grnLineItemsTable,
+outboxEventsTable,
+} from "@workspace/db";
+import { ReverseWipIssueBody } from "@workspace/api-zod";
+import { requireWriteRole } from "../../middleware/auth";
+import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
+
+const router: IRouter = Router();
+router.use(requireWriteRole("supervisor", "director"));
+
+function numify(v: unknown): unknown {
+return typeof v === "string" && /^-?\d+(\.\d+)?/.test(v) ? Number(v) : v;
+}
+
+// ─── Reverse a WIP issue note (full note, unconsumed only) ──────────────────
+router.post("/:id/reverse", async (req: Request, res: Response): Promise => {
+const parsed = ReverseWipIssueBody.safeParse(req.body);
+if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+const actorId = req.user?.userId ?? null;
+
+const outcome = await db.transaction(async (tx) => {
+const [note] = await tx.select().from(wipIssueNotesTable)
+.where(eq(wipIssueNotesTable.id, req.params.id as string))
+.for("update").limit(1);
+if (!note) return { status: "not_found" as const };
+// Deterministic (not idempotent): double-reverse → 409, like release.
+if (note.status === "reversed") return { status: "invalid_state" as const, current: "reversed" };
+if (note.status !== "fully_issued") return { status: "invalid_state" as const, current: note.status };
+
+    const lines = await tx.select({
+      line: wipIssueLinesTable,
+      alloc: inventoryReservationAllocationsTable,
+      lot: inventoryLotsTable,
+    })
+      .from(wipIssueLinesTable)
+      .innerJoin(inventoryReservationAllocationsTable,
+        eq(inventoryReservationAllocationsTable.id, wipIssueLinesTable.reservationAllocationId))
+      .innerJoin(inventoryLotsTable, eq(inventoryLotsTable.id, wipIssueLinesTable.lotId))
+      .where(eq(wipIssueLinesTable.wipIssueNoteId, note.id))
+      .orderBy(asc(wipIssueLinesTable.createdAt))
+      .for("update");
+
+    const wipRows = await tx.select().from(wipInventoryTable)
+      .where(eq(wipInventoryTable.wipIssueNoteId, note.id))
+      .orderBy(asc(wipInventoryTable.createdAt))
+      .for("update");
+
+    // Precondition: nothing consumed/returned/scrapped from this note's wip.
+    for (const w of wipRows) {
+      if (Number(w.remainingQty) !== Number(w.issuedQty)) {
+        return { status: "consumed" as const, wipId: w.id };
+      }
+    }
+
+    let total = 0;
+    for (const { line, alloc, lot } of lines) {
+      if (alloc.status !== "issued") return { status: "alloc_state" as const, allocId: alloc.id };
+      const qty = Number(line.quantity);
+      total += qty;
+      // Serialize with transfers on the same GRN line (we add back to available).
+      await tx.select({ id: grnLineItemsTable.id }).from(grnLineItemsTable)
+        .where(eq(grnLineItemsTable.id, lot.grnLineId)).for("update").limit(1);
+      // Undo the movement: −wip, +available. PRODUCTION_ISSUE_REVERSAL (enum exists).
+      await tx.insert(inventoryTransactionsTable).values({
+        materialId: alloc.reservationId ? (await tx.select({ m: inventoryReservationsTable.materialId })
+            .from(inventoryReservationsTable)
+            .where(eq(inventoryReservationsTable.id, note.reservationId)).limit(1))[0].m : null,
+        quantity: String(-qty),
+        uom: line.uom,
+        stockState: "wip",
+        transactionType: "PRODUCTION_ISSUE_REVERSAL",
+        sourceDocumentType: "wip_issue_reversal",
+        sourceDocumentId: note.id,
+        sourceLineId: lot.grnLineId,
+        lotId: lot.id,
+        warehouseId: lot.warehouseId,
+        locationId: lot.locationId,
+        binId: lot.binId,
+        productionOrderId: note.productionOrderId,
+        actorId,
+        actorName: req.user?.email ?? null,
+      });
+      await tx.insert(inventoryTransactionsTable).values({
+        materialId: (await tx.select({ m: inventoryReservationsTable.materialId })
+            .from(inventoryReservationsTable)
+            .where(eq(inventoryReservationsTable.id, note.reservationId)).limit(1))[0].m,
+        quantity: String(qty),
+        uom: line.uom,
+        stockState: "available",
+        transactionType: "PRODUCTION_ISSUE_REVERSAL",
+        sourceDocumentType: "wip_issue_reversal",
+        sourceDocumentId: note.id,
+        sourceLineId: lot.grnLineId,
+        lotId: lot.id,
+        warehouseId: lot.warehouseId,
+        locationId: lot.locationId,
+        binId: lot.binId,
+        productionOrderId: note.productionOrderId,
+        actorId,
+        actorName: req.user?.email ?? null,
+      });
+      // Allocation evidence: issued slice returns to active hold.
+      await tx.update(inventoryReservationAllocationsTable)
+        .set({ status: "active" })
+        .where(eq(inventoryReservationAllocationsTable.id, alloc.id));
+    }
+
+    // wip rows fully undone — exit both remaining sums and the ledger consistently.
+    for (const w of wipRows) {
+      await tx.update(wipInventoryTable).set({
+        remainingQty: "0",
+        status: "reversed",
+      }).where(eq(wipInventoryTable.id, w.id));
+    }
+
+    // Reservation restore: issued → allocated.
+    const [reservation] = await tx.select().from(inventoryReservationsTable)
+      .where(eq(inventoryReservationsTable.id, note.reservationId))
+      .for("update").limit(1);
+    if (reservation) {
+      const newIssued = Number(reservation.issuedQty) - total;
+      const newAllocated = Number(reservation.allocatedQty) + total;
+      const status = newIssued > 0
+        ? (newIssued >= Number(reservation.reservedQty) ? "fully_issued" : "partially_issued")
+        : (newAllocated >= Number(reservation.reservedQty) ? "fully_allocated" : "partially_allocated");
+      await tx.update(inventoryReservationsTable).set({
+        issuedQty: String(newIssued),
+        allocatedQty: String(newAllocated),
+        status,
+      }).where(eq(inventoryReservationsTable.id, reservation.id));
+    }
+
+    const [updated] = await tx.update(wipIssueNotesTable).set({
+      status: "reversed",
+      reversedAt: new Date(),
+      reversedBy: actorId,
+      reversalReason: parsed.data.reason,
+    }).where(eq(wipIssueNotesTable.id, note.id)).returning();
+
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "wip_issue_note",
+      aggregateId: note.id,
+      eventType: "WIP_ISSUE_REVERSED",
+      payload: {
+        issue_number: note.issueNumber,
+        reservation_id: note.reservationId,
+        total_reversed: total,
+        reason: parsed.data.reason,
+        actor_id: actorId,
+      },
+    });
+
+    return { status: "ok" as const, note: updated };
+
+});
+
+if (outcome.status === "not_found") { res.status(404).json({ error: "WIP issue note not found" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Issue note cannot be reversed from status '${outcome.current}'` }); return; }
+if (outcome.status === "consumed") { res.status(409).json({ error: "WIP_PARTIALLY_CONSUMED", details: { wip_inventory_id: outcome.wipId } }); return; }
+if (outcome.status === "alloc_state") { res.status(409).json({ error: "ALLOCATION_STATE_CONFLICT", details: { allocation_id: outcome.allocId } }); return; }
+
+void recordSecurityEvent({
+eventType: "wip.issue_reversed", actorId,
+actorEmail: req.user?.email ?? null, actorRole: req.user?.role ?? null,
+...reqMeta(req), statusCode: 200,
+detail: `WIP issue ${outcome.note.issueNumber} reversed: ${parsed.data.reason}`,
+});
+
+res.json({
+id: outcome.note.id,
+issue_number: outcome.note.issueNumber,
+status: outcome.note.status,
+reversed_at: outcome.note.reversedAt,
+reversed_by: outcome.note.reversedBy,
+reversal_reason: outcome.note.reversalReason,
+});
+});
+
+// ─── Reads ───────────────────────────────────────────────────────────────────
+router.get("/:id", async (req: Request, res: Response): Promise => {
+const [n] = await db.select().from(wipIssueNotesTable)
+.where(eq(wipIssueNotesTable.id, req.params.id as string)).limit(1);
+if (!n) { res.status(404).json({ error: "WIP issue note not found" }); return; }
+const lines = await db.select({
+id: wipIssueLinesTable.id,
+reservation_allocation_id: wipIssueLinesTable.reservationAllocationId,
+lot_id: wipIssueLinesTable.lotId,
+quantity: numify(wipIssueLinesTable.quantity),
+uom: wipIssueLinesTable.uom,
+}).from(wipIssueLinesTable).where(eq(wipIssueLinesTable.wipIssueNoteId, n.id));
+res.json({
+id: n.id, issue_number: n.issueNumber, reservation_id: n.reservationId,
+production_order_id: n.productionOrderId, status: n.status,
+issued_by: n.issuedBy, notes: n.notes ?? null,
+reversed_at: n.reversedAt ?? null, reversed_by: n.reversedBy ?? null,
+reversal_reason: n.reversalReason ?? null, created_at: n.createdAt, lines,
+});
+});
+
+export default router;
+
+FILE 5a — consumptions.ts: APPEND the adjust route (annotation-only):
+
+// ─── Adjust (annotation-only; no physical change) ───────────────────────────
+
+router.post("/:id/adjust", async (req: Request, res: Response): Promise => {
+
+const parsed = AdjustConsumptionBody.safeParse(req.body);
+
+if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+const actorId = req.user?.userId ?? null;
+
+const outcome = await db.transaction(async (tx) => {
+
+const [c] = await tx.select().from(consumptionConfirmationsTable)
+
+.where(eq(consumptionConfirmationsTable.id, req.params.id as string))
+
+.for("update").limit(1);
+
+if (!c) return { status: "not_found" as const };
+
+if (c.status !== "confirmed") return { status: "invalid_state" as const, current: c.status };
+
+const [updated] = await tx.update(consumptionConfirmationsTable).set({
+
+status: "adjusted",
+
+adjustedBy: actorId,                    // ADJUST: column name per live schema
+
+adjustedAt: new Date(),                 // ADJUST
+
+reason: `${c.reason ?? ""} | adjustment: ${parsed.data.reason}`.trim(),
+
+}).where(eq(consumptionConfirmationsTable.id, c.id)).returning();
+
+await tx.insert(outboxEventsTable).values({
+
+aggregateType: "consumption_confirmation", aggregateId: c.id,
+
+eventType: "CONSUMPTION_ADJUSTED",
+
+payload: { confirmation_number: c.confirmationNumber, reason: parsed.data.reason, actor_id: actorId },
+
+});
+
+return { status: "ok" as const, updated };
+
+});
+
+if (outcome.status === "not_found") { res.status(404).json({ error: "Consumption confirmation not found" }); return; }
+
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Confirmation cannot be adjusted from status '${outcome.current}'` }); return; }
+
+void recordSecurityEvent({
+
+eventType: "consumption.adjusted", actorId,
+
+actorEmail: req.user?.email ?? null, actorRole: req.user?.role ?? null,
+
+...reqMeta(req), statusCode: 200,
+
+detail: `Consumption ${outcome.updated.confirmationNumber} adjusted (annotation): ${parsed.data.reason}`,
+
+});
+
+res.json(serializeConfirmation(outcome.updated as Record<string, any>));
+
+});
+
+(+ import AdjustConsumptionBody)
+
+FILE 5b — routes/inventory/index.ts: ADD
+
+import wipIssuesRouter from "./wip-issues";
+
+router.use("/wip-issues", wipIssuesRouter);
+
+---------------------------------------------------------------------------
+
+VERIFICATION (fixtures: issue 50 to WIP, consume 0)
+
+# 1. Reverse happy path: issue 30 → reverse → reservation back to
+
+#    fully_allocated (allocated 100/issued 0... per scenario), allocations
+
+#    active again, ledger −30 wip / +30 available (PRODUCTION_ISSUE_REVERSAL),
+
+#    wip row status reversed + remaining 0, outbox WIP_ISSUE_REVERSED.
+
+# 2. Reverse-after-consumption → 409 WIP_PARTIALLY_CONSUMED.
+
+# 3. Double reverse → 409. Parallel double-submit reverse → 1×200/1×409.
+
+# 4. Post-reversal: new allocation/ISSUE cycle works again on the same
+
+#    reservation (full loop closed).
+
+# 5. INV-P4-01/03 hold after reversal (wip back to available; Σ consistent).
+
+# 6. Adjust: confirmed → adjusted with reason append; second adjust → 409;
+
+#    adjust on draft → 409; NO ledger rows from adjust (annotation-only).
+
+# 7. Authz matrix. 8. test:reservation 15/15; MIN smoke; SS-02/03 if cheap.
+
+# 9. git diff --stat = the five files only.
+
+WHAT MUST NOT BE CHANGED:
+
+❌ No edits to the 70-B issue engine accounting, MIN, Task #69 create/
+
+allocate logic, GRN/transfer/stock.
+
+❌ generated/api.ts; frontend; no commit; dev DB only.
+
+RISK: Medium. Reversal is a compensating movement — the unconsumed precondition
+
++ row locks + deterministic (non-idempotent) semantics keep it safe; every
+
+409 path leaves state untouched.
+
+NEXT: After evidence, Kimi prepares BATCH 70-E — read projections (stock +wip_qty,
+
+order WIP view, reservation issued breakdown) and then the single 70-F gate.
