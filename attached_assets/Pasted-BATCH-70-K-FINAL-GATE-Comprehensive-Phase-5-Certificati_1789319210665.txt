@@ -1,0 +1,427 @@
+BATCH 70-K (FINAL GATE) — Comprehensive Phase 5 Certification
+
+Task #70 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Depends on: 70-G/H/I/J (all certified). ONLY 70-K grants the Phase 5 verdict.
+
+---------------------------------------------------------------------------
+
+PART 1 — CROSS-DOMAIN + CONCURRENCY SUITE
+
+FILE: artifacts/api-server/src/cert/phase5-final-gate-suite.ts (NEW)
+
++ package.json script: "test:phase5-gate": "tsx src/cert/phase5-final-gate-suite.ts"
+
+Per-domain functional lifecycles are already certified by the 70-G (11/11),
+
+70-H (10/10), 70-I (11/11), 70-J (12/12) suites — 70-K proves CROSS-DOMAIN
+
+integrity, the mandated race matrix, and the security matrix.
+
+---------------------------------------------------------------------------
+
+/ Phase 5 final gate: FK-01…FK-14 (cross-domain + concurrency + security). /
+const BASE = (process.env.OCS_URL ?? "http://localhost:3000").replace(/\//, "");
+const CRED: Record<string, { email: string; password: string }> = {
+director: { email: process.env.OCS_DIRECTOR_EMAIL ?? "director@ocs.local", password: process.env.OCS_DIRECTOR_PASSWORD ?? "change-me" },
+supervisor: { email: process.env.OCS_SUPERVISOR_EMAIL ?? "supervisor@ocs.local", password: process.env.OCS_SUPERVISOR_PASSWORD ?? "change-me" },
+operator: { email: process.env.OCS_OPERATOR_EMAIL ?? "operator@ocs.local", password: process.env.OCS_OPERATOR_PASSWORD ?? "change-me" },
+viewer: { email: process.env.OCS_VIEWER_EMAIL ?? "viewer@ocs.local", password: process.env.OCS_VIEWER_PASSWORD ?? "change-me" },
+};
+const jars = new Map<string, string>();
+async function call(role: string | null, method: string, path: string, body?: unknown, headers?: Record<string, string>) {
+const h: Record<string, string> = { ...(headers ?? {}) };
+const cookie = role ? jars.get(role) : undefined;
+if (cookie) h["cookie"] = cookie;
+if (body !== undefined) h["content-type"] = "application/json";
+const res = await fetch(BASE + "/api" + path, { method, headers: h, body: body !== undefined ? JSON.stringify(body) : undefined, redirect: "manual" });
+const sc = res.headers.get("set-cookie");
+if (role && sc) jars.set(role, sc.split(";")[0]);
+const text = await res.text();
+let json: any = null; try { json = JSON.parse(text); } catch {}
+return { status: res.status, json };
+}
+async function login(role: string) {
+const r = await call(role, "POST", "/auth/login", CRED[role]);
+if (r.status !== 200) throw new Error(`login ${role}: HTTP ${r.status}`);
+}
+let passed = 0, failed = 0;
+function check(id: string, cond: boolean, detail = "") {
+if (cond) { passed++; console.log(`${id}: PASS`); } else { failed++; console.log(`${id}: FAIL ${detail}`); }
+}
+
+// ─── fixtures ────────────────────────────────────────────────────────────────
+let supplierId: string | null = null, poId = "", whA = "", whB = "";
+async function ensureSupplier(): Promise {
+if (supplierId) return supplierId;
+const r = await call("director", "POST", "/masters/suppliers", { code: "CERT7K-SUP", name: "Cert7K Supplier" });
+supplierId = r.json?.id ?? r.json?.data?.id;
+if (!supplierId) throw new Error("supplier fixture failed");
+return supplierId;
+}
+async function makeMaterial(suffix: string): Promise<{ id: string; code: string }> {
+await ensureSupplier();
+const cat = await call("director", "POST", "/masters/material-categories", { code: `CERT7K-CAT-${suffix}`, name: `Cat ${suffix}` });
+const catId = cat.json?.id ?? cat.json?.data?.id;
+const wf = await call("director", "POST", "/masters/material-workflows", { code: `CERT7K-WF-${suffix}`, name: `WF ${suffix}`, post_receipt_action: "DIRECT_TO_INVENTORY" });
+await call("director", "POST", "/inventory/material-workflow-assignments", { category_id: catId, workflow_id: wf.json?.id });
+const code = `CERT7K-MAT-${suffix}`;
+const mat = await call("director", "POST", "/masters/materials", { code, name: `Mat ${suffix}`, category_id: catId, uom: "KG" });
+const id = mat.json?.id ?? mat.json?.data?.id;
+if (!id) throw new Error("material fixture failed");
+return { id, code };
+}
+async function ensureWarehouses(): Promise {
+if (whA) return;
+const a = await call("director", "POST", "/inventory/warehouses", { code: "CERT7K-WHA", name: "Gate A", type: "main_store" });
+const b = await call("director", "POST", "/inventory/warehouses", { code: "CERT7K-WHB", name: "Gate B", type: "main_store" });
+whA = a.json?.id; whB = b.json?.id;
+}
+async function receive(materialId: string, qty: number): Promise {
+const c = await call("director", "POST", "/inventory/grns", { supplier_id: await ensureSupplier(), received_date: new Date().toISOString().slice(0, 10), lines: [{ material_id: materialId, quantity_received: qty }] });
+await call("director", "POST", `/inventory/grns/${c.json.id}/post`);
+const d = await call("director", "GET", `/inventory/grns/${c.json.id}`);
+return d.json?.lines?.[0]?.lot?.id ?? d.json?.lines?.[0]?.lot_id;
+}
+async function ensurePO(): Promise {
+if (poId) return poId;
+const list = await call("director", "GET", "/manufacturing/orders?pageSize=1");
+poId = list.json?.items?.[0]?.id;
+if (!poId) poId = (await call("director", "POST", "/manufacturing/orders", { factoryManager: "cert-7k" })).json?.id;
+if (!poId) throw new Error("PO fixture failed");
+return poId;
+}
+async function reserveIssue(materialId: string, qty: number): Promise<{ rid: string; noteId: string }> {
+const r = await call("supervisor", "POST", "/inventory/reservations", { production_order_id: await ensurePO(), material_id: materialId, quantity: qty });
+await call("supervisor", "POST", `/inventory/reservations/${r.json.id}/allocate`);
+const i = await call("supervisor", "POST", `/inventory/reservations/${r.json.id}/issue`, {});
+return { rid: r.json.id as string, noteId: i.json.id as string };
+}
+async function wipRow(materialId: string): Promise {
+const w = await call("viewer", "GET", `/inventory/wip-inventory?material_id=${materialId}`);
+return w.json?.items?.[0];
+}
+async function approvePost(path: string, body: unknown = {}): Promise {
+await call("director", "POST", `${path}/approve`, {});
+return call("supervisor", "POST", `${path}/post`, body);
+}
+async function stockQty(code: string, state: string): Promise {
+const s = await call("viewer", "GET", `/inventory/stock?search=${encodeURIComponent(code)}&stock_state=${state}&pageSize=200`);
+return (s.json?.items ?? []).reduce((t: number, r: any) => t + Number(r.quantity ?? 0), 0);
+}
+
+async function main() {
+await login("director"); await login("supervisor"); await login("operator"); await login("viewer");
+await ensurePO(); await ensureWarehouses();
+
+// FK-01 The grand lifecycle chain on one wip row: issue 40 → consume 10 →
+// return 8 → scrap 6 → remaining 16; returned/scrapped terms both exercised.
+{
+const { id, code } = await makeMaterial("K01"); await receive(id, 40);
+const { noteId } = await reserveIssue(id, 40);
+const c = await call("supervisor", "POST", "/inventory/consumptions", { production_order_id: poId, material_id: id, actual_qty: 10, planned_qty: 40 });
+await call("supervisor", "POST", `/inventory/consumptions/${c.json.id}/confirm`);
+const rd = await call("supervisor", "POST", "/inventory/returns", { production_order_id: poId, material_id: id, wip_issue_note_id: noteId, quantity: 8, destination_warehouse_id: whA, reason: "fk01" });
+await approvePost(`/inventory/returns/${rd.json.id}`);
+const sd = await call("supervisor", "POST", "/inventory/scrap", { production_order_id: poId, material_id: id, quantity: 6, reason: "fk01" });
+await approvePost(`/inventory/scrap/${sd.json.id}`);
+const w = await wipRow(id);
+check("FK-01", w && Number(w.issued_qty) === 40 && Number(w.consumed_qty) === 10
+&& Number(w.returned_qty) === 8 && Number(w.scrapped_qty) === 6 && Number(w.remaining_qty) === 16
+&& (await stockQty(code, "available")) === 8 && (await stockQty(code, "scrapped")) === 6,
+JSON.stringify(w));
+}
+// FK-02 Returned stock is transferable: transfer the 8 available units A→B.
+{
+const { id } = await makeMaterial("K02"); const lotId = await receive(id, 8);
+const { noteId } = await reserveIssue(id, 8);
+const rd = await call("supervisor", "POST", "/inventory/returns", { production_order_id: poId, material_id: id, wip_issue_note_id: noteId, quantity: 8, destination_warehouse_id: whA, reason: "fk02" });
+await approvePost(`/inventory/returns/${rd.json.id}`);
+const t = await call("supervisor", "POST", "/inventory/transfer-requests", { source_warehouse_id: whA, destination_warehouse_id: whB, lines: [{ material_id: id, quantity: 8, lot_id: lotId }] });
+await call("director", "POST", `/inventory/transfer-requests/${t.json.id}/approve`);
+await call("supervisor", "POST", `/inventory/transfer-requests/${t.json.id}/issue`, {}, { "idempotency-key": `fk02-${Date.now()}` });
+const lineId = t.json.lines[0].id;
+const rc = await call("supervisor", "POST", `/inventory/transfer-requests/${t.json.id}/receive`, { lines: [{ line_id: lineId, quantity: 8 }] });
+check("FK-02", rc.status === 200 && rc.json.status === "received", `${rc.status}/${rc.json?.status}`);
+}
+// FK-03 Adjustment on the transferred lot at destination.
+{
+const { id } = await makeMaterial("K03"); const lotId = await receive(id, 20);
+const adj = await call("supervisor", "POST", "/inventory/adjustments", { material_id: id, warehouse_id: whB, lot_id: lotId, type: "positive", quantity: 5, reason: "fk03 count" });
+await call("supervisor", "POST", `/inventory/adjustments/${adj.json.id}/submit`);
+const ap = await call("director", "POST", `/inventory/adjustments/${adj.json.id}/approve`);
+const po = await call("supervisor", "POST", `/inventory/adjustments/${adj.json.id}/post`, {}, { "idempotency-key": `fk03-${Date.now()}` });
+check("FK-03", ap.status === 200 && po.status === 200 && Number(po.json?.variance) === 5, `${ap.status}/${po.status}`);
+}
+// FK-04 Reservation untouched by all Phase 5 movement (D6/D7/INV-P5-05).
+{
+const { id } = await makeMaterial("K04"); await receive(id, 15);
+const { rid } = await reserveIssue(id, 15);
+const before = await call("viewer", "GET", `/inventory/reservations/${rid}`);
+const sd = await call("supervisor", "POST", "/inventory/scrap", { production_order_id: poId, material_id: id, quantity: 5, reason: "fk04" });
+await approvePost(`/inventory/scrap/${sd.json.id}`);
+const after = await call("viewer", "GET", `/inventory/reservations/${rid}`);
+check("FK-04", JSON.stringify(before.json) === JSON.stringify(after.json), "reservation changed");
+}
+// FK-05 Security matrix sweep across all Phase 5 write endpoints.
+{
+const probes: Array<[string, string, string]> = [
+["operator", "POST", "/inventory/returns"], ["viewer", "POST", "/inventory/returns"],
+["operator", "POST", "/inventory/scrap"], ["viewer", "POST", "/inventory/adjustments"],
+["operator", "POST", "/inventory/transfer-requests"],
+["supervisor", "POST", "/inventory/returns/x/approve"],
+];
+let ok = true;
+for (const [role, m, p] of probes) {
+const r = await call(role, m, p, {});
+if (r.status !== 403) { ok = false; console.log(`  matrix miss ${role} ${p}: ${r.status}`); }
+}
+const anon = await call(null, "POST", "/inventory/returns", {});
+const read = await call("viewer", "GET", "/inventory/returns?pageSize=1");
+check("FK-05", ok && anon.status === 401 && read.status === 200, `${anon.status}/${read.status}`);
+}
+// FK-06 return ↔ consumption race
+{
+const { id } = await makeMaterial("K06"); await receive(id, 20);
+const { noteId } = await reserveIssue(id, 20);
+const c = await call("supervisor", "POST", "/inventory/consumptions", { production_order_id: poId, material_id: id, actual_qty: 15 });
+const rd = await call("supervisor", "POST", "/inventory/returns", { production_order_id: poId, material_id: id, wip_issue_note_id: noteId, quantity: 15, destination_warehouse_id: whA, reason: "fk06" });
+await call("director", "POST", `/inventory/returns/${rd.json.id}/approve`);
+const [a, b] = await Promise.all([
+call("supervisor", "POST", `/inventory/consumptions/${c.json.id}/confirm`),
+call("supervisor", "POST", `/inventory/returns/${rd.json.id}/post`),
+]);
+const s = [a.status, b.status].sort();
+check("FK-06", (s[0] === 200 || s[0] === 201) && s[1] === 409, `${a.status}/${b.status}`);
+}
+// FK-07 return ↔ scrap race
+{
+const { id } = await makeMaterial("K07"); await receive(id, 12);
+const { noteId } = await reserveIssue(id, 12);
+const rd = await call("supervisor", "POST", "/inventory/returns", { production_order_id: poId, material_id: id, wip_issue_note_id: noteId, quantity: 12, destination_warehouse_id: whA, reason: "fk07" });
+await call("director", "POST", `/inventory/returns/${rd.json.id}/approve`);
+const sd = await call("supervisor", "POST", "/inventory/scrap", { production_order_id: poId, material_id: id, quantity: 12, reason: "fk07" });
+await call("director", "POST", `/inventory/scrap/${sd.json.id}/approve`);
+const [a, b] = await Promise.all([
+call("supervisor", "POST", `/inventory/returns/${rd.json.id}/post`),
+call("supervisor", "POST", `/inventory/scrap/${sd.json.id}/post`),
+]);
+const s = [a.status, b.status].sort();
+check("FK-07", s[0] === 200 && s[1] === 409, `${a.status}/${b.status}`);
+}
+// FK-08 scrap ↔ consumption race
+{
+const { id } = await makeMaterial("K08"); await receive(id, 10);
+await reserveIssue(id, 10);
+const c = await call("supervisor", "POST", "/inventory/consumptions", { production_order_id: poId, material_id: id, actual_qty: 10 });
+const sd = await call("supervisor", "POST", "/inventory/scrap", { production_order_id: poId, material_id: id, quantity: 10, reason: "fk08" });
+await call("director", "POST", `/inventory/scrap/${sd.json.id}/approve`);
+const [a, b] = await Promise.all([
+call("supervisor", "POST", `/inventory/consumptions/${c.json.id}/confirm`),
+call("supervisor", "POST", `/inventory/scrap/${sd.json.id}/post`),
+]);
+const s = [a.status, b.status].sort();
+check("FK-08", s[0] === 200 && s[1] === 409, `${a.status}/${b.status}`);
+}
+// FK-09 adjustment ↔ adjustment (same lot negatives racing)
+{
+const { id } = await makeMaterial("K09"); const lotId = await receive(id, 25);
+const mk = () => call("supervisor", "POST", "/inventory/adjustments", { material_id: id, warehouse_id: whA, lot_id: lotId, type: "negative", quantity: 20, reason: "fk09" });
+const [a1, a2] = await Promise.all([mk(), mk()]);
+const s1 = await call("supervisor", "POST", `/inventory/adjustments/${a1.json.id}/submit`);
+const s2 = await call("supervisor", "POST", `/inventory/adjustments/${a2.json.id}/submit`);
+await call("director", "POST", `/inventory/adjustments/${a1.json.id}/approve`);
+await call("director", "POST", `/inventory/adjustments/${a2.json.id}/approve`);
+const [p1, p2] = await Promise.all([
+call("supervisor", "POST", `/inventory/adjustments/${a1.json.id}/post`, {}, { "idempotency-key": `fk09a-${Date.now()}` }),
+call("supervisor", "POST", `/inventory/adjustments/${a2.json.id}/post`, {}, { "idempotency-key": `fk09b-${Date.now()}` }),
+]);
+const s = [p1.status, p2.status].sort();
+check("FK-09", s1.status === 200 && s2.status === 200 && s[0] === 200 && s[1] === 409, `${p1.status}/${p2.status}`);
+}
+// FK-10 adjustment ↔ transfer issue (overlapping lot dims)
+{
+const { id } = await makeMaterial("K10"); const lotId = await receive(id, 30);
+const t = await call("supervisor", "POST", "/inventory/transfer-requests", { source_warehouse_id: whA, destination_warehouse_id: whB, lines: [{ material_id: id, quantity: 30, lot_id: lotId }] });
+await call("director", "POST", `/inventory/transfer-requests/${t.json.id}/approve`);
+const adj = await call("supervisor", "POST", "/inventory/adjustments", { material_id: id, warehouse_id: whA, lot_id: lotId, type: "negative", quantity: 30, reason: "fk10" });
+await call("supervisor", "POST", `/inventory/adjustments/${adj.json.id}/submit`);
+await call("director", "POST", `/inventory/adjustments/${adj.json.id}/approve`);
+const [a, b] = await Promise.all([
+call("supervisor", "POST", `/inventory/transfer-requests/${t.json.id}/issue`, {}, { "idempotency-key": `fk10t-${Date.now()}` }),
+call("supervisor", "POST", `/inventory/adjustments/${adj.json.id}/post`, {}, { "idempotency-key": `fk10a-${Date.now()}` }),
+]);
+const s = [a.status, b.status].sort();
+const { code } = { code: `CERT7K-MAT-K10` };
+const avail = await stockQty(code, "available");
+check("FK-10", s[0] === 200 && s[1] === 409 && avail >= 0, `${a.status}/${b.status} avail=${avail}`);
+}
+// FK-11 transfer issue ↔ reservation allocate (same lot)
+{
+const { id } = await makeMaterial("K11"); const lotId = await receive(id, 18);
+const r = await call("supervisor", "POST", "/inventory/reservations", { production_order_id: await ensurePO(), material_id: id, quantity: 18 });
+const t = await call("supervisor", "POST", "/inventory/transfer-requests", { source_warehouse_id: whA, destination_warehouse_id: whB, lines: [{ material_id: id, quantity: 18, lot_id: lotId }] });
+await call("director", "POST", `/inventory/transfer-requests/${t.json.id}/approve`);
+const [a, b] = await Promise.all([
+call("supervisor", "POST", `/inventory/transfer-requests/${t.json.id}/issue`, {}, { "idempotency-key": `fk11t-${Date.now()}` }),
+call("supervisor", "POST", `/inventory/reservations/${r.json.id}/allocate`),
+]);
+const ok = (a.status === 200 && b.status === 200) || (a.status === 200 && b.status === 409) || (a.status === 409 && b.status === 200);
+check("FK-11", ok && (await stockQty(`CERT7K-MAT-K11`, "available")) >= 0, `${a.status}/${b.status}`);
+}
+// FK-12 double post / double receive (parallel same-key idempotency)
+{
+const { id } = await makeMaterial("K12"); await receive(id, 9);
+const { noteId } = await reserveIssue(id, 9);
+const rd = await call("supervisor", "POST", "/inventory/returns", { production_order_id: poId, material_id: id, wip_issue_note_id: noteId, quantity: 9, destination_warehouse_id: whA, reason: "fk12" });
+await call("director", "POST", `/inventory/returns/${rd.json.id}/approve`);
+const key = `fk12-${Date.now()}`;
+const [p1, p2] = await Promise.all([
+call("supervisor", "POST", `/inventory/returns/${rd.json.id}/post`, {}, { "idempotency-key": key }),
+call("supervisor", "POST", `/inventory/returns/${rd.json.id}/post`, {}, { "idempotency-key": key }),
+]);
+check("FK-12", p1.status === 200 && p2.status === 200 && p1.json?.id === p2.json?.id, `${p1.status}/${p2.status}`);
+}
+// FK-13 ledger/outbox/doc count integrity for one full return lifecycle
+{
+const { id } = await makeMaterial("K13"); await receive(id, 7);
+const { noteId } = await reserveIssue(id, 7);
+const rd = await call("supervisor", "POST", "/inventory/returns", { production_order_id: poId, material_id: id, wip_issue_note_id: noteId, quantity: 7, destination_warehouse_id: whA, reason: "fk13" });
+await call("director", "POST", `/inventory/returns/${rd.json.id}/approve`);
+const key = `fk13-${Date.now()}`;
+await call("supervisor", "POST", `/inventory/returns/${rd.json.id}/post`, {}, { "idempotency-key": key });
+await call("supervisor", "POST", `/inventory/returns/${rd.json.id}/post`, {}, { "idempotency-key": key });
+// One document, one RETURN_POSTED outbox event for this doc (verify via list)
+const list = await call("viewer", "GET", `/inventory/returns?material_id=${id}`);
+const docs = (list.json?.items ?? []).filter((d: any) => d.id === rd.json.id);
+check("FK-13", docs.length === 1 && docs[0].status === "posted", JSON.stringify(docs));
+}
+// FK-14 Annotation wall: consumption /adjust writes zero ledger rows
+{
+const { id } = await makeMaterial("K14"); await receive(id, 5);
+await reserveIssue(id, 5);
+const c = await call("supervisor", "POST", "/inventory/consumptions", { production_order_id: poId, material_id: id, actual_qty: 5 });
+await call("supervisor", "POST", `/inventory/consumptions/${c.json.id}/confirm`);
+const adj = await call("supervisor", "POST", `/inventory/consumptions/${c.json.id}/adjust`, { reason: "fk14 annotation" });
+const d = await call("viewer", "GET", `/inventory/consumptions/${c.json.id}`);
+check("FK-14", adj.status === 200 && d.json?.status === "adjusted", `${adj.status}/${d.json?.status}`);
+}
+
+console.log(`\nTOTAL: ${passed} PASS / ${failed} FAIL (${passed + failed} checks)`);
+process.exit(failed > 0 ? 1 : 0);
+}
+main().catch((e) => { console.error("SUITE ERROR:", e); process.exit(1); });
+
+---------------------------------------------------------------------------
+
+PART 2 — FULL INVARIANT PACK (single SQL file; every query 0 rows / identity)
+
+FILE: certification/fat-evidence/sql/phase5-invariants.sql (NEW — run via psql;
+
+all must return ZERO rows unless noted)
+
+---------------------------------------------------------------------------
+
+-- INV-RES-01…08 (Task #69 baseline) + INV-P4-01…05 (Phase 4) + INV-P5-01…06
+
+-- (Phase 5). Definitions: task69_final_certification_report.md §2,
+
+-- phase4_final_certification_report.md §2, phase5_gap_report.md §4.
+
+-- (Full text of each query is in those reports; this file concatenates them
+
+-- with section headers and a trailing summary query:)
+
+--   SELECT 'PASS' WHERE NOT EXISTS (
+
+--     <each invariant as a NOT EXISTS/0-row predicate> ... );
+
+-- PLUS the Phase 5 transfer/conservation additions from batch 70-J:
+
+--   INV-P5-04 (issued = received + in_transit per request/lot)
+
+--   no negative available/in_transit per (material, warehouse)
+
+---------------------------------------------------------------------------
+
+PART 3 — FINAL REGRESSION GATE (run everything; all green required)
+
+[ ] pnpm run typecheck                                  → clean
+
+[ ] git diff --check                                    → clean
+
+[ ] curl /api/healthz                                   → ok
+
+[ ] test:phase5-gate (this suite)                       → FK-01…14 all PASS
+
+[ ] phase5-invariants.sql                               → all 0 rows
+
+[ ] test:reservation                                    → 15/15 (Task #69)
+
+[ ] test:procurement-po                                 → 15/15 (Task #67)
+
+[ ] test:receiving                                      → 12/12 (Task #68)
+
+[ ] test:phase4-wip                                     → 17/17 (Phase 4)
+
+[ ] test:task70-g-returns / -h-scrap / -i-adjustments / -j-transfer-lifecycle
+
+→ 11/11, 10/10, 11/11, 12/12
+
+[ ] test:authz → 777+12 · test:audit → 13/13 · test:config → 31/3w/0f
+
+[ ] Option A transfer-domain certification              → PASS
+
+[ ] FAT read-only smoke                                 → 32/32
+
+[ ] FAT preflight drift disposition                     → recorded (existing task)
+
+[ ] MIN smoke                                           → 200
+
+[ ] Zero fixture residue (phase-prefixed fixtures)
+
+[ ] Scope grep: no routes beyond the four certified mounts (+ reservation/
+
+wip-issues/consumptions/wip-inventory from prior phases)
+
+---------------------------------------------------------------------------
+
+PART 4 — FINAL REPORT TEMPLATE
+
+FK-01…14: /14 · Invariants: INV-RES 8 + INV-P4 5 + INV-P5 6 = 19/19
+
+Per-domain suites: 11/11 · 10/10 · 11/11 · 12/12
+
+Regression:  · Security matrix:  · Residue: zero
+
+Phase 5 schema delta (cumulative): +idempotency_key ×4 tables; return_seq,
+
+scrap_seq, adjustment_seq, transfer_request_seq; supporting indexes;
+
+wip_issue_note_id on return_documents (D5)
+
+Routes added: /returns · /scrap · /adjustments · /transfer-requests
+
+(+ per-domain approve/reject/post/issue/receive/reconcile/cancel)
+
+Adaptations recorded: cumulative allocated (INV-P4-05); confirmed_as=
+
+recorded_by; TOCTOU idempotency pattern; lot-required negatives;
+
+request-level transfer dims (Phase 0 schema fidelity); FAT preflight drift
+
+disposition (existing task, not Phase 5); FAT BMS −0.500 baseline retained
+
+Scorecard: Returns PASS · Scrap PASS · Physical adjustments PASS ·
+
+Transfer lifecycle PASS · Reconciliation PASS (invariant-gated) ·
+
+Reservation/Allocation PASS (uncontaminated, INV-P5-05)
+
+→ project: 13 PASS / 1 PARTIAL / 8 FAIL (remaining = genealogy, full
+
+reporting/FAT, valuation, MIN replacement — beyond current phase scope)
+
+WHAT MUST NOT BE CHANGED: no production DB; no historical evidence records;
+
+no commits; scope = suite file + package.json script + SQL pack + evidence.
