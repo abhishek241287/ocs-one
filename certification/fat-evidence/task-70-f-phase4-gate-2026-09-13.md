@@ -51,4 +51,4 @@ The first FAT smoke attempt was `12/32` because prior certification traffic had 
 - Changed implementation scope: 70-F certification fixture and runner only, plus its package script.
 - No frontend, generated API, production database, manual commit, or unrelated accounting changes were made.
 - 70-C, 70-D, and 70-E evidence remains in their separate records.
-- **Disposition:** Phase 4 behavior and isolated certification pass. Release sign-off should retain the documented pre-existing FAT BMS `-0.500` WIP ledger exception until the development baseline is repaired or formally accepted.
+- **Disposition:** Phase 4 behavior and isolated certification pass. **Release sign-off is blocked until the pre-existing FAT BMS `-0.500` WIP ledger balance is repaired.** All other 70-F gate checks are green.
