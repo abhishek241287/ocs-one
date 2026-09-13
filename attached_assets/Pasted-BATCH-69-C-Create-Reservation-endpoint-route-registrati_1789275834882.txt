@@ -1,0 +1,386 @@
+BATCH 69-C — Create Reservation endpoint + route registration
+
+Task #69 — micro-batch 3 of 7 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Depends on: 69-A (schema + res_seq, certified) and 69-B (api-zod schemas, certified).
+
+---------------------------------------------------------------------------
+
+REPOSITORY PATTERNS THIS BATCH MIRRORS (verified in code 2026-09-13)
+
+- Numbering   : pool.query("SELECT nextval('res_seq') AS seq") outside the tx,
+
+RSV-YYYYMMDD-NNNN (same family as GRN-…/INSP-…).
+
+- Concurrency : tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`key`}))`)
+
+INSIDE the tx (grn-posting.ts "purchase-order:{id}" pattern).
+
+- Availability: SUM(quantity) FROM inventory_transactions WHERE material_id=?
+
+AND stock_state='available' — never lot.remainingQty.
+
+- Audit       : outboxEventsTable insert INSIDE the same tx (grn-posting.ts
+
+PO_RECEIPT_RECORDED pattern): aggregate_type, aggregate_id,
+
+event_type, payload {snake_case}.
+
+PLUS recordSecurityEvent (fire-and-forget) as in every route.
+
+- RBAC        : router.use(requireWriteRole("supervisor","director")) at top.
+
+- Responses   : flattened snake_case detail objects; numify() for numerics.
+
+- Errors      : unknown referenced ids → 400 (GRN create house style);
+
+unique-violation 23505 → 409; business conflict → 409.
+
+---------------------------------------------------------------------------
+
+FILES (exactly two):
+
+1. artifacts/api-server/src/routes/inventory/reservations.ts   — NEW
+
+2. artifacts/api-server/src/routes/inventory/index.ts          — MODIFY (2 lines)
+
+---------------------------------------------------------------------------
+
+FILE 1 — CREATE artifacts/api-server/src/routes/inventory/reservations.ts
+
+EXACTLY this content (create endpoint only — allocate/release/cancel/list come in
+
+batches 69-D/69-E/69-F; do not add them now):
+
+import { Router, type IRouter, type Request, type Response } from "express";
+import { eq, and, inArray, sql } from "drizzle-orm";
+import {
+db,
+pool,
+inventoryReservationsTable,
+inventoryTransactionsTable,
+materialsTable,
+mfgProductionOrdersTable,
+outboxEventsTable,
+} from "@workspace/db";
+import { CreateReservationBody } from "@workspace/api-zod";
+import { requireWriteRole } from "../../middleware/auth";
+import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
+
+const router: IRouter = Router();
+
+// Reservation writes are supervisor+director; reads pass for any authed user —
+// same policy as GRN / Inspection / Transfer.
+router.use(requireWriteRole("supervisor", "director"));
+
+// ─── serialization ───────────────────────────────────────────────────────────
+function numify(v: unknown): unknown {
+return typeof v === "string" && /^-?\d+(\.\d+)?/.test(v) ? Number(v) : v;
+}
+
+function serializeReservation(r: Record<string, any>) {
+return {
+id: r.id,
+reservation_number: r.reservationNumber,
+production_order_id: r.productionOrderId,
+material_id: r.materialId,
+reserved_qty: numify(r.reservedQty),
+allocated_qty: numify(r.allocatedQty),
+issued_qty: numify(r.issuedQty),
+uom: r.uom,
+status: r.status,
+lot_id: r.lotId ?? null,
+warehouse_id: r.warehouseId ?? null,
+location_id: r.locationId ?? null,
+expires_at: r.expiresAt ?? null,
+released_at: r.releasedAt ?? null,
+cancelled_at: r.cancelledAt ?? null,
+cancelled_by: r.cancelledBy ?? null,
+cancellation_reason: r.cancellationReason ?? null,
+created_by: r.createdBy,
+created_at: r.createdAt,
+};
+}
+
+// ─── availability helpers (read the signed ledger — never caches) ────────────
+async function materialAvailable(tx: any, materialId: string): Promise {
+const [row] = await tx
+.select({ sum: sql`coalesce(sum(${inventoryTransactionsTable.quantity}), 0)` })
+.from(inventoryTransactionsTable)
+.where(
+and(
+eq(inventoryTransactionsTable.materialId, materialId),
+eq(inventoryTransactionsTable.stockState, "available"),
+),
+);
+return Number(row.sum);
+}
+
+// Every pre-fulfilment state holds stock. released/cancelled/expired do not.
+// (issued states are unreachable in Task #69 — no issue routes — but counted for
+// forward correctness; see schema comment on inventory_reservations.)
+const HOLDING_STATUSES = [
+"active",
+"partially_allocated",
+"fully_allocated",
+"partially_issued",
+"fully_issued",
+] as const;
+
+async function materialReserved(tx: any, materialId: string): Promise {
+const [row] = await tx
+.select({ sum: sql`coalesce(sum(${inventoryReservationsTable.reservedQty}), 0)` })
+.from(inventoryReservationsTable)
+.where(
+and(
+eq(inventoryReservationsTable.materialId, materialId),
+inArray(inventoryReservationsTable.status, [...HOLDING_STATUSES]),
+),
+);
+return Number(row.sum);
+}
+
+// ─── Create ──────────────────────────────────────────────────────────────────
+router.post("/", async (req: Request, res: Response): Promise => {
+const parsed = CreateReservationBody.safeParse(req.body);
+if (!parsed.success) {
+req.log.warn({ errors: parsed.error.issues }, "Invalid reservation input");
+res.status(400).json({ error: parsed.error.message });
+return;
+}
+const body = parsed.data;
+const actorId = req.user?.userId ?? null;
+
+// Pre-tx existence validation (no locks needed) — house style: 400 for unknown ids.
+const [material] = await db
+.select({ id: materialsTable.id, uom: materialsTable.uom })
+.from(materialsTable)
+.where(eq(materialsTable.id, body.material_id))
+.limit(1);
+if (!material) {
+res.status(400).json({ error: "Unknown material id" });
+return;
+}
+const [po] = await db
+.select({ id: mfgProductionOrdersTable.id })
+.from(mfgProductionOrdersTable)
+.where(eq(mfgProductionOrdersTable.id, body.production_order_id))
+.limit(1);
+if (!po) {
+res.status(400).json({ error: "Unknown production order id" });
+return;
+}
+
+// Race-safe reservation number (RSV-YYYYMMDD-NNNN) from the res_seq sequence —
+// taken OUTSIDE the tx; sequence gaps on rollback are accepted house behavior.
+const now = new Date();
+const dateStr = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, "0")}${String(now.getUTCDate()).padStart(2, "0")}`;
+const { rows } = await pool.query("SELECT nextval('res_seq') AS seq");
+const reservationNumber = `RSV-${dateStr}-${String(rows[0].seq).padStart(4, "0")}`;
+
+const outcome = await db.transaction(async (tx) => {
+// Serialize creators per material: the over-reservation check below is only
+// race-free while concurrent creators on the same material are ordered.
+// Same advisory-lock pattern as grn-posting.ts ("purchase-order:{id}").
+await tx.execute(
+sql`SELECT pg_advisory_xact_lock(hashtext(${`reservation-material:{body.material_id}`}))`,
+);
+
+    const available = await materialAvailable(tx, body.material_id);
+    const reserved = await materialReserved(tx, body.material_id);
+    const reservable = available - reserved;
+
+    if (reservable <= 0) {
+      return { status: "insufficient" as const, available, reserved };
+    }
+    let qty = body.quantity;
+    if (body.quantity > reservable) {
+      if (!body.allow_partial) {
+        return { status: "insufficient" as const, available, reserved };
+      }
+      qty = reservable; // partial hold — capped at what legitimately exists
+    }
+
+    const [created] = await tx
+      .insert(inventoryReservationsTable)
+      .values({
+        reservationNumber,
+        productionOrderId: body.production_order_id,
+        materialId: body.material_id,
+        reservedQty: String(qty),
+        allocatedQty: "0",
+        issuedQty: "0",
+        uom: material.uom, // snapshot from the Material Master
+        status: "active",
+        expiresAt: body.expiry_date ? new Date(body.expiry_date) : null,
+        createdBy: actorId,
+      })
+      .returning();
+
+    // Transactional audit evidence — same outbox pattern as PO_RECEIPT_RECORDED.
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "inventory_reservation",
+      aggregateId: created.id,
+      eventType: "RESERVATION_CREATED",
+      payload: {
+        reservation_number: reservationNumber,
+        production_order_id: body.production_order_id,
+        material_id: body.material_id,
+        requested_qty: body.quantity,
+        reserved_qty: qty,
+        partial: qty < body.quantity,
+        uom: material.uom,
+        actor_id: actorId,
+      },
+    });
+
+    return { status: "ok" as const, created };
+
+});
+
+if (outcome.status === "insufficient") {
+res.status(409).json({
+error: "INSUFFICIENT_STOCK",
+details: {
+available: outcome.available,
+reserved: outcome.reserved,
+requested: body.quantity,
+},
+});
+return;
+}
+
+void recordSecurityEvent({
+eventType: "reservation.created",
+actorId,
+actorEmail: req.user?.email ?? null,
+actorRole: req.user?.role ?? null,
+...reqMeta(req),
+statusCode: 201,
+detail: `Reservation ${reservationNumber} created (PO ${body.production_order_id}, material ${body.material_id}, qty ${outcome.created.reservedQty}${body.quantity > Number(outcome.created.reservedQty) ? ", partial" : ""})`,
+});
+
+res.status(201).json(serializeReservation(outcome.created as Record<string, any>));
+});
+
+export default router;
+
+---------------------------------------------------------------------------
+
+FILE 2 — EDIT artifacts/api-server/src/routes/inventory/index.ts
+
+(a) ADD this import with the existing ones (alphabetical position fits):
+
+import reservationsRouter from "./reservations";
+
+(b) ADD this mount line with the existing router.use(...) lines:
+
+router.use("/reservations", reservationsRouter);
+
+---------------------------------------------------------------------------
+
+NOTES / ACCEPTED LIMITATIONS (for the batch report)
+
+- The synced inventory_reservations table has NO notes column → body.notes is
+
+validated but not persisted. Do NOT alter the table to add one.
+
+- expires_at is stored as provided (nullable); lazy expiry enforcement arrives
+
+with the allocate endpoint in batch 69-D.
+
+- createdBy is NOT NULL: requireAuth guarantees req.user.userId on this route.
+
+---------------------------------------------------------------------------
+
+VERIFICATION (dev DB, dev server). Set: BASE=http://localhost:3000,
+
+TOKEN=<director or supervisor JWT/session cookie per house auth>,
+
+MAT=<a material id with ledger 'available' stock>,
+
+PO=.
+
+pnpm run typecheck:libs && pnpm run typecheck    # both exit 0
+
+pnpm --filter @workspace/api-server run dev      # boot dev server
+
+# 1. Happy path → expect 201, status "active", reservation_number RSV-…
+
+curl -sS -X POST "BASE/api/inventory/reservations" -H "Authorization: Bearer TOKEN" \
+
+-H 'content-type: application/json' \
+
+-d "{\"production_order_id\":\"PO\",\"material_id\":\"MAT\",\"quantity\":10}"
+
+# 2. Over-reservation (qty > available − reserved) → expect 409 INSUFFICIENT_STOCK
+
+curl -sS -X POST "BASE/api/inventory/reservations" -H "Authorization: Bearer TOKEN" \
+
+-H 'content-type: application/json' \
+
+-d "{\"production_order_id\":\"PO\",\"material_id\":\"MAT\",\"quantity\":999999}"
+
+# 3. allow_partial caps the hold → expect 201 with reserved_qty = reservable
+
+curl -sS -X POST "BASE/api/inventory/reservations" -H "Authorization: Bearer TOKEN" \
+
+-H 'content-type: application/json' \
+
+-d "{\"production_order_id\":\"PO\",\"material_id\":\"MAT\",\"quantity\":999999,\"allow_partial\":true}"
+
+# 4. Unknown ids → expect 400
+
+curl -sS -X POST "BASE/api/inventory/reservations" -H "Authorization: Bearer TOKEN" \
+
+-H 'content-type: application/json' \
+
+-d "{\"production_order_id\":\"00000000-0000-0000-0000-000000000000\",\"material_id\":\"MAT\",\"quantity\":1}"
+
+# 5. Concurrency: two simultaneous 60-unit reservations on a 100-unit material —
+
+#    expect EXACTLY one 201 and one 409 (order irrelevant).
+
+curl ... quantity=60 & curl ... quantity=60 & wait
+
+# 6. Operator/viewer → expect 403; no token → expect 401.
+
+# 7. Transactional outbox evidence (same-tx audit):
+
+psql "DATABASE_URL" -c "SELECT event_type, payload FROM outbox_events
+
+WHERE aggregate_type='inventory_reservation' ORDER BY created_at DESC LIMIT 3;"
+
+#   expect RESERVATION_CREATED rows with snake_case payloads.
+
+# 8. Ledger untouched by reservation creation (physical stock unchanged):
+
+psql "DATABASE_URL" -c "SELECT coalesce(sum(quantity),0) FROM inventory_transactions
+
+WHERE material_id='MAT' AND stock_state='available';"   # identical before/after
+
+EXPECTED RESULTS: all of the above; git diff --stat shows exactly the new route
+
+file + 2 lines in routes/inventory/index.ts.
+
+WHAT MUST NOT BE CHANGED:
+
+❌ No allocate/release/cancel/list/detail routes yet (69-D/E/F).
+
+❌ No schema/table changes; inventory_reservations is NOT modified.
+
+❌ grns.ts / transfers.ts / lots.ts / stock.ts / material-issue untouched.
+
+❌ generated/api.ts untouched; no frontend; no package.json changes; no commit.
+
+RISK: Low-medium. New file + 2-line registration; concurrency guard mirrors the
+
+proven grn-posting advisory-lock pattern. Sole new surface: res_seq numbering and
+
+the 23505 duplicate path (partial unique index) — mapped to 409 like GRN.
+
+NEXT: After Replit reports results (especially check #5 concurrency and #7
+
+outbox), Kimi prepares BATCH 69-D — POST /:id/allocate (FIFO/FEFO lot-aware
+
+engine with FOR UPDATE lot locks).
