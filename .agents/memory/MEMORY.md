@@ -58,3 +58,4 @@
 - [Reservation issue accounting](reservation-issue-accounting.md) — allocated_qty is cumulative; issue advances issued_qty while allocation rows track the active remainder.
 - [WIP issue idempotency race](wip-idempotency-race.md) — lock and recheck the key inside the transaction so same-key losers replay instead of hitting uniqueness errors.
 - [Consumption ledger source labels](consumption-ledger-source-labels.md) — inventory transaction source_document_type is varchar(16); use bounded canonical labels for new ledger writers.
+- [FAT WIP issue fixtures](fat-wip-issue-fixtures.md) — FAT seed may have stock ledger rows without lots/warehouses; issue tests need an explicit source-lot fixture.

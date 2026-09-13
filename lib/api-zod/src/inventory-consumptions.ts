@@ -19,3 +19,8 @@ export type CreateConsumptionBody = zod.infer<typeof CreateConsumptionBody>;
 
 export const ConfirmConsumptionBody = zod.object({});
 export type ConfirmConsumptionBody = zod.infer<typeof ConfirmConsumptionBody>;
+
+export const AdjustConsumptionBody = zod.object({
+  reason: zod.string().min(1).max(255),
+});
+export type AdjustConsumptionBody = zod.infer<typeof AdjustConsumptionBody>;

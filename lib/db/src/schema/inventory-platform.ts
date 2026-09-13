@@ -552,6 +552,7 @@ export const wipStatusEnum = pgEnum("wip_status", [
   "active",
   "partially_consumed",
   "fully_consumed",
+  "reversed",
 ]);
 
 export const wipInventoryTable = pgTable(
@@ -844,6 +845,9 @@ export const wipIssueNotesTable = pgTable(
     idempotencyKey: varchar("idempotency_key", { length: 100 }).unique(
       "wip_issue_notes_idempotency_key_unique",
     ),
+    reversedAt: timestamp("reversed_at", { withTimezone: true }),
+    reversedBy: uuid("reversed_by").references(() => usersTable.id),
+    reversalReason: text("reversal_reason"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

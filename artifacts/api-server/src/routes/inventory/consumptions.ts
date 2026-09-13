@@ -14,6 +14,7 @@ import {
   wipInventoryTable,
 } from "@workspace/db";
 import {
+  AdjustConsumptionBody,
   ConfirmConsumptionBody,
   CreateConsumptionBody,
 } from "@workspace/api-zod";
@@ -355,6 +356,81 @@ router.post("/:id/confirm", async (req: Request, res: Response): Promise<void> =
     ...reqMeta(req),
     statusCode: 200,
     detail: `Consumption ${outcome.updated.confirmationNumber} confirmed`,
+  });
+
+  res.json(serializeConfirmation(outcome.updated as Record<string, any>));
+});
+
+// ─── POST /inventory/consumptions/:id/adjust — annotation only ───────────────
+router.post("/:id/adjust", async (req: Request, res: Response): Promise<void> => {
+  const parsed = AdjustConsumptionBody.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const actorId = req.user!.userId;
+  const outcome = await db.transaction(async (tx) => {
+    const [confirmation] = await tx
+      .select()
+      .from(consumptionConfirmationsTable)
+      .where(eq(consumptionConfirmationsTable.id, req.params.id as string))
+      .for("update")
+      .limit(1);
+
+    if (!confirmation) return { status: "not_found" as const };
+    if (confirmation.status !== "confirmed") {
+      return {
+        status: "invalid_state" as const,
+        current: confirmation.status,
+      };
+    }
+
+    const combinedReason = `${confirmation.reason ? `${confirmation.reason} | ` : ""}adjustment: ${parsed.data.reason}`;
+    const [updated] = await tx
+      .update(consumptionConfirmationsTable)
+      .set({
+        status: "adjusted",
+        adjustedBy: actorId,
+        adjustedAt: new Date(),
+        reason: combinedReason.slice(0, 255),
+      })
+      .where(eq(consumptionConfirmationsTable.id, confirmation.id))
+      .returning();
+
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "consumption_confirmation",
+      aggregateId: confirmation.id,
+      eventType: "CONSUMPTION_ADJUSTED",
+      payload: {
+        confirmation_number: confirmation.confirmationNumber,
+        reason: parsed.data.reason,
+        actor_id: actorId,
+      },
+    });
+
+    return { status: "ok" as const, updated };
+  });
+
+  if (outcome.status === "not_found") {
+    res.status(404).json({ error: "Consumption confirmation not found" });
+    return;
+  }
+  if (outcome.status === "invalid_state") {
+    res.status(409).json({
+      error: `Confirmation cannot be adjusted from status '${outcome.current}'`,
+    });
+    return;
+  }
+
+  void recordSecurityEvent({
+    eventType: "consumption.adjusted",
+    actorId,
+    actorEmail: req.user?.email ?? null,
+    actorRole: req.user?.role ?? null,
+    ...reqMeta(req),
+    statusCode: 200,
+    detail: `Consumption ${outcome.updated.confirmationNumber} adjusted (annotation)`,
   });
 
   res.json(serializeConfirmation(outcome.updated as Record<string, any>));
