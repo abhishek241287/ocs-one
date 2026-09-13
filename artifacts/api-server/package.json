@@ -14,6 +14,7 @@
     "test:task35-transfer-domain": "tsx src/cert/task35-transfer-domain-suite.ts",
     "test:procurement-po": "tsx src/cert/procurement-po-suite.ts",
     "test:receiving": "tsx src/cert/receiving-suite.ts",
+    "test:reservation": "tsx src/cert/reservation-suite.ts",
     "test:inv-p04-evidence-harness-schema": "tsx src/cert/inv-p04-evidence-harness-schema-regression.ts",
     "test:reports-response-shape": "tsx src/cert/reports-response-shape-contract.ts",
     "test:task32-bom-obsoletion": "tsx src/cert/task32-bom-obsoletion-suite.ts",

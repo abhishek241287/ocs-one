@@ -18,3 +18,11 @@ description: Causes and fixes for cert suite false failures unrelated to code re
 **Why:** The auth limiter fires before the global limiter during burst-login scenarios; global-limiter 429s (for paths like `/api/products`) ARE logged correctly but the shape-mode query finds the auth-limiter event first by timestamp.
 
 **How to apply:** Run with `CERT_AUDIT_RATELIMIT=1` to trigger an authoritative non-login rate limit event, or accept the shape-mode red as a known false positive when no code changes touch rate limiting or audit logging.
+
+## Reservation certification harness
+
+**Rule:** Reservation certification should provision temporary role accounts when explicit credentials are unavailable, and teardown must discover reservations by fixture order/material IDs in addition to IDs captured by helper functions.
+
+**Why:** Seeded development passwords may differ from the documented defaults, and direct authorization cases can create reservations without passing through the normal fixture helper; either condition otherwise causes false setup failures or leaves foreign-key-blocking residue after a passing run.
+
+**How to apply:** Keep temporary-account cleanup in the suite's `finally` path, run concurrent allocation cases only after creating valid reservations, and use a tracked signed ledger adjustment when the test must exercise allocation scarcity below the creation-time availability check.
