@@ -1,0 +1,653 @@
+BATCH 70-J — Full Transfer Lifecycle (transfer_requests / transfer_lines)
+
+Task #70 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Ratified: D9 (transfer_requests/lines; /transfer-requests mount; Option A
+
+material_transfers NOT modified), D10, all governing rules. 70-G/H/I certified.
+
+---------------------------------------------------------------------------
+
+STATE MACHINE (Phase 0 schema, preserved)
+
+request: draft → approved → in_transit(†issue) → received(†) → reconciled
+
+[cancelled: draft|approved only] [rejected: in_transit only, and
+
+only when no line has received anything]
+
+line:    pending → issued → partially_received → fully_received [rejected]
+
+†ISSUE  (physical): per line −qty 'available' @source dims / +qty
+
+'in_transit' (TRANSFER_OUT). Full-line issue in one action.
+
+†RECEIVE(physical): per line −qty 'in_transit' / +qty 'available' @dest
+
+dims (TRANSFER_IN). PARTIAL receiving supported per line.
+
+REJECT  (physical): −qty 'in_transit' / +qty 'available' @SOURCE dims
+
+(TRANSFER_REVERSAL) for all issued-but-unreceived qty.
+
+In-transit ledger rows carry source_document_id = request id and
+
+source_line_id = the lot's GRN line → per-line conservation keyed by
+
+(request, lot/grn-line) — see INV-P5-04.
+
+LOCKS: issue: request FOR UPDATE → lines FOR UPDATE (lineNumber order) → per
+
+line lot FOR UPDATE + GRN line FOR UPDATE (SAME objects transfers/allocate/
+
+issue hold → full serialization; single-line lockers cannot deadlock against
+
+this fixed order). receive/reject: request FOR UPDATE → lines FOR UPDATE
+
+(in-transit is request-scoped; no external writer locks it). Idempotency:
+
+Idempotency-Key on issue + receive ('transfer-idem:' / 'transfer-rcv-idem:')
+
+— TOCTOU-hardened pattern (in-tx advisory lock + under-lock select +
+
+dual-shape 23505 fallback); NO pre-tx lookup.
+
+---------------------------------------------------------------------------
+
+FILES (four):
+
+1. lib/db/src/schema/inventory-platform.ts — MODIFY (1 column) + push
+
+2. lib/api-zod/src/inventory-transfer-requests.ts — NEW (+1 export line)
+
+3. artifacts/api-server/src/routes/inventory/transfer-requests.ts — NEW
+
+4. artifacts/api-server/src/routes/inventory/index.ts — MODIFY (2 lines)
+
+---------------------------------------------------------------------------
+
+FILE 1 — transferRequestsTable add:
+
+idempotencyKey: varchar("idempotency_key", { length: 100 }).unique("transfer_requests_idempotency_key_unique"),
+
+APPEND: export const transferRequestSequence = pgSequence("transfer_request_seq");
+
+Supplement if absent:
+
+CREATE INDEX IF NOT EXISTS idx_transfer_requests_status ON transfer_requests (status);
+
+CREATE INDEX IF NOT EXISTS idx_transfer_lines_request ON transfer_lines (transfer_request_id);
+
+Push (pseudo-TTY for the sequence).
+
+---------------------------------------------------------------------------
+
+FILE 2 — CREATE lib/api-zod/src/inventory-transfer-requests.ts:
+
+/ Task 70-J — Transfer lifecycle schemas (hand-written, orval-drift tracked). /
+import * as zod from "zod";
+
+export const CreateTransferRequestBody = zod.object({
+source_warehouse_id: zod.string().uuid(),
+destination_warehouse_id: zod.string().uuid(),
+notes: zod.string().max(500).nullish(),
+lines: zod.array(zod.object({
+material_id: zod.string().uuid(),
+quantity: zod.coerce.number().positive(),
+lot_id: zod.string().uuid().optional(),
+source_location_id: zod.string().uuid().optional(),
+source_bin_id: zod.string().uuid().optional(),
+destination_location_id: zod.string().uuid().optional(),
+destination_bin_id: zod.string().uuid().optional(),
+})).min(1),
+});
+export type CreateTransferRequestBody = zod.infer;
+
+export const ReceiveTransferBody = zod.object({
+lines: zod.array(zod.object({
+line_id: zod.string().uuid(),
+quantity: zod.coerce.number().positive(),
+})).min(1),
+});
+export type ReceiveTransferBody = zod.infer;
+
+export const RejectTransferBody = zod.object({
+reason: zod.string().min(1).max(255),
+});
+export type RejectTransferBody = zod.infer;
+
+index.ts: ADD  export * from "./inventory-transfer-requests";
+
+---------------------------------------------------------------------------
+
+FILE 3 — CREATE artifacts/api-server/src/routes/inventory/transfer-requests.ts
+
+(Approve = empty body; Cancel = empty body; Reconcile = empty body.)
+
+import { Router, type IRouter, type Request, type Response } from "express";
+import { eq, and, asc, inArray, sql } from "drizzle-orm";
+import {
+db, pool,
+transferRequestsTable,
+transferLinesTable,
+inventoryLotsTable,
+grnLineItemsTable,
+inventoryTransactionsTable,
+materialsTable,
+warehousesTable,
+outboxEventsTable,
+} from "@workspace/db";
+import {
+CreateTransferRequestBody, ReceiveTransferBody, RejectTransferBody,
+} from "@workspace/api-zod";
+import { requireAuth, requireWriteRole } from "../../middleware/auth";
+import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
+
+const router: IRouter = Router();
+router.use(requireAuth);
+
+function numify(v: unknown): unknown {
+return typeof v === "string" && /^-?\d+(\.\d+)?/.test(v) ? Number(v) : v;
+}
+function todayDateStr(): string {
+const n = new Date();
+return `${n.getUTCFullYear()}${String(n.getUTCMonth() + 1).padStart(2, "0")}${String(n.getUTCDate()).padStart(2, "0")}`;
+}
+function serializeRequest(r: Record<string, any>, lines: Array<Record<string, any>>) {
+return {
+id: r.id, transfer_request_number: r.transferRequestNumber, status: r.status,
+source_warehouse_id: r.sourceWarehouseId, destination_warehouse_id: r.destinationWarehouseId,
+notes: r.notes ?? null,
+requested_by: r.requestedBy, requested_at: r.requestedAt,
+approved_by: r.approvedBy ?? null, approved_at: r.approvedAt ?? null,
+issued_by: r.issuedBy ?? null, issued_at: r.issuedAt ?? null,
+received_by: r.receivedBy ?? null, received_at: r.receivedAt ?? null,
+reconciled_by: r.reconciledBy ?? null, reconciled_at: r.reconciledAt ?? null,
+lines: lines.map((l) => ({
+id: l.id, line_number: l.lineNumber, material_id: l.materialId, lot_id: l.lotId ?? null,
+source_location_id: l.sourceLocationId ?? null, source_bin_id: l.sourceBinId ?? null,
+destination_location_id: l.destinationLocationId ?? null, destination_bin_id: l.destinationBinId ?? null,
+requested_qty: numify(l.requestedQty), issued_qty: numify(l.issuedQty),
+received_qty: numify(l.receivedQty), status: l.status,
+})),
+};
+}
+async function loadRequest(id: string) {
+const [r] = await db.select().from(transferRequestsTable).where(eq(transferRequestsTable.id, id)).limit(1);
+if (!r) return null;
+const lines = await db.select().from(transferLinesTable)
+.where(eq(transferLinesTable.transferRequestId, id)).orderBy(asc(transferLinesTable.lineNumber));
+return { r, lines };
+}
+
+// ─── Create draft ────────────────────────────────────────────────────────────
+router.post("/", requireWriteRole("supervisor", "director"), async (req: Request, res: Response): Promise => {
+const parsed = CreateTransferRequestBody.safeParse(req.body);
+if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+const b = parsed.data;
+const actorId = req.user?.userId ?? null;
+if (b.source_warehouse_id === b.destination_warehouse_id) {
+res.status(422).json({ error: "Source and destination warehouses must differ" }); return;
+}
+const [sw] = await db.select({ id: warehousesTable.id }).from(warehousesTable)
+.where(eq(warehousesTable.id, b.source_warehouse_id)).limit(1);
+const [dw] = await db.select({ id: warehousesTable.id }).from(warehousesTable)
+.where(eq(warehousesTable.id, b.destination_warehouse_id)).limit(1);
+if (!sw || !dw) { res.status(400).json({ error: "Unknown warehouse id" }); return; }
+
+const { rows } = await pool.query("SELECT nextval('transfer_request_seq') AS seq");
+const number = `TRQ-${todayDateStr()}-${String(rows[0].seq).padStart(4, "0")}`;
+
+const outcome = await db.transaction(async (tx) => {
+const [reqRow] = await tx.insert(transferRequestsTable).values({
+transferRequestNumber: number, status: "draft",
+sourceWarehouseId: b.source_warehouse_id, destinationWarehouseId: b.destination_warehouse_id,
+notes: b.notes ?? null, requestedBy: actorId,
+}).returning();
+for (const [i, ln] of b.lines.entries()) {
+const [mat] = await tx.select({ uom: materialsTable.uom }).from(materialsTable)
+.where(eq(materialsTable.id, ln.material_id)).limit(1);
+if (!mat) return { status: "bad_material" as const, index: i };
+if (ln.lot_id) {
+const [lot] = await tx.select({ materialId: inventoryLotsTable.materialId })
+.from(inventoryLotsTable).where(eq(inventoryLotsTable.id, ln.lot_id)).limit(1);
+if (!lot || lot.materialId !== ln.material_id) return { status: "bad_lot" as const, index: i };
+}
+await tx.insert(transferLinesTable).values({
+transferRequestId: reqRow.id, lineNumber: i + 1,
+materialId: ln.material_id, lotId: ln.lot_id ?? null,
+sourceLocationId: ln.source_location_id ?? null, sourceBinId: ln.source_bin_id ?? null,
+destinationLocationId: ln.destination_location_id ?? null, destinationBinId: ln.destination_bin_id ?? null,
+uom: mat.uom, requestedQty: String(ln.quantity), status: "pending",
+});
+}
+return { status: "ok" as const, id: reqRow.id };
+});
+if (outcome.status === "bad_material") { res.status(400).json({ error: `Unknown material at line ${outcome.index + 1}` }); return; }
+if (outcome.status === "bad_lot") { res.status(422).json({ error: `Lot/material mismatch at line ${outcome.index + 1}` }); return; }
+const full = await loadRequest(outcome.id as string);
+res.status(201).json(serializeRequest(full!.r as Record<string, any>, full!.lines as Array<Record<string, any>>));
+});
+
+// ─── Approve (director only) / Cancel (draft|approved) / Reconcile (received) ──
+router.post("/:id/approve", requireWriteRole("director"), async (req: Request, res: Response): Promise => {
+const actorId = req.user?.userId ?? null;
+const outcome = await db.transaction(async (tx) => {
+const [r] = await tx.select().from(transferRequestsTable)
+.where(eq(transferRequestsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (r.status !== "draft") return { status: "invalid_state" as const, current: r.status };
+const [u] = await tx.update(transferRequestsTable).set({
+status: "approved", approvedBy: actorId, approvedAt: new Date(),
+}).where(eq(transferRequestsTable.id, r.id)).returning();
+return { status: "ok" as const, updated: u };
+});
+if (outcome.status === "not_found") { res.status(404).json({ error: "Transfer request not found" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Cannot approve from status '${outcome.current}'` }); return; }
+const full = await loadRequest(outcome.updated.id);
+res.json(serializeRequest(full!.r as Record<string, any>, full!.lines as Array<Record<string, any>>));
+});
+router.post("/:id/cancel", requireWriteRole("supervisor", "director"), async (req: Request, res: Response): Promise => {
+const outcome = await db.transaction(async (tx) => {
+const [r] = await tx.select().from(transferRequestsTable)
+.where(eq(transferRequestsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (!["draft", "approved"].includes(r.status)) return { status: "invalid_state" as const, current: r.status };
+const [u] = await tx.update(transferRequestsTable).set({ status: "cancelled" })
+.where(eq(transferRequestsTable.id, r.id)).returning();
+return { status: "ok" as const, updated: u };
+});
+if (outcome.status === "not_found") { res.status(404).json({ error: "Transfer request not found" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Cannot cancel from status '${outcome.current}'` }); return; }
+const full = await loadRequest(outcome.updated.id);
+res.json(serializeRequest(full!.r as Record<string, any>, full!.lines as Array<Record<string, any>>));
+});
+router.post("/:id/reconcile", requireWriteRole("supervisor", "director"), async (req: Request, res: Response): Promise => {
+const actorId = req.user?.userId ?? null;
+const outcome = await db.transaction(async (tx) => {
+const [r] = await tx.select().from(transferRequestsTable)
+.where(eq(transferRequestsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (r.status !== "received") return { status: "invalid_state" as const, current: r.status };
+const [u] = await tx.update(transferRequestsTable).set({
+status: "reconciled", reconciledBy: actorId, reconciledAt: new Date(),
+}).where(eq(transferRequestsTable.id, r.id)).returning();
+return { status: "ok" as const, updated: u };
+});
+if (outcome.status === "not_found") { res.status(404).json({ error: "Transfer request not found" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Cannot reconcile from status '${outcome.current}'` }); return; }
+const full = await loadRequest(outcome.updated.id);
+res.json(serializeRequest(full!.r as Record<string, any>, full!.lines as Array<Record<string, any>>));
+});
+
+// ─── Issue (PHYSICAL: available → in_transit) ───────────────────────────────
+router.post("/:id/issue", requireWriteRole("supervisor", "director"), async (req: Request, res: Response): Promise => {
+const actorId = req.user?.userId ?? null;
+const idemKey = (req.header("idempotency-key") ?? "").slice(0, 100) || null;
+const outcome = await db.transaction(async (tx) => {
+if (idemKey) {
+await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`transfer-idem:{idemKey}`}))`);
+const [replay] = await tx.select().from(transferRequestsTable)
+.where(eq(transferRequestsTable.idempotencyKey, idemKey)).limit(1);
+if (replay) return { status: "replay" as const, id: replay.id };
+}
+const [r] = await tx.select().from(transferRequestsTable)
+.where(eq(transferRequestsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (r.status === "in_transit") return { status: "already" as const };
+if (r.status !== "approved") return { status: "invalid_state" as const, current: r.status };
+
+    const lines = await tx.select().from(transferLinesTable)
+      .where(eq(transferLinesTable.transferRequestId, r.id))
+      .orderBy(asc(transferLinesTable.lineNumber)).for("update");
+
+    for (const l of lines) {
+      let sourceLineId: string | null = null;
+      const conds = [
+        eq(inventoryTransactionsTable.materialId, l.materialId),
+        eq(inventoryTransactionsTable.stockState, "available"),
+        eq(inventoryTransactionsTable.warehouseId, r.sourceWarehouseId),
+      ];
+      if (l.sourceLocationId) conds.push(eq(inventoryTransactionsTable.locationId, l.sourceLocationId));
+      if (l.lotId) {
+        const [lot] = await tx.select().from(inventoryLotsTable)
+          .where(eq(inventoryLotsTable.id, l.lotId)).for("update").limit(1);
+        await tx.select({ id: grnLineItemsTable.id }).from(grnLineItemsTable)
+          .where(eq(grnLineItemsTable.id, lot.grnLineId)).for("update").limit(1);
+        sourceLineId = lot.grnLineId;
+        conds.push(eq(inventoryTransactionsTable.lotId, l.lotId));
+      } else {
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`reservation-material:${l.materialId}`}))`);
+      }
+      const [bal] = await tx.select({ sum: sql<string>`coalesce(sum(${inventoryTransactionsTable.quantity}), 0)` })
+        .from(inventoryTransactionsTable).where(and(...conds));
+      if (Number(l.requestedQty) > Number(bal.sum)) {
+        return { status: "insufficient" as const, line: l.lineNumber, available: Number(bal.sum) };
+      }
+      await tx.insert(inventoryTransactionsTable).values({
+        materialId: l.materialId, quantity: String(-Number(l.requestedQty)), uom: l.uom,
+        stockState: "available", transactionType: "TRANSFER_OUT",
+        sourceDocumentType: "transfer_request", sourceDocumentId: r.id, sourceLineId,
+        lotId: l.lotId, warehouseId: r.sourceWarehouseId, locationId: l.sourceLocationId, binId: l.sourceBinId,
+        actorId, actorName: req.user?.email ?? null,
+      });
+      await tx.insert(inventoryTransactionsTable).values({
+        materialId: l.materialId, quantity: String(Number(l.requestedQty)), uom: l.uom,
+        stockState: "in_transit", transactionType: "TRANSFER_OUT",
+        sourceDocumentType: "transfer_request", sourceDocumentId: r.id, sourceLineId,
+        lotId: l.lotId, warehouseId: r.sourceWarehouseId, locationId: l.sourceLocationId, binId: l.sourceBinId,
+        actorId, actorName: req.user?.email ?? null,
+      });
+      await tx.update(transferLinesTable).set({
+        issuedQty: l.requestedQty, status: "issued",
+      }).where(eq(transferLinesTable.id, l.id));
+    }
+
+    const [u] = await tx.update(transferRequestsTable).set({
+      status: "in_transit", issuedBy: actorId, issuedAt: new Date(),
+      idempotencyKey: idemKey,
+    }).where(eq(transferRequestsTable.id, r.id)).returning();
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "transfer_request", aggregateId: r.id, eventType: "TRANSFER_ISSUED",
+      payload: { transfer_request_number: r.transferRequestNumber, lines: lines.length, actor_id: actorId },
+    });
+    return { status: "ok" as const, id: u.id };
+
+});
+if (outcome.status === "not_found") { res.status(404).json({ error: "Transfer request not found" }); return; }
+if (outcome.status === "already") { res.status(409).json({ error: "Transfer already issued" }); return; }
+if (outcome.status === "replay") { const f = await loadRequest(outcome.id as string); res.status(200).json(serializeRequest(f!.r as Record<string, any>, f!.lines as Array<Record<string, any>>)); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Cannot issue from status '${outcome.current}'` }); return; }
+if (outcome.status === "insufficient") {
+res.status(409).json({ error: "INSUFFICIENT_STOCK_AT_SOURCE", details: { line: outcome.line, available: outcome.available } }); return;
+}
+void recordSecurityEvent({
+eventType: "transfer.issued", actorId, actorEmail: req.user?.email ?? null,
+actorRole: req.user?.role ?? null, ...reqMeta(req), statusCode: 200,
+detail: `Transfer request issued`,
+});
+const full = await loadRequest((outcome as any).id as string);
+res.json(serializeRequest(full!.r as Record<string, any>, full!.lines as Array<Record<string, any>>));
+});
+
+// ─── Receive (PHYSICAL: in_transit → dest available; PARTIAL per line) ──────
+router.post("/:id/receive", requireWriteRole("supervisor", "director"), async (req: Request, res: Response): Promise => {
+const parsed = ReceiveTransferBody.safeParse(req.body);
+if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+const actorId = req.user?.userId ?? null;
+const idemKey = (req.header("idempotency-key") ?? "").slice(0, 100) || null;
+
+const outcome = await db.transaction(async (tx) => {
+if (idemKey) {
+await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`transfer-rcv-idem:{idemKey}`}))`);
+const [replay] = await tx.select().from(transferRequestsTable)
+.where(eq(transferRequestsTable.idempotencyKey, idemKey)).limit(1);
+if (replay) return { status: "replay" as const, id: replay.id };
+}
+const [r] = await tx.select().from(transferRequestsTable)
+.where(eq(transferRequestsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (r.status !== "in_transit") return { status: "invalid_state" as const, current: r.status };
+
+    const lines = await tx.select().from(transferLinesTable)
+      .where(and(
+        eq(transferLinesTable.transferRequestId, r.id),
+        inArray(transferLinesTable.id, parsed.data.lines.map((l) => l.line_id)),
+      )).orderBy(asc(transferLinesTable.lineNumber)).for("update");
+
+    for (const recv of parsed.data.lines) {
+      const l = lines.find((x) => x.id === recv.line_id);
+      if (!l) return { status: "bad_line" as const, line_id: recv.line_id };
+      const outstanding = Number(l.issuedQty) - Number(l.receivedQty);
+      if (recv.quantity > outstanding) return { status: "over_receive" as const, line: l.lineNumber, outstanding };
+      const newReceived = Number(l.receivedQty) + recv.quantity;
+      let sourceLineId: string | null = null;
+      if (l.lotId) {
+        const [lot] = await tx.select().from(inventoryLotsTable)
+          .where(eq(inventoryLotsTable.id, l.lotId)).limit(1);
+        sourceLineId = lot?.grnLineId ?? null;
+      }
+      await tx.insert(inventoryTransactionsTable).values({
+        materialId: l.materialId, quantity: String(-recv.quantity), uom: l.uom,
+        stockState: "in_transit", transactionType: "TRANSFER_IN",
+        sourceDocumentType: "transfer_request", sourceDocumentId: r.id, sourceLineId,
+        lotId: l.lotId, warehouseId: r.sourceWarehouseId, locationId: l.sourceLocationId, binId: l.sourceBinId,
+        actorId, actorName: req.user?.email ?? null,
+      });
+      await tx.insert(inventoryTransactionsTable).values({
+        materialId: l.materialId, quantity: String(recv.quantity), uom: l.uom,
+        stockState: "available", transactionType: "TRANSFER_IN",
+        sourceDocumentType: "transfer_request", sourceDocumentId: r.id, sourceLineId,
+        lotId: l.lotId, warehouseId: r.destinationWarehouseId,
+        locationId: l.destinationLocationId, binId: l.destinationBinId,
+        actorId, actorName: req.user?.email ?? null,
+      });
+      await tx.update(transferLinesTable).set({
+        receivedQty: String(newReceived),
+        status: newReceived >= Number(l.issuedQty) ? "fully_received" : "partially_received",
+      }).where(eq(transferLinesTable.id, l.id));
+    }
+
+    const allLines = await tx.select().from(transferLinesTable)
+      .where(eq(transferLinesTable.transferRequestId, r.id));
+    const allReceived = allLines.every((l) => Number(l.receivedQty) >= Number(l.issuedQty));
+    const [u] = await tx.update(transferRequestsTable).set({
+      status: allReceived ? "received" : "in_transit",
+      receivedBy: actorId, receivedAt: new Date(),
+      idempotencyKey: idemKey,
+    }).where(eq(transferRequestsTable.id, r.id)).returning();
+    await tx.insert(outboxEventsTable).values({
+      aggregateType: "transfer_request", aggregateId: r.id, eventType: "TRANSFER_RECEIVED",
+      payload: { transfer_request_number: r.transferRequestNumber, partial: !allReceived, actor_id: actorId },
+    });
+    return { status: "ok" as const, id: u.id };
+
+});
+if (outcome.status === "not_found") { res.status(404).json({ error: "Transfer request not found" }); return; }
+if (outcome.status === "replay") { const f = await loadRequest(outcome.id as string); res.status(200).json(serializeRequest(f!.r as Record<string, any>, f!.lines as Array<Record<string, any>>)); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Cannot receive from status '${outcome.current}'` }); return; }
+if (outcome.status === "bad_line") { res.status(422).json({ error: "Line does not belong to this transfer" }); return; }
+if (outcome.status === "over_receive") {
+res.status(409).json({ error: "OVER_RECEIVE", details: { line: outcome.line, outstanding: outcome.outstanding } }); return;  }
+void recordSecurityEvent({
+eventType: "transfer.received", actorId, actorEmail: req.user?.email ?? null,
+actorRole: req.user?.role ?? null, ...reqMeta(req), statusCode: 200,
+detail: `Transfer request received`,
+});
+const full = await loadRequest((outcome as any).id as string);
+res.json(serializeRequest(full!.r as Record<string, any>, full!.lines as Array<Record<string, any>>));
+});
+
+// ─── Reject in-transit (PHYSICAL reversal to source) ────────────────────────
+router.post("/:id/reject", requireWriteRole("supervisor", "director"), async (req: Request, res: Response): Promise => {
+const parsed = RejectTransferBody.safeParse(req.body);
+if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+const actorId = req.user?.userId ?? null;
+const outcome = await db.transaction(async (tx) => {
+const [r] = await tx.select().from(transferRequestsTable)
+.where(eq(transferRequestsTable.id, req.params.id as string)).for("update").limit(1);
+if (!r) return { status: "not_found" as const };
+if (r.status !== "in_transit") return { status: "invalid_state" as const, current: r.status };
+const lines = await tx.select().from(transferLinesTable)
+.where(eq(transferLinesTable.transferRequestId, r.id))
+.orderBy(asc(transferLinesTable.lineNumber)).for("update");
+if (lines.some((l) => Number(l.receivedQty) > 0)) {
+return { status: "partially_received" as const };
+}
+for (const l of lines) {
+const outstanding = Number(l.issuedQty) - Number(l.receivedQty);
+if (outstanding <= 0) continue;
+let sourceLineId: string | null = null;
+if (l.lotId) {
+const [lot] = await tx.select().from(inventoryLotsTable)
+.where(eq(inventoryLotsTable.id, l.lotId)).limit(1);
+sourceLineId = lot?.grnLineId ?? null;
+}
+await tx.insert(inventoryTransactionsTable).values({
+materialId: l.materialId, quantity: String(-outstanding), uom: l.uom,
+stockState: "in_transit", transactionType: "TRANSFER_REVERSAL",
+sourceDocumentType: "transfer_request", sourceDocumentId: r.id, sourceLineId,
+lotId: l.lotId, warehouseId: r.sourceWarehouseId, locationId: l.sourceLocationId, binId: l.sourceBinId,
+actorId, actorName: req.user?.email ?? null,
+});
+await tx.insert(inventoryTransactionsTable).values({
+materialId: l.materialId, quantity: String(outstanding), uom: l.uom,
+stockState: "available", transactionType: "TRANSFER_REVERSAL",
+sourceDocumentType: "transfer_request", sourceDocumentId: r.id, sourceLineId,
+lotId: l.lotId, warehouseId: r.sourceWarehouseId, locationId: l.sourceLocationId, binId: l.sourceBinId,
+actorId, actorName: req.user?.email ?? null,
+});
+await tx.update(transferLinesTable).set({ status: "rejected" })
+.where(eq(transferLinesTable.id, l.id));
+}
+const [u] = await tx.update(transferRequestsTable).set({ status: "rejected" })
+.where(eq(transferRequestsTable.id, r.id)).returning();
+await tx.insert(outboxEventsTable).values({
+aggregateType: "transfer_request", aggregateId: r.id, eventType: "TRANSFER_REJECTED",
+payload: { transfer_request_number: r.transferRequestNumber, reason: parsed.data.reason, actor_id: actorId },
+});
+return { status: "ok" as const, id: u.id };
+});
+if (outcome.status === "not_found") { res.status(404).json({ error: "Transfer request not found" }); return; }
+if (outcome.status === "invalid_state") { res.status(409).json({ error: `Cannot reject from status '${outcome.current}'` }); return; }
+if (outcome.status === "partially_received") { res.status(409).json({ error: "Cannot reject: lines already received" }); return; }
+const full = await loadRequest((outcome as any).id as string);
+res.json(serializeRequest(full!.r as Record<string, any>, full!.lines as Array<Record<string, any>>));
+});
+
+// ─── Reads ───────────────────────────────────────────────────────────────────
+router.get("/", async (req: Request, res: Response): Promise => {
+const q = req.query as Record<string, string | undefined>;
+const conds = [
+q.status ? eq(transferRequestsTable.status, q.status) : undefined,
+q.source_warehouse_id ? eq(transferRequestsTable.sourceWarehouseId, q.source_warehouse_id) : undefined,
+].filter(Boolean) as any[];
+const rows = await db.select().from(transferRequestsTable)
+.where(conds.length ? and(...conds) : undefined)
+.orderBy(asc(transferRequestsTable.createdAt)).limit(200);
+const items = [] as Array<Record<string, any>>;
+for (const r of rows) {
+const f = await loadRequest(r.id);
+items.push(serializeRequest(f!.r as Record<string, any>, f!.lines as Array<Record<string, any>>));
+}
+res.json({ items, meta: { total: items.length } });
+});
+router.get("/:id", async (req: Request, res: Response): Promise => {
+const f = await loadRequest(req.params.id as string);
+if (!f) { res.status(404).json({ error: "Transfer request not found" }); return; }
+res.json(serializeRequest(f.r as Record<string, any>, f.lines as Array<Record<string, any>>));
+});
+
+export default router;
+
+---------------------------------------------------------------------------
+
+FILE 4 — routes/inventory/index.ts: ADD
+
+import transferRequestsRouter from "./transfer-requests";
+
+router.use("/transfer-requests", transferRequestsRouter);
+
+---------------------------------------------------------------------------
+
+VERIFICATION (fixtures: material 50 in warehouse A (lot L); warehouse B)
+
+1. Flow: create(2 lines: 30 lot-scoped, 20 unlotted)→approve(director)→issue:
+
+ledger −available/+in_transit (TRANSFER_OUT, source dims); request in_transit.
+
+2. Partial receive: line1 qty 10 → TRANSFER_IN −in_transit/+available @DEST
+
+dims; line1 partially_received (10/30); request stays in_transit.
+
+3. Full receive rest → line statuses fully_received; request received; reconcile.
+
+4. Conservation after each step (INV-P5-04 SQL below): issued = received +
+
+Σ in_transit per (request, lot/line).
+
+5. Cancel: draft/approved → cancelled, zero ledger. Cancel in_transit → 409.
+
+6. Reject in-transit (fresh request, no receives): TRANSFER_REVERSAL pairs;
+
+in_transit returns to 0; available @source restored.
+
+7. Reject after partial receive → 409.
+
+8. Over-receive → 409 OVER_RECEIVE zero mutation. Issue with insufficient
+
+source stock → 409 INSUFFICIENT_STOCK_AT_SOURCE zero mutation.
+
+9. Idempotency: same-key parallel issue → 1 issue + 1 replay, one ledger pair
+
+set + one outbox; same-key parallel receive likewise.
+
+10. transfer↔issue/allocate overlap on same lot: serialized; no negative
+
+balances afterwards.
+
+11. Authz: supervisor approve → 403; operator/viewer writes 403; anon 401;
+
+viewer reads 200.
+
+12. Regression: FULL list incl. Option A (untouched), Phase 4 suite 17/17,
+
+Phase 4 invariants 15/15, 70-G/H/I suites; zero residue;
+
+evidence certification/fat-evidence/task-70-j-transfer-lifecycle-2026-09-13.md.
+
+INV-P5-04 SQL (0 rows expected):
+
+-- per (request, lot): issued = received + in-transit balance
+
+SELECT l.transfer_request_id, l.lot_id,
+
+MAX(l.issued_qty)::numeric AS issued, MAX(l.received_qty)::numeric AS received,
+
+(SELECT COALESCE(SUM(it.quantity),0)::numeric FROM inventory_transactions it
+
+WHERE it.source_document_type='transfer_request' AND it.source_document_id=l.transfer_request_id
+
+AND it.stock_state='in_transit' AND (l.lot_id IS NULL OR it.lot_id = l.lot_id)) AS in_transit
+
+FROM transfer_lines l WHERE l.issued_qty::numeric > 0
+
+GROUP BY l.transfer_request_id, l.lot_id
+
+HAVING MAX(l.issued_qty)::numeric <> MAX(l.received_qty)::numeric +
+
+(SELECT COALESCE(SUM(it.quantity),0)::numeric FROM inventory_transactions it
+
+WHERE it.source_document_type='transfer_request' AND it.source_document_id=l.transfer_request_id
+
+AND it.stock_state='in_transit' AND (l.lot_id IS NULL OR it.lot_id = l.lot_id));
+
+-- global: no negative available/in_transit per (material, warehouse)
+
+SELECT material_id, warehouse_id, stock_state, SUM(quantity)::numeric
+
+FROM inventory_transactions WHERE stock_state IN ('available','in_transit')
+
+GROUP BY material_id, warehouse_id, stock_state HAVING SUM(quantity) < 0;
+
+WHAT MUST NOT BE CHANGED:
+
+❌ Option A /transfers untouched (D9); no Phase 4/70-G/H/I edits; MIN,
+
+reservations untouched; FAT BMS exception untouched.
+
+❌ generated/api.ts; frontend; no commit; dev DB only.
+
+RISK: Medium-high (multi-line, multi-physical-step flow). Closed by: fixed
+
+lock order shared with existing line-lockers, per-line under-lock stock
+
+validation, request-row serialization of receive/reject, TOCTOU-hardened
+
+idempotency on both physical steps, INV-P5-04 conservation queries.
+
+NEXT: After evidence, Kimi certifies 70-J and prepares 70-K — the single
+
+comprehensive Phase 5 gate (functional + concurrency matrix + INV-RES/P4/P5
+
+full invariant suite + security + complete regression + zero residue).

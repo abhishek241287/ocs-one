@@ -50,6 +50,7 @@ export const poStatusEnum = pgEnum("po_status", [
 export const purchaseOrderNumberSequence = pgSequence("po_seq");
 export const lotNumberSequence = pgSequence("lot_seq");
 export const materialTransferNumberSequence = pgSequence("material_transfer_seq");
+export const transferRequestSequence = pgSequence("transfer_request_seq");
 
 export const purchaseOrdersTable = pgTable(
   "purchase_orders",
@@ -672,6 +673,9 @@ export const transferRequestsTable = pgTable(
     issuedAt: timestamp("issued_at", { withTimezone: true }),
     receivedBy: uuid("received_by").references(() => usersTable.id),
     receivedAt: timestamp("received_at", { withTimezone: true }),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }).unique(
+      "transfer_requests_idempotency_key_unique",
+    ),
     cancelledBy: uuid("cancelled_by").references(() => usersTable.id),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     cancellationReason: text("cancellation_reason"),
@@ -714,6 +718,7 @@ export const transferLinesTable = pgTable(
       table.transferRequestId,
       table.lineNumber,
     ),
+    index("transfer_lines_request_idx").on(table.transferRequestId),
     index("transfer_lines_material_idx").on(table.materialId),
     check("transfer_lines_requested_positive", sql`${table.requestedQty} > 0`),
     check("transfer_lines_issued_nonnegative", sql`${table.issuedQty} IS NULL OR ${table.issuedQty} >= 0`),
