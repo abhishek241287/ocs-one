@@ -61,3 +61,37 @@
 - `git diff --check` passed.
 - SS-02/SS-03 results were carried forward from the certified 70-C run; 70-D
   changes do not modify those authz/audit paths.
+
+## Complete focused rerun
+
+The focused journey was rerun with a fresh isolated warehouse, GRN lines, lots,
+and available-ledger fixtures. The following direct outcomes were captured:
+
+- Happy reversal: `200`; the immediate response returned reservation
+  `fully_allocated`, `allocated_qty = 1`, `issued_qty = 0`; allocations were
+  `active`; the WIP row was `reversed` with `remaining_qty = 0`.
+- Reversal ledger counts: exactly one `-1 wip` row and one `+1 available` row,
+  both `PRODUCTION_ISSUE_REVERSAL` with `ISSUE_REVERSAL`; exactly one
+  `WIP_ISSUE_REVERSED` outbox event.
+- `INV-P4-01/03`: post-reversal WIP remaining `0.000`, signed WIP ledger
+  projection `0.000`, and the issue document's available movement net `0.000`.
+- `INV-P4-05`: active allocation sum `1.000`, `allocated_qty - issued_qty =
+  1.000`, issued allocation sum `0`, and `issued_qty = 0`.
+- Reverse-after-consumption: `409 WIP_PARTIALLY_CONSUMED`; second reversal:
+  `409`; parallel reversal: exactly `1 × 200 / 1 × 409`.
+- Parallel reversal mutation counts: exactly two compensating ledger rows, one
+  reversed outbox event, and one reversed WIP row with zero remaining.
+- Same-reservation loop closure: re-issue after reversal returned `201`.
+- Confirmed adjustment: `200`, status `adjusted`; total physical ledger rows
+  remained `1` (no row added by adjustment); `CONSUMPTION_ADJUSTED` count `1`.
+- Draft adjustment and second adjustment: both `409`.
+- Authorization: operator write `403`, viewer write `403`, anonymous write
+  `401`, viewer read `200`.
+- MIN smoke: `200`.
+- Residue after teardown: notes `0`, reservations `0`, confirmations `0`, lots
+  `0`.
+
+The rerun made no application edits. Library and API typechecks passed again.
+The enum push and API restart had already completed successfully before the
+focused journey; no generated API, frontend, 70-B, MIN, GRN, transfer, or stock
+files were changed.
