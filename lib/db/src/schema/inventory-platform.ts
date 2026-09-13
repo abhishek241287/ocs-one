@@ -762,3 +762,48 @@ export type TransferLine = typeof transferLinesTable.$inferSelect;
 export type OutboxEvent = typeof outboxEventsTable.$inferSelect;
 export type InventoryReconciliationReport =
   typeof inventoryReconciliationReportsTable.$inferSelect;
+
+// ─── Task #69 — Reservation Allocations ─────────────────────────────────────
+// Evidence rows recording exactly which lot quantities back a reservation.
+// Allocation NEVER writes ledger rows and NEVER mutates inventory_lots — it is an
+// accounting overlay on the frozen signed ledger (reservable(lot) =
+// SUM(ledger quantity WHERE lot_id=? AND stock_state='available') − active
+// allocations on that lot). Release/cancel flips status (rows are never deleted),
+// which is what restores the reservable quantity without touching physical stock.
+// Warehouse/location/bin are NOT denormalized here — they are attributes of the
+// referenced lot (single source of truth, no duplicate stock accounting).
+
+export const reservationNumberSequence = pgSequence("res_seq");
+
+export const reservationAllocationStatusEnum = pgEnum("reservation_allocation_status", [
+  "active",
+  "released",
+  "cancelled",
+]);
+
+export const inventoryReservationAllocationsTable = pgTable(
+  "inventory_reservation_allocations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reservationId: uuid("reservation_id")
+      .notNull()
+      .references(() => inventoryReservationsTable.id),
+    lotId: uuid("lot_id")
+      .notNull()
+      .references(() => inventoryLotsTable.id),
+    quantity: numeric("quantity", { precision: 14, scale: 3 }).notNull(),
+    status: reservationAllocationStatusEnum("status").notNull().default("active"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    releasedAt: timestamp("released_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("inventory_reservation_allocations_res_idx").on(table.reservationId),
+    index("inventory_reservation_allocations_lot_idx").on(table.lotId, table.status),
+    check("inventory_reservation_allocations_quantity_positive", sql`${table.quantity} > 0`),
+  ],
+);
+
+export type InventoryReservationAllocation =
+  typeof inventoryReservationAllocationsTable.$inferSelect;
+export type InsertInventoryReservationAllocation =
+  typeof inventoryReservationAllocationsTable.$inferInsert;
