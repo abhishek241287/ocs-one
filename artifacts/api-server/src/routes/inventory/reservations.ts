@@ -877,62 +877,46 @@ router.post("/:id/issue", async (req: Request, res: Response): Promise<void> => 
   const actorName = req.user?.email ?? null;
   const idempotencyKey = (req.header("idempotency-key") ?? "").slice(0, 100) || null;
 
-  if (idempotencyKey) {
-    const [existing] = await db
-      .select()
-      .from(wipIssueNotesTable)
-      .where(eq(wipIssueNotesTable.idempotencyKey, idempotencyKey))
-      .limit(1);
-    if (existing) {
-      const lines = await db
-        .select()
-        .from(wipIssueLinesTable)
-        .where(eq(wipIssueLinesTable.wipIssueNoteId, existing.id));
-      res
-        .status(200)
-        .json(serializeIssueNote(existing as Record<string, any>, lines as Array<Record<string, any>>));
-      return;
-    }
-  }
-
   const { rows } = await pool.query("SELECT nextval('wip_issue_seq') AS seq");
   const issueNumber = `ISS-${todayDateStr()}-${String(rows[0].seq).padStart(4, "0")}`;
 
-  const outcome = await db.transaction(async (tx) => {
-    // Serialize all requests sharing an idempotency key before the lookup and
-    // insert. The reservation lock alone is insufficient when the same key is
-    // submitted against different reservations.
-    if (idempotencyKey) {
-      await tx.execute(
-        sql`SELECT pg_advisory_xact_lock(hashtext(${`wip-issue-idempotency:${idempotencyKey}`}))`,
-      );
-    }
+  const outcome = await (async () => {
+    try {
+      return await db.transaction(async (tx) => {
+        // Serialize all requests sharing an idempotency key before the lookup
+        // and insert. The reservation lock alone is insufficient when the same
+        // key is submitted against different reservations.
+        if (idempotencyKey) {
+          await tx.execute(
+            sql`SELECT pg_advisory_xact_lock(hashtext(${`wip-issue-idem:${idempotencyKey}`}))`,
+          );
+        }
 
-    if (idempotencyKey) {
-      const [existing] = await tx
-        .select()
-        .from(wipIssueNotesTable)
-        .where(eq(wipIssueNotesTable.idempotencyKey, idempotencyKey))
-        .limit(1);
-      if (existing) {
-        const lines = await tx
+        if (idempotencyKey) {
+          const [existing] = await tx
+            .select()
+            .from(wipIssueNotesTable)
+            .where(eq(wipIssueNotesTable.idempotencyKey, idempotencyKey))
+            .limit(1);
+          if (existing) {
+            const lines = await tx
+              .select()
+              .from(wipIssueLinesTable)
+              .where(eq(wipIssueLinesTable.wipIssueNoteId, existing.id));
+            return {
+              status: "replay" as const,
+              note: existing,
+              lines,
+            };
+          }
+        }
+
+        const [reservation] = await tx
           .select()
-          .from(wipIssueLinesTable)
-          .where(eq(wipIssueLinesTable.wipIssueNoteId, existing.id));
-        return {
-          status: "replay" as const,
-          note: existing,
-          lines,
-        };
-      }
-    }
-
-    const [reservation] = await tx
-      .select()
-      .from(inventoryReservationsTable)
-      .where(eq(inventoryReservationsTable.id, req.params.id as string))
-      .for("update")
-      .limit(1);
+          .from(inventoryReservationsTable)
+          .where(eq(inventoryReservationsTable.id, req.params.id as string))
+          .for("update")
+          .limit(1);
 
     if (!reservation) return { status: "not_found" as const };
 
@@ -1192,13 +1176,36 @@ router.post("/:id/issue", async (req: Request, res: Response): Promise<void> => 
       .select()
       .from(wipIssueLinesTable)
       .where(eq(wipIssueLinesTable.wipIssueNoteId, note.id));
-    return {
-      status: "ok" as const,
-      note,
-      lines,
-      reservation: updatedReservation,
-    };
-  });
+        return {
+          status: "ok" as const,
+          note,
+          lines,
+          reservation: updatedReservation,
+        };
+      });
+    } catch (err: any) {
+      const pgCode = err?.code ?? err?.cause?.code;
+      if (idempotencyKey && pgCode === "23505") {
+        const [existing] = await db
+          .select()
+          .from(wipIssueNotesTable)
+          .where(eq(wipIssueNotesTable.idempotencyKey, idempotencyKey))
+          .limit(1);
+        if (existing) {
+          const lines = await db
+            .select()
+            .from(wipIssueLinesTable)
+            .where(eq(wipIssueLinesTable.wipIssueNoteId, existing.id));
+          return {
+            status: "replay" as const,
+            note: existing,
+            lines,
+          };
+        }
+      }
+      throw err;
+    }
+  })();
 
   if (outcome.status === "replay") {
     res

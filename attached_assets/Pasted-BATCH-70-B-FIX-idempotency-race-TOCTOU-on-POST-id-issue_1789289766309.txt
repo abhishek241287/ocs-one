@@ -1,0 +1,161 @@
+BATCH 70-B FIX — idempotency race (TOCTOU) on POST /:id/issue
+
+Small surgical patch to artifacts/api-server/src/routes/inventory/reservations.ts.
+
+No other files. Dev DB only. NO COMMIT.
+
+ROOT CAUSE (Replit-verified): the idempotency SELECT ran BEFORE db.transaction,
+
+so two concurrent same-key requests both missed, both entered transactions, and
+
+the loser hit the unique constraint → raw 409 instead of a 200 replay.
+
+FIX PATTERN: per-key advisory xact lock INSIDE the transaction, then re-check —
+
+the classic insert-serialization approach already used by this codebase
+
+(Task #69 create: pg_advisory_xact_lock('reservation-material:…')). Same-key
+
+requests now serialize on the lock; the second waits for the first commit, then
+
+its re-check finds the note → clean 200 replay. Different keys unaffected.
+
+---------------------------------------------------------------------------
+
+PATCH — in reservations.ts, POST /:id/issue handler:
+
+(1) DELETE this entire pre-transaction block:
+
+// Idempotent replay: same key → original note, nothing written.
+
+if (idemKey) {
+
+const [existing] = await db
+
+.select()
+
+.from(wipIssueNotesTable)
+
+.where(eq(wipIssueNotesTable.idempotencyKey, idemKey))
+
+.limit(1);
+
+if (existing) {
+
+const lines = await db.select().from(wipIssueLinesTable)
+
+.where(eq(wipIssueLinesTable.wipIssueNoteId, existing.id));
+
+res.status(200).json(serializeIssueNote(existing as Record<string, any>, lines as Array<Record<string, any>>));
+
+return;
+
+}
+
+}
+
+(2) INSIDE db.transaction, as the VERY FIRST statements (before the reservation
+
+SELECT), insert:
+
+// Idempotency serialization: per-key advisory lock (same family as
+
+// Task #69 'reservation-material:' lock), THEN re-check under it.
+
+if (idemKey) {
+
+await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`wip-issue-idem:{idemKey}`}))`);
+
+const [existing] = await tx
+
+.select()
+
+.from(wipIssueNotesTable)
+
+.where(eq(wipIssueNotesTable.idempotencyKey, idemKey))
+
+.limit(1);
+
+if (existing) {
+
+const lines = await tx.select().from(wipIssueLinesTable)
+
+.where(eq(wipIssueLinesTable.wipIssueNoteId, existing.id));
+
+return { status: "replay" as const, note: existing, lines };
+
+}
+
+}
+
+(3) In the outcome dispatch (after the transaction), ADD this branch FIRST:
+
+if (outcome.status === "replay") {
+
+res.status(200).json(serializeIssueNote(outcome.note as Record<string, any>, outcome.lines as Array<Record<string, any>>));
+
+return;
+
+}
+
+(4) DEFENSE IN DEPTH — in the outer catch of the handler, map a late 23505 on the
+
+idempotency key to a replay fetch (covers any path that still races):
+
+} catch (err: any) {
+
+if (idemKey && err?.code === "23505") {
+
+const [existing] = await db.select().from(wipIssueNotesTable)
+
+.where(eq(wipIssueNotesTable.idempotencyKey, idemKey)).limit(1);
+
+if (existing) {
+
+const lines = await db.select().from(wipIssueLinesTable)
+
+.where(eq(wipIssueLinesTable.wipIssueNoteId, existing.id));
+
+res.status(200).json(serializeIssueNote(existing as Record<string, any>, lines as Array<Record<string, any>>));
+
+return;
+
+}
+
+}
+
+...existing error handling...
+
+}
+
+(If the handler currently has no try/catch around the tx, wrap minimally —
+
+only this 23505 mapping; do not change other error behavior.)
+
+---------------------------------------------------------------------------
+
+VERIFY (dev server restarted after edit):
+
+1. pnpm run typecheck:libs && pnpm run typecheck   → exit 0
+
+2. Same-key race (the failing scenario): fire BOTH requests simultaneously:
+
+curl -X POST .../reservations/RID/issue -H "Idempotency-Key: race-1" ... &
+
+curl -X POST .../reservations/RID/issue -H "Idempotency-Key: race-1" ... &
+
+wait
+
+EXPECT: one 201, one 200 (replay, SAME note id), exactly ONE note,
+
+ONE ledger pair (±available/+wip), ONE outbox event.
+
+3. Sequential same-key retry → 200 same note id, zero new rows.
+
+4. Different keys concurrently → both 201, independent notes (no cross-lock).
+
+5. Re-run the full 70-B evidence journey + test:reservation → 15/15.
+
+WHAT MUST NOT CHANGE: everything outside POST /:id/issue idempotency handling;
+
+MIN/transfers/GRN/Task #69 logic untouched; no schema changes; no commit.
