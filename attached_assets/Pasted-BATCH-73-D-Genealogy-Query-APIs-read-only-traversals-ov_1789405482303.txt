@@ -1,0 +1,173 @@
+BATCH 73-D — Genealogy Query APIs (read-only traversals over the 73-C catalog)
+
+Task 73 · APPLY ON WORKING TREE · dev DB only · NO COMMIT · append-only evidence.
+
+Authority: Phase 8 ratification; 73-A/B/C certified; D-gen-1 (document-cited
+
+edges only), D-gen-4 (recall over typed values), D-73C-01 (serial composition
+
+edges deferred — composition answers at LOT level until mfg_battery_genealogy
+
+carries document citations). NO writes beyond reads. NO UI (73-E).
+
+---------------------------------------------------------------------------
+
+ROUTER — artifacts/api-server/src/routes/genealogy.ts (NEW) mounted at
+
+/api/genealogy (routes/index.ts +1 line). router.use(requireAuth) — READS for
+
+all authenticated roles (viewer included; tracing is a floor activity).
+
+House conventions: flattened snake_case, numify, {items, meta} for lists.
+
+GET /upstream?production_order_id=
+
+FROM the catalog Q1 SQL. Response: {
+
+production_order_id, order_number,
+
+inputs: [ { material_id, material_code, quantity_issued, uom,
+
+issue: { note_id, note_number, document_cited },
+
+allocations: [ { lot_id, lot_number, quantity, grn_line_id,
+
+grn_id, grn_number, supplier_id, supplier_name,
+
+document_cited } ],
+
+attributes: [ { attribute_code, value, unit } ]   // via captures
+
+} ] }
+
+Every nested object carries document_cited {type, id} from its hop.
+
+Bulk-issued orders traverse identically (notes linked via bulk_batch_lines
+
+— same note→allocation hops).
+
+GET /downstream?lot_id=
+
+FROM catalog Q2. Response: {
+
+lot_id, lot_number, material_id,
+
+reservations: [ { reservation_id, number, production_order_id,
+
+quantity_active, document_cited } ],
+
+wip: [ { wip_issue_note_id, production_order_id, quantity,
+
+consumed_qty, document_cited } ],
+
+consumptions: [ { confirmation_id, number, actual_qty, document_cited } ],
+
+transfers: [ { transfer_request_id, number, status, quantity,
+
+document_cited } ] }
+
+GET /composition?product_id=  |  ?serial_number=
+
+FROM catalog Q3. Response: {
+
+product: { product_id, serial_number (battery_number), production_order_id },
+
+order: { id, number },
+
+consumed_lots: [ { lot_id, lot_number, material_id, quantity,
+
+document_cited } ],          // LOT level (D-73C-01)
+
+cell_genealogy: [ { cell_lot_id, transfer_id, grn_line_id,
+
+document_cited } ]          // where present
+
+// component_serials: OMITTED until D-73C-01 resolves — never inferred.
+
+}
+
+GET /recall?template_id=&attribute_code=&min=&max=
+
+[&date_from&date_to]
+
+FROM catalog Q4 over attribute_capture_values typed columns (index-backed;
+
+template version scoping mandatory — reject without template_id: 422).
+
+Response: {
+
+criteria: { template_id, attribute_code, min, max, … },
+
+matches: [ { material_id, lot_id, lot_number, grn_line_id, grn_id,
+
+value_num, unit, capture_instance_id, document_cited } ],
+
+downstream: per match, the downstream consumers (lot-level; reuse the
+
+downstream hop, capped at 25 per match with meta.truncated flag) }
+
+Deterministic: same params → same result (INV-GEN-04); no time dependence.
+
+---------------------------------------------------------------------------
+
+RULES (frozen)
+
+• READ-ONLY: no route in this router writes anything. No outbox events for
+
+reads (security_events still logged per house pattern for the endpoint).
+
+• Every edge object carries document_cited; the SUITE asserts no edge lacks
+
+it (INV-GEN-01 at the API layer).
+
+• No mfg_battery_genealogy reads for edges unless the row carries a
+
+document citation; until then, composition = lots only (D-73C-01).
+
+• Recall without template_id → 422 (scope mandatory); result caps explicit.
+
+---------------------------------------------------------------------------
+
+VERIFICATION (P73D- fixtures; permanent suite test:phase8-genealogy)
+
+GQ-01 upstream: full traversal of an order issued TWO ways (one single-issue
+
+material + one bulk-issued material) — both inputs fully traced with
+
+citations on every hop
+
+GQ-02 downstream: lot → reservation/PO + consumption + transfer consumers,
+
+all cited
+
+GQ-03 composition by product_id and by serial_number (via serial_units);
+
+consumed lots cited; NO component_serials field present (deferral
+
+respected)
+
+GQ-04 recall: capacity range over the battery-cell template → matches with
+
+typed values + downstream consumers; deterministic double-run equality
+
+GQ-05 every-edge-has-citation assertion across GQ-01…04 responses
+
+GQ-06 recall without template_id → 422; capped downstream truncation flag
+
+GQ-07 RBAC: viewer 200; anon 401; no write verbs exist (405 on POST)
+
+GQ-08 performance sanity: recall over the gate fixtures returns < 2s
+
+GQ-09 regression: phase8-serials, phase6 suites, phase7 bulk, reservation
+
+15/15, 22/22 invariants, zero residue
+
+GQ-10 git diff --stat scope; no commit
+
+WHAT MUST NOT CHANGE: ❌ no writes · ❌ no UI (73-E) · ❌ no inferred edges ·
+
+❌ no MIN reads · ❌ no commit.
+
+NEXT: 73-E — TraceabilityPage becomes the genealogy console (four tabs over
+
+these APIs); 73-F — final gate with INV-GEN-01…04 + the full wall.
