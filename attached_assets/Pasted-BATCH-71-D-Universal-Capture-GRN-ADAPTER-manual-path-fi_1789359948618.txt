@@ -1,0 +1,213 @@
+BATCH 71-D — Universal Capture → GRN ADAPTER (manual path + first registration)
+
+Task 71 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Authority: Constitution v2; 71-A/B/C certified. This is the FIRST — and so
+
+far only — registration in the A3 adapter wall, and the manual input channel.
+
+STILL no ledger change: attributes ride the GRN LINE; POSTING remains the
+
+certified explicit step, byte-identical.
+
+---------------------------------------------------------------------------
+
+FILES (three):
+
+1. lib/api-zod/src/inventory-capture.ts — MODIFY (append GRN capture schema)
+
+2. artifacts/api-server/src/lib/universal-capture/grn-adapter.ts — NEW
+
+3. artifacts/api-server/src/routes/inventory/grns.ts — MODIFY (ADDITIVE only)
+
+---------------------------------------------------------------------------
+
+DESIGN (the shape that must not drift)
+
+• Manual GRN create accepts OPTIONAL `attribute_values`, keyed by the 1-based
+
+line_number of the request's lines array:
+
+attribute_values: [{ line_number: 1, attributes: [CanonicalAttributeValue…] }]
+
+• Inside the EXISTING create transaction, after lines are inserted:
+
+for each entry: resolve template (material, resolutionDate=now, via the
+
+71-C resolution path / resolveTemplate) →
+
+NO_TEMPLATE + attributes supplied  ⇒ 422 NO_TEMPLATE (whole create
+
+ROLLS BACK — atomic, no partial GRN, no partial capture)
+
+template found                     ⇒ build TemplateField[] from the
+
+pinned version's attribute lines + definitions + unit registry rows
+
+⇒ validateCapture() ⇒
+
+errors ⇒ 422 CAPTURE_VALIDATION with the A14 machine-readable
+
+error list (whole create rolls back)
+
+ok     ⇒ insert attribute_capture_instances (target_type
+
+GRN_LINE, target_id = line.id, template_version_id = PINNED
+
+version, material_id, status VALIDATED — downstream draft exists,
+
+source_type MANUAL) + attribute_capture_values rows.
+
+• GRN detail: each line gains `capture: { template_version_id, template_id,
+
+template_code, version_no, fields: [{ attribute_code, name, data_type,
+
+value_text/value_num/value_bool/value_date, unit, value_origin, display }]
+
+} | null` — joined read, additive field, existing fields untouched.
+
+• ADAPTER: grn-adapter.ts registers { targetType: "GRN_LINE", confirm }.
+
+confirm(canonicalInput, validated) creates a GRN DRAFT through the SAME
+
+internal creation flow the route uses (ADJUST: extract/reuse the existing
+
+create helper if present; otherwise the adapter builds the same insert
+
+sequence via a shared exported function — ONE creation path, no
+
+divergence). It is NOT wired to any route in 71-D; 71-E/F call it.
+
+---------------------------------------------------------------------------
+
+FILE 1 — APPEND to lib/api-zod/src/inventory-capture.ts:
+
+export const GrnLineCaptureValues = zod.object({
+
+line_number: zod.number().int().min(1),
+
+attributes: zod.array(CanonicalAttributeValue).default([]),
+
+});
+
+export type GrnLineCaptureValues = zod.infer;
+
+---------------------------------------------------------------------------
+
+FILE 2 — CREATE artifacts/api-server/src/lib/universal-capture/grn-adapter.ts:
+
+• buildTemplateFields(versionId): loads template attribute lines + definitions
+
++ returns TemplateField[] (71-B shape) — shared by route and adapter.
+
+• loadUnitRegistry(): all active unit_definitions rows (71-B UnitRow shape).
+
+• persistCapture(tx, { lineId, materialId, templateVersionId, sourceType,
+
+sourceSessionId, sourceRowRef } , validatedValues): inserts instance
+
+(status VALIDATED) + value rows (value_origin from the validator).
+
+• resolveForMaterial(materialId, date): the 71-C resolution logic, returning
+
+{ kind, templateId?, templateVersionId? } (reused, not re-implemented).
+
+• registerCaptureAdapter({ targetType: "GRN_LINE", confirm: async (input,
+
+validated) => { / create GRN draft via the shared creation flow with
+
+attribute_values reconstructed from validated; return { documentId } / } })
+
+ADJUST: reuse the house GRN-numbering (grn_seq via pool.query nextval) and
+
+the existing insert sequence; keep exactly one creation path.
+
+---------------------------------------------------------------------------
+
+FILE 3 — grns.ts MODIFICATIONS (ADDITIVE ONLY — the single certified-file
+
+touch in this batch; justify in evidence + prove regression):
+
+(a) import { GrnLineCaptureValues } + the capture helpers from FILE 2.
+
+(b) In POST / after line insertion, parse optional req.body.attribute_values
+
+with zod.array(GrnLineCaptureValues) — invalid → 400. Process per the
+
+DESIGN above inside the same transaction. New failure codes: 422
+
+NO_TEMPLATE, 422 CAPTURE_VALIDATION (A14 errors under `capture_errors`).
+
+(c) GET /:id detail: enrich each line with `capture` (joined read via
+
+attribute_capture_instances/values + template/version join). Purely
+
+additive to the response.
+
+(d) POST /:id/post and ALL other GRN behavior: UNCHANGED.
+
+---------------------------------------------------------------------------
+
+VERIFICATION (dev server; fixtures: category C mapped to template T v1 with
+
+attributes capacity DECIMAL unit AH required, chemistry DROPDOWN [LiFePO4,NMC])
+
+pnpm run typecheck:libs && pnpm run typecheck     # exit 0
+
+# 1. Manual GRN with valid attributes (line 1): 201; detail shows capture
+
+#    { template_version_id, fields: capacity 280 AH NORMALIZED(?) origin
+
+#    EXPLICIT/NORMALIZED per rules, chemistry canonical }.
+
+# 2. Validation failure (capacity "10.256" @ scale 2): 422 CAPTURE_VALIDATION
+
+#    with A14 row; GRN NOT created (atomic rollback — verify no GRN row).
+
+# 3. NO_TEMPLATE material + attributes → 422 NO_TEMPLATE, no GRN.
+
+# 4. Template material WITHOUT attribute_values → normal 201 (unchanged
+
+#    certified behavior); without template and without values → normal 201.
+
+# 5. Duplicate attribute_code in one line → 422 DUPLICATE_ATTRIBUTE.
+
+# 6. getCaptureAdapter("GRN_LINE") now returns the adapter (wall down for
+
+#    exactly one type); getCaptureAdapter("TRANSFER_LINE") still throws.
+
+# 7. Outbox: CAPTURE_RECORDED event in-tx; security event logged.
+
+# 8. Posting unchanged: POST /:id/post writes ledger exactly as certified
+
+#    (attribute capture does not alter ledger rows; verify ledger rows for
+
+#    the GRN identical in shape to a no-attribute GRN).
+
+# 9. REGRESSION: test:receiving 12/12 · test:reservation 15/15 ·
+
+#    test:phase4-wip 17/17 (certified core untouched).
+
+# 10. git diff --stat = the 3 files only.
+
+WHAT MUST NOT BE CHANGED: ❌ posting/ledger logic · ❌ import/scan (71-E/F) ·
+
+❌ UI (71-G) · ❌ any other certified route/table · ❌ no auto-post · ❌ no
+
+seeds/material-specific code · ❌ no commit · dev DB only.
+
+RISK: Medium — one additive touch to a certified file. Closed by: atomic
+
+single-transaction capture, OPTIONAL field (no-attributes path byte-identical),
+
+and the full regression trio in verification #9.
+
+NEXT: On evidence, Kimi certifies 71-D and issues 71-E — the universal CSV
+
+engine: template download (from the SAME preview payload 71-C exposes),
+
+upload → import session staging → shared validation → row-level A14 errors →
+
+dry-run preview → confirm → GRN_LINE adapter (business-level idempotency,
+
+file_hash import idempotency, STRICT policy).
