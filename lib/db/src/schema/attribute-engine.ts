@@ -21,7 +21,7 @@ import {
   foreignKey,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { materialsTable, materialCategoriesTable } from "./inventory";
+import { materialsTable, materialCategoriesTable, suppliersTable } from "./inventory";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 export const attributeDataTypeEnum = pgEnum("attribute_data_type", [
@@ -79,6 +79,20 @@ export const scanItemStateEnum = pgEnum("scan_item_state", [
   "READY",
   "CONFIRMED",
   "REMOVED",
+]);
+export const scanSessionStatusEnum = pgEnum("scan_session_status", [
+  "DRAFT",
+  "READY",
+  "CONFIRMED",
+  "CANCELLED",
+]);
+export const scanEntityTypeEnum = pgEnum("scan_entity_type", [
+  "material",
+  "lot",
+  "serial",
+  "location",
+  "warehouse",
+  "document",
 ]);
 
 // ─── A16: reserved codes — identity/quantity/valuation are NOT attributes ────
@@ -426,3 +440,79 @@ export type AttributeCaptureInstance = typeof attributeCaptureInstancesTable.$in
 export type AttributeCaptureValue = typeof attributeCaptureValuesTable.$inferSelect;
 export type ImportSession = typeof importSessionsTable.$inferSelect;
 export type ImportRow = typeof importRowsTable.$inferSelect;
+
+// ─── Universal scan sessions (71-F, D-attr-5/A9-A12) ─────────────────────────
+export const scanNumberSequence = pgSequence("scan_seq");
+
+export const scanSessionsTable = pgTable(
+  "scan_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionNumber: varchar("session_number", { length: 50 }).unique().notNull(),
+    status: scanSessionStatusEnum("status").notNull().default("DRAFT"),
+    supplierId: uuid("supplier_id")
+      .notNull()
+      .references(() => suppliersTable.id),
+    templateVersionId: uuid("template_version_id").references(
+      () => attributeTemplateVersionsTable.id,
+    ),
+    totalItems: integer("total_items").notNull().default(0),
+    readyItems: integer("ready_items").notNull().default(0),
+    unknownItems: integer("unknown_items").notNull().default(0),
+    duplicateItems: integer("duplicate_items").notNull().default(0),
+    removedItems: integer("removed_items").notNull().default(0),
+    confirmKey: varchar("confirm_key", { length: 100 }).unique(),
+    downstreamDocumentId: uuid("downstream_document_id"),
+    createdBy: uuid("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedBy: uuid("updated_by"),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("scan_sessions_status_idx").on(t.status),
+    index("scan_sessions_supplier_idx").on(t.supplierId),
+  ],
+);
+
+export const scanItemsTable = pgTable(
+  "scan_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => scanSessionsTable.id, { onDelete: "cascade" }),
+    itemNumber: integer("item_number").notNull(),
+    payloadRaw: text("payload_raw").notNull(),
+    entityType: scanEntityTypeEnum("entity_type"),
+    entityId: uuid("entity_id"),
+    state: scanItemStateEnum("state").notNull().default("SCANNED"),
+    materialId: uuid("material_id").references(() => materialsTable.id),
+    lotNumber: varchar("lot_number", { length: 100 }),
+    serialNumber: varchar("serial_number", { length: 100 }),
+    quantity: numeric("quantity", { precision: 14, scale: 3 }).notNull().default("1"),
+    duplicateScanCount: integer("duplicate_scan_count").notNull().default(0),
+    attributes: jsonb("attributes").notNull().default([]),
+    canonical: jsonb("canonical"),
+    errors: jsonb("errors"),
+    grnLineId: uuid("grn_line_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex("scan_items_session_item_unique").on(t.sessionId, t.itemNumber),
+    index("scan_items_session_state_idx").on(t.sessionId, t.state),
+    index("scan_items_material_lot_idx").on(t.materialId, t.lotNumber),
+    index("scan_items_material_serial_idx").on(t.materialId, t.serialNumber),
+  ],
+);
+
+export type ScanSession = typeof scanSessionsTable.$inferSelect;
+export type ScanItem = typeof scanItemsTable.$inferSelect;

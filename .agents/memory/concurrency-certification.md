@@ -14,3 +14,9 @@ Selector-based race fixtures must isolate the selected master as well as the tra
 **Why:** The BOM resolver selects the latest approved revision; obsoleting an isolated revision can legitimately expose an older approved revision unless the race fixture owns the model and has exactly one approved BOM.
 
 **How to apply:** For lifecycle races involving “latest approved” or similar selectors, create a unique master with one candidate row, then assert both the contested row and all downstream references.
+
+Legacy certification suites should be run as standalone gates, not nested after mutation-heavy fixture suites; shared database state and in-memory API limiters can create false failures in otherwise passing race cases.
+
+**Why:** A combined Universal Capture run repeatedly made the existing forced-lot PH4 check fail while the same suite passed cleanly against a fresh API process and database state.
+
+**How to apply:** Keep cross-suite regression coverage explicit, but execute each suite against a clean API state and report a nested-harness failure separately from the feature under test.

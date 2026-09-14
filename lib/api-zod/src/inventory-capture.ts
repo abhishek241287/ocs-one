@@ -43,3 +43,20 @@ export type ImportCsvBody = zod.infer<typeof ImportCsvBody>;
 
 export const ImportConfirmBody = zod.object({}).strict();
 export type ImportConfirmBody = zod.infer<typeof ImportConfirmBody>;
+
+export const ScanSessionCreateBody = zod.object({
+  supplier_id: zod.string().uuid(),
+  material_id: zod.string().uuid().optional(),
+  template_version_id: zod.string().uuid().optional(),
+}).strict();
+export type ScanSessionCreateBody = zod.infer<typeof ScanSessionCreateBody>;
+
+export const ScanBody = zod.object({
+  payload: zod.string().min(1).max(10_000),
+  quantity: zod.number().positive().finite().optional(),
+  attributes: zod.array(CanonicalAttributeValue).optional(),
+}).strict();
+export type ScanBody = zod.infer<typeof ScanBody>;
+
+export const ScanConfirmBody = zod.object({}).strict();
+export type ScanConfirmBody = zod.infer<typeof ScanConfirmBody>;
