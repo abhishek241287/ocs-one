@@ -1,0 +1,399 @@
+BATCH 71-B v2 (AMENDED) — Universal Capture Brain
+
+Task 71 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Authority: Constitution v2 + advisor adjudication (all 14 points adopted;
+
+nothing rejected). v2 supersedes 71-B v1 BEFORE execution — do not run v1.
+
+Still pure logic: no routes (71-C), no GRN (71-D), no UI.
+
+═══════════════════════════════════════════════════════════════════════════
+
+AMENDMENTS ADOPTED (v1 → v2)
+
+═══════════════════════════════════════════════════════════════════════════
+
+A. CONTRACT PRESERVES UNITS (🔴 v1 bug): CanonicalAttributeValue gains
+
+`value` + `supplied_unit`. Channels parse "280 AH" into
+
+{ raw: "280 AH", value: 280, supplied_unit: "AH" }. The validator reads
+
+ONLY `value`/`supplied_unit` — never digs into raw. raw is A14 evidence.
+
+B. UNITLESS HOLE CLOSED (🔴): attribute without unitCode REJECTS any supplied
+
+unit (UNIT_NOT_ALLOWED); allowedUnits without unitCode = CONFIGURATION
+
+error. Three cases frozen: unitless (no unit permitted) / canonical-only /
+
+canonical + allowed alternates (converted).
+
+C. DECIMAL-STRING PRECISION AUTHORITY (🔴): precision/scale/range validated
+
+on the canonical DECIMAL STRING — never on JS floating point. No new
+
+dependencies: string-based decimal compare/pad. 0.10 vs 0.100 distinct;
+
+10.256 @ scale 2 rejected, never rounded.
+
+D. MISSING-UNIT RULE FROZEN: numeric attribute WITH canonical unit + no
+
+supplied unit ⇒ interpreted in canonical unit. Numeric attribute with NO
+
+canonical unit ⇒ CONFIGURATION error (not silent success).
+
+E. PIPELINE LITERAL (A8): PARSE → TYPE-NORMALIZE → UNIT-RESOLVE → UNIT-
+
+CONVERT → CANONICAL-PRECISION → CANONICAL-SCALE → CANONICAL-RANGE →
+
+STORE. Named steps; smoke asserts the order via a failing-precision case
+
+that passes conversion (unit convert happens before precision).
+
+F. DUPLICATE ATTRIBUTE CODES (🔴 v1 bug): duplicate attribute_code in one
+
+capture ⇒ DUPLICATE_ATTRIBUTE error, capture fails. No Map-overwrite.
+
+G. REQUIRED+DEFAULT PROVENANCE FROZEN: default satisfies required, stored
+
+value_origin=DEFAULT; explicit "0" stays EXPLICIT; normalization flips
+
+origin to NORMALIZED; raw preserved for audit.
+
+H. STRICT DATE PARSING: DATE = /^\\d{4}-\\d{2}-\\d{2}/ → canonical date;
+
+DATETIME = ISO-8601 with offset (house convention) — no permissive
+
+new Date(string) as the hidden spec.
+
+I. BOOLEAN SPELLINGS CENTRALIZED: one constant map (true/yes/1, false/no/0).
+
+J. RESOLVER ENFORCES A6 ITSELF: takes mapping/version ARRAYS + resolution
+
+date; >1 effective ⇒ ERROR (ambiguity), even though partial indexes make
+
+ties unrepresentable; applies the frozen ACTIVE∧effective predicate.
+
+K. RESOLUTION vs PINNING SEPARATED: 71-B resolves (material + resolution
+
+date + config snapshot → template_id + template_version_id). Sessions pin
+
+in 71-C/E/F — 71-B never "finds whatever is active now" for a session.
+
+L. SMOKE EXPANDED to the advisor's 13-case list (below).
+
+═══════════════════════════════════════════════════════════════════════════
+
+FILES (unchanged set from v1; content per amendments)
+
+1. lib/api-zod/src/inventory-capture.ts — contract (AMENDED per A)
+
+2. artifacts/api-server/src/lib/universal-capture/{units,normalize,
+
+decimal,validate,resolve,adapters}.ts — engine (AMENDED B–K)
+
+3. artifacts/api-server/src/lib/universal-capture/smoke.ts — proof (L)
+
+---------------------------------------------------------------------------
+
+FILE 1 — lib/api-zod/src/inventory-capture.ts (FULL REPLACEMENT):
+
+/
+- Phase 6 — Canonical Capture Contract (Constitution A1, amended v2).
+- Every channel produces exactly this. `value`/`supplied_unit` are the parsed
+- form the validator consumes; `raw` is immutable A14 evidence.
+ /
+import * as zod from "zod";
+
+export const CanonicalAttributeValue = zod.object({
+attribute_code: zod.string().min(1).max(60),
+raw: zod.unknown().optional(),              // original input string/cell (A14)
+value: zod.unknown().optional(),            // parsed scalar (post channel-parse)
+supplied_unit: zod.string().trim().max(20).nullish(),
+});
+export type CanonicalAttributeValue = zod.infer;
+
+export const CanonicalCaptureInput = zod.object({
+material_id: zod.string().uuid(),
+lot_number: zod.string().max(60).nullish(),
+serial_number: zod.string().max(100).nullish(),
+quantity: zod.number().positive(),
+attributes: zod.array(CanonicalAttributeValue).default([]),
+source: zod.object({
+type: zod.enum(["MANUAL", "CSV", "SCAN", "API", "SYSTEM"]),
+session_id: zod.string().uuid().nullish(),
+row_ref: zod.string().max(60).nullish(),
+}),
+});
+export type CanonicalCaptureInput = zod.infer;
+
+---------------------------------------------------------------------------
+
+FILE 2 — engine modules. Reference implementations below are the contract;
+
+naming may adapt to compile, behavior may NOT drift from the amendments.
+
+── decimal.ts (NEW — C: string-decimal authority, no float, no deps) ───────
+// All canonical numeric validation runs on decimal strings.
+export function decimalString(n: number | string): string {
+// normalize to plain decimal string; reject scientific notation inputs
+const s = typeof n === "number" ? String(n) : n.trim();
+if (!/^-?\d+(\.\d+)?/.test(s)) throw new Error(`Not a plain decimal: ${s}`);
+return s;
+}
+export function decimalSignificants(s: string): number { return s.replace("-", "").replace(".", "").replace(/^0+/, "").length; }
+export function decimalScale(s: string): number { const i = s.indexOf("."); return i < 0 ? 0 : s.length - i - 1; }
+export function decimalCompare(a: string, b: string): number {
+const [ai, af] = a.replace("-", "").split("."); const [bi, bf] = b.replace("-", "").split(".");
+const scale = Math.max((af ?? "").length, (bf ?? "").length);
+const an = BigInt((ai ?? "0") + (af ?? "").padEnd(scale, "0"));
+const bn = BigInt((bi ?? "0") + (bf ?? "").padEnd(scale, "0"));
+const cmp = an === bn ? 0 : an < bn ? -1 : 1;
+const aneg = a.startsWith("-"); const bneg = b.startsWith("-");
+if (aneg && !bneg) return -1; if (!aneg && bneg) return 1;
+return aneg ? -cmp : cmp;
+}
+
+NOTE: BigInt is built-in (no dependency). If the repo targets an environment
+
+without BigInt, replace decimalCompare with a digit-pad string compare —
+
+keep the rule: never floating point.
+
+── units.ts (AMENDED B/D) ────────────────────────────────────────────────────
+export interface UnitRow { unitCode: string; dimension: string; canonicalUnit: string; conversionFactor: string; }
+interface UnitField { unitCode: string | null; allowedUnits: string[] | null; }
+export function normalizeUnit(
+value: number, suppliedUnit: string | null | undefined, def: UnitField, registry: UnitRow[],
+): { ok: true; value: string; unit: string } | { ok: false; rule: string; message: string } {
+if (!def.unitCode) {
+if (def.allowedUnits?.length) return { ok: false, rule: "CONFIGURATION", message: "allowedUnits set without canonical unit" };
+if (suppliedUnit) return { ok: false, rule: "UNIT_NOT_ALLOWED", message: `Attribute is unitless; '${suppliedUnit}' not permitted` };
+return { ok: true, value: decimalString(value), unit: "" };
+}
+const defRow = registry.find((r) => r.unitCode.toUpperCase() === def.unitCode!.toUpperCase());
+if (!defRow) return { ok: false, rule: "CONFIGURATION", message: `Canonical unit '${def.unitCode}' not in registry` };
+if (suppliedUnit == null || suppliedUnit === "") {
+return { ok: true, value: decimalString(value), unit: defRow.canonicalUnit };   // D: interpreted in canonical unit
+}
+const row = registry.find((r) => r.unitCode.toUpperCase() === suppliedUnit.toUpperCase());
+if (!row) return { ok: false, rule: "UNIT", message: `Unknown unit '${suppliedUnit}'` };
+if (row.dimension !== defRow.dimension)
+return { ok: false, rule: "UNIT_DIMENSION", message: `'${suppliedUnit}' is ${row.dimension}, expected ${defRow.dimension}` };
+if (def.allowedUnits?.length && !def.allowedUnits.map((u) => u.toUpperCase()).includes(row.unitCode.toUpperCase()))
+return { ok: false, rule: "UNIT_ALLOWED", message: `'${suppliedUnit}' not allowed for this attribute` };
+if (row.canonicalUnit.toUpperCase() === defRow.canonicalUnit.toUpperCase() && row.unitCode.toUpperCase() === defRow.unitCode.toUpperCase())
+return { ok: true, value: decimalString(value), unit: row.canonicalUnit };
+const converted = Number(value) * Number(row.conversionFactor);      // conversion factors are registry-owned (A8)
+return { ok: true, value: decimalString(converted), unit: row.canonicalUnit };
+}
+
+── normalize.ts (AMENDED H/I; normalize returns STRING numerics for C) ──────
+export const BOOLEAN_SPELLINGS: Record<string, boolean> = {
+true: true, yes: true, "1": true, false: false, no: false, "0": false,
+};
+export type NormalizedPrimitive = string | number | boolean | Date;   // numbers are INTEGER-only; DECIMAL stays string
+export function normalizeAttribute(raw: unknown, dataType: string, allowedValues: string[] | null): {
+value: NormalizedPrimitive | null; error?: { rule: string; message: string };
+} {
+const blank = raw === null || raw === undefined || (typeof raw === "string" && raw.trim() === "");
+if (blank) return { value: null };
+switch (dataType) {
+case "TEXT": return { value: String(raw) };
+case "INTEGER": {
+const s = String(raw).trim();
+if (!/^-?\d+/.test(s)) return { value: null, error: { rule: "TYPE", message: "Expected integer" } };
+return { value: Number(s) };
+}
+case "DECIMAL": {
+const s = String(raw).trim();
+if (!/^-?\d+(\.\d+)?/.test(s)) return { value: null, error: { rule: "TYPE", message: "Expected decimal" } };
+return { value: s };                                             // stays string (C)
+}
+case "BOOLEAN": {
+const v = BOOLEAN_SPELLINGS[String(raw).trim().toLowerCase()];
+if (v === undefined) return { value: null, error: { rule: "TYPE", message: "Expected boolean (true/false/yes/no/1/0)" } };
+return { value: v };
+}
+case "DATE": {
+const s = String(raw).trim();
+if (!/^\d{4}-\d{2}-\d{2}/.test(s)) return { value: null, error: { rule: "TYPE", message: "DATE must be YYYY-MM-DD" } };
+const d = new Date(`${s}T00:00:00Z`);
+if (isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== s) return { value: null, error: { rule: "TYPE", message: "Invalid calendar date" } };
+return { value: d };
+}
+case "DATETIME": {
+const s = String(raw).trim();
+if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})/.test(s))
+return { value: null, error: { rule: "TYPE", message: "DATETIME must be ISO-8601 with timezone offset" } };
+const d = new Date(s);
+if (isNaN(d.getTime())) return { value: null, error: { rule: "TYPE", message: "Invalid datetime" } };
+return { value: d };
+}
+case "DROPDOWN": {
+const s = String(raw).trim();
+const canon = (allowedValues ?? []).find((v) => v.toUpperCase() === s.toUpperCase());
+if (!canon) return { value: null, error: { rule: "ALLOWED_VALUES", message: "Value not in allowed set" } };
+return { value: canon };
+}
+default: return { value: null, error: { rule: "TYPE", message: `Unsupported data type ${dataType}` } };
+}
+}
+
+── validate.ts (AMENDED A/E/F/G — pipeline order + duplicates) ──────────────
+// Pipeline per attribute (A8 literal order): TYPE-NORMALIZE → UNIT-RESOLVE →
+// UNIT-CONVERT → CANONICAL-PRECISION → CANONICAL-SCALE → CANONICAL-RANGE →
+// TEXT-CONSTRAINTS → STORE. F: duplicate attribute_code ⇒ DUPLICATE_ATTRIBUTE.
+// G: default satisfies required with origin DEFAULT; explicit values stay
+// EXPLICIT; normalization marks NORMALIZED; raw preserved on every error.
+export function validateCapture(input, fields, registry) {
+const errors = []; const values = [];
+// F: duplicate detection BEFORE any Map building
+const seen = new Set();
+for (const a of input.attributes) {
+if (seen.has(a.attribute_code)) {
+errors.push({ attribute_code: a.attribute_code, rule: "DUPLICATE_ATTRIBUTE", input: a.raw ?? a.value ?? null, normalized: null, message: "Attribute supplied more than once" });
+}
+seen.add(a.attribute_code);
+}
+if (errors.length) return { ok: false, errors, values };
+const byCode = new Map(input.attributes.map((a) => [a.attribute_code, a]));
+for (const f of [...fields].sort((x, y) => x.sequence - y.sequence)) {
+const supplied = byCode.get(f.attributeCode);
+let raw: unknown = supplied ? (supplied.value !== undefined ? supplied.value : supplied.raw) : undefined;
+let suppliedUnit = supplied?.supplied_unit ?? null;
+let origin: "EXPLICIT" | "DEFAULT" | "NORMALIZED" = "EXPLICIT";
+if ((raw === undefined || raw === null || raw === "") && f.defaultValue != null) {
+raw = f.defaultValue; origin = "DEFAULT"; suppliedUnit = null;               // defaults are canonical-form
+}
+const norm = normalizeAttribute(raw, f.dataType, f.allowedValues);
+if (norm.error) { errors.push({ attribute_code: f.attributeCode, rule: norm.error.rule, input: raw, normalized: null, message: norm.error.message }); continue; }
+if (norm.value === null) {
+if (f.required) errors.push({ attribute_code: f.attributeCode, rule: "REQUIRED", input: raw, normalized: null, message: "Required value missing" });
+continue;
+}
+if (origin === "EXPLICIT") origin = "NORMALIZED";                              // any survived normalization is normalized
+let valueNum: string | null = null; let unit: string | null = null;
+if (f.dataType === "INTEGER" || f.dataType === "DECIMAL") {
+const un = normalizeUnit(f.dataType === "INTEGER" ? (norm.value as number) : Number(norm.value), suppliedUnit, f, registry);
+if (!un.ok) { errors.push({ attribute_code: f.attributeCode, rule: un.rule, input: raw, normalized: norm.value, message: un.message }); continue; }
+valueNum = un.value; unit = un.unit || null;
+// C: canonical-string precision/scale/range — never floating point
+if (f.precision != null && decimalSignificants(valueNum) > f.precision) {
+errors.push({ attribute_code: f.attributeCode, rule: "PRECISION", input: raw, normalized: valueNum, message: `Exceeds precision ${f.precision} (rejected, not rounded)` }); continue;
+}
+if (f.scale != null && decimalScale(valueNum) > f.scale) {
+errors.push({ attribute_code: f.attributeCode, rule: "SCALE", input: raw, normalized: valueNum, message: `Exceeds scale ${f.scale} (rejected, not rounded)` }); continue;
+}
+if (f.minValue != null && decimalCompare(valueNum, decimalString(f.minValue)) < 0) { errors.push({ attribute_code: f.attributeCode, rule: "MIN", input: raw, normalized: valueNum, message: `Below minimum ${f.minValue}` }); continue; }
+if (f.maxValue != null && decimalCompare(valueNum, decimalString(f.maxValue)) > 0) { errors.push({ attribute_code: f.attributeCode, rule: "MAX", input: raw, normalized: valueNum, message: `Exceeds maximum ${f.maxValue}` }); continue; }
+}
+if (f.dataType === "TEXT") {
+const s = norm.value as string;
+if (f.maxLength != null && s.length > f.maxLength) { errors.push({ attribute_code: f.attributeCode, rule: "MAX_LENGTH", input: raw, normalized: s, message: `Exceeds max length ${f.maxLength}` }); continue; }
+if (f.regex && !(new RegExp(f.regex).test(s))) { errors.push({ attribute_code: f.attributeCode, rule: "REGEX", input: raw, normalized: s, message: "Pattern mismatch" }); continue; }
+}
+values.push({ attributeId: f.attributeId, attributeCode: f.attributeCode,
+valueText: f.dataType === "TEXT" || f.dataType === "DROPDOWN" ? String(norm.value) : null,
+valueNum, valueBool: f.dataType === "BOOLEAN" ? (norm.value as boolean) : null,
+valueDate: f.dataType === "DATE" || f.dataType === "DATETIME" ? (norm.value as Date) : null,
+unit, valueOrigin: origin });
+}
+for (const u of input.attributes.filter((a) => !fields.some((f) => f.attributeCode === a.attribute_code)))
+errors.push({ attribute_code: u.attribute_code, rule: "UNKNOWN_ATTRIBUTE", input: u.raw ?? u.value ?? null, normalized: null, message: "Attribute not in template version" });
+return { ok: errors.length === 0, errors, values };
+}
+
+── resolve.ts (AMENDED J/K) ──────────────────────────────────────────────────
+// A6 enforced HERE (not just by DB uniques): arrays in, ambiguity out.
+export interface MappingCandidate { templateId: string; }
+export interface VersionCandidate { templateVersionId: string; status: string; effectiveFrom: Date; effectiveTo: Date | null; }
+export function resolveTemplate(params: {
+materialMappings: MappingCandidate[];   // already scope/date-filtered by caller's query
+categoryMappings: MappingCandidate[];
+versions: (m: MappingCandidate) => VersionCandidate[];  // caller supplies versions per mapping
+resolutionDate: Date;
+}): { kind: "OK"; templateId: string; templateVersionId: string }
+| { kind: "NO_TEMPLATE" }
+| { kind: "ERROR"; reason: string } {
+const pick = (ms: MappingCandidate[], label: string) => {
+if (ms.length > 1) return { kind: "ERROR" as const, reason: `AMBIGUOUS_${label}` };
+if (ms.length === 0) return null;
+const vs = params.versions(ms[0]).filter((v) =>
+v.status === "ACTIVE" &&
+v.effectiveFrom <= params.resolutionDate &&
+(v.effectiveTo === null || params.resolutionDate < v.effectiveTo));
+if (vs.length > 1) return { kind: "ERROR" as const, reason: `AMBIGUOUS_${label}_VERSION` };
+if (vs.length === 0) return { kind: "ERROR" as const, reason: `NO_ACTIVE_VERSION_${label}` };
+return { kind: "OK" as const, templateId: ms[0].templateId, templateVersionId: vs[0].templateVersionId };
+};
+const m = pick(params.materialMappings, "MATERIAL");
+if (m) return m;                                  // material mapping wins (A6.1)
+const c = pick(params.categoryMappings, "CATEGORY");
+if (c) return c;
+return { kind: "NO_TEMPLATE" };
+}
+// K: callers pass a SNAPSHOT + resolutionDate; sessions pin the returned
+// template_version_id at creation — this function never re-resolves a session.
+
+── adapters.ts — UNCHANGED from v1 (A3 wall; GRN_LINE registered in 71-D).
+
+---------------------------------------------------------------------------
+
+FILE 3 — smoke.ts must assert ALL of (advisor L, expanded):
+
+1 unit convergence  "280 AH"|"280"|280 → (280, AH) — via contract fields
+
+2 blank vs zero     ""→null; "0"→0; "0.00"→0 (distinct)
+
+3 precision reject  10.256 @ scale 2 → SCALE error (never 10.26)
+
+4 decimal strings   0.10 ok; 0.100 @ scale 2 → SCALE error (string authority)
+
+5 dropdown case     "lifepo4" → "LiFePO4"
+
+6 boolean spelling  "yes" → true
+
+7 duplicates        capacity twice → DUPLICATE_ATTRIBUTE, whole capture fails
+
+8 unitless+unit     attr w/o unit + "50 KG" → UNIT_NOT_ALLOWED
+
+9 unknown unit      280 XYZ → UNIT
+
+10 dimension         280 KG on capacity → UNIT_DIMENSION
+
+11 config error      numeric attr without canonical unit → CONFIGURATION
+
+12 default provenance blank + default 280 → value 280, origin DEFAULT
+
+13 explicit zero    "0" → 0, origin EXPLICIT
+
+14 required missing → REQUIRED; unknown attr → UNKNOWN_ATTRIBUTE
+
+15 pipeline order   mAH→AH conversion then precision (mAh 280000 @ precision
+
+4 → PRECISION fires AFTER conversion, proving order E)
+
+16 date strict       "14/09/2026" → TYPE error; "2026-09-14" → ok
+
+17 resolution dates v2 effective today / v3 tomorrow → today=v2, tomorrow=v3
+
+18 ambiguity         two material mappings → ERROR (resolver-level)
+
+19 adapter wall      getCaptureAdapter("GRN_LINE") throws UNREGISTERED
+
+Exit 0 + "CAPTURE ENGINE SMOKE PASS".
+
+VERIFICATION: typecheck:libs + typecheck exit 0; smoke PASS; git diff --stat =
+
+the 8 files only (contract module + export line; 6 engine modules; smoke).
+
+WHAT MUST NOT CHANGE: everything from v1 still holds (no routes/GRN/UI/tables;
+
+constitutional rules may not be weakened).
+
+RISK: Low. BigInt availability note above; decimalCompare fallback if needed.
+
+NEXT: On green expanded smoke → Kimi certifies 71-B v2 and issues 71-C.

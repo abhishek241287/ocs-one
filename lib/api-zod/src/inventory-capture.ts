@@ -10,6 +10,8 @@ import * as zod from "zod";
 export const CanonicalAttributeValue = zod.object({
   attribute_code: zod.string().min(1).max(60),
   raw: zod.unknown().optional(),
+  value: zod.unknown().optional(),
+  supplied_unit: zod.string().trim().max(20).nullish(),
 });
 export type CanonicalAttributeValue = zod.infer<typeof CanonicalAttributeValue>;
 
