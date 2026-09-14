@@ -12,6 +12,7 @@ import qcApprovalRouter from "./qc-approval";
 import reworkRouter from "./rework";
 import testingDashboardRouter from "./testing-dashboard";
 import materialIssuesRouter from "./material-issues";
+import bulkIssuesRouter from "./bulk-issues";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use("/orders/:id/formation-report", formationReportRouter);
 router.use("/orders/:id/test-results", testResultsRouter);
 router.use("/orders/:id/qc-approval", qcApprovalRouter);
 router.use("/orders/:id/material-issues", materialIssuesRouter);
+router.use("/orders/:id/issues", bulkIssuesRouter);
 
 export default router;

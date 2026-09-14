@@ -9,6 +9,7 @@ import {
   materialsTable,
   bomHeadersTable,
   mfgProductionOrdersTable,
+  bulkBatchesTable,
 } from "@workspace/db";
 import { IssueMaterialsBody, ReverseMaterialIssueBody } from "@workspace/api-zod";
 import { requireWriteRole } from "../../middleware/auth";
@@ -258,6 +259,17 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
         .limit(1);
       if (!order) return { kind: "order_not_found" as const };
       if (!order.modelId) return { kind: "no_bom" as const };
+      const [bulk] = await tx
+        .select({ id: bulkBatchesTable.id })
+        .from(bulkBatchesTable)
+        .where(
+          and(
+            eq(bulkBatchesTable.productionOrderId, orderId),
+            eq(bulkBatchesTable.status, "completed"),
+          ),
+        )
+        .limit(1);
+      if (bulk) return { kind: "bulk_exists" as const, batchId: bulk.id };
 
       // System-generated MIN number (never client-supplied).
       const now = new Date();
@@ -290,6 +302,13 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     }
     if (result.kind === "no_bom") {
       res.status(404).json({ error: "No approved BOM for this order's model" });
+      return;
+    }
+    if (result.kind === "bulk_exists") {
+      res.status(409).json({
+        error: "BULK_BATCH_EXISTS",
+        batch_id: result.batchId,
+      });
       return;
     }
     const o = result.outcome;

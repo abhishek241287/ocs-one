@@ -913,3 +913,55 @@ export type WipIssueNote = typeof wipIssueNotesTable.$inferSelect;
 export type InsertWipIssueNote = typeof wipIssueNotesTable.$inferInsert;
 export type WipIssueLine = typeof wipIssueLinesTable.$inferSelect;
 export type InsertWipIssueLine = typeof wipIssueLinesTable.$inferInsert;
+
+// ─── Task #72 — Certified bulk issue identity ────────────────────────────────
+// A bulk issue is an atomic orchestration over the reservation/WIP engine. The
+// batch tables group the per-material reservation and WIP notes without changing
+// the certified note semantics or its global note-level idempotency key.
+export const bulkBatchStatusEnum = pgEnum("bulk_batch_status", ["completed"]);
+
+export const bulkBatchesTable = pgTable(
+  "bulk_batches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    productionOrderId: uuid("production_order_id")
+      .notNull()
+      .references(() => mfgProductionOrdersTable.id),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }).notNull().unique(
+      "bulk_batches_idempotency_key_unique",
+    ),
+    requestHash: varchar("request_hash", { length: 64 }).notNull(),
+    status: bulkBatchStatusEnum("status").notNull().default("completed"),
+    createdBy: uuid("created_by").references(() => usersTable.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("bulk_batches_order_idx").on(table.productionOrderId)],
+);
+
+export const bulkBatchLinesTable = pgTable(
+  "bulk_batch_lines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    batchId: uuid("batch_id")
+      .notNull()
+      .references(() => bulkBatchesTable.id, { onDelete: "cascade" }),
+    sequence: integer("sequence").notNull(),
+    materialId: uuid("material_id")
+      .notNull()
+      .references(() => materialsTable.id),
+    requestedQty: numeric("requested_qty", { precision: 14, scale: 3 }).notNull(),
+    sourceBomLineRefs: jsonb("source_bom_line_refs").notNull(),
+    reservationId: uuid("reservation_id")
+      .notNull()
+      .references(() => inventoryReservationsTable.id),
+    wipIssueNoteId: uuid("wip_issue_note_id")
+      .notNull()
+      .references(() => wipIssueNotesTable.id),
+    issuedQty: numeric("issued_qty", { precision: 14, scale: 3 }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("bulk_batch_lines_batch_sequence_unique").on(table.batchId, table.sequence),
+    index("bulk_batch_lines_reservation_idx").on(table.reservationId),
+    index("bulk_batch_lines_issue_note_idx").on(table.wipIssueNoteId),
+  ],
+);

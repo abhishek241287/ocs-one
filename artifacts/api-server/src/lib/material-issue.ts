@@ -12,6 +12,7 @@ import {
   materialIssueNotesTable,
   materialIssueNoteLinesTable,
   materialIssueReversalsTable,
+  bulkBatchesTable,
   mfgProductionOrdersTable,
   mfgBatteryTimelineTable,
   productWorkflowsTable,
@@ -276,6 +277,23 @@ export async function findActiveMinForSource(
         eq(materialIssueNotesTable.sourceType, sourceType),
         eq(materialIssueNotesTable.sourceRefId, sourceRefId),
         sql`not exists (select 1 from ${materialIssueReversalsTable} r where r.min_id = ${materialIssueNotesTable.id})`,
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+export async function findCompletedBulkBatchForOrder(
+  exec: Executor,
+  productionOrderId: string,
+): Promise<{ id: string } | null> {
+  const [row] = await exec
+    .select({ id: bulkBatchesTable.id })
+    .from(bulkBatchesTable)
+    .where(
+      and(
+        eq(bulkBatchesTable.productionOrderId, productionOrderId),
+        eq(bulkBatchesTable.status, "completed"),
       ),
     )
     .limit(1);
@@ -704,6 +722,8 @@ export async function evaluateStageMaterialGate(
 
   const active = await findActiveMinForSource(db, "PRODUCTION_ORDER", orderId);
   if (active) return { blocked: false };
+  const bulk = await findCompletedBulkBatchForOrder(db, orderId);
+  if (bulk) return { blocked: false };
 
   return {
     blocked: true,

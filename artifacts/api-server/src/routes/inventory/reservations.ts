@@ -23,6 +23,12 @@ import {
 } from "@workspace/api-zod";
 import { requireWriteRole } from "../../middleware/auth";
 import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
+import {
+  allocateInTx,
+  createReservationInTx,
+  issueToWipInTx,
+  nextWipIssueNumber,
+} from "../../lib/inventory-reservation-engine";
 
 const router: IRouter = Router();
 
@@ -138,58 +144,18 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
   const reservationNumber = `RSV-${dateStr}-${String(rows[0].seq).padStart(4, "0")}`;
 
   const outcome = await db.transaction(async (tx) => {
-    // Serialize reservation creators for this material so the availability check
-    // and insert form one race-free decision.
-    await tx.execute(
-      sql`SELECT pg_advisory_xact_lock(hashtext(${`reservation-material:${body.material_id}`}))`,
-    );
-
-    const available = await materialAvailable(tx, body.material_id);
-    const reserved = await materialReserved(tx, body.material_id);
-    const reservable = available - reserved;
-
-    if (reservable <= 0 || body.quantity > reservable && !body.allow_partial) {
-      return { status: "insufficient" as const, available, reserved };
-    }
-
-    const quantity = body.quantity > reservable ? reservable : body.quantity;
-    if (quantity <= 0) {
-      return { status: "insufficient" as const, available, reserved };
-    }
-
-    const [created] = await tx
-      .insert(inventoryReservationsTable)
-      .values({
-        reservationNumber,
-        productionOrderId: body.production_order_id,
-        materialId: body.material_id,
-        reservedQty: String(quantity),
-        allocatedQty: "0",
-        issuedQty: "0",
-        uom: material.uom,
-        status: "active",
-        expiresAt: body.expiry_date ? new Date(body.expiry_date) : null,
-        createdBy: actorId,
-      })
-      .returning();
-
-    await tx.insert(outboxEventsTable).values({
-      aggregateType: "inventory_reservation",
-      aggregateId: created.id,
-      eventType: "RESERVATION_CREATED",
-      payload: {
-        reservation_number: reservationNumber,
-        production_order_id: body.production_order_id,
-        material_id: body.material_id,
-        requested_qty: body.quantity,
-        reserved_qty: quantity,
-        partial: quantity < body.quantity,
-        uom: material.uom,
-        actor_id: actorId,
-      },
+    const result = await createReservationInTx(tx, {
+      productionOrderId: body.production_order_id,
+      materialId: body.material_id,
+      quantity: body.quantity,
+      uom: material.uom,
+      reservationNumber,
+      actorId,
+      expiryDate: body.expiry_date ? new Date(body.expiry_date) : null,
+      allowPartial: body.allow_partial,
     });
-
-    return { status: "ok" as const, created, reserved: quantity };
+    if (result.status === "insufficient") return result;
+    return { status: "ok" as const, created: result.reservation };
   });
 
   if (outcome.status === "insufficient") {
@@ -197,7 +163,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       error: "INSUFFICIENT_STOCK",
       details: {
         available: outcome.available,
-        reserved: outcome.reserved,
+      reserved: outcome.reserved,
         requested: body.quantity,
       },
     });
@@ -211,10 +177,10 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     actorRole: req.user?.role ?? null,
     ...reqMeta(req),
     statusCode: 201,
-    detail: `Reservation ${reservationNumber} created (production order ${body.production_order_id}, material ${body.material_id}, qty ${outcome.reserved}${outcome.reserved < body.quantity ? ", partial" : ""})`,
+    detail: `Reservation ${reservationNumber} created (production order ${body.production_order_id}, material ${body.material_id}, qty ${outcome.created.reservedQty}${Number(outcome.created.reservedQty) < body.quantity ? ", partial" : ""})`,
   });
 
-  res.status(201).json(serializeReservation(outcome.created as Record<string, any>));
+  res.status(201).json(serializeReservation(outcome.created));
 });
 
 // ─── Allocation helpers ──────────────────────────────────────────────────────
@@ -284,6 +250,77 @@ router.post("/:id/allocate", async (req: Request, res: Response): Promise<void> 
   }
   const body = parsed.data;
   const actorId = req.user?.userId ?? null;
+
+  const delegated = await db.transaction((tx) =>
+    allocateInTx(tx, {
+      reservationId: req.params.id as string,
+      actorId,
+      quantity: body.quantity,
+      strategy: body.strategy,
+      allowPartial: body.allow_partial,
+      lotId: body.lot_id,
+    }),
+  );
+  if (delegated.status === "not_found") {
+    res.status(404).json({ error: "Reservation not found" });
+    return;
+  }
+  if (delegated.status === "expired") {
+    res.status(409).json({ error: "Reservation has expired" });
+    return;
+  }
+  if (delegated.status === "invalid_state") {
+    res.status(409).json({
+      error: `Reservation cannot be allocated from status '${delegated.current}'`,
+    });
+    return;
+  }
+  if (delegated.status === "nothing") {
+    res.status(422).json({ error: "Nothing left to allocate" });
+    return;
+  }
+  if (delegated.status === "quantity_exceeds_remainder") {
+    res.status(422).json({
+      error: "Allocation quantity exceeds unallocated reservation quantity",
+      details: { remainder: delegated.remainder },
+    });
+    return;
+  }
+  if (delegated.status === "bad_lot") {
+    res.status(422).json({ error: "Lot does not match the reserved material" });
+    return;
+  }
+  if (delegated.status === "insufficient") {
+    res.status(409).json({
+      error: "INSUFFICIENT_STOCK",
+      details: { unallocated: delegated.unallocated },
+    });
+    return;
+  }
+
+  void recordSecurityEvent({
+    eventType: "reservation.allocated",
+    actorId,
+    actorEmail: req.user?.email ?? null,
+    actorRole: req.user?.role ?? null,
+    ...reqMeta(req),
+    statusCode: 200,
+    detail: `Reservation ${delegated.reservation.reservationNumber} allocated across ${delegated.allocations.length} lot(s) [${body.strategy}]`,
+  });
+  res.json({
+    ...serializeReservation(delegated.reservation),
+    allocations: delegated.allocations.map((item) => ({
+      lot_id: item.lotId,
+      lot_number: item.lotNumber,
+      grn_line_id: item.grnLineId,
+      quantity: item.quantity,
+      warehouse_id: item.warehouseId,
+      location_id: item.locationId,
+      bin_id: item.binId,
+      status: "active",
+    })),
+  });
+  return;
 
   const outcome = await db.transaction(async (tx) => {
     const [reservation] = await tx
@@ -520,12 +557,12 @@ router.post("/:id/allocate", async (req: Request, res: Response): Promise<void> 
     actorRole: req.user?.role ?? null,
     ...reqMeta(req),
     statusCode: 200,
-    detail: `Reservation ${outcome.reservation.reservationNumber} allocated across ${outcome.allocations.length} lot(s) [${body.strategy}]`,
+    detail: `Reservation ${(outcome as any).reservation.reservationNumber} allocated across ${(outcome as any).allocations.length} lot(s) [${body.strategy}]`,
   });
 
   res.json({
     ...serializeReservation(outcome.reservation as Record<string, any>),
-    allocations: outcome.allocations.map((item) => ({
+    allocations: (outcome as any).allocations.map((item: any) => ({
       lot_id: item.lotId,
       lot_number: item.lotNumber,
       grn_line_id: item.grnLineId,
@@ -876,6 +913,74 @@ router.post("/:id/issue", async (req: Request, res: Response): Promise<void> => 
   const actorId = req.user!.userId;
   const actorName = req.user?.email ?? null;
   const idempotencyKey = (req.header("idempotency-key") ?? "").slice(0, 100) || null;
+
+  const delegated = await db.transaction(async (tx) =>
+    issueToWipInTx(tx, {
+      reservationId: req.params.id as string,
+      issueNumber: await nextWipIssueNumber(tx),
+      actorId,
+      actorName,
+      quantity: body.quantity,
+      lotId: body.lot_id ?? null,
+      allowPartial: body.allow_partial,
+      notes: body.notes ?? null,
+      idempotencyKey,
+    }),
+  );
+  if (delegated.status === "not_found") {
+    res.status(404).json({ error: "Reservation not found" });
+    return;
+  }
+  if (delegated.status === "expired") {
+    res.status(409).json({ error: "Reservation has expired" });
+    return;
+  }
+  if (delegated.status === "invalid_state") {
+    res.status(409).json({ error: `Reservation cannot be issued from status '${delegated.current}'` });
+    return;
+  }
+  if (delegated.status === "nothing") {
+    res.status(422).json({ error: "Nothing left to issue" });
+    return;
+  }
+  if (delegated.status === "exceeds") {
+    res.status(409).json({
+      error: "ISSUE_EXCEEDS_ALLOCATED",
+      details: { issuable: delegated.issuable },
+    });
+    return;
+  }
+  if (delegated.status === "no_alloc") {
+    res.status(409).json({ error: "Reservation has no active allocations" });
+    return;
+  }
+  if (delegated.status === "bad_lot") {
+    res.status(422).json({ error: "Unknown lot id" });
+    return;
+  }
+  if (delegated.status === "phys_unavailable") {
+    res.status(409).json({ error: "PHYSICAL_STOCK_UNAVAILABLE" });
+    return;
+  }
+  if (delegated.status === "insufficient") {
+    res.status(409).json({
+      error: "INSUFFICIENT_ALLOCATED",
+      details: { unissued: delegated.unissued },
+    });
+    return;
+  }
+  const statusCode = delegated.status === "replay" ? 200 : 201;
+  void recordSecurityEvent({
+    eventType: delegated.status === "replay" ? "wip_issue.replayed" : "wip_issue.created",
+    actorId,
+    actorEmail: req.user?.email ?? null,
+    actorRole: req.user?.role ?? null,
+    ...reqMeta(req),
+    statusCode,
+    detail: `WIP issue ${delegated.note.issueNumber} ${delegated.status === "replay" ? "replayed" : "created"}`,
+  });
+  res.status(statusCode).json(serializeIssueNote(delegated.note, delegated.lines));
+  return;
 
   const { rows } = await pool.query("SELECT nextval('wip_issue_seq') AS seq");
   const issueNumber = `ISS-${todayDateStr()}-${String(rows[0].seq).padStart(4, "0")}`;
@@ -1271,7 +1376,7 @@ router.post("/:id/issue", async (req: Request, res: Response): Promise<void> => 
     actorRole: req.user?.role ?? null,
     ...reqMeta(req),
     statusCode: 201,
-    detail: `WIP issue ${outcome.note.issueNumber} from reservation ${outcome.reservation.reservationNumber}: ${outcome.lines.length} lot line(s)`,
+    detail: `WIP issue ${(outcome as any).note.issueNumber} from reservation ${(outcome as any).reservation.reservationNumber}: ${(outcome as any).lines.length} lot line(s)`,
   });
 
   res

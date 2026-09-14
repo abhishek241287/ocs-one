@@ -30,6 +30,7 @@
     "test:phase6-71d": "tsx src/cert/phase6-71d-suite.ts",
     "test:phase6-71f": "tsx src/cert/phase6-71f-suite.ts",
     "test:phase6-gate": "tsx src/cert/phase6-final-gate.ts",
+    "test:task72a-bulk-issue": "tsx src/cert/bulk-issue-suite.ts",
     "cert:fat:seed": "tsx src/cert/fat-seed.ts --action=seed",
     "cert:fat:verify": "tsx src/cert/fat-seed.ts --action=verify",
     "cert:fat:preflight": "tsx src/cert/fat-seed.ts --action=preflight",
