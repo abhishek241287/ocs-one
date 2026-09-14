@@ -6,4 +6,5 @@ export * from "./inventory-returns";
 export * from "./inventory-scrap";
 export * from "./inventory-adjustments";
 export * from "./inventory-transfer-requests";
+export * from "./inventory-capture";
 export * as types from "./generated/types";

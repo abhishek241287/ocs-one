@@ -1,0 +1,293 @@
+BATCH 71-B — Universal Capture: THE BRAIN (normalization + validation engine)
+
+Task 71 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Authority: Phase 6 Constitution v2. 71-A certified (schema proof).
+
+This batch is pure logic — NO routes (71-C), NO GRN changes (71-D), NO UI.
+
+It gives the 71-A schema its brain: one contract, one pipeline, one registry.
+
+---------------------------------------------------------------------------
+
+FILES (three):
+
+1. lib/api-zod/src/inventory-capture.ts — NEW (+1 export line in index.ts)
+
+2. artifacts/api-server/src/lib/universal-capture/.ts — NEW (5 modules)
+
+3. artifacts/api-server/src/lib/universal-capture/smoke.ts — NEW (proof)
+
+---------------------------------------------------------------------------
+
+FILE 1 — CREATE lib/api-zod/src/inventory-capture.ts (the A1 contract):
+
+/
+- Phase 6 — Canonical Capture Contract (Constitution A1).
+- EVERY input channel (manual/CSV/scan, later API) produces exactly this
+- shape; the shared validator consumes only this. attribute values are keyed
+- by immutable attribute_code; identity/quantity stay OUT (A2/A16) — they
+- travel in the operation envelope of the certified service call, not here.
+ /
+import * as zod from "zod";
+
+export const CanonicalAttributeValue = zod.object({
+attribute_code: zod.string().min(1).max(60),
+raw: zod.unknown().optional(),          // original input, kept for A14 error reporting
+});
+export type CanonicalAttributeValue = zod.infer;
+
+export const CanonicalCaptureInput = zod.object({
+material_id: zod.string().uuid(),       // identity: resolved from the operation, not redefined (A4)
+lot_number: zod.string().max(60).nullish(),
+serial_number: zod.string().max(100).nullish(),
+quantity: zod.number().positive(),      // quantity belongs to the operation (A4) — carried for the adapter
+attributes: zod.array(CanonicalAttributeValue).default([]),
+source: zod.object({                     // A13 provenance
+type: zod.enum(["MANUAL", "CSV", "SCAN", "API", "SYSTEM"]),
+session_id: zod.string().uuid().nullish(),
+row_ref: zod.string().max(60).nullish(),
+}),
+});
+export type CanonicalCaptureInput = zod.infer;
+
+index.ts: ADD  export * from "./inventory-capture";
+
+---------------------------------------------------------------------------
+
+FILE 2 — CREATE artifacts/api-server/src/lib/universal-capture/ with 5 modules.
+
+Reference implementation below; adjust names to compile, but the RULES are
+
+frozen (Constitution A6/A8/A11/A14/A16) — behavior must not drift.
+
+── units.ts ─────────────────────────────────────────────────────────────────
+// Unit registry consult (A8). conversionFactor: value_canonical = value_supplied × factor.
+export interface UnitRow { unitCode: string; dimension: string; canonicalUnit: string; conversionFactor: string; }
+export function normalizeUnit(
+value: number, suppliedUnit: string | null | undefined,
+def: { unitCode: string | null; allowedUnits: string[] | null },
+registry: UnitRow[],
+): { ok: true; value: number; unit: string } | { ok: false; rule: string; message: string } {
+if (!def.unitCode) return { ok: true, value, unit: "" };               // unitless attribute
+const defRow = registry.find((r) => r.unitCode === def.unitCode);
+const dimension = defRow?.dimension;
+if (suppliedUnit == null || suppliedUnit === "") {
+return { ok: true, value, unit: def.unitCode };                      // canonical assumed
+}
+const row = registry.find((r) => r.unitCode.toUpperCase() === suppliedUnit.toUpperCase());
+if (!row) return { ok: false, rule: "UNIT", message: `Unknown unit '${suppliedUnit}'` };
+if (dimension && row.dimension !== dimension)
+return { ok: false, rule: "UNIT_DIMENSION", message: `Unit '${suppliedUnit}' is ${row.dimension}, expected ${dimension}` };
+if (def.allowedUnits && def.allowedUnits.length && !def.allowedUnits.map((u) => u.toUpperCase()).includes(row.unitCode.toUpperCase()))
+return { ok: false, rule: "UNIT_ALLOWED", message: `Unit '${suppliedUnit}' not allowed for this attribute` };
+const converted = value * Number(row.conversionFactor);
+return { ok: true, value: converted, unit: row.canonicalUnit };        // conversion NEVER user-supplied (A8)
+}
+
+── normalize.ts ─────────────────────────────────────────────────────────────
+// Per-datatype normalization with the A8 blank-semantics table, frozen:
+//   TEXT     blank → null | DECIMAL/INTEGER blank → null (never 0) | BOOLEAN
+//   blank → null; accepted true/false/yes/no/1/0 → true|false | DATE/DATETIME
+//   blank → null, ISO parse | DROPDOWN blank → null, case-insensitive match to
+//   canonical stored form.
+// Returns { value: NormalizedPrimitive | null, error?: { rule, message } }.
+export type NormalizedPrimitive = string | number | boolean | Date;
+export function normalizeAttribute(raw: unknown, dataType: string, allowedValues: string[] | null): {
+value: NormalizedPrimitive | null;
+error?: { rule: string; message: string };
+} {
+const blank = raw === null || raw === undefined || (typeof raw === "string" && raw.trim() === "");
+if (blank) return { value: null };                                     // blank ≠ 0 (A8)
+switch (dataType) {
+case "TEXT": return { value: String(raw) };
+case "INTEGER": {
+const n = typeof raw === "number" ? raw : Number(String(raw).trim());
+if (!Number.isFinite(n) || !Number.isInteger(n)) return { value: null, error: { rule: "TYPE", message: "Expected integer" } };
+return { value: n };
+}
+case "DECIMAL": {
+const n = typeof raw === "number" ? raw : Number(String(raw).trim());
+if (!Number.isFinite(n)) return { value: null, error: { rule: "TYPE", message: "Expected number" } };
+return { value: n };
+}
+case "BOOLEAN": {
+const s = String(raw).trim().toLowerCase();
+if (["true", "yes", "1"].includes(s)) return { value: true };
+if (["false", "no", "0"].includes(s)) return { value: false };
+return { value: null, error: { rule: "TYPE", message: "Expected boolean (true/false/yes/no/1/0)" } };
+}
+case "DATE":
+case "DATETIME": {
+const d = new Date(String(raw));
+if (isNaN(d.getTime())) return { value: null, error: { rule: "TYPE", message: `Invalid ${dataType.toLowerCase()}` } };
+return { value: d };
+}
+case "DROPDOWN": {
+const s = String(raw).trim();
+const canon = (allowedValues ?? []).find((v) => v.toUpperCase() === s.toUpperCase());
+if (!canon) return { value: null, error: { rule: "ALLOWED_VALUES", message: `Value not in allowed set` } };
+return { value: canon };                                           // canonical stored form (A8)
+}
+default: return { value: null, error: { rule: "TYPE", message: `Unsupported data type ${dataType}` } };
+}
+}
+
+── validate.ts ──────────────────────────────────────────────────────────────
+// The single shared validator (A1). Pipeline per attribute, IN ORDER (A8):
+//   normalize → unit convert (numeric only) → precision/scale → min/max →
+//   max_length → regex → required. EXCESS PRECISION IS REJECTED, NEVER ROUNDED.
+// Output errors are A14 machine-readable.
+export interface TemplateField {
+attributeId: string; attributeCode: string; dataType: string;
+required: boolean; sequence: number; defaultValue: string | null;
+unitCode: string | null; allowedUnits: string[] | null;
+allowedValues: string[] | null; precision: number | null; scale: number | null;
+minValue: string | null; maxValue: string | null; regex: string | null; maxLength: number | null;
+}
+export interface CaptureError { attribute_code: string; rule: string; input: unknown; normalized: unknown; message: string; row?: number; column?: string; }
+export interface ValidatedValue { attributeId: string; attributeCode: string; valueText: string | null; valueNum: string | null; valueBool: boolean | null; valueDate: Date | null; unit: string | null; valueOrigin: "EXPLICIT" | "DEFAULT" | "NORMALIZED"; }
+export function validateCapture(
+input: { attributes: Array<{ attribute_code: string; raw?: unknown }> },
+fields: TemplateField[],
+registry: UnitRow[],
+): { ok: boolean; errors: CaptureError[]; values: ValidatedValue[] } {
+const errors: CaptureError[] = [];
+const values: ValidatedValue[] = [];
+const byCode = new Map(input.attributes.map((a) => [a.attribute_code, a]));
+for (const f of [...fields].sort((a, b) => a.sequence - b.sequence)) {
+const supplied = byCode.get(f.attributeCode);
+let raw: unknown = supplied?.raw;
+let origin: "EXPLICIT" | "DEFAULT" | "NORMALIZED" = "EXPLICIT";
+if ((raw === undefined || raw === null || raw === "") && f.defaultValue != null) {
+raw = f.defaultValue; origin = "DEFAULT";                          // default ≠ captured fact (A13)
+}
+const norm = normalizeAttribute(raw, f.dataType, f.allowedValues);
+if (norm.error) { errors.push({ attribute_code: f.attributeCode, rule: norm.error.rule, input: raw, normalized: null, message: norm.error.message }); continue; }
+if (norm.value === null) {
+if (f.required) errors.push({ attribute_code: f.attributeCode, rule: "REQUIRED", input: raw, normalized: null, message: "Required value missing" });
+continue;                                                          // null stored as absence, never 0
+}
+let valueNum: number | null = null;
+let unit: string | null = null;
+if (f.dataType === "INTEGER" || f.dataType === "DECIMAL") {
+const un = normalizeUnit(norm.value as number, (raw as any)?.unit ?? null, f, registry);
+if (!un.ok) { errors.push({ attribute_code: f.attributeCode, rule: un.rule, input: raw, normalized: norm.value, message: un.message }); continue; }
+valueNum = un.value; unit = un.unit || null; origin = "NORMALIZED";
+// canonical precision/scale validation AFTER conversion (A8 order)
+const str = valueNum.toString();
+const decimals = str.includes(".") ? str.split(".")[1].length : 0;
+if (f.precision != null && str.replace("-", "").replace(".", "").length > f.precision) {
+errors.push({ attribute_code: f.attributeCode, rule: "PRECISION", input: raw, normalized: valueNum, message: `Exceeds precision ${f.precision} (rejected, not rounded)` }); continue;
+}
+if (f.scale != null && decimals > f.scale) {
+errors.push({ attribute_code: f.attributeCode, rule: "SCALE", input: raw, normalized: valueNum, message: `Exceeds scale ${f.scale} (rejected, not rounded)` }); continue;
+}
+if (f.minValue != null && valueNum < Number(f.minValue)) { errors.push({ attribute_code: f.attributeCode, rule: "MIN", input: raw, normalized: valueNum, message: `Below minimum ${f.minValue}` }); continue; }
+if (f.maxValue != null && valueNum > Number(f.maxValue)) { errors.push({ attribute_code: f.attributeCode, rule: "MAX", input: raw, normalized: valueNum, message: `Exceeds maximum ${f.maxValue}` }); continue; }
+}
+if (f.dataType === "TEXT") {
+const s = norm.value as string;
+if (f.maxLength != null && s.length > f.maxLength) { errors.push({ attribute_code: f.attributeCode, rule: "MAX_LENGTH", input: raw, normalized: s, message: `Exceeds max length ${f.maxLength}` }); continue; }
+if (f.regex && !(new RegExp(f.regex).test(s))) { errors.push({ attribute_code: f.attributeCode, rule: "REGEX", input: raw, normalized: s, message: "Pattern mismatch" }); continue; }
+}
+values.push({
+attributeId: f.attributeId, attributeCode: f.attributeCode,
+valueText: f.dataType === "TEXT" || f.dataType === "DROPDOWN" ? String(norm.value) : null,
+valueNum: valueNum != null ? String(valueNum) : null,
+valueBool: f.dataType === "BOOLEAN" ? (norm.value as boolean) : null,
+valueDate: f.dataType === "DATE" || f.dataType === "DATETIME" ? (norm.value as Date) : null,
+unit, valueOrigin: origin,
+});
+}
+const unknown = input.attributes.filter((a) => !fields.some((f) => f.attributeCode === a.attribute_code));
+for (const u of unknown) errors.push({ attribute_code: u.attribute_code, rule: "UNKNOWN_ATTRIBUTE", input: u.raw, normalized: null, message: "Attribute not in template version" });
+return { ok: errors.length === 0, errors, values };
+}
+
+── resolve.ts ───────────────────────────────────────────────────────────────
+// A6 deterministic resolution: material mapping → category mapping → NO_TEMPLATE.
+// Ties are ERRORS (the partial uniques make ties unrepresentable; this is the
+// app-level guard). Returns BOTH template_id and template_version_id (A6).
+export type Resolution =
+| { kind: "OK"; templateId: string; templateVersionId: string }
+| { kind: "NO_TEMPLATE" }
+| { kind: "ERROR"; reason: string };
+export function resolveTemplate(params: {
+materialMapping: { templateId: string; activeVersionId: string } | null;
+categoryMapping: { templateId: string; activeVersionId: string } | null;
+}): Resolution {
+if (params.materialMapping) return { kind: "OK", ...params.materialMapping };
+if (params.categoryMapping) return { kind: "OK", ...params.categoryMapping };
+return { kind: "NO_TEMPLATE" };
+}
+
+── adapters.ts ──────────────────────────────────────────────────────────────
+// A3 adapter registry: captures can only CONFIRM through a REGISTERED adapter.
+export interface CaptureAdapter {
+targetType: string;
+// 71-D implements this against the certified GRN service. Signature frozen:
+confirm(input: CanonicalCaptureInput, validated: ValidatedValue[]): Promise<{ documentId: string }>;
+}
+const registry = new Map<string, CaptureAdapter>();
+export function registerCaptureAdapter(a: CaptureAdapter): void { registry.set(a.targetType, a); }
+export function getCaptureAdapter(targetType: string): CaptureAdapter {
+const a = registry.get(targetType);
+if (!a) throw new Error(`UNREGISTERED_TARGET: '${targetType}' has no adapter (A3)`);
+return a;
+}
+// Phase 6 allowlist: registerCaptureAdapter({ targetType: "GRN_LINE", confirm: … }) in 71-D.
+
+---------------------------------------------------------------------------
+
+FILE 3 — smoke proof: artifacts/api-server/src/lib/universal-capture/smoke.ts
+
+A tsx-runnable assertion script (no server, no DB) proving the frozen rules:
+
+• "280 AH", "280", 280 → identical canonical (280, AH)           [A8]
+
+• "" → null; "0" → 0;  "0.00" → 0 (distinct)                    [A8]
+
+• scale=2 + 10.256 → SCALE error (rejected, NOT rounded)        [A8]
+
+• DROPDOWN "lifepo4" → canonical "LiFePO4"                      [A8]
+
+• BOOLEAN "yes" → true                                          [A8]
+
+• required missing → REQUIRED; unknown attr → UNKNOWN_ATTRIBUTE [A14]
+
+• unit dimension mismatch (kg vs capacity) → UNIT_DIMENSION     [A8]
+
+• resolve: material beats category; none → NO_TEMPLATE          [A6]
+
+• getCaptureAdapter("GRN_LINE") throws UNREGISTERED (until 71-D)[A3]
+
+Run: pnpm --filter @workspace/api-server exec tsx src/lib/universal-capture/smoke.ts
+
+Exit 0 + "CAPTURE ENGINE SMOKE PASS".
+
+VERIFICATION: pnpm run typecheck:libs && pnpm run typecheck → exit 0;
+
+smoke prints CAPTURE ENGINE SMOKE PASS; git diff --stat = the 7 new files only
+
+(api-zod module + export line; 5 engine modules; smoke).
+
+WHAT MUST NOT BE CHANGED: ❌ no routes/controllers (71-C) · ❌ no GRN/ledger
+
+touch (71-D) · ❌ no tables (71-A locked) · ❌ no UI · ❌ no seeds · ❌ no
+
+edits to certified files. Rules may not be weakened: the pipeline order,
+
+blank semantics, precision-rejection, resolution precedence, and the adapter
+
+wall are constitutional.
+
+RISK: Low (pure functions, no I/O). Residual: engine/schema naming drift —
+
+smoke covers the rules, 71-C/D integrate against real rows.
+
+NEXT: On green smoke, Kimi certifies 71-B and issues 71-C — config CRUD APIs
+
+(attributes, units, templates, versions with activation integrity + preview,
+
+mappings, profiles) with director-only config RBAC and outbox/audit.
