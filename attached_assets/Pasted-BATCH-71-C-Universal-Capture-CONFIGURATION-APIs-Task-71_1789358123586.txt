@@ -1,0 +1,256 @@
+BATCH 71-C — Universal Capture: CONFIGURATION APIs
+
+Task 71 · APPLY ON WORKING TREE · dev DB only · NO COMMIT.
+
+Authority: Constitution v2 + 71-B v2 engine (certified). D-attr-6 RBAC:
+
+ALL config mutations = director-only; reads = any authenticated role.
+
+NO GRN touch (71-D), NO import/scan (71-E/F), NO UI (71-G).
+
+---------------------------------------------------------------------------
+
+FILES:
+
+1. lib/api-zod/src/capture-config.ts — NEW (+1 export line)
+
+2. artifacts/api-server/src/routes/masters/units.ts — NEW
+
+3. artifacts/api-server/src/routes/masters/material-attributes.ts — NEW
+
+4. artifacts/api-server/src/routes/masters/attribute-templates.ts — NEW
+
+5. artifacts/api-server/src/routes/masters/material-template-mappings.ts — NEW
+
+6. artifacts/api-server/src/routes/masters/material-inventory-profiles.ts — NEW
+
+7. masters route mount — MODIFY (ADJUST: locate the existing /api/masters
+
+router file first; mount the five sub-routers there)
+
+---------------------------------------------------------------------------
+
+HOUSE PATTERNS (unchanged): flattened snake_case responses; numify; zod parse
+
+→ 400; unknown refs → 400/422; unique violation 23505 (both shapes) → 409;
+
+mutations in db.transaction with outbox insert in-tx; recordSecurityEvent;
+
+requireAuth at router level + requireWriteRole("director") on mutations.
+
+---------------------------------------------------------------------------
+
+FILE 1 — lib/api-zod/src/capture-config.ts:
+
+/ Phase 6 — capture configuration request schemas (hand-written). /
+import * as zod from "zod";
+
+export const CreateUnitBody = zod.object({
+unit_code: zod.string().min(1).max(20),
+dimension: zod.string().min(1).max(50),
+canonical_unit: zod.string().min(1).max(20),
+conversion_factor: zod.coerce.number().positive().default(1),
+});
+export const UpdateUnitBody = zod.object({ active: zod.boolean() });
+
+export const CreateAttributeBody = zod.object({
+code: zod.string().min(1).max(60),                 // immutable after ACTIVE (A7)
+name: zod.string().min(1).max(120),
+data_type: zod.enum(["TEXT", "DECIMAL", "INTEGER", "BOOLEAN", "DATE", "DATETIME", "DROPDOWN"]),
+scope: zod.enum(["MATERIAL", "LOT", "SERIAL", "RECEIPT_LINE", "OPERATION"]).default("RECEIPT_LINE"),
+unit_code: zod.string().max(20).nullish(),
+allowed_units: zod.array(zod.string().max(20)).nullish(),
+precision: zod.number().int().positive().nullish(),
+scale: zod.number().int().min(0).nullish(),
+min_value: zod.coerce.number().nullish(),
+max_value: zod.coerce.number().nullish(),
+allowed_values: zod.array(zod.string().max(200)).nullish(),
+regex: zod.string().max(255).nullish(),
+max_length: zod.number().int().positive().nullish(),
+required_default: zod.boolean().default(false),
+description: zod.string().max(500).nullish(),
+});
+export const UpdateAttributeBody = zod.object({       // DRAFT: any rule; ACTIVE: name/description only (A7)
+name: zod.string().min(1).max(120).optional(),
+description: zod.string().max(500).nullish(),
+allowed_values: zod.array(zod.string().max(200)).nullish(),
+required_default: zod.boolean().optional(),
+});
+
+export const CreateTemplateBody = zod.object({
+code: zod.string().min(1).max(60),
+name: zod.string().min(1).max(120),
+description: zod.string().max(500).nullish(),
+});
+export const UpdateTemplateBody = zod.object({ name: zod.string().min(1).max(120).optional(), description: zod.string().max(500).nullish() });
+
+export const CreateTemplateVersionBody = zod.object({
+version_no: zod.number().int().positive(),
+effective_from: zod.string().datetime(),           // offset ISO (A8 datetime)
+effective_to: zod.string().datetime().nullish(),
+});
+export const AddTemplateAttributeBody = zod.object({
+attribute_id: zod.string().uuid(),
+required: zod.boolean().default(false),
+sequence: zod.number().int().min(0).default(0),
+default_value: zod.string().nullish(),             // stored canonical-form
+allowed_values_override: zod.array(zod.string().max(200)).nullish(),
+unit_override: zod.string().max(20).nullish(),
+});
+
+export const CreateMappingBody = zod.object({
+scope: zod.enum(["MATERIAL", "CATEGORY"]),
+material_id: zod.string().uuid().nullish(),
+category_id: zod.string().uuid().nullish(),
+template_id: zod.string().uuid(),
+effective_from: zod.string().datetime().optional(),
+effective_to: zod.string().datetime().nullish(),
+});
+export const UpdateMappingBody = zod.object({
+status: zod.enum(["ACTIVE", "RETIRED"]).optional(),
+effective_to: zod.string().datetime().nullish(),
+});
+
+export const UpsertProfileBody = zod.object({
+tracking_mode: zod.enum(["NONE", "LOT", "SERIAL", "LOT_AND_SERIAL"]),
+});
+
+index.ts: ADD  export * from "./capture-config";
+
+---------------------------------------------------------------------------
+
+ROUTE FILES — full CRUD per house patterns; the BEHAVIORAL FREEZES below are
+
+the parts that must not drift; routine CRUD may follow local naming.
+
+── CRITICAL LOGIC 1 — ACTIVATION INTEGRITY (attributes & template versions):
+
+Activation runs a dry-run BEFORE flipping status:
+
+attribute: data_type valid; DROPDOWN ⇒ allowed_values non-empty;
+
+unit_code ⇒ exists in unit_definitions; allowed_units ⊆ registry;
+
+precision/scale/min/max consistent (scale ≤ precision when both set).
+
+Fail → 422 TEMPLATE_INTEGRITY with the failing checks listed.
+
+template version: ≥1 attribute; every attribute ACTIVE (not DRAFT/RETIRED);
+
+sequences unique; NO overlap with another ACTIVE version's effective
+
+range of the SAME template (A6 one-active-per-date) → 409 on overlap.
+
+Activation is transactional; outbox ATTRIBUTE_ACTIVATED / TEMPLATE_VERSION
+
+ACTIVATED in-tx.
+
+── CRITICAL LOGIC 2 — PREVIEW (round-4 §18): GET /versions/:vid/preview
+
+returns { template_code, version_no, status, effective_from/to, fields: [
+
+{ attribute_code, name, data_type, required, sequence, default_value,
+
+unit, allowed_values, min, max, precision, scale } ], generated_csv
+
+columns: ["material_code","lot_number","quantity", ...attribute_codes] }
+
+— the SAME payload 71-E uses to generate CSV headers (one definition,
+
+three consumers). Preview available to any authed role.
+
+── CRITICAL LOGIC 3 — MAPPING (A6 + Option A): create validates scope shape
+
+(exactly one of material_id/category_id), template exists. DB partial
+
+uniques enforce one-active; map 23505 (both code shapes) → 409
+
+AMBIGUOUS_CONFIGURATION with the winning scope in details. Resolution
+
+endpoint: GET /masters/resolve-template?material_id=&date=
+
+→ loads candidate mappings + ACTIVE versions, calls resolveTemplate()
+
+from 71-B, returns its result verbatim ({kind, template_id,
+
+template_version_id} | NO_TEMPLATE | ERROR+reason). Any authed role.
+
+── CRITICAL LOGIC 4 — PROFILE GUARD (A12): PUT profile validates the
+
+transition: moving AWAY from the current mode is rejected 409
+
+UNSAFE_TRANSITION if any ledger rows, lots, or wip rows exist for the
+
+material (conservative reading; refine per real rules later — flag in
+
+evidence). Creating a profile where none existed is always allowed.
+
+── OUTBOX/SECURITY: every mutation writes the corresponding event
+
+(UNIT_UPSERTED, ATTRIBUTE_CREATED/UPDATED/ACTIVATED/RETIRED, TEMPLATE
+
+CREATED/UPDATED, TEMPLATE_VERSION_CREATED/ATTRIBUTE_ADDED/ACTIVATED/
+
+RETIRED, MAPPING_CREATED/UPDATED, PROFILE_UPSERTED, RESOLUTION is read-only
+
+— no event) with actor + payload; recordSecurityEvent mirrors it.
+
+---------------------------------------------------------------------------
+
+VERIFICATION (dev server running)
+
+pnpm run typecheck:libs && pnpm run typecheck        # exit 0
+
+# 1. Unit create (director 201; supervisor 403; viewer read 200; anon 401)
+
+# 2. Attribute: create DRAFT → activate with DROPDOWN + empty allowed_values
+
+#    → 422 TEMPLATE_INTEGRITY; fix → activate 200; PATCH code attempt n/a
+
+#    (no code field); name PATCH after ACTIVE → 200 (A7)
+
+# 3. Template + v1 (2 attributes) → activate 200; v2 overlapping effective
+
+#    range → activate 409; adjust dates → 200. Preview endpoint returns
+
+#    field list + generated_csv_columns.
+
+# 4. Mappings: two ACTIVE material mappings same material → second 409
+
+#    AMBIGUOUS_CONFIGURATION; category fallback resolution via endpoint;
+
+#    unknown material → NO_TEMPLATE.
+
+# 5. Profile: create LOT → attempt NONE with existing ledger rows → 409
+
+#    UNSAFE_TRANSITION (fixture material).
+
+# 6. Resolution: material beats category; date-sensitive version pick.
+
+# 7. Outbox: config events present in-tx; security events logged.
+
+# 8. Sentinel regression: test:reservation 15/15 (certified core untouched).
+
+# 9. git diff --stat = the 7 files only.
+
+WHAT MUST NOT BE CHANGED: ❌ no GRN/import/scan/UI (71-D/E/F/G) · ❌ no edits
+
+to certified files/ledger/state machines · ❌ no seeds/material-specific code
+
+· ❌ no commit · dev DB only.
+
+RISK: Medium (first HTTP surface). Mitigations: RBAC at router level,
+
+integrity dry-runs, DB unique backstops, sentinel regression.
+
+NEXT: On evidence, Kimi certifies 71-C and issues 71-D — Universal Capture →
+
+GRN Adapter: register the GRN_LINE adapter, GRN create accepts optional
+
+attribute_values (resolved + validated by the 71-B engine + resolved template
+
+version), capture instance persisted (target grn_line), detail returns
+
+values + version + provenance. Still no ledger change — GRN posting remains
+
+the certified explicit step.
