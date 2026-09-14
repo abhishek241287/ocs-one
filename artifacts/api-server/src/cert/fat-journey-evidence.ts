@@ -1030,39 +1030,7 @@ async function runFulfillmentAndTraceability(): Promise<void> {
   await get("TRACE-N01", "traceability", "supervisor", `/api/products/${unknown}/traceability`, 404);
 }
 
-async function ensureReportBoundaryOrders(): Promise<void> {
-  const reportWindow = FAT_FIXTURE_CONTRACT.reports.productionDateWindow;
-  const reportBoundaryOrders = [
-    [reportWindow.boundaryOrders.before.id, "REPORT-BEFORE", reportWindow.boundaryOrders.before.createdAt],
-    [reportWindow.boundaryOrders.inside.id, "REPORT-INSIDE", reportWindow.boundaryOrders.inside.createdAt],
-    [reportWindow.boundaryOrders.after.id, "REPORT-AFTER", reportWindow.boundaryOrders.after.createdAt],
-  ] as const;
-
-  for (const [id, key, createdAt] of reportBoundaryOrders) {
-    await pool.query(
-      `INSERT INTO mfg_production_orders
-        (id, order_number, battery_number, product_id, factory_manager,
-         current_stage, status, priority, planned_start_date, planned_end_date, notes, created_at)
-       VALUES ($1, $2, $3, $4, $5, NULL, 'completed'::mfg_order_status,
-               'medium', $6, $7, $8, $9)
-       ON CONFLICT (id) DO NOTHING`,
-      [
-        id,
-        `${FAT_PREFIX}ORD-${key}`,
-        `${FAT_PREFIX}BAT-${key}`,
-        FAT_IDS.masters.model,
-        "FAT E2E Report Boundary",
-        "2026-09-08",
-        "2026-09-08",
-        `${FAT_PREFIX} production report boundary ${key}`,
-        createdAt,
-      ],
-    );
-  }
-}
-
 async function runReportsAndDashboard(): Promise<void> {
-  await ensureReportBoundaryOrders();
   const manifest = JSON.parse(await readFile(FAT_MANIFEST_PATH, "utf8")) as {
     recordCounts: Record<string, number>;
     expectations: Record<string, number | boolean>;

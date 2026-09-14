@@ -805,6 +805,33 @@ async function seedManufacturing(client: SqlClient): Promise<void> {
       [orderId, componentType, componentId, componentName, quantity, serial, `${FAT_PREFIX}genealogy`],
     );
   }
+  const reportWindow = FAT_FIXTURE_CONTRACT.reports.productionDateWindow;
+  const reportBoundaryOrders = [
+    [reportWindow.boundaryOrders.before.id, "REPORT-BEFORE", reportWindow.boundaryOrders.before.createdAt],
+    [reportWindow.boundaryOrders.inside.id, "REPORT-INSIDE", reportWindow.boundaryOrders.inside.createdAt],
+    [reportWindow.boundaryOrders.after.id, "REPORT-AFTER", reportWindow.boundaryOrders.after.createdAt],
+  ] as const;
+  for (const [id, key, createdAt] of reportBoundaryOrders) {
+    await query(
+      client,
+      `INSERT INTO mfg_production_orders
+        (id, order_number, battery_number, product_id, factory_manager,
+         current_stage, status, priority, planned_start_date, planned_end_date, notes, created_at)
+       VALUES ($1, $2, $3, $4, $5, NULL, 'completed'::mfg_order_status,
+               'medium', $6, $7, $8, $9)`,
+      [
+        id,
+        orderNumber(key),
+        batteryNumber(key),
+        FAT_IDS.masters.model,
+        "FAT E2E Report Boundary",
+        DATE,
+        DATE,
+        `${FAT_PREFIX} production report boundary ${key}`,
+        createdAt,
+      ],
+    );
+  }
   await query(
     client,
     `INSERT INTO mfg_battery_timeline

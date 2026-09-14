@@ -1,12 +1,12 @@
 # FAT Journey Evidence
 
-- Run: 2026-09-14T00:49:51.287Z
+- Run: 2026-09-12T03:08:27.801Z
 - Environment: http://localhost:8080
 - Dataset: FAT-E2E-
 - Frozen tag: FAT-CANDIDATE-2026-09-08
 - Frozen commit: 60564b1b49b76ce0b97e46d1de65a7325ef50ba7
 - Password evidence: omitted; supplied only through FAT_TEST_PASSWORD
-- Result: 69 PASS / 0 FAIL
+- Result: 62 PASS / 0 FAIL
 
 | Case | Area | Role | Method | Path | Status | Result |
 |---|---|---|---|---|---:|---|
@@ -33,13 +33,6 @@
 | RPT-N01 | reports | operator | GET | `/api/reports/executive` | 403 | **PASS** |
 | RPT-N01 | reports | viewer | GET | `/api/reports/executive` | 403 | **PASS** |
 | RPT-N01 | reports | dealer | GET | `/api/reports/executive` | 403 | **PASS** |
-| RPT-SHAPE | reports-shape | director | ASSERT | `/api/reports/executive` | 0 | **PASS** |
-| RPT-SHAPE | reports-shape | director | ASSERT | `/api/reports/production` | 0 | **PASS** |
-| RPT-SHAPE | reports-shape | director | ASSERT | `/api/reports/cells` | 0 | **PASS** |
-| RPT-SHAPE | reports-shape | director | ASSERT | `/api/reports/quality` | 0 | **PASS** |
-| RPT-SHAPE | reports-shape | director | ASSERT | `/api/reports/inventory` | 0 | **PASS** |
-| RPT-SHAPE | reports-shape | director | ASSERT | `/api/reports/logistics` | 0 | **PASS** |
-| RPT-SHAPE | reports-shape | director | ASSERT | `/api/dashboard/director` | 0 | **PASS** |
 | RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/executive` | 0 | **PASS** |
 | RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/executive` | 0 | **PASS** |
 | RPT-P01 | reports-reconciliation | director | ASSERT | `/api/reports/executive` | 0 | **PASS** |
