@@ -39,6 +39,7 @@ import dashboardRouter from "./dashboard/index";
 import reportsRouter from "./reports/index";
 import developerRouter from "./developer/index";
 import procurementRouter from "./procurement/index";
+import genealogyRouter from "./genealogy";
 
 const router: IRouter = Router();
 
@@ -48,6 +49,11 @@ router.use("/auth", authRouter);
 
 // ─── All routes below require a valid session ─────────────────────────────────
 router.use(requireAuth);
+
+// Phase 8 genealogy is an authenticated read-only tracing surface. Mount it
+// before the factory-role denial so every authenticated role, including viewer,
+// can perform the floor-level trace defined by D-gen-1/D-gen-4.
+router.use("/genealogy", genealogyRouter);
 
 // Fulfillment — Dealer portal (read-only projection for dealer-role users).
 // Mounted BEFORE denyDealerFactoryAccess so dealer accounts can reach their own
