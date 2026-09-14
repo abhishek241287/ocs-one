@@ -282,3 +282,17 @@ mtime_ms = 1789320831418
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/633112a5-c421-40aa-a7e4-2edd9f3de030/df672c66-cb12-4dc6-b548-13c3ed3ebca0"
 storage_version_token = "1789320845011488"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "yFYgFjaWURn0RUBpKZb9E"
+uri = "file://certification/fat-evidence/task-b2-bms-baseline-2026-09-14.md"
+type = "text"
+title = "B2 BMS Baseline Trace — 2026-09-14"
+description = "Read-only baseline verification, full BMS inventory ledger trace, source-document lookups, and recursive evidence grep. No seed, reset, teardown, or database writes were performed."
+logical_id = "e5619bdc-8025-4c2a-a59a-86559eb4ff0b"
+content_hash = "sha256:d1e7b9476e3b4d181c1e6531d25509bd1824988165c61eddce86bd5ee82f3ed2"
+size = 21386
+mtime_ms = 1789349052813
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:ea6808d5-6430-4e7b-99b8-faa3b9535ced/e5619bdc-8025-4c2a-a59a-86559eb4ff0b/5a7f1e1a-3a10-4088-b5db-b37c228841ca"
+storage_version_token = "1789349296047933"
+content_type = "text/markdown"
