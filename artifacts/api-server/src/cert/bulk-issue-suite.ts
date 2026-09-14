@@ -298,6 +298,69 @@ async function bulk(orderId: string, key: string, notes?: string): Promise<{ sta
   return api("POST", `/api/manufacturing/orders/${orderId}/issues/bulk`, notes === undefined ? undefined : { notes }, key);
 }
 
+async function assertBulkAtomicEvidence(batchId: string, expectedPairs: number): Promise<void> {
+  const pairs = await query<{
+    issue_id: string;
+    source_line_id: string;
+    lot_id: string;
+    negative_count: string;
+    positive_count: string;
+    negative_qty: string;
+    positive_qty: string;
+  }>(
+    `SELECT
+       it.source_document_id AS issue_id,
+       it.source_line_id,
+       it.lot_id,
+       count(*) FILTER (
+         WHERE it.transaction_type = 'PRODUCTION_ISSUE'
+           AND it.stock_state = 'available'
+           AND it.quantity < 0
+       ) AS negative_count,
+       count(*) FILTER (
+         WHERE it.transaction_type = 'WIP_RECEIPT'
+           AND it.stock_state = 'wip'
+           AND it.quantity > 0
+       ) AS positive_count,
+       coalesce(sum(it.quantity) FILTER (
+         WHERE it.transaction_type = 'PRODUCTION_ISSUE'
+           AND it.stock_state = 'available'
+       ), 0) AS negative_qty,
+       coalesce(sum(it.quantity) FILTER (
+         WHERE it.transaction_type = 'WIP_RECEIPT'
+           AND it.stock_state = 'wip'
+       ), 0) AS positive_qty
+     FROM inventory_transactions it
+     JOIN bulk_batch_lines bbl ON bbl.wip_issue_note_id = it.source_document_id
+     WHERE bbl.batch_id = $1
+     GROUP BY it.source_document_id, it.source_line_id, it.lot_id`,
+    [batchId],
+  );
+  assert(pairs.length === expectedPairs, `G5 expected ${expectedPairs} ledger pairs, found ${pairs.length}`);
+  for (const pair of pairs) {
+    assert(
+      pair.negative_count === "1" &&
+        pair.positive_count === "1" &&
+        Number(pair.negative_qty) < 0 &&
+        Number(pair.positive_qty) > 0 &&
+        Math.abs(Number(pair.negative_qty)) === Number(pair.positive_qty),
+      `G5 ledger pair is not balanced: ${JSON.stringify(pair)}`,
+    );
+  }
+  console.log("G5 ledger pairs: PASS");
+
+  const outbox = await query<{ n: string }>(
+    `SELECT count(*) AS n
+       FROM outbox_events
+      WHERE aggregate_type = 'bulk_batch'
+        AND aggregate_id = $1
+        AND event_type = 'BULK_ISSUE_CREATED'`,
+    [batchId],
+  );
+  assert(outbox[0]?.n === "1", `G9 expected one BULK_ISSUE_CREATED event, found ${outbox[0]?.n ?? "0"}`);
+  console.log("G9 single bulk outbox event: PASS");
+}
+
 async function main(): Promise<void> {
   await login();
   await setupBom();
@@ -305,11 +368,13 @@ async function main(): Promise<void> {
     await runCase("T01 full BOM issue", 4, async (f) => {
       const r = await bulk(f.orderId, `${prefix}-T01`);
       assert(r.status === 201 && r.body.lines?.length === 1, `T01 unexpected response ${r.status}: ${JSON.stringify(r.body)}`);
+      await assertBulkAtomicEvidence(r.body.id, r.body.lines.reduce((sum: number, line: any) => sum + line.lots.length, 0));
     });
     await runCase("T02 duplicate-material aggregation", 4, async (f) => {
       const r = await bulk(f.orderId, `${prefix}-T02`);
       assert(r.status === 201, `T02 HTTP ${r.status}`);
       assert(r.body.lines[0].source_bom_line_refs.length === 2, "T02 did not preserve both BOM references");
+      await assertBulkAtomicEvidence(r.body.id, r.body.lines.reduce((sum: number, line: any) => sum + line.lots.length, 0));
       const count = (await query<{ n: string }>(
         "SELECT count(*) AS n FROM inventory_reservations WHERE production_order_id = $1",
         [f.orderId],
