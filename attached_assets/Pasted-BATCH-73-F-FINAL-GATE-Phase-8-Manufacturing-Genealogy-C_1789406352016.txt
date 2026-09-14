@@ -1,0 +1,145 @@
+BATCH 73-F (FINAL GATE) — Phase 8 Manufacturing Genealogy: Certification
+
+Task 73 · APPLY ON WORKING TREE · dev DB only · NO COMMIT · append-only evidence.
+
+Authority: Phase 8 ratification; 73-A/B/C certified; 73-D certified with
+
+traversals carried forward HERE as mandatory. 73-E (TraceabilityPage console)
+
+is an optional fast-follow AFTER this gate (72-D precedent) — not required
+
+for Phase 8 certification.
+
+═══════════════════════════════════════════════════════════════════════════
+
+PART 1 — THE GENEALOGY BATTERY (builds the full fixture chain; the carried-
+
+forward traversals + the acceptance story). Permanent suite
+
+test:phase8-genealogy-battery; P73F- fixtures; isolated wall per 71-H rules.
+
+FIXTURE CHAIN ("one battery, fully traced"):
+
+supplier S → GRN (cell material, lot LOT-S1, attributes captured:
+
+capacity 280 Ah, chemistry LiFePO4 — the 71-H scenario-1 config) →
+
+reservation+allocation (FIFO) → issue TWO ways on ONE order: material A
+
+via single-issue, material B via certified bulk (72-A path) → partial
+
+consumption of A → QC-PASS completion → products row (battery_number
+
+indexed in serial_units) → dispatch NOT required (composition ends at
+
+product).
+
+MANDATORY TRAVERSALS (the 73-D carry-forward — all must PASS):
+
+GT-01 upstream: the order's inputs fully traced — BOTH the single-issued
+
+and bulk-issued materials, every hop carrying document_cited; bulk
+
+path traverses identically to single (via bulk_batch_lines)
+
+GT-02 downstream: LOT-S1 → its reservation/PO, wip issue, consumption,
+
+and (where applicable) transfer consumers — all cited
+
+GT-03 composition: by product_id AND by serial_number — consumed lots at
+
+lot level (D-73C-01), cell genealogy hops where present; NO
+
+component_serials (deferral respected — assert the field is absent)
+
+GT-04 recall: capacity < 270 Ah over the battery-cell template → matches
+
+carry typed values; a SECOND template out of scope returns zero
+
+matches (scoping proven); double-run determinism
+
+GT-05 citation completeness: across GT-01…04, zero edges lacking
+
+document_cited (INV-GEN-01 at the traversal layer)
+
+GT-06 serial round-trip: scan the product serial's QR → serial_units
+
+resolution → composition by that serial (73-B → 73-D integration)
+
+GT-07 reverse recall drill: given LOT-S1, downstream reaches the finished
+
+serial (the full upstream→downstream→composition triangle closes)
+
+INV-GEN FAMILY (new invariants — additive pack extension to 26/26):
+
+INV-GEN-01  every genealogy API edge resolves to an existing certified
+
+source document (query: edges whose cited document id does not
+
+exist in its cited table — run over a traversal capture table
+
+OR as a suite assertion over GT-01…04 responses; choose ONE
+
+canonical form and record it)
+
+INV-GEN-02  serial_units entries reference existing lots/captures/orders/
+
+products (FK integrity query — 0 violations)
+
+INV-GEN-03  products output rows reference completed orders and existing
+
+lots where lot-linked (0 violations)
+
+INV-GEN-04  recall determinism: same parameters, two executions, identical
+
+result hashes (suite assertion, recorded)
+
+═══════════════════════════════════════════════════════════════════════════
+
+PART 2 — FULL ISOLATED REGRESSION WALL (current-code, limiter-aware, never
+
+nested): reservation 15/15 · receiving 12/12 · phase4 17/17 · phase5 suites
+
+(70-G/H/I/J · FK 15/15) · phase6 suites incl. final gate (22/22) · phase7
+
+(bulk T01–T11 · deprecation B · migration C) · phase8 (serials S-01…S-10 ·
+
+genealogy API suite) · SS-02 (777+12) · SS-03 (13) · SS-04 (31/3w/0f) ·
+
+FAT preflight 67/67 + smoke 32/32 ×2 · MIN smoke · 26/26 invariants ·
+
+zero residue.
+
+═══════════════════════════════════════════════════════════════════════════
+
+PART 3 — PHASE 8 REPORT TEMPLATE
+
+Traversals GT-01…07 · INV-GEN 4/4 · Wall: all green · 26/26
+
+Delta (cumulative): serial_units + serial_status (+QR serial resolution);
+
+mfg_battery_genealogy finding + D-73C-01 deferral; genealogy router ×4;
+
+composition catalog; NO new movement (zero new ledger paths — Phase 8
+
+added identity + read traversals only)
+
+Adaptations: W3 fail-closed rule (no finished-product material mapping);
+
+serial-index teardown ordering; D-73C-01 serial-composition deferral;
+
+73-D traversal carry-forward resolved here
+
+Scorecard: Manufacturing genealogy PASS · project: 16 PASS / 1 PARTIAL /
+
+5 FAIL (remainder: FAT automation, valuation, dispatcher, camera-scan,
+
+admin UIs 71-G2/72-D/73-E)
+
+WHAT MUST NOT CHANGE: ❌ no writes in genealogy paths · ❌ no UI (73-E) ·
+
+❌ no D-73C-01 shortcut (no inferred serial edges) · ❌ no commit.
+
+NEXT: green gate → Phase 8 certified → owner: bank release, then optional
+
+73-E console or next program area (valuation / FAT automation / dispatcher).
