@@ -7,4 +7,5 @@ export * from "./inventory-scrap";
 export * from "./inventory-adjustments";
 export * from "./inventory-transfer-requests";
 export * from "./inventory-capture";
+export * from "./capture-config";
 export * as types from "./generated/types";

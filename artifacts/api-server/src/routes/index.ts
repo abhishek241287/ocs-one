@@ -17,6 +17,13 @@ import materialCategoryMasterRouter from "./masters/material-categories";
 import materialMasterRouter from "./masters/materials";
 import supplierMasterRouter from "./masters/suppliers";
 import materialWorkflowMasterRouter from "./masters/material-workflows";
+import unitMasterRouter from "./masters/units";
+import materialAttributeMasterRouter from "./masters/material-attributes";
+import attributeTemplateMasterRouter from "./masters/attribute-templates";
+import materialTemplateMappingRouter, {
+  resolveTemplateHandler,
+} from "./masters/material-template-mappings";
+import materialInventoryProfileRouter from "./masters/material-inventory-profiles";
 import inventoryRouter from "./inventory/index";
 import productsRouter from "./products/index";
 import packingRouter from "./packing/index";
@@ -70,6 +77,12 @@ router.use("/masters/material-categories", materialCategoryMasterRouter);
 router.use("/masters/materials", materialMasterRouter);
 router.use("/masters/suppliers", supplierMasterRouter);
 router.use("/masters/material-workflows", materialWorkflowMasterRouter);
+router.use("/masters/units", unitMasterRouter);
+router.use("/masters/material-attributes", materialAttributeMasterRouter);
+router.use("/masters/attribute-templates", attributeTemplateMasterRouter);
+router.use("/masters/material-template-mappings", materialTemplateMappingRouter);
+router.use("/masters/material-inventory-profiles", materialInventoryProfileRouter);
+router.get("/masters/resolve-template", resolveTemplateHandler);
 
 // Inventory Platform — Goods Receipt Notes + workflow assignment routing
 router.use("/inventory", inventoryRouter);
