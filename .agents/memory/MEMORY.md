@@ -65,3 +65,4 @@
 - [Transfer lifecycle invariants](transfer-lifecycle-invariants.md) — issue/receive share one idempotency column via phase prefixes; rejected requests need terminal conservation handling.
 - [Phase 6 fixed-lot residue](phase6-fixed-lot-residue.md) — an interrupted 71-H setup can leave LOT-R1 behind and block the next gate before teardown runs.
 - [FAT fixture code case](fat-fixture-case-convention.md) — uppercase primary fixture codes and lowercase Phase 6 codes need separate exact-prefix cleanup.
+- [FAT ledger provenance](fat-ledger-provenance.md) — seed GRN/inspection ledger anchors must carry the lot/warehouse used by later bulk issue rows, or material-only sums hide warehouse negatives.

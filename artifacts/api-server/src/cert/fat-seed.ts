@@ -550,6 +550,23 @@ async function seedInventoryPlatform(client: SqlClient): Promise<void> {
       FAT_IDS.procurement.bmsLine,
     ],
   );
+  await query(
+    client,
+    `UPDATE inventory_transactions
+     SET lot_id = $1, warehouse_id = $2, location_id = $3
+     WHERE material_id = $4
+       AND source_document_type IN ('GRN', 'INSPECTION')
+       AND source_document_id IN ($5, $6, $7)`,
+    [
+      FAT_IDS.inventory.bmsLot,
+      FAT_IDS.inventory.warehouse,
+      FAT_IDS.inventory.location,
+      FAT_IDS.masters.materialBms,
+      FAT_IDS.procurement.posted,
+      FAT_IDS.procurement.rejected,
+      FAT_IDS.procurement.inspection,
+    ],
+  );
 }
 
 async function seedCells(client: SqlClient): Promise<void> {
