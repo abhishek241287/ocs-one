@@ -75,10 +75,11 @@ type Downstream = {
   wip: DbRow[];
   consumptions: DbRow[];
   transfers: DbRow[];
+  outputs: DbRow[];
 };
 
 function emptyDownstream(): Downstream {
-  return { reservations: [], wip: [], consumptions: [], transfers: [] };
+  return { reservations: [], wip: [], consumptions: [], transfers: [], outputs: [] };
 }
 
 async function loadDownstream(lotIds: string[]): Promise<Map<string, Downstream>> {
@@ -86,7 +87,7 @@ async function loadDownstream(lotIds: string[]): Promise<Map<string, Downstream>
   for (const lotId of lotIds) result.set(lotId, emptyDownstream());
   if (lotIds.length === 0) return result;
 
-  const [reservationRows, wipRows, consumptionRows, transferRows] = await Promise.all([
+  const [reservationRows, wipRows, consumptionRows, transferRows, outputRows] = await Promise.all([
     rows(
       `SELECT
          ira.lot_id,
@@ -146,6 +147,23 @@ async function loadDownstream(lotIds: string[]): Promise<Map<string, Downstream>
        ORDER BY tl.lot_id, tr.created_at, tl.id`,
       [lotIds],
     ),
+    rows(
+      `SELECT
+         wi.lot_id,
+         wi.production_order_id,
+         p.id AS product_id,
+         p.official_product_serial AS serial_number,
+         su.id AS serial_unit_id
+       FROM wip_inventory wi
+       JOIN products p ON p.source_production_order_id = wi.production_order_id
+       LEFT JOIN serial_units su
+         ON su.product_id = p.id
+        AND su.production_order_id = wi.production_order_id
+       WHERE wi.lot_id = ANY($1::uuid[])
+         AND wi.consumed_qty > 0
+       ORDER BY wi.lot_id, p.created_at, p.id`,
+      [lotIds],
+    ),
   ]);
 
   for (const row of reservationRows) {
@@ -201,6 +219,18 @@ async function loadDownstream(lotIds: string[]): Promise<Map<string, Downstream>
       status: row.status,
       quantity: numify(row.quantity),
       document_cited: documentCited("transfer_line", String(row.transfer_line_id)),
+    });
+  }
+
+  for (const row of outputRows) {
+    const lot = result.get(String(row.lot_id));
+    if (!lot) continue;
+    lot.outputs.push({
+      production_order_id: row.production_order_id,
+      product_id: row.product_id,
+      serial_number: row.serial_number,
+      serial_unit_id: row.serial_unit_id,
+      document_cited: documentCited("product", String(row.product_id)),
     });
   }
 
@@ -269,13 +299,15 @@ router.get("/upstream", async (req: Request, res: Response): Promise<void> => {
        av.value_num,
        av.value_bool,
        av.value_date,
-       av.unit
+        av.unit,
+        bbl.id AS bulk_batch_line_id,
+        bb.id AS bulk_batch_id
      FROM wip_issue_notes win
      JOIN wip_issue_lines wil ON wil.wip_issue_note_id = win.id
      JOIN inventory_reservations ir
        ON ir.id = win.reservation_id
       AND ir.production_order_id = win.production_order_id
-     JOIN materials m ON m.id = ir.material_id
+      JOIN master_materials m ON m.id = ir.material_id
      JOIN inventory_reservation_allocations ira
        ON ira.id = wil.reservation_allocation_id
       AND ira.lot_id = wil.lot_id
@@ -292,6 +324,10 @@ router.get("/upstream", async (req: Request, res: Response): Promise<void> => {
      LEFT JOIN attribute_capture_values av
        ON av.capture_instance_id = ac.id
      LEFT JOIN attribute_definitions ad ON ad.id = av.attribute_id
+      LEFT JOIN bulk_batch_lines bbl
+        ON bbl.wip_issue_note_id = win.id
+      LEFT JOIN bulk_batches bb
+        ON bb.id = bbl.batch_id
      WHERE win.production_order_id = $1
      ORDER BY win.created_at, wil.created_at, wil.id, av.id`,
     [productionOrderId],
@@ -315,9 +351,18 @@ router.get("/upstream", async (req: Request, res: Response): Promise<void> => {
         },
         allocations: [],
         attributes: [],
+         bulk_issue: null,
       };
       inputs.set(inputKey, input);
     }
+
+     if (row.bulk_batch_line_id && !input.bulk_issue) {
+       input.bulk_issue = {
+         batch_id: row.bulk_batch_id,
+         batch_line_id: row.bulk_batch_line_id,
+         document_cited: documentCited("bulk_batch_line", String(row.bulk_batch_line_id)),
+       };
+     }
 
     const allocations = input.allocations as DbRow[];
     if (
@@ -344,7 +389,7 @@ router.get("/upstream", async (req: Request, res: Response): Promise<void> => {
         attribute_code: row.attribute_code,
         value:
           row.value_text ??
-          row.value_num ??
+           numify(row.value_num) ??
           row.value_bool ??
           row.value_date ??
           null,

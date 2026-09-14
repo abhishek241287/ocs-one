@@ -32,6 +32,7 @@
     "test:phase6-gate": "tsx src/cert/phase6-final-gate.ts",
     "test:phase8-serials": "tsx src/cert/phase8-serials.ts",
     "test:phase8-genealogy": "tsx src/cert/phase8-genealogy.ts",
+    "test:phase8-genealogy-battery": "tsx src/cert/phase8-genealogy.ts",
     "test:task72a-bulk-issue": "tsx src/cert/bulk-issue-suite.ts",
     "test:task72b-min-deprecation": "tsx src/cert/min-deprecation-suite.ts",
     "cert:fat:seed": "tsx src/cert/fat-seed.ts --action=seed",
