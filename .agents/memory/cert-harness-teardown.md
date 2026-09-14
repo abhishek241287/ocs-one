@@ -90,3 +90,19 @@ lot foreign key, leaving the fixture behind even though the route was correct.
 **How to apply:** in GRN certification cleanup, delete dependent outbox/audit/ledger rows,
 then generated `inventory_lots` by GRN-line relationship, then capture rows, GRNs, and
 controlled masters; finish with residual assertions.
+
+# Shared authentication limiter saturation
+
+Heavy certification suites that repeatedly call `/api/auth/login` or
+`/api/auth/register` can exhaust the API's shared in-memory limiter and produce
+misleading SS-02 validator failures as persistent 429s.
+
+**Why:** the authorization matrix hammers authentication endpoints across many
+principals; a manual pass can pass after an API restart, while the next validator
+run fails before reaching authorization assertions.
+
+**How to apply:** reuse authenticated sessions where possible, add deliberate
+backoff between heavy auth checks, and restart the API workflow between large
+validator passes when the limiter has already been saturated. Treat a failure
+showing only repeated auth-endpoint 429s as limiter state first, not an RBAC
+regression.
