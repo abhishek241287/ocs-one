@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { GrnLineCaptureValues } from './grnLineCaptureValues';
 import type { GrnLineItemInput } from './grnLineItemInput';
 
 export interface GrnInput {
@@ -18,4 +19,5 @@ export interface GrnInput {
   remarks?: string | null;
   /** @minItems 1 */
   lines: GrnLineItemInput[];
+  attribute_values?: GrnLineCaptureValues[];
 }

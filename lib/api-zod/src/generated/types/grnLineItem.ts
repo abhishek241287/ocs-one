@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { GrnInspectionStatus } from './grnInspectionStatus';
+import type { GrnLineCaptureProjection } from './grnLineCaptureProjection';
 import type { InventoryUom } from './inventoryUom';
 import type { LinkedMasterSummary } from './linkedMasterSummary';
 
@@ -35,5 +36,6 @@ export interface GrnLineItem {
   inspection_status?: GrnInspectionStatus | null;
   /** @nullable */
   remarks?: string | null;
+  capture?: GrnLineCaptureProjection | null;
   created_at: Date;
 }

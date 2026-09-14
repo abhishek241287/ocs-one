@@ -2896,6 +2896,737 @@ export interface PurchaseOrderCancelInput {
   reason: string;
 }
 
+export type CaptureLifecycleStatus = typeof CaptureLifecycleStatus[keyof typeof CaptureLifecycleStatus];
+
+
+export const CaptureLifecycleStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  RETIRED: 'RETIRED',
+} as const;
+
+export interface CaptureUnit {
+  id: string;
+  unit_code: string;
+  dimension: string;
+  canonical_unit: string;
+  conversion_factor: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCaptureUnitBody {
+  /**
+     * @minLength 1
+     * @maxLength 20
+     */
+  unit_code: string;
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  dimension: string;
+  /**
+     * @minLength 1
+     * @maxLength 20
+     */
+  canonical_unit: string;
+  /** @exclusiveMinimum 0 */
+  conversion_factor?: number;
+}
+
+export type UpsertCaptureUnitBody = CreateCaptureUnitBody & {
+  /** @maxLength 20 */
+  unit_code?: string;
+};
+
+export interface UpdateCaptureUnitBody {
+  active: boolean;
+}
+
+export type MaterialAttributeDataType = typeof MaterialAttributeDataType[keyof typeof MaterialAttributeDataType];
+
+
+export const MaterialAttributeDataType = {
+  TEXT: 'TEXT',
+  DECIMAL: 'DECIMAL',
+  INTEGER: 'INTEGER',
+  BOOLEAN: 'BOOLEAN',
+  DATE: 'DATE',
+  DATETIME: 'DATETIME',
+  DROPDOWN: 'DROPDOWN',
+} as const;
+
+export type MaterialAttributeScope = typeof MaterialAttributeScope[keyof typeof MaterialAttributeScope];
+
+
+export const MaterialAttributeScope = {
+  MATERIAL: 'MATERIAL',
+  LOT: 'LOT',
+  SERIAL: 'SERIAL',
+  RECEIPT_LINE: 'RECEIPT_LINE',
+  OPERATION: 'OPERATION',
+} as const;
+
+export interface MaterialAttribute {
+  id: string;
+  code: string;
+  name: string;
+  data_type: MaterialAttributeDataType;
+  scope: MaterialAttributeScope;
+  /** @nullable */
+  unit_code?: string | null;
+  /** @nullable */
+  allowed_units?: string[] | null;
+  /** @nullable */
+  precision?: number | null;
+  /** @nullable */
+  scale?: number | null;
+  /** @nullable */
+  min_value?: number | null;
+  /** @nullable */
+  max_value?: number | null;
+  /** @nullable */
+  allowed_values?: string[] | null;
+  /** @nullable */
+  regex?: string | null;
+  /** @nullable */
+  max_length?: number | null;
+  required_default?: boolean;
+  /** @nullable */
+  description?: string | null;
+  status: CaptureLifecycleStatus;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type CreateMaterialAttributeBodyDataType = typeof CreateMaterialAttributeBodyDataType[keyof typeof CreateMaterialAttributeBodyDataType];
+
+
+export const CreateMaterialAttributeBodyDataType = {
+  TEXT: 'TEXT',
+  DECIMAL: 'DECIMAL',
+  INTEGER: 'INTEGER',
+  BOOLEAN: 'BOOLEAN',
+  DATE: 'DATE',
+  DATETIME: 'DATETIME',
+  DROPDOWN: 'DROPDOWN',
+} as const;
+
+export type CreateMaterialAttributeBodyScope = typeof CreateMaterialAttributeBodyScope[keyof typeof CreateMaterialAttributeBodyScope];
+
+
+export const CreateMaterialAttributeBodyScope = {
+  MATERIAL: 'MATERIAL',
+  LOT: 'LOT',
+  SERIAL: 'SERIAL',
+  RECEIPT_LINE: 'RECEIPT_LINE',
+  OPERATION: 'OPERATION',
+} as const;
+
+export interface CreateMaterialAttributeBody {
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  code: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  data_type: CreateMaterialAttributeBodyDataType;
+  scope?: CreateMaterialAttributeBodyScope;
+  /**
+     * @maxLength 20
+     * @nullable
+     */
+  unit_code?: string | null;
+  /**
+     * @nullable
+     * @items.maxLength 20
+     */
+  allowed_units?: string[] | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  precision?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  scale?: number | null;
+  /** @nullable */
+  min_value?: number | null;
+  /** @nullable */
+  max_value?: number | null;
+  /**
+     * @nullable
+     * @items.maxLength 200
+     */
+  allowed_values?: string[] | null;
+  /**
+     * @maxLength 255
+     * @nullable
+     */
+  regex?: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  max_length?: number | null;
+  required_default?: boolean;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  description?: string | null;
+}
+
+export interface UpdateMaterialAttributeBody {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name?: string;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  description?: string | null;
+  /**
+     * @nullable
+     * @items.maxLength 200
+     */
+  allowed_values?: string[] | null;
+  required_default?: boolean;
+}
+
+export interface AttributeTemplate {
+  id: string;
+  code: string;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  status: CaptureLifecycleStatus;
+  /** @nullable */
+  created_by?: string | null;
+  created_at?: string;
+  /** @nullable */
+  updated_by?: string | null;
+  updated_at?: string;
+}
+
+export interface AttributeTemplateVersion {
+  id: string;
+  template_id: string;
+  /** @minimum 1 */
+  version_no: number;
+  status: CaptureLifecycleStatus;
+  effective_from: string;
+  /** @nullable */
+  effective_to?: string | null;
+  /** @nullable */
+  created_by?: string | null;
+  created_at: string;
+}
+
+export type AttributeTemplateDetail = AttributeTemplate & {
+  versions: AttributeTemplateVersion[];
+};
+
+export interface CreateAttributeTemplateBody {
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  code: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  description?: string | null;
+}
+
+export interface UpdateAttributeTemplateBody {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name?: string;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  description?: string | null;
+}
+
+export interface AttributeTemplateField {
+  id?: string;
+  attribute_id?: string;
+  attribute_code?: string;
+  name?: string;
+  data_type?: string;
+  required?: boolean;
+  sequence?: number;
+  /** @nullable */
+  default_value?: string | null;
+  /** @nullable */
+  allowed_values_override?: string[] | null;
+  /** @nullable */
+  unit_override?: string | null;
+}
+
+export type AttributeTemplateVersionDetail = AttributeTemplateVersion & {
+  attributes: AttributeTemplateField[];
+};
+
+export interface CreateAttributeTemplateVersionBody {
+  /** @minimum 1 */
+  version_no: number;
+  effective_from: string;
+  /** @nullable */
+  effective_to?: string | null;
+}
+
+export interface UpdateAttributeTemplateVersionBody {
+  effective_from?: string;
+  /** @nullable */
+  effective_to?: string | null;
+}
+
+export interface AddTemplateAttributeBody {
+  attribute_id: string;
+  required?: boolean;
+  /** @minimum 0 */
+  sequence?: number;
+  /** @nullable */
+  default_value?: string | null;
+  /**
+     * @nullable
+     * @items.maxLength 200
+     */
+  allowed_values_override?: string[] | null;
+  /**
+     * @maxLength 20
+     * @nullable
+     */
+  unit_override?: string | null;
+}
+
+export interface AttributeTemplatePreviewField {
+  attribute_code: string;
+  name: string;
+  data_type: string;
+  required: boolean;
+  sequence: number;
+  /** @nullable */
+  default_value?: string | null;
+  /** @nullable */
+  unit?: string | null;
+  /** @nullable */
+  allowed_values?: string[] | null;
+  /** @nullable */
+  min?: number | null;
+  /** @nullable */
+  max?: number | null;
+  /** @nullable */
+  precision?: number | null;
+  /** @nullable */
+  scale?: number | null;
+}
+
+export type AttributeTemplatePreviewGeneratedCsv = {
+  columns?: string[];
+};
+
+export interface AttributeTemplatePreview {
+  template_code: string;
+  version_no: number;
+  status: CaptureLifecycleStatus;
+  effective_from?: string;
+  /** @nullable */
+  effective_to?: string | null;
+  fields: AttributeTemplatePreviewField[];
+  generated_csv?: AttributeTemplatePreviewGeneratedCsv;
+  generated_csv_columns: string[];
+}
+
+export type MaterialTemplateMappingScope = typeof MaterialTemplateMappingScope[keyof typeof MaterialTemplateMappingScope];
+
+
+export const MaterialTemplateMappingScope = {
+  MATERIAL: 'MATERIAL',
+  CATEGORY: 'CATEGORY',
+} as const;
+
+export type MaterialTemplateMappingStatus = typeof MaterialTemplateMappingStatus[keyof typeof MaterialTemplateMappingStatus];
+
+
+export const MaterialTemplateMappingStatus = {
+  ACTIVE: 'ACTIVE',
+  RETIRED: 'RETIRED',
+} as const;
+
+export interface MaterialTemplateMapping {
+  id: string;
+  scope: MaterialTemplateMappingScope;
+  /** @nullable */
+  material_id?: string | null;
+  /** @nullable */
+  material_code?: string | null;
+  /** @nullable */
+  category_id?: string | null;
+  /** @nullable */
+  category_code?: string | null;
+  template_id: string;
+  /** @nullable */
+  template_code?: string | null;
+  status: MaterialTemplateMappingStatus;
+  effective_from: string;
+  /** @nullable */
+  effective_to?: string | null;
+  /** @nullable */
+  created_by?: string | null;
+  created_at: string;
+}
+
+export type CreateMaterialTemplateMappingBodyScope = typeof CreateMaterialTemplateMappingBodyScope[keyof typeof CreateMaterialTemplateMappingBodyScope];
+
+
+export const CreateMaterialTemplateMappingBodyScope = {
+  MATERIAL: 'MATERIAL',
+  CATEGORY: 'CATEGORY',
+} as const;
+
+export interface CreateMaterialTemplateMappingBody {
+  scope: CreateMaterialTemplateMappingBodyScope;
+  /** @nullable */
+  material_id?: string | null;
+  /** @nullable */
+  category_id?: string | null;
+  template_id: string;
+  effective_from?: string;
+  /** @nullable */
+  effective_to?: string | null;
+}
+
+export type UpdateMaterialTemplateMappingBodyStatus = typeof UpdateMaterialTemplateMappingBodyStatus[keyof typeof UpdateMaterialTemplateMappingBodyStatus];
+
+
+export const UpdateMaterialTemplateMappingBodyStatus = {
+  ACTIVE: 'ACTIVE',
+  RETIRED: 'RETIRED',
+} as const;
+
+export interface UpdateMaterialTemplateMappingBody {
+  status?: UpdateMaterialTemplateMappingBodyStatus;
+  /** @nullable */
+  effective_to?: string | null;
+}
+
+export type MaterialInventoryProfileTrackingMode = typeof MaterialInventoryProfileTrackingMode[keyof typeof MaterialInventoryProfileTrackingMode];
+
+
+export const MaterialInventoryProfileTrackingMode = {
+  NONE: 'NONE',
+  LOT: 'LOT',
+  SERIAL: 'SERIAL',
+  LOT_AND_SERIAL: 'LOT_AND_SERIAL',
+} as const;
+
+export interface MaterialInventoryProfile {
+  material_id: string;
+  tracking_mode: MaterialInventoryProfileTrackingMode;
+  /** @nullable */
+  updated_by?: string | null;
+  updated_at?: string;
+}
+
+export type UpsertMaterialInventoryProfileBodyTrackingMode = typeof UpsertMaterialInventoryProfileBodyTrackingMode[keyof typeof UpsertMaterialInventoryProfileBodyTrackingMode];
+
+
+export const UpsertMaterialInventoryProfileBodyTrackingMode = {
+  NONE: 'NONE',
+  LOT: 'LOT',
+  SERIAL: 'SERIAL',
+  LOT_AND_SERIAL: 'LOT_AND_SERIAL',
+} as const;
+
+export interface UpsertMaterialInventoryProfileBody {
+  tracking_mode: UpsertMaterialInventoryProfileBodyTrackingMode;
+}
+
+export type TemplateResolution = {
+  kind: 'OK';
+  template_id: string;
+  template_version_id: string;
+} | {
+  kind: 'NO_TEMPLATE';
+} | {
+  kind: 'ERROR';
+  reason: string;
+};
+
+export interface CanonicalAttributeValue {
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  attribute_code: string;
+  raw?: unknown;
+  value?: unknown;
+  /**
+     * @maxLength 20
+     * @nullable
+     */
+  supplied_unit?: string | null;
+}
+
+export interface GrnLineCaptureValues {
+  /** @minimum 1 */
+  line_number: number;
+  attributes: CanonicalAttributeValue[];
+}
+
+export type GrnLineCaptureProjectionFieldsItemValueOrigin = typeof GrnLineCaptureProjectionFieldsItemValueOrigin[keyof typeof GrnLineCaptureProjectionFieldsItemValueOrigin];
+
+
+export const GrnLineCaptureProjectionFieldsItemValueOrigin = {
+  EXPLICIT: 'EXPLICIT',
+  DEFAULT: 'DEFAULT',
+  NORMALIZED: 'NORMALIZED',
+} as const;
+
+export type GrnLineCaptureProjectionFieldsItem = {
+  attribute_code: string;
+  name: string;
+  data_type: string;
+  /** @nullable */
+  value_text?: string | null;
+  /** @nullable */
+  value_num?: number | null;
+  /** @nullable */
+  value_bool?: boolean | null;
+  /** @nullable */
+  value_date?: string | null;
+  /** @nullable */
+  unit?: string | null;
+  value_origin?: GrnLineCaptureProjectionFieldsItemValueOrigin;
+  /** @nullable */
+  display?: string | null;
+};
+
+export interface GrnLineCaptureProjection {
+  template_version_id: string;
+  template_id: string;
+  template_code: string;
+  version_no: number;
+  fields: GrnLineCaptureProjectionFieldsItem[];
+}
+
+export interface ImportCsvBody {
+  /**
+     * @minLength 1
+     * @maxLength 10000000
+     */
+  csv: string;
+  /** @maxLength 255 */
+  filename?: string;
+}
+
+export interface CaptureError {
+  attribute_code: string;
+  rule: string;
+  input?: unknown;
+  normalized?: unknown;
+  message: string;
+  row?: number;
+  column?: string;
+}
+
+export type ImportSessionStatus = typeof ImportSessionStatus[keyof typeof ImportSessionStatus];
+
+
+export const ImportSessionStatus = {
+  DRAFT: 'DRAFT',
+  VALIDATED: 'VALIDATED',
+  CONFIRMED: 'CONFIRMED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface ImportSession {
+  id: string;
+  import_number: string;
+  file_hash: string;
+  /** @nullable */
+  filename?: string | null;
+  template_version_id: string;
+  status: ImportSessionStatus;
+  total_rows: number;
+  valid_rows: number;
+  invalid_rows: number;
+  /** @nullable */
+  confirm_key?: string | null;
+  /** @nullable */
+  downstream_document_id?: string | null;
+  /** @nullable */
+  created_by?: string | null;
+  created_at?: string;
+}
+
+export type ImportRowRaw = { [key: string]: unknown };
+
+export type ImportRowCanonical = { [key: string]: unknown };
+
+export type ImportRowStatus = typeof ImportRowStatus[keyof typeof ImportRowStatus];
+
+
+export const ImportRowStatus = {
+  PENDING: 'PENDING',
+  VALID: 'VALID',
+  INVALID: 'INVALID',
+} as const;
+
+export interface ImportRow {
+  id: string;
+  row_number: number;
+  raw: ImportRowRaw;
+  canonical?: ImportRowCanonical;
+  status: ImportRowStatus;
+  /** @nullable */
+  errors?: CaptureError[] | null;
+  /** @nullable */
+  grn_line_id?: string | null;
+}
+
+export interface ImportDetail {
+  session: ImportSession;
+  rows: ImportRow[];
+}
+
+export interface EmptyObject { [key: string]: unknown }
+
+export interface ImportConfirmResponse {
+  import_session_id: string;
+  document_id: string;
+  replay: boolean;
+}
+
+export interface ScanSessionCreateBody {
+  supplier_id: string;
+  material_id?: string;
+  template_version_id?: string;
+}
+
+export interface ScanBody {
+  /**
+     * @minLength 1
+     * @maxLength 10000
+     */
+  payload: string;
+  /** @exclusiveMinimum 0 */
+  quantity?: number;
+  attributes?: CanonicalAttributeValue[];
+}
+
+export type ScanSessionStatus = typeof ScanSessionStatus[keyof typeof ScanSessionStatus];
+
+
+export const ScanSessionStatus = {
+  DRAFT: 'DRAFT',
+  READY: 'READY',
+  CONFIRMED: 'CONFIRMED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface ScanSession {
+  id: string;
+  session_number: string;
+  status: ScanSessionStatus;
+  supplier_id: string;
+  /** @nullable */
+  template_version_id?: string | null;
+  total: number;
+  ready: number;
+  unknown: number;
+  duplicate: number;
+  removed: number;
+  /** @nullable */
+  confirm_key?: string | null;
+  /** @nullable */
+  downstream_document_id?: string | null;
+  /** @nullable */
+  created_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  /** @nullable */
+  confirmed_at?: string | null;
+  /** @nullable */
+  cancelled_at?: string | null;
+}
+
+export type ScanItemState = typeof ScanItemState[keyof typeof ScanItemState];
+
+
+export const ScanItemState = {
+  SCANNED: 'SCANNED',
+  UNKNOWN: 'UNKNOWN',
+  RESOLVED: 'RESOLVED',
+  VALIDATED: 'VALIDATED',
+  READY: 'READY',
+  CONFIRMED: 'CONFIRMED',
+  REMOVED: 'REMOVED',
+} as const;
+
+export type ScanItemCanonical = { [key: string]: unknown };
+
+export interface ScanItem {
+  id: string;
+  item_number: number;
+  payload_raw: string;
+  /** @nullable */
+  entity_type?: string | null;
+  /** @nullable */
+  entity_id?: string | null;
+  state: ScanItemState;
+  /** @nullable */
+  material_id?: string | null;
+  /** @nullable */
+  lot_number?: string | null;
+  /** @nullable */
+  serial_number?: string | null;
+  /** @nullable */
+  quantity: number | null;
+  duplicate_scan_count: number;
+  attributes: CanonicalAttributeValue[];
+  canonical?: ScanItemCanonical;
+  /** @nullable */
+  errors?: CaptureError[] | null;
+  /** @nullable */
+  grn_line_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ScanSessionDetail {
+  session: ScanSession;
+  items: ScanItem[];
+}
+
+export interface ScanConfirmResponse {
+  scan_session_id: string;
+  document_id: string;
+  replay: boolean;
+}
+
 export type GrnStatus = typeof GrnStatus[keyof typeof GrnStatus];
 
 
@@ -2943,6 +3674,7 @@ export interface GrnLineItem {
   inspection_status?: GrnInspectionStatus | null;
   /** @nullable */
   remarks?: string | null;
+  capture?: GrnLineCaptureProjection | null;
   created_at: string;
 }
 
@@ -2997,6 +3729,7 @@ export interface GrnInput {
   remarks?: string | null;
   /** @minItems 1 */
   lines: GrnLineItemInput[];
+  attribute_values?: GrnLineCaptureValues[];
 }
 
 export interface CellStockLine {
@@ -3366,6 +4099,8 @@ export const StatusParamParameter = {
 export type PageParamParameter = number;
 
 export type PageSizeParamParameter = number;
+
+export type IdempotencyKeyHeaderParameter = string;
 
 export type ListProductMastersParams = {
 search?: SearchParamParameter;
@@ -3848,6 +4583,64 @@ export type ListMaterialWorkflowAssignments200 = {
   items: MaterialWorkflowAssignment[];
 };
 
+export type ListCaptureUnitsParams = {
+search?: SearchParamParameter;
+active?: boolean;
+};
+
+export type ListCaptureUnits200 = {
+  items: CaptureUnit[];
+};
+
+export type ListMaterialAttributesParams = {
+search?: SearchParamParameter;
+status?: StatusParamParameter;
+};
+
+export type ListMaterialAttributes200 = {
+  items: MaterialAttribute[];
+};
+
+export type ListAttributeTemplatesParams = {
+search?: SearchParamParameter;
+status?: StatusParamParameter;
+};
+
+export type ListAttributeTemplates200 = {
+  items: AttributeTemplate[];
+};
+
+export type ListAttributeTemplateVersions200 = {
+  items: AttributeTemplateVersion[];
+};
+
+export type ListMaterialTemplateMappingsParams = {
+scope?: ListMaterialTemplateMappingsScope;
+status?: StatusParamParameter;
+search?: SearchParamParameter;
+};
+
+export type ListMaterialTemplateMappingsScope = typeof ListMaterialTemplateMappingsScope[keyof typeof ListMaterialTemplateMappingsScope];
+
+
+export const ListMaterialTemplateMappingsScope = {
+  MATERIAL: 'MATERIAL',
+  CATEGORY: 'CATEGORY',
+} as const;
+
+export type ListMaterialTemplateMappings200 = {
+  items: MaterialTemplateMapping[];
+};
+
+export type ListMaterialInventoryProfiles200 = {
+  items: MaterialInventoryProfile[];
+};
+
+export type ResolveMaterialAttributeTemplateParams = {
+material_id?: string;
+date?: string;
+};
+
 export type ListPurchaseOrdersParams = {
 search?: SearchParamParameter;
 page?: PageParamParameter;
@@ -3895,6 +4688,11 @@ export type PutAwayGrn200 = {
 
 export type ListGrnTransactions200 = {
   items: InventoryTransaction[];
+};
+
+export type DownloadInventoryImportTemplateParams = {
+material_id: string;
+template_version_id?: string;
 };
 
 export type ListInspectionsParams = {

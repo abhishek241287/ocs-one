@@ -17,8 +17,10 @@ import {
 } from "@/components/ui/select";
 import { ChevronLeft, Plus, Trash2, Loader2 } from "lucide-react";
 import { useOdsNotify } from "@/hooks/use-ods-notify";
+import { useAuth } from "@/hooks/use-auth";
 import { ModuleHeader } from "@/components/ods";
 import { Link, useLocation } from "wouter";
+import InventoryInputTabs from "../components/InventoryInput/InventoryInputTabs";
 
 type LineDraft = { material_id: string; quantity_received: string; supplier_lot_number: string };
 
@@ -39,6 +41,8 @@ const WORKFLOW_LABEL: Record<string, string> = {
 export default function GrnCreatePage() {
   const notify = useOdsNotify();
   const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const canSubmit = user?.role === "supervisor" || user?.role === "director" || user?.role === "owner";
 
   const [supplierId, setSupplierId] = useState("");
   const [receivedDate, setReceivedDate] = useState(() => new Date().toISOString().split("T")[0]);
@@ -127,7 +131,7 @@ export default function GrnCreatePage() {
       notify.success(`GRN ${created.grn_number} created as draft`);
       navigate(`/inventory/grns/${created.id}`);
     } catch (e: any) {
-      notify.error(e?.response?.data?.error ?? "Failed to create GRN");
+      notify.error(e?.data?.error ?? "Failed to create GRN");
     }
   };
 
@@ -155,7 +159,7 @@ export default function GrnCreatePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-xs">Supplier *</Label>
-                <Select value={supplierId} onValueChange={setSupplierId}>
+                <Select value={supplierId} onValueChange={setSupplierId} disabled={!canSubmit}>
                   <SelectTrigger><SelectValue placeholder="Select supplier…" /></SelectTrigger>
                   <SelectContent>
                     {supplierOptions.map((s: any) => (
@@ -168,15 +172,15 @@ export default function GrnCreatePage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Received Date *</Label>
-                <Input type="date" value={receivedDate} onChange={(e) => setReceivedDate(e.target.value)} />
+                <Input type="date" value={receivedDate} onChange={(e) => setReceivedDate(e.target.value)} disabled={!canSubmit} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Invoice Number</Label>
-                <Input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="Supplier invoice no." />
+                <Input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="Supplier invoice no." disabled={!canSubmit} />
               </div>
               <div className="space-y-1.5 md:col-span-2">
                 <Label className="text-xs">Remarks</Label>
-                <Input value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Optional" />
+                <Input value={remarks} onChange={(e) => setRemarks(e.target.value)} placeholder="Optional" disabled={!canSubmit} />
               </div>
             </div>
           </CardContent>
@@ -186,7 +190,7 @@ export default function GrnCreatePage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm">Line Items</CardTitle>
-              <Button size="sm" variant="outline" onClick={addLine} className="gap-1 h-8 text-xs">
+              <Button size="sm" variant="outline" onClick={addLine} className="gap-1 h-8 text-xs" disabled={!canSubmit}>
                 <Plus className="h-3 w-3" /> Add Line
               </Button>
             </div>
@@ -204,6 +208,7 @@ export default function GrnCreatePage() {
                       <Select
                         value={line.material_id}
                         onValueChange={(v) => updateLine(idx, { material_id: v })}
+                        disabled={!canSubmit}
                       >
                         <SelectTrigger><SelectValue placeholder="Select material…" /></SelectTrigger>
                         <SelectContent>
@@ -224,6 +229,7 @@ export default function GrnCreatePage() {
                         value={line.quantity_received}
                         onChange={(e) => updateLine(idx, { quantity_received: e.target.value })}
                         placeholder="0"
+                        disabled={!canSubmit}
                       />
                     </div>
                     <div className="col-span-3 space-y-1.5">
@@ -232,6 +238,7 @@ export default function GrnCreatePage() {
                         value={line.supplier_lot_number}
                         onChange={(e) => updateLine(idx, { supplier_lot_number: e.target.value })}
                         placeholder="Optional"
+                        disabled={!canSubmit}
                       />
                     </div>
                     <div className="col-span-1 space-y-1.5">
@@ -243,7 +250,7 @@ export default function GrnCreatePage() {
                         size="icon"
                         variant="ghost"
                         className="h-9 w-9 text-red-500"
-                        disabled={lines.length === 1}
+                        disabled={!canSubmit || lines.length === 1}
                         onClick={() => removeLine(idx)}
                         title="Remove line"
                       >
@@ -306,11 +313,27 @@ export default function GrnCreatePage() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader><CardTitle className="text-sm">Capture channel</CardTitle></CardHeader>
+          <CardContent>
+            <InventoryInputTabs
+              supplierId={supplierId}
+              receivedDate={receivedDate}
+              invoiceNumber={invoiceNumber}
+              remarks={remarks}
+              lines={lines}
+              materials={materialList}
+              onLineChange={updateLine}
+              onSubmitted={(documentId) => navigate(`/inventory/grns/${documentId}`)}
+            />
+          </CardContent>
+        </Card>
+
         <div className="flex justify-end gap-2">
           <Link href="/inventory/grns">
             <Button variant="outline">Cancel</Button>
           </Link>
-          <Button onClick={handleSubmit} disabled={createGrn.isPending}>
+          <Button onClick={handleSubmit} disabled={!canSubmit || createGrn.isPending}>
             {createGrn.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             Create Draft GRN
           </Button>

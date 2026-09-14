@@ -7197,6 +7197,819 @@ export const UpsertMaterialWorkflowAssignmentResponse = zod.object({
 })
 
 
+export const ListCaptureUnitsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "active": zod.coerce.boolean().optional()
+})
+
+export const ListCaptureUnitsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "unit_code": zod.string(),
+  "dimension": zod.string(),
+  "canonical_unit": zod.string(),
+  "conversion_factor": zod.number(),
+  "active": zod.boolean(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+}))
+})
+
+
+export const createCaptureUnitBodyUnitCodeMax = 20;
+
+export const createCaptureUnitBodyDimensionMax = 50;
+
+export const createCaptureUnitBodyCanonicalUnitMax = 20;
+
+export const createCaptureUnitBodyConversionFactorDefault = 1;
+export const createCaptureUnitBodyConversionFactorExclusiveMin = 0;
+
+
+
+export const CreateCaptureUnitBody = zod.object({
+  "unit_code": zod.string().min(1).max(createCaptureUnitBodyUnitCodeMax),
+  "dimension": zod.string().min(1).max(createCaptureUnitBodyDimensionMax),
+  "canonical_unit": zod.string().min(1).max(createCaptureUnitBodyCanonicalUnitMax),
+  "conversion_factor": zod.number().gt(createCaptureUnitBodyConversionFactorExclusiveMin).default(createCaptureUnitBodyConversionFactorDefault)
+})
+
+export const CreateCaptureUnitResponse = zod.object({
+  "id": zod.string().uuid(),
+  "unit_code": zod.string(),
+  "dimension": zod.string(),
+  "canonical_unit": zod.string(),
+  "conversion_factor": zod.number(),
+  "active": zod.boolean(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const GetCaptureUnitParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetCaptureUnitResponse = zod.object({
+  "id": zod.string().uuid(),
+  "unit_code": zod.string(),
+  "dimension": zod.string(),
+  "canonical_unit": zod.string(),
+  "conversion_factor": zod.number(),
+  "active": zod.boolean(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const UpdateCaptureUnitStatusParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateCaptureUnitStatusBody = zod.object({
+  "active": zod.boolean()
+})
+
+export const UpdateCaptureUnitStatusResponse = zod.object({
+  "id": zod.string().uuid(),
+  "unit_code": zod.string(),
+  "dimension": zod.string(),
+  "canonical_unit": zod.string(),
+  "conversion_factor": zod.number(),
+  "active": zod.boolean(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const upsertCaptureUnitPathIdMax = 20;
+
+
+
+export const UpsertCaptureUnitParams = zod.object({
+  "id": zod.coerce.string().max(upsertCaptureUnitPathIdMax)
+})
+
+export const upsertCaptureUnitBodyOneUnitCodeMax = 20;
+
+export const upsertCaptureUnitBodyOneDimensionMax = 50;
+
+export const upsertCaptureUnitBodyOneCanonicalUnitMax = 20;
+
+export const upsertCaptureUnitBodyOneConversionFactorDefault = 1;
+export const upsertCaptureUnitBodyOneConversionFactorExclusiveMin = 0;
+
+export const upsertCaptureUnitBodyTwoUnitCodeMax = 20;
+
+
+
+export const UpsertCaptureUnitBody = zod.object({
+  "unit_code": zod.string().min(1).max(upsertCaptureUnitBodyOneUnitCodeMax),
+  "dimension": zod.string().min(1).max(upsertCaptureUnitBodyOneDimensionMax),
+  "canonical_unit": zod.string().min(1).max(upsertCaptureUnitBodyOneCanonicalUnitMax),
+  "conversion_factor": zod.number().gt(upsertCaptureUnitBodyOneConversionFactorExclusiveMin).default(upsertCaptureUnitBodyOneConversionFactorDefault)
+}).and(zod.object({
+  "unit_code": zod.string().max(upsertCaptureUnitBodyTwoUnitCodeMax)
+}))
+
+export const UpsertCaptureUnitResponse = zod.object({
+  "id": zod.string().uuid(),
+  "unit_code": zod.string(),
+  "dimension": zod.string(),
+  "canonical_unit": zod.string(),
+  "conversion_factor": zod.number(),
+  "active": zod.boolean(),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date()
+})
+
+
+export const ListMaterialAttributesQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.enum(['active', 'inactive']).optional()
+})
+
+export const ListMaterialAttributesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "data_type": zod.enum(['TEXT', 'DECIMAL', 'INTEGER', 'BOOLEAN', 'DATE', 'DATETIME', 'DROPDOWN']),
+  "scope": zod.enum(['MATERIAL', 'LOT', 'SERIAL', 'RECEIPT_LINE', 'OPERATION']),
+  "unit_code": zod.string().nullish(),
+  "allowed_units": zod.array(zod.string()).nullish(),
+  "precision": zod.number().nullish(),
+  "scale": zod.number().nullish(),
+  "min_value": zod.number().nullish(),
+  "max_value": zod.number().nullish(),
+  "allowed_values": zod.array(zod.string()).nullish(),
+  "regex": zod.string().nullish(),
+  "max_length": zod.number().nullish(),
+  "required_default": zod.boolean().optional(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "created_at": zod.coerce.date().optional(),
+  "updated_at": zod.coerce.date().optional()
+}))
+})
+
+
+export const createMaterialAttributeBodyCodeMax = 60;
+
+export const createMaterialAttributeBodyNameMax = 120;
+
+export const createMaterialAttributeBodyScopeDefault = `RECEIPT_LINE`;
+export const createMaterialAttributeBodyUnitCodeMax = 20;
+
+export const createMaterialAttributeBodyAllowedUnitsItemMax = 20;
+
+
+export const createMaterialAttributeBodyScaleMin = 0;
+
+export const createMaterialAttributeBodyAllowedValuesItemMax = 200;
+
+export const createMaterialAttributeBodyRegexMax = 255;
+
+
+export const createMaterialAttributeBodyRequiredDefaultDefault = false;
+export const createMaterialAttributeBodyDescriptionMax = 500;
+
+
+
+export const CreateMaterialAttributeBody = zod.object({
+  "code": zod.string().min(1).max(createMaterialAttributeBodyCodeMax),
+  "name": zod.string().min(1).max(createMaterialAttributeBodyNameMax),
+  "data_type": zod.enum(['TEXT', 'DECIMAL', 'INTEGER', 'BOOLEAN', 'DATE', 'DATETIME', 'DROPDOWN']),
+  "scope": zod.enum(['MATERIAL', 'LOT', 'SERIAL', 'RECEIPT_LINE', 'OPERATION']).default(createMaterialAttributeBodyScopeDefault),
+  "unit_code": zod.string().max(createMaterialAttributeBodyUnitCodeMax).nullish(),
+  "allowed_units": zod.array(zod.string().max(createMaterialAttributeBodyAllowedUnitsItemMax)).nullish(),
+  "precision": zod.number().min(1).nullish(),
+  "scale": zod.number().min(createMaterialAttributeBodyScaleMin).nullish(),
+  "min_value": zod.number().nullish(),
+  "max_value": zod.number().nullish(),
+  "allowed_values": zod.array(zod.string().max(createMaterialAttributeBodyAllowedValuesItemMax)).nullish(),
+  "regex": zod.string().max(createMaterialAttributeBodyRegexMax).nullish(),
+  "max_length": zod.number().min(1).nullish(),
+  "required_default": zod.boolean().default(createMaterialAttributeBodyRequiredDefaultDefault),
+  "description": zod.string().max(createMaterialAttributeBodyDescriptionMax).nullish()
+})
+
+export const CreateMaterialAttributeResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "data_type": zod.enum(['TEXT', 'DECIMAL', 'INTEGER', 'BOOLEAN', 'DATE', 'DATETIME', 'DROPDOWN']),
+  "scope": zod.enum(['MATERIAL', 'LOT', 'SERIAL', 'RECEIPT_LINE', 'OPERATION']),
+  "unit_code": zod.string().nullish(),
+  "allowed_units": zod.array(zod.string()).nullish(),
+  "precision": zod.number().nullish(),
+  "scale": zod.number().nullish(),
+  "min_value": zod.number().nullish(),
+  "max_value": zod.number().nullish(),
+  "allowed_values": zod.array(zod.string()).nullish(),
+  "regex": zod.string().nullish(),
+  "max_length": zod.number().nullish(),
+  "required_default": zod.boolean().optional(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "created_at": zod.coerce.date().optional(),
+  "updated_at": zod.coerce.date().optional()
+})
+
+
+export const GetMaterialAttributeParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetMaterialAttributeResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "data_type": zod.enum(['TEXT', 'DECIMAL', 'INTEGER', 'BOOLEAN', 'DATE', 'DATETIME', 'DROPDOWN']),
+  "scope": zod.enum(['MATERIAL', 'LOT', 'SERIAL', 'RECEIPT_LINE', 'OPERATION']),
+  "unit_code": zod.string().nullish(),
+  "allowed_units": zod.array(zod.string()).nullish(),
+  "precision": zod.number().nullish(),
+  "scale": zod.number().nullish(),
+  "min_value": zod.number().nullish(),
+  "max_value": zod.number().nullish(),
+  "allowed_values": zod.array(zod.string()).nullish(),
+  "regex": zod.string().nullish(),
+  "max_length": zod.number().nullish(),
+  "required_default": zod.boolean().optional(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "created_at": zod.coerce.date().optional(),
+  "updated_at": zod.coerce.date().optional()
+})
+
+
+export const UpdateMaterialAttributeParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updateMaterialAttributeBodyNameMax = 120;
+
+export const updateMaterialAttributeBodyDescriptionMax = 500;
+
+export const updateMaterialAttributeBodyAllowedValuesItemMax = 200;
+
+
+
+export const UpdateMaterialAttributeBody = zod.object({
+  "name": zod.string().min(1).max(updateMaterialAttributeBodyNameMax).optional(),
+  "description": zod.string().max(updateMaterialAttributeBodyDescriptionMax).nullish(),
+  "allowed_values": zod.array(zod.string().max(updateMaterialAttributeBodyAllowedValuesItemMax)).nullish(),
+  "required_default": zod.boolean().optional()
+})
+
+export const UpdateMaterialAttributeResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "data_type": zod.enum(['TEXT', 'DECIMAL', 'INTEGER', 'BOOLEAN', 'DATE', 'DATETIME', 'DROPDOWN']),
+  "scope": zod.enum(['MATERIAL', 'LOT', 'SERIAL', 'RECEIPT_LINE', 'OPERATION']),
+  "unit_code": zod.string().nullish(),
+  "allowed_units": zod.array(zod.string()).nullish(),
+  "precision": zod.number().nullish(),
+  "scale": zod.number().nullish(),
+  "min_value": zod.number().nullish(),
+  "max_value": zod.number().nullish(),
+  "allowed_values": zod.array(zod.string()).nullish(),
+  "regex": zod.string().nullish(),
+  "max_length": zod.number().nullish(),
+  "required_default": zod.boolean().optional(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "created_at": zod.coerce.date().optional(),
+  "updated_at": zod.coerce.date().optional()
+})
+
+
+export const ActivateMaterialAttributeParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ActivateMaterialAttributeResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "data_type": zod.enum(['TEXT', 'DECIMAL', 'INTEGER', 'BOOLEAN', 'DATE', 'DATETIME', 'DROPDOWN']),
+  "scope": zod.enum(['MATERIAL', 'LOT', 'SERIAL', 'RECEIPT_LINE', 'OPERATION']),
+  "unit_code": zod.string().nullish(),
+  "allowed_units": zod.array(zod.string()).nullish(),
+  "precision": zod.number().nullish(),
+  "scale": zod.number().nullish(),
+  "min_value": zod.number().nullish(),
+  "max_value": zod.number().nullish(),
+  "allowed_values": zod.array(zod.string()).nullish(),
+  "regex": zod.string().nullish(),
+  "max_length": zod.number().nullish(),
+  "required_default": zod.boolean().optional(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "created_at": zod.coerce.date().optional(),
+  "updated_at": zod.coerce.date().optional()
+})
+
+
+export const RetireMaterialAttributeParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const RetireMaterialAttributeResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "data_type": zod.enum(['TEXT', 'DECIMAL', 'INTEGER', 'BOOLEAN', 'DATE', 'DATETIME', 'DROPDOWN']),
+  "scope": zod.enum(['MATERIAL', 'LOT', 'SERIAL', 'RECEIPT_LINE', 'OPERATION']),
+  "unit_code": zod.string().nullish(),
+  "allowed_units": zod.array(zod.string()).nullish(),
+  "precision": zod.number().nullish(),
+  "scale": zod.number().nullish(),
+  "min_value": zod.number().nullish(),
+  "max_value": zod.number().nullish(),
+  "allowed_values": zod.array(zod.string()).nullish(),
+  "regex": zod.string().nullish(),
+  "max_length": zod.number().nullish(),
+  "required_default": zod.boolean().optional(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "created_at": zod.coerce.date().optional(),
+  "updated_at": zod.coerce.date().optional()
+})
+
+
+export const ListAttributeTemplatesQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.enum(['active', 'inactive']).optional()
+})
+
+export const ListAttributeTemplatesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date().optional()
+}))
+})
+
+
+export const createAttributeTemplateBodyCodeMax = 60;
+
+export const createAttributeTemplateBodyNameMax = 120;
+
+export const createAttributeTemplateBodyDescriptionMax = 500;
+
+
+
+export const CreateAttributeTemplateBody = zod.object({
+  "code": zod.string().min(1).max(createAttributeTemplateBodyCodeMax),
+  "name": zod.string().min(1).max(createAttributeTemplateBodyNameMax),
+  "description": zod.string().max(createAttributeTemplateBodyDescriptionMax).nullish()
+})
+
+export const CreateAttributeTemplateResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date().optional()
+})
+
+
+export const GetAttributeTemplateParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+
+
+
+export const GetAttributeTemplateResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date().optional()
+}).and(zod.object({
+  "versions": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "template_id": zod.string().uuid(),
+  "version_no": zod.number().min(1),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "effective_from": zod.coerce.date(),
+  "effective_to": zod.coerce.date().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+}))
+}))
+
+
+export const UpdateAttributeTemplateParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const updateAttributeTemplateBodyNameMax = 120;
+
+export const updateAttributeTemplateBodyDescriptionMax = 500;
+
+
+
+export const UpdateAttributeTemplateBody = zod.object({
+  "name": zod.string().min(1).max(updateAttributeTemplateBodyNameMax).optional(),
+  "description": zod.string().max(updateAttributeTemplateBodyDescriptionMax).nullish()
+})
+
+export const UpdateAttributeTemplateResponse = zod.object({
+  "id": zod.string().uuid(),
+  "code": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional(),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date().optional()
+})
+
+
+export const ListAttributeTemplateVersionsParams = zod.object({
+  "templateId": zod.coerce.string().uuid()
+})
+
+
+
+
+export const ListAttributeTemplateVersionsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "template_id": zod.string().uuid(),
+  "version_no": zod.number().min(1),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "effective_from": zod.coerce.date(),
+  "effective_to": zod.coerce.date().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+}))
+})
+
+
+export const CreateAttributeTemplateVersionParams = zod.object({
+  "templateId": zod.coerce.string().uuid()
+})
+
+
+
+
+export const CreateAttributeTemplateVersionBody = zod.object({
+  "version_no": zod.number().min(1),
+  "effective_from": zod.coerce.date(),
+  "effective_to": zod.coerce.date().nullish()
+})
+
+
+
+
+export const CreateAttributeTemplateVersionResponse = zod.object({
+  "id": zod.string().uuid(),
+  "template_id": zod.string().uuid(),
+  "version_no": zod.number().min(1),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "effective_from": zod.coerce.date(),
+  "effective_to": zod.coerce.date().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+})
+
+
+export const GetAttributeTemplateVersionParams = zod.object({
+  "versionId": zod.coerce.string().uuid()
+})
+
+
+
+
+export const GetAttributeTemplateVersionResponse = zod.object({
+  "id": zod.string().uuid(),
+  "template_id": zod.string().uuid(),
+  "version_no": zod.number().min(1),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "effective_from": zod.coerce.date(),
+  "effective_to": zod.coerce.date().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+}).and(zod.object({
+  "attributes": zod.array(zod.object({
+  "id": zod.string().uuid().optional(),
+  "attribute_id": zod.string().uuid().optional(),
+  "attribute_code": zod.string().optional(),
+  "name": zod.string().optional(),
+  "data_type": zod.string().optional(),
+  "required": zod.boolean().optional(),
+  "sequence": zod.number().optional(),
+  "default_value": zod.string().nullish(),
+  "allowed_values_override": zod.array(zod.string()).nullish(),
+  "unit_override": zod.string().nullish()
+}))
+}))
+
+
+export const UpdateAttributeTemplateVersionParams = zod.object({
+  "versionId": zod.coerce.string().uuid()
+})
+
+export const UpdateAttributeTemplateVersionBody = zod.object({
+  "effective_from": zod.coerce.date().optional(),
+  "effective_to": zod.coerce.date().nullish()
+})
+
+
+
+
+export const UpdateAttributeTemplateVersionResponse = zod.object({
+  "id": zod.string().uuid(),
+  "template_id": zod.string().uuid(),
+  "version_no": zod.number().min(1),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "effective_from": zod.coerce.date(),
+  "effective_to": zod.coerce.date().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+})
+
+
+export const PreviewAttributeTemplateVersionParams = zod.object({
+  "versionId": zod.coerce.string().uuid()
+})
+
+export const PreviewAttributeTemplateVersionResponse = zod.object({
+  "template_code": zod.string(),
+  "version_no": zod.number(),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "effective_from": zod.coerce.date().optional(),
+  "effective_to": zod.coerce.date().nullish(),
+  "fields": zod.array(zod.object({
+  "attribute_code": zod.string(),
+  "name": zod.string(),
+  "data_type": zod.string(),
+  "required": zod.boolean(),
+  "sequence": zod.number(),
+  "default_value": zod.string().nullish(),
+  "unit": zod.string().nullish(),
+  "allowed_values": zod.array(zod.string()).nullish(),
+  "min": zod.number().nullish(),
+  "max": zod.number().nullish(),
+  "precision": zod.number().nullish(),
+  "scale": zod.number().nullish()
+})),
+  "generated_csv": zod.object({
+  "columns": zod.array(zod.string()).optional()
+}).optional(),
+  "generated_csv_columns": zod.array(zod.string())
+})
+
+
+export const AddAttributeTemplateVersionAttributeParams = zod.object({
+  "versionId": zod.coerce.string().uuid()
+})
+
+export const addAttributeTemplateVersionAttributeBodyRequiredDefault = false;
+export const addAttributeTemplateVersionAttributeBodySequenceDefault = 0;
+export const addAttributeTemplateVersionAttributeBodySequenceMin = 0;
+
+export const addAttributeTemplateVersionAttributeBodyAllowedValuesOverrideItemMax = 200;
+
+export const addAttributeTemplateVersionAttributeBodyUnitOverrideMax = 20;
+
+
+
+export const AddAttributeTemplateVersionAttributeBody = zod.object({
+  "attribute_id": zod.string().uuid(),
+  "required": zod.boolean().default(addAttributeTemplateVersionAttributeBodyRequiredDefault),
+  "sequence": zod.number().min(addAttributeTemplateVersionAttributeBodySequenceMin).default(addAttributeTemplateVersionAttributeBodySequenceDefault),
+  "default_value": zod.string().nullish(),
+  "allowed_values_override": zod.array(zod.string().max(addAttributeTemplateVersionAttributeBodyAllowedValuesOverrideItemMax)).nullish(),
+  "unit_override": zod.string().max(addAttributeTemplateVersionAttributeBodyUnitOverrideMax).nullish()
+})
+
+export const AddAttributeTemplateVersionAttributeResponse = zod.object({
+  "id": zod.string().uuid().optional(),
+  "attribute_id": zod.string().uuid().optional(),
+  "attribute_code": zod.string().optional(),
+  "name": zod.string().optional(),
+  "data_type": zod.string().optional(),
+  "required": zod.boolean().optional(),
+  "sequence": zod.number().optional(),
+  "default_value": zod.string().nullish(),
+  "allowed_values_override": zod.array(zod.string()).nullish(),
+  "unit_override": zod.string().nullish()
+})
+
+
+export const ActivateAttributeTemplateVersionParams = zod.object({
+  "versionId": zod.coerce.string().uuid()
+})
+
+
+
+
+export const ActivateAttributeTemplateVersionResponse = zod.object({
+  "id": zod.string().uuid(),
+  "template_id": zod.string().uuid(),
+  "version_no": zod.number().min(1),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "effective_from": zod.coerce.date(),
+  "effective_to": zod.coerce.date().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+})
+
+
+export const RetireAttributeTemplateVersionParams = zod.object({
+  "versionId": zod.coerce.string().uuid()
+})
+
+
+
+
+export const RetireAttributeTemplateVersionResponse = zod.object({
+  "id": zod.string().uuid(),
+  "template_id": zod.string().uuid(),
+  "version_no": zod.number().min(1),
+  "status": zod.enum(['DRAFT', 'ACTIVE', 'RETIRED']),
+  "effective_from": zod.coerce.date(),
+  "effective_to": zod.coerce.date().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+})
+
+
+export const ListMaterialTemplateMappingsQueryParams = zod.object({
+  "scope": zod.enum(['MATERIAL', 'CATEGORY']).optional(),
+  "status": zod.enum(['active', 'inactive']).optional(),
+  "search": zod.coerce.string().optional()
+})
+
+export const ListMaterialTemplateMappingsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "scope": zod.enum(['MATERIAL', 'CATEGORY']),
+  "material_id": zod.string().uuid().nullish(),
+  "material_code": zod.string().nullish(),
+  "category_id": zod.string().uuid().nullish(),
+  "category_code": zod.string().nullish(),
+  "template_id": zod.string().uuid(),
+  "template_code": zod.string().nullish(),
+  "status": zod.enum(['ACTIVE', 'RETIRED']),
+  "effective_from": zod.coerce.date(),
+  "effective_to": zod.coerce.date().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+}))
+})
+
+
+export const CreateMaterialTemplateMappingBody = zod.object({
+  "scope": zod.enum(['MATERIAL', 'CATEGORY']),
+  "material_id": zod.string().uuid().nullish(),
+  "category_id": zod.string().uuid().nullish(),
+  "template_id": zod.string().uuid(),
+  "effective_from": zod.coerce.date().optional(),
+  "effective_to": zod.coerce.date().nullish()
+})
+
+export const CreateMaterialTemplateMappingResponse = zod.object({
+  "id": zod.string().uuid(),
+  "scope": zod.enum(['MATERIAL', 'CATEGORY']),
+  "material_id": zod.string().uuid().nullish(),
+  "material_code": zod.string().nullish(),
+  "category_id": zod.string().uuid().nullish(),
+  "category_code": zod.string().nullish(),
+  "template_id": zod.string().uuid(),
+  "template_code": zod.string().nullish(),
+  "status": zod.enum(['ACTIVE', 'RETIRED']),
+  "effective_from": zod.coerce.date(),
+  "effective_to": zod.coerce.date().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+})
+
+
+export const GetMaterialTemplateMappingParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetMaterialTemplateMappingResponse = zod.object({
+  "id": zod.string().uuid(),
+  "scope": zod.enum(['MATERIAL', 'CATEGORY']),
+  "material_id": zod.string().uuid().nullish(),
+  "material_code": zod.string().nullish(),
+  "category_id": zod.string().uuid().nullish(),
+  "category_code": zod.string().nullish(),
+  "template_id": zod.string().uuid(),
+  "template_code": zod.string().nullish(),
+  "status": zod.enum(['ACTIVE', 'RETIRED']),
+  "effective_from": zod.coerce.date(),
+  "effective_to": zod.coerce.date().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+})
+
+
+export const UpdateMaterialTemplateMappingParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const UpdateMaterialTemplateMappingBody = zod.object({
+  "status": zod.enum(['ACTIVE', 'RETIRED']).optional(),
+  "effective_to": zod.coerce.date().nullish()
+})
+
+export const UpdateMaterialTemplateMappingResponse = zod.object({
+  "id": zod.string().uuid(),
+  "scope": zod.enum(['MATERIAL', 'CATEGORY']),
+  "material_id": zod.string().uuid().nullish(),
+  "material_code": zod.string().nullish(),
+  "category_id": zod.string().uuid().nullish(),
+  "category_code": zod.string().nullish(),
+  "template_id": zod.string().uuid(),
+  "template_code": zod.string().nullish(),
+  "status": zod.enum(['ACTIVE', 'RETIRED']),
+  "effective_from": zod.coerce.date(),
+  "effective_to": zod.coerce.date().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date()
+})
+
+
+export const ListMaterialInventoryProfilesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "material_id": zod.string().uuid(),
+  "tracking_mode": zod.enum(['NONE', 'LOT', 'SERIAL', 'LOT_AND_SERIAL']),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date().optional()
+}))
+})
+
+
+export const GetMaterialInventoryProfileParams = zod.object({
+  "materialId": zod.coerce.string().uuid()
+})
+
+export const GetMaterialInventoryProfileResponse = zod.object({
+  "material_id": zod.string().uuid(),
+  "tracking_mode": zod.enum(['NONE', 'LOT', 'SERIAL', 'LOT_AND_SERIAL']),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date().optional()
+})
+
+
+export const UpsertMaterialInventoryProfileParams = zod.object({
+  "materialId": zod.coerce.string().uuid()
+})
+
+export const UpsertMaterialInventoryProfileBody = zod.object({
+  "tracking_mode": zod.enum(['NONE', 'LOT', 'SERIAL', 'LOT_AND_SERIAL'])
+})
+
+export const UpsertMaterialInventoryProfileResponse = zod.object({
+  "material_id": zod.string().uuid(),
+  "tracking_mode": zod.enum(['NONE', 'LOT', 'SERIAL', 'LOT_AND_SERIAL']),
+  "updated_by": zod.string().uuid().nullish(),
+  "updated_at": zod.coerce.date().optional()
+})
+
+
+export const ResolveMaterialAttributeTemplateQueryParams = zod.object({
+  "material_id": zod.coerce.string().uuid().optional(),
+  "date": zod.date().optional()
+})
+
+export const ResolveMaterialAttributeTemplateResponse = zod.union([zod.object({
+  "kind": zod.enum(['OK']),
+  "template_id": zod.string().uuid(),
+  "template_version_id": zod.string().uuid()
+}),zod.object({
+  "kind": zod.enum(['NO_TEMPLATE'])
+}),zod.object({
+  "kind": zod.enum(['ERROR']),
+  "reason": zod.string()
+})])
+
+
 export const listPurchaseOrdersQueryPageDefault = 1;
 export const listPurchaseOrdersQueryPageSizeDefault = 25;
 
@@ -7769,6 +8582,11 @@ export const createGrnBodyLinesItemQuantityReceivedExclusiveMin = 0;
 
 
 
+export const createGrnBodyAttributeValuesItemAttributesItemAttributeCodeMax = 60;
+
+export const createGrnBodyAttributeValuesItemAttributesItemSuppliedUnitMax = 20;
+
+
 
 export const CreateGrnBody = zod.object({
   "supplier_id": zod.string().uuid(),
@@ -7782,7 +8600,16 @@ export const CreateGrnBody = zod.object({
   "quantity_received": zod.number().gt(createGrnBodyLinesItemQuantityReceivedExclusiveMin),
   "supplier_lot_number": zod.string().nullish(),
   "remarks": zod.string().nullish()
-})).min(1)
+})).min(1),
+  "attribute_values": zod.array(zod.object({
+  "line_number": zod.number().min(1),
+  "attributes": zod.array(zod.object({
+  "attribute_code": zod.string().min(1).max(createGrnBodyAttributeValuesItemAttributesItemAttributeCodeMax),
+  "raw": zod.unknown().optional(),
+  "value": zod.unknown().optional(),
+  "supplied_unit": zod.string().max(createGrnBodyAttributeValuesItemAttributesItemSuppliedUnitMax).nullish()
+}))
+})).optional()
 })
 
 export const CreateGrnResponse = zod.object({
@@ -7825,6 +8652,24 @@ export const CreateGrnResponse = zod.object({
   "put_away_qty": zod.number(),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
+  "capture": zod.union([zod.object({
+  "template_version_id": zod.string().uuid(),
+  "template_id": zod.string().uuid(),
+  "template_code": zod.string(),
+  "version_no": zod.number(),
+  "fields": zod.array(zod.object({
+  "attribute_code": zod.string(),
+  "name": zod.string(),
+  "data_type": zod.string(),
+  "value_text": zod.string().nullish(),
+  "value_num": zod.number().nullish(),
+  "value_bool": zod.boolean().nullish(),
+  "value_date": zod.coerce.date().nullish(),
+  "unit": zod.string().nullish(),
+  "value_origin": zod.enum(['EXPLICIT', 'DEFAULT', 'NORMALIZED']).optional(),
+  "display": zod.string().nullish()
+}))
+}),zod.null()]).optional(),
   "created_at": zod.coerce.date()
 }))
 }))
@@ -7874,6 +8719,24 @@ export const GetGrnResponse = zod.object({
   "put_away_qty": zod.number(),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
+  "capture": zod.union([zod.object({
+  "template_version_id": zod.string().uuid(),
+  "template_id": zod.string().uuid(),
+  "template_code": zod.string(),
+  "version_no": zod.number(),
+  "fields": zod.array(zod.object({
+  "attribute_code": zod.string(),
+  "name": zod.string(),
+  "data_type": zod.string(),
+  "value_text": zod.string().nullish(),
+  "value_num": zod.number().nullish(),
+  "value_bool": zod.boolean().nullish(),
+  "value_date": zod.coerce.date().nullish(),
+  "unit": zod.string().nullish(),
+  "value_origin": zod.enum(['EXPLICIT', 'DEFAULT', 'NORMALIZED']).optional(),
+  "display": zod.string().nullish()
+}))
+}),zod.null()]).optional(),
   "created_at": zod.coerce.date()
 }))
 }))
@@ -7930,6 +8793,24 @@ export const PostGrnResponse = zod.object({
   "put_away_qty": zod.number(),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
+  "capture": zod.union([zod.object({
+  "template_version_id": zod.string().uuid(),
+  "template_id": zod.string().uuid(),
+  "template_code": zod.string(),
+  "version_no": zod.number(),
+  "fields": zod.array(zod.object({
+  "attribute_code": zod.string(),
+  "name": zod.string(),
+  "data_type": zod.string(),
+  "value_text": zod.string().nullish(),
+  "value_num": zod.number().nullish(),
+  "value_bool": zod.boolean().nullish(),
+  "value_date": zod.coerce.date().nullish(),
+  "unit": zod.string().nullish(),
+  "value_origin": zod.enum(['EXPLICIT', 'DEFAULT', 'NORMALIZED']).optional(),
+  "display": zod.string().nullish()
+}))
+}),zod.null()]).optional(),
   "created_at": zod.coerce.date()
 }))
 }))
@@ -7997,6 +8878,24 @@ export const InspectGrnResponse = zod.object({
   "put_away_qty": zod.number(),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
+  "capture": zod.union([zod.object({
+  "template_version_id": zod.string().uuid(),
+  "template_id": zod.string().uuid(),
+  "template_code": zod.string(),
+  "version_no": zod.number(),
+  "fields": zod.array(zod.object({
+  "attribute_code": zod.string(),
+  "name": zod.string(),
+  "data_type": zod.string(),
+  "value_text": zod.string().nullish(),
+  "value_num": zod.number().nullish(),
+  "value_bool": zod.boolean().nullish(),
+  "value_date": zod.coerce.date().nullish(),
+  "unit": zod.string().nullish(),
+  "value_origin": zod.enum(['EXPLICIT', 'DEFAULT', 'NORMALIZED']).optional(),
+  "display": zod.string().nullish()
+}))
+}),zod.null()]).optional(),
   "created_at": zod.coerce.date()
 }))
 }))
@@ -8050,6 +8949,376 @@ export const ListGrnTransactionsResponse = zod.object({
   "created_by": zod.string().uuid().nullish(),
   "created_at": zod.coerce.date()
 }))
+})
+
+
+export const DownloadInventoryImportTemplateQueryParams = zod.object({
+  "material_id": zod.coerce.string().uuid(),
+  "template_version_id": zod.coerce.string().uuid().optional()
+})
+
+export const DownloadInventoryImportTemplateResponse = zod.unknown()
+
+
+export const uploadInventoryImportBodyCsvMax = 10000000;
+
+export const uploadInventoryImportBodyFilenameMax = 255;
+
+
+
+export const UploadInventoryImportBody = zod.object({
+  "csv": zod.string().min(1).max(uploadInventoryImportBodyCsvMax),
+  "filename": zod.string().max(uploadInventoryImportBodyFilenameMax).optional()
+})
+
+export const UploadInventoryImportResponse = zod.object({
+  "id": zod.string().uuid(),
+  "import_number": zod.string(),
+  "file_hash": zod.string(),
+  "filename": zod.string().nullish(),
+  "template_version_id": zod.string().uuid(),
+  "status": zod.enum(['DRAFT', 'VALIDATED', 'CONFIRMED', 'CANCELLED']),
+  "total_rows": zod.number(),
+  "valid_rows": zod.number(),
+  "invalid_rows": zod.number(),
+  "confirm_key": zod.string().nullish(),
+  "downstream_document_id": zod.string().uuid().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional()
+})
+
+
+export const GetInventoryImportParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetInventoryImportResponse = zod.object({
+  "session": zod.object({
+  "id": zod.string().uuid(),
+  "import_number": zod.string(),
+  "file_hash": zod.string(),
+  "filename": zod.string().nullish(),
+  "template_version_id": zod.string().uuid(),
+  "status": zod.enum(['DRAFT', 'VALIDATED', 'CONFIRMED', 'CANCELLED']),
+  "total_rows": zod.number(),
+  "valid_rows": zod.number(),
+  "invalid_rows": zod.number(),
+  "confirm_key": zod.string().nullish(),
+  "downstream_document_id": zod.string().uuid().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional()
+}),
+  "rows": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "row_number": zod.number(),
+  "raw": zod.record(zod.string(), zod.unknown()),
+  "canonical": zod.record(zod.string(), zod.unknown()).optional(),
+  "status": zod.enum(['PENDING', 'VALID', 'INVALID']),
+  "errors": zod.array(zod.object({
+  "attribute_code": zod.string(),
+  "rule": zod.string(),
+  "input": zod.unknown().optional(),
+  "normalized": zod.unknown().optional(),
+  "message": zod.string(),
+  "row": zod.number().optional(),
+  "column": zod.string().optional()
+})).nullish(),
+  "grn_line_id": zod.string().uuid().nullish()
+}))
+})
+
+
+export const ConfirmInventoryImportParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const confirmInventoryImportHeaderIdempotencyKeyMax = 100;
+
+
+
+export const ConfirmInventoryImportHeader = zod.object({
+  "Idempotency-Key": zod.string().min(1).max(confirmInventoryImportHeaderIdempotencyKeyMax)
+})
+
+export const ConfirmInventoryImportBody = zod.object({
+
+})
+
+export const ConfirmInventoryImportResponse = zod.object({
+  "import_session_id": zod.string().uuid(),
+  "document_id": zod.string().uuid(),
+  "replay": zod.boolean()
+})
+
+
+export const CancelInventoryImportParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const CancelInventoryImportResponse = zod.object({
+  "id": zod.string().uuid(),
+  "import_number": zod.string(),
+  "file_hash": zod.string(),
+  "filename": zod.string().nullish(),
+  "template_version_id": zod.string().uuid(),
+  "status": zod.enum(['DRAFT', 'VALIDATED', 'CONFIRMED', 'CANCELLED']),
+  "total_rows": zod.number(),
+  "valid_rows": zod.number(),
+  "invalid_rows": zod.number(),
+  "confirm_key": zod.string().nullish(),
+  "downstream_document_id": zod.string().uuid().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional()
+})
+
+
+export const CreateInventoryScanSessionBody = zod.object({
+  "supplier_id": zod.string().uuid(),
+  "material_id": zod.string().uuid().optional(),
+  "template_version_id": zod.string().uuid().optional()
+})
+
+export const CreateInventoryScanSessionResponse = zod.object({
+  "id": zod.string().uuid(),
+  "session_number": zod.string(),
+  "status": zod.enum(['DRAFT', 'READY', 'CONFIRMED', 'CANCELLED']),
+  "supplier_id": zod.string().uuid(),
+  "template_version_id": zod.string().uuid().nullish(),
+  "total": zod.number(),
+  "ready": zod.number(),
+  "unknown": zod.number(),
+  "duplicate": zod.number(),
+  "removed": zod.number(),
+  "confirm_key": zod.string().nullish(),
+  "downstream_document_id": zod.string().uuid().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional(),
+  "updated_at": zod.coerce.date().optional(),
+  "confirmed_at": zod.coerce.date().nullish(),
+  "cancelled_at": zod.coerce.date().nullish()
+})
+
+
+export const GetInventoryScanSessionParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const getInventoryScanSessionResponseItemsItemAttributesItemAttributeCodeMax = 60;
+
+export const getInventoryScanSessionResponseItemsItemAttributesItemSuppliedUnitMax = 20;
+
+
+
+export const GetInventoryScanSessionResponse = zod.object({
+  "session": zod.object({
+  "id": zod.string().uuid(),
+  "session_number": zod.string(),
+  "status": zod.enum(['DRAFT', 'READY', 'CONFIRMED', 'CANCELLED']),
+  "supplier_id": zod.string().uuid(),
+  "template_version_id": zod.string().uuid().nullish(),
+  "total": zod.number(),
+  "ready": zod.number(),
+  "unknown": zod.number(),
+  "duplicate": zod.number(),
+  "removed": zod.number(),
+  "confirm_key": zod.string().nullish(),
+  "downstream_document_id": zod.string().uuid().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional(),
+  "updated_at": zod.coerce.date().optional(),
+  "confirmed_at": zod.coerce.date().nullish(),
+  "cancelled_at": zod.coerce.date().nullish()
+}),
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "item_number": zod.number(),
+  "payload_raw": zod.string(),
+  "entity_type": zod.string().nullish(),
+  "entity_id": zod.string().uuid().nullish(),
+  "state": zod.enum(['SCANNED', 'UNKNOWN', 'RESOLVED', 'VALIDATED', 'READY', 'CONFIRMED', 'REMOVED']),
+  "material_id": zod.string().uuid().nullish(),
+  "lot_number": zod.string().nullish(),
+  "serial_number": zod.string().nullish(),
+  "quantity": zod.number().nullable(),
+  "duplicate_scan_count": zod.number(),
+  "attributes": zod.array(zod.object({
+  "attribute_code": zod.string().min(1).max(getInventoryScanSessionResponseItemsItemAttributesItemAttributeCodeMax),
+  "raw": zod.unknown().optional(),
+  "value": zod.unknown().optional(),
+  "supplied_unit": zod.string().max(getInventoryScanSessionResponseItemsItemAttributesItemSuppliedUnitMax).nullish()
+})),
+  "canonical": zod.record(zod.string(), zod.unknown()).optional(),
+  "errors": zod.array(zod.object({
+  "attribute_code": zod.string(),
+  "rule": zod.string(),
+  "input": zod.unknown().optional(),
+  "normalized": zod.unknown().optional(),
+  "message": zod.string(),
+  "row": zod.number().optional(),
+  "column": zod.string().optional()
+})).nullish(),
+  "grn_line_id": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional(),
+  "updated_at": zod.coerce.date().optional()
+}))
+})
+
+
+export const ScanInventoryItemParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const scanInventoryItemBodyPayloadMax = 10000;
+
+export const scanInventoryItemBodyQuantityExclusiveMin = 0;
+
+export const scanInventoryItemBodyAttributesItemAttributeCodeMax = 60;
+
+export const scanInventoryItemBodyAttributesItemSuppliedUnitMax = 20;
+
+
+
+export const ScanInventoryItemBody = zod.object({
+  "payload": zod.string().min(1).max(scanInventoryItemBodyPayloadMax),
+  "quantity": zod.number().gt(scanInventoryItemBodyQuantityExclusiveMin).optional(),
+  "attributes": zod.array(zod.object({
+  "attribute_code": zod.string().min(1).max(scanInventoryItemBodyAttributesItemAttributeCodeMax),
+  "raw": zod.unknown().optional(),
+  "value": zod.unknown().optional(),
+  "supplied_unit": zod.string().max(scanInventoryItemBodyAttributesItemSuppliedUnitMax).nullish()
+})).optional()
+})
+
+export const scanInventoryItemResponseAttributesItemAttributeCodeMax = 60;
+
+export const scanInventoryItemResponseAttributesItemSuppliedUnitMax = 20;
+
+
+
+export const ScanInventoryItemResponse = zod.object({
+  "id": zod.string().uuid(),
+  "item_number": zod.number(),
+  "payload_raw": zod.string(),
+  "entity_type": zod.string().nullish(),
+  "entity_id": zod.string().uuid().nullish(),
+  "state": zod.enum(['SCANNED', 'UNKNOWN', 'RESOLVED', 'VALIDATED', 'READY', 'CONFIRMED', 'REMOVED']),
+  "material_id": zod.string().uuid().nullish(),
+  "lot_number": zod.string().nullish(),
+  "serial_number": zod.string().nullish(),
+  "quantity": zod.number().nullable(),
+  "duplicate_scan_count": zod.number(),
+  "attributes": zod.array(zod.object({
+  "attribute_code": zod.string().min(1).max(scanInventoryItemResponseAttributesItemAttributeCodeMax),
+  "raw": zod.unknown().optional(),
+  "value": zod.unknown().optional(),
+  "supplied_unit": zod.string().max(scanInventoryItemResponseAttributesItemSuppliedUnitMax).nullish()
+})),
+  "canonical": zod.record(zod.string(), zod.unknown()).optional(),
+  "errors": zod.array(zod.object({
+  "attribute_code": zod.string(),
+  "rule": zod.string(),
+  "input": zod.unknown().optional(),
+  "normalized": zod.unknown().optional(),
+  "message": zod.string(),
+  "row": zod.number().optional(),
+  "column": zod.string().optional()
+})).nullish(),
+  "grn_line_id": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional(),
+  "updated_at": zod.coerce.date().optional()
+})
+
+
+export const RemoveInventoryScanItemParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "itemId": zod.coerce.string().uuid()
+})
+
+export const removeInventoryScanItemResponseAttributesItemAttributeCodeMax = 60;
+
+export const removeInventoryScanItemResponseAttributesItemSuppliedUnitMax = 20;
+
+
+
+export const RemoveInventoryScanItemResponse = zod.object({
+  "id": zod.string().uuid(),
+  "item_number": zod.number(),
+  "payload_raw": zod.string(),
+  "entity_type": zod.string().nullish(),
+  "entity_id": zod.string().uuid().nullish(),
+  "state": zod.enum(['SCANNED', 'UNKNOWN', 'RESOLVED', 'VALIDATED', 'READY', 'CONFIRMED', 'REMOVED']),
+  "material_id": zod.string().uuid().nullish(),
+  "lot_number": zod.string().nullish(),
+  "serial_number": zod.string().nullish(),
+  "quantity": zod.number().nullable(),
+  "duplicate_scan_count": zod.number(),
+  "attributes": zod.array(zod.object({
+  "attribute_code": zod.string().min(1).max(removeInventoryScanItemResponseAttributesItemAttributeCodeMax),
+  "raw": zod.unknown().optional(),
+  "value": zod.unknown().optional(),
+  "supplied_unit": zod.string().max(removeInventoryScanItemResponseAttributesItemSuppliedUnitMax).nullish()
+})),
+  "canonical": zod.record(zod.string(), zod.unknown()).optional(),
+  "errors": zod.array(zod.object({
+  "attribute_code": zod.string(),
+  "rule": zod.string(),
+  "input": zod.unknown().optional(),
+  "normalized": zod.unknown().optional(),
+  "message": zod.string(),
+  "row": zod.number().optional(),
+  "column": zod.string().optional()
+})).nullish(),
+  "grn_line_id": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional(),
+  "updated_at": zod.coerce.date().optional()
+})
+
+
+export const ConfirmInventoryScanSessionParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const confirmInventoryScanSessionHeaderIdempotencyKeyMax = 100;
+
+
+
+export const ConfirmInventoryScanSessionHeader = zod.object({
+  "Idempotency-Key": zod.string().min(1).max(confirmInventoryScanSessionHeaderIdempotencyKeyMax)
+})
+
+export const ConfirmInventoryScanSessionBody = zod.object({
+
+})
+
+export const ConfirmInventoryScanSessionResponse = zod.object({
+  "scan_session_id": zod.string().uuid(),
+  "document_id": zod.string().uuid(),
+  "replay": zod.boolean()
+})
+
+
+export const CancelInventoryScanSessionParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const CancelInventoryScanSessionResponse = zod.object({
+  "id": zod.string().uuid(),
+  "session_number": zod.string(),
+  "status": zod.enum(['DRAFT', 'READY', 'CONFIRMED', 'CANCELLED']),
+  "supplier_id": zod.string().uuid(),
+  "template_version_id": zod.string().uuid().nullish(),
+  "total": zod.number(),
+  "ready": zod.number(),
+  "unknown": zod.number(),
+  "duplicate": zod.number(),
+  "removed": zod.number(),
+  "confirm_key": zod.string().nullish(),
+  "downstream_document_id": zod.string().uuid().nullish(),
+  "created_by": zod.string().uuid().nullish(),
+  "created_at": zod.coerce.date().optional(),
+  "updated_at": zod.coerce.date().optional(),
+  "confirmed_at": zod.coerce.date().nullish(),
+  "cancelled_at": zod.coerce.date().nullish()
 })
 
 

@@ -3536,6 +3536,533 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/MaterialWorkflowAssignment" }
 
+  # ─── Universal Capture — Configuration and Resolution ───────────────────────
+  /masters/units:
+    get:
+      operationId: listCaptureUnits
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - name: active
+          in: query
+          required: false
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Capture unit definitions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CaptureUnit" }
+    post:
+      operationId: createCaptureUnit
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateCaptureUnitBody" }
+      responses:
+        "201":
+          description: Capture unit created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CaptureUnit" }
+
+  /masters/units/{id}:
+    get:
+      operationId: getCaptureUnit
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Capture unit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CaptureUnit" }
+    patch:
+      operationId: updateCaptureUnitStatus
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateCaptureUnitBody" }
+      responses:
+        "200":
+          description: Capture unit updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CaptureUnit" }
+    put:
+      operationId: upsertCaptureUnit
+      tags: [masters]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, maxLength: 20 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpsertCaptureUnitBody" }
+      responses:
+        "200":
+          description: Existing capture unit updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CaptureUnit" }
+        "201":
+          description: Capture unit created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CaptureUnit" }
+
+  /masters/material-attributes:
+    get:
+      operationId: listMaterialAttributes
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+      responses:
+        "200":
+          description: Material attribute definitions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/MaterialAttribute" }
+    post:
+      operationId: createMaterialAttribute
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateMaterialAttributeBody" }
+      responses:
+        "201":
+          description: Material attribute created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialAttribute" }
+
+  /masters/material-attributes/{id}:
+    get:
+      operationId: getMaterialAttribute
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Material attribute
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialAttribute" }
+    patch:
+      operationId: updateMaterialAttribute
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateMaterialAttributeBody" }
+      responses:
+        "200":
+          description: Material attribute updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialAttribute" }
+
+  /masters/material-attributes/{id}/activate:
+    post:
+      operationId: activateMaterialAttribute
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Material attribute activated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialAttribute" }
+
+  /masters/material-attributes/{id}/retire:
+    post:
+      operationId: retireMaterialAttribute
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Material attribute retired
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialAttribute" }
+
+  /masters/attribute-templates:
+    get:
+      operationId: listAttributeTemplates
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/StatusParam"
+      responses:
+        "200":
+          description: Attribute templates
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/AttributeTemplate" }
+    post:
+      operationId: createAttributeTemplate
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateAttributeTemplateBody" }
+      responses:
+        "201":
+          description: Attribute template created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttributeTemplate" }
+
+  /masters/attribute-templates/{id}:
+    get:
+      operationId: getAttributeTemplate
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Attribute template with versions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttributeTemplateDetail" }
+    patch:
+      operationId: updateAttributeTemplate
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateAttributeTemplateBody" }
+      responses:
+        "200":
+          description: Attribute template updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttributeTemplate" }
+
+  /masters/attribute-templates/{templateId}/versions:
+    get:
+      operationId: listAttributeTemplateVersions
+      tags: [masters]
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Attribute template versions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/AttributeTemplateVersion" }
+    post:
+      operationId: createAttributeTemplateVersion
+      tags: [masters]
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateAttributeTemplateVersionBody" }
+      responses:
+        "201":
+          description: Attribute template version created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttributeTemplateVersion" }
+
+  /masters/attribute-templates/versions/{versionId}:
+    get:
+      operationId: getAttributeTemplateVersion
+      tags: [masters]
+      parameters:
+        - name: versionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Attribute template version with configured fields
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttributeTemplateVersionDetail" }
+    patch:
+      operationId: updateAttributeTemplateVersion
+      tags: [masters]
+      parameters:
+        - name: versionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateAttributeTemplateVersionBody" }
+      responses:
+        "200":
+          description: Attribute template version updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttributeTemplateVersion" }
+
+  /masters/attribute-templates/versions/{versionId}/preview:
+    get:
+      operationId: previewAttributeTemplateVersion
+      tags: [masters]
+      parameters:
+        - name: versionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Server-driven capture field preview and CSV columns
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttributeTemplatePreview" }
+
+  /masters/attribute-templates/versions/{versionId}/attributes:
+    post:
+      operationId: addAttributeTemplateVersionAttribute
+      tags: [masters]
+      parameters:
+        - name: versionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AddTemplateAttributeBody" }
+      responses:
+        "201":
+          description: Template attribute added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttributeTemplateField" }
+
+  /masters/attribute-templates/versions/{versionId}/activate:
+    post:
+      operationId: activateAttributeTemplateVersion
+      tags: [masters]
+      parameters:
+        - name: versionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Attribute template version activated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttributeTemplateVersion" }
+
+  /masters/attribute-templates/versions/{versionId}/retire:
+    post:
+      operationId: retireAttributeTemplateVersion
+      tags: [masters]
+      parameters:
+        - name: versionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Attribute template version retired
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttributeTemplateVersion" }
+
+  /masters/material-template-mappings:
+    get:
+      operationId: listMaterialTemplateMappings
+      tags: [masters]
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema: { type: string, enum: [MATERIAL, CATEGORY] }
+        - $ref: "#/components/parameters/StatusParam"
+        - $ref: "#/components/parameters/SearchParam"
+      responses:
+        "200":
+          description: Material and category template mappings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/MaterialTemplateMapping" }
+    post:
+      operationId: createMaterialTemplateMapping
+      tags: [masters]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateMaterialTemplateMappingBody" }
+      responses:
+        "201":
+          description: Material template mapping created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialTemplateMapping" }
+
+  /masters/material-template-mappings/{id}:
+    get:
+      operationId: getMaterialTemplateMapping
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Material template mapping
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialTemplateMapping" }
+    patch:
+      operationId: updateMaterialTemplateMapping
+      tags: [masters]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateMaterialTemplateMappingBody" }
+      responses:
+        "200":
+          description: Material template mapping updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialTemplateMapping" }
+
+  /masters/material-inventory-profiles:
+    get:
+      operationId: listMaterialInventoryProfiles
+      tags: [masters]
+      responses:
+        "200":
+          description: Material inventory profiles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/MaterialInventoryProfile" }
+
+  /masters/material-inventory-profiles/{materialId}:
+    get:
+      operationId: getMaterialInventoryProfile
+      tags: [masters]
+      parameters:
+        - name: materialId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Material inventory profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialInventoryProfile" }
+    put:
+      operationId: upsertMaterialInventoryProfile
+      tags: [masters]
+      parameters:
+        - name: materialId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpsertMaterialInventoryProfileBody" }
+      responses:
+        "200":
+          description: Material inventory profile upserted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialInventoryProfile" }
+
+  /masters/resolve-template:
+    get:
+      operationId: resolveMaterialAttributeTemplate
+      tags: [masters]
+      parameters:
+        - name: material_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: date
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Resolved material attribute template or resolution status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TemplateResolution" }
+
   # ─── Procurement — Purchase Orders ──────────────────────────────────────────
   /procurement/purchase-orders:
     get:
@@ -3856,6 +4383,194 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/InventoryTransaction"
+
+  # ─── Universal Capture — CSV Imports ─────────────────────────────────────────
+  /inventory/imports/template:
+    get:
+      operationId: downloadInventoryImportTemplate
+      tags: [inventory]
+      parameters:
+        - name: material_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: template_version_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: CSV template for the resolved active attribute template
+          content:
+            text/csv:
+              schema:
+                type: string
+        "400": { description: Material is required }
+        "409": { description: Requested template version is stale }
+        "422": { description: No resolvable template }
+
+  /inventory/imports:
+    post:
+      operationId: uploadInventoryImport
+      tags: [inventory]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ImportCsvBody" }
+      responses:
+        "201":
+          description: CSV validated and staged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportSession" }
+        "200":
+          description: Existing idempotent CSV session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportSession" }
+
+  /inventory/imports/{id}:
+    get:
+      operationId: getInventoryImport
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Import session and staged rows
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportDetail" }
+
+  /inventory/imports/{id}/confirm:
+    post:
+      operationId: confirmInventoryImport
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EmptyObject" }
+      responses:
+        "200":
+          description: Import confirmed and converted to one GRN draft
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportConfirmResponse" }
+
+  /inventory/imports/{id}/cancel:
+    post:
+      operationId: cancelInventoryImport
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Import session cancelled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportSession" }
+
+  # ─── Universal Capture — Keyboard-Wedge Scan Sessions ────────────────────────
+  /inventory/scan-sessions:
+    post:
+      operationId: createInventoryScanSession
+      tags: [inventory]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScanSessionCreateBody" }
+      responses:
+        "201":
+          description: Scan session created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScanSession" }
+
+  /inventory/scan-sessions/{id}:
+    get:
+      operationId: getInventoryScanSession
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Scan session with scan items
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScanSessionDetail" }
+
+  /inventory/scan-sessions/{id}/scan:
+    post:
+      operationId: scanInventoryItem
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScanBody" }
+      responses:
+        "201":
+          description: Scan retained as an item, including UNKNOWN and duplicate states
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScanItem" }
+
+  /inventory/scan-sessions/{id}/items/{itemId}/remove:
+    post:
+      operationId: removeInventoryScanItem
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Scan item removed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScanItem" }
+
+  /inventory/scan-sessions/{id}/confirm:
+    post:
+      operationId: confirmInventoryScanSession
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EmptyObject" }
+      responses:
+        "200":
+          description: Scan session confirmed and converted to one GRN draft
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScanConfirmResponse" }
+
+  /inventory/scan-sessions/{id}/cancel:
+    post:
+      operationId: cancelInventoryScanSession
+      tags: [inventory]
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Scan session cancelled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScanSession" }
 
   /inventory/inspections:
     get:
@@ -4263,6 +4978,14 @@ components:
       schema:
         type: integer
         default: 25
+    IdempotencyKeyHeader:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 100
 
   schemas:
     # ─── MES — Bill of Materials (BOM Master) ─────────────────────────────────
@@ -6799,6 +7522,531 @@ components:
       properties:
         reason: { type: string, minLength: 1, maxLength: 1000 }
 
+    # ─── Universal Capture — Configuration Schemas ─────────────────────────────
+    CaptureLifecycleStatus:
+      type: string
+      enum: [DRAFT, ACTIVE, RETIRED]
+
+    CaptureUnit:
+      type: object
+      required: [id, unit_code, dimension, canonical_unit, conversion_factor, active, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        unit_code: { type: string }
+        dimension: { type: string }
+        canonical_unit: { type: string }
+        conversion_factor: { type: number }
+        active: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateCaptureUnitBody:
+      type: object
+      required: [unit_code, dimension, canonical_unit]
+      properties:
+        unit_code: { type: string, minLength: 1, maxLength: 20 }
+        dimension: { type: string, minLength: 1, maxLength: 50 }
+        canonical_unit: { type: string, minLength: 1, maxLength: 20 }
+        conversion_factor: { type: number, exclusiveMinimum: 0, default: 1 }
+
+    UpsertCaptureUnitBody:
+      allOf:
+        - $ref: "#/components/schemas/CreateCaptureUnitBody"
+        - type: object
+          properties:
+            unit_code: { type: string, maxLength: 20 }
+
+    UpdateCaptureUnitBody:
+      type: object
+      required: [active]
+      properties:
+        active: { type: boolean }
+
+    MaterialAttribute:
+      type: object
+      required: [id, code, name, data_type, scope, status]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        data_type:
+          type: string
+          enum: [TEXT, DECIMAL, INTEGER, BOOLEAN, DATE, DATETIME, DROPDOWN]
+        scope:
+          type: string
+          enum: [MATERIAL, LOT, SERIAL, RECEIPT_LINE, OPERATION]
+        unit_code: { type: ["string", "null"] }
+        allowed_units:
+          type: ["array", "null"]
+          items: { type: string }
+        precision: { type: ["integer", "null"] }
+        scale: { type: ["integer", "null"] }
+        min_value: { type: ["number", "null"] }
+        max_value: { type: ["number", "null"] }
+        allowed_values:
+          type: ["array", "null"]
+          items: { type: string }
+        regex: { type: ["string", "null"] }
+        max_length: { type: ["integer", "null"] }
+        required_default: { type: boolean }
+        description: { type: ["string", "null"] }
+        status: { $ref: "#/components/schemas/CaptureLifecycleStatus" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateMaterialAttributeBody:
+      type: object
+      required: [code, name, data_type]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 60 }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        data_type:
+          type: string
+          enum: [TEXT, DECIMAL, INTEGER, BOOLEAN, DATE, DATETIME, DROPDOWN]
+        scope:
+          type: string
+          enum: [MATERIAL, LOT, SERIAL, RECEIPT_LINE, OPERATION]
+          default: RECEIPT_LINE
+        unit_code: { type: ["string", "null"], maxLength: 20 }
+        allowed_units:
+          type: ["array", "null"]
+          items: { type: string, maxLength: 20 }
+        precision: { type: ["integer", "null"], minimum: 1 }
+        scale: { type: ["integer", "null"], minimum: 0 }
+        min_value: { type: ["number", "null"] }
+        max_value: { type: ["number", "null"] }
+        allowed_values:
+          type: ["array", "null"]
+          items: { type: string, maxLength: 200 }
+        regex: { type: ["string", "null"], maxLength: 255 }
+        max_length: { type: ["integer", "null"], minimum: 1 }
+        required_default: { type: boolean, default: false }
+        description: { type: ["string", "null"], maxLength: 500 }
+
+    UpdateMaterialAttributeBody:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: ["string", "null"], maxLength: 500 }
+        allowed_values:
+          type: ["array", "null"]
+          items: { type: string, maxLength: 200 }
+        required_default: { type: boolean }
+
+    AttributeTemplate:
+      type: object
+      required: [id, code, name, status]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        description: { type: ["string", "null"] }
+        status: { $ref: "#/components/schemas/CaptureLifecycleStatus" }
+        created_by: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_by: { type: ["string", "null"], format: uuid }
+        updated_at: { type: string, format: date-time }
+
+    AttributeTemplateDetail:
+      allOf:
+        - $ref: "#/components/schemas/AttributeTemplate"
+        - type: object
+          required: [versions]
+          properties:
+            versions:
+              type: array
+              items: { $ref: "#/components/schemas/AttributeTemplateVersion" }
+
+    CreateAttributeTemplateBody:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 60 }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: ["string", "null"], maxLength: 500 }
+
+    UpdateAttributeTemplateBody:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: ["string", "null"], maxLength: 500 }
+
+    AttributeTemplateVersion:
+      type: object
+      required: [id, template_id, version_no, status, effective_from, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        template_id: { type: string, format: uuid }
+        version_no: { type: integer, minimum: 1 }
+        status: { $ref: "#/components/schemas/CaptureLifecycleStatus" }
+        effective_from: { type: string, format: date-time }
+        effective_to: { type: ["string", "null"], format: date-time }
+        created_by: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+
+    AttributeTemplateField:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        attribute_id: { type: string, format: uuid }
+        attribute_code: { type: string }
+        name: { type: string }
+        data_type: { type: string }
+        required: { type: boolean }
+        sequence: { type: integer }
+        default_value: { type: ["string", "null"] }
+        allowed_values_override:
+          type: ["array", "null"]
+          items: { type: string }
+        unit_override: { type: ["string", "null"] }
+
+    AttributeTemplateVersionDetail:
+      allOf:
+        - $ref: "#/components/schemas/AttributeTemplateVersion"
+        - type: object
+          required: [attributes]
+          properties:
+            attributes:
+              type: array
+              items: { $ref: "#/components/schemas/AttributeTemplateField" }
+
+    CreateAttributeTemplateVersionBody:
+      type: object
+      required: [version_no, effective_from]
+      properties:
+        version_no: { type: integer, minimum: 1 }
+        effective_from: { type: string, format: date-time }
+        effective_to: { type: ["string", "null"], format: date-time }
+
+    UpdateAttributeTemplateVersionBody:
+      type: object
+      properties:
+        effective_from: { type: string, format: date-time }
+        effective_to: { type: ["string", "null"], format: date-time }
+
+    AddTemplateAttributeBody:
+      type: object
+      required: [attribute_id]
+      properties:
+        attribute_id: { type: string, format: uuid }
+        required: { type: boolean, default: false }
+        sequence: { type: integer, minimum: 0, default: 0 }
+        default_value: { type: ["string", "null"] }
+        allowed_values_override:
+          type: ["array", "null"]
+          items: { type: string, maxLength: 200 }
+        unit_override: { type: ["string", "null"], maxLength: 20 }
+
+    AttributeTemplatePreviewField:
+      type: object
+      required: [attribute_code, name, data_type, required, sequence]
+      properties:
+        attribute_code: { type: string }
+        name: { type: string }
+        data_type: { type: string }
+        required: { type: boolean }
+        sequence: { type: integer }
+        default_value: { type: ["string", "null"] }
+        unit: { type: ["string", "null"] }
+        allowed_values:
+          type: ["array", "null"]
+          items: { type: string }
+        min: { type: ["number", "null"] }
+        max: { type: ["number", "null"] }
+        precision: { type: ["integer", "null"] }
+        scale: { type: ["integer", "null"] }
+
+    AttributeTemplatePreview:
+      type: object
+      required: [template_code, version_no, status, fields, generated_csv_columns]
+      properties:
+        template_code: { type: string }
+        version_no: { type: integer }
+        status: { $ref: "#/components/schemas/CaptureLifecycleStatus" }
+        effective_from: { type: string, format: date-time }
+        effective_to: { type: ["string", "null"], format: date-time }
+        fields:
+          type: array
+          items: { $ref: "#/components/schemas/AttributeTemplatePreviewField" }
+        generated_csv:
+          type: object
+          properties:
+            columns:
+              type: array
+              items: { type: string }
+        generated_csv_columns:
+          type: array
+          items: { type: string }
+
+    MaterialTemplateMapping:
+      type: object
+      required: [id, scope, template_id, status, effective_from, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        scope: { type: string, enum: [MATERIAL, CATEGORY] }
+        material_id: { type: ["string", "null"], format: uuid }
+        material_code: { type: ["string", "null"] }
+        category_id: { type: ["string", "null"], format: uuid }
+        category_code: { type: ["string", "null"] }
+        template_id: { type: string, format: uuid }
+        template_code: { type: ["string", "null"] }
+        status: { type: string, enum: [ACTIVE, RETIRED] }
+        effective_from: { type: string, format: date-time }
+        effective_to: { type: ["string", "null"], format: date-time }
+        created_by: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+
+    CreateMaterialTemplateMappingBody:
+      type: object
+      required: [scope, template_id]
+      properties:
+        scope: { type: string, enum: [MATERIAL, CATEGORY] }
+        material_id: { type: ["string", "null"], format: uuid }
+        category_id: { type: ["string", "null"], format: uuid }
+        template_id: { type: string, format: uuid }
+        effective_from: { type: string, format: date-time }
+        effective_to: { type: ["string", "null"], format: date-time }
+
+    UpdateMaterialTemplateMappingBody:
+      type: object
+      properties:
+        status: { type: string, enum: [ACTIVE, RETIRED] }
+        effective_to: { type: ["string", "null"], format: date-time }
+
+    MaterialInventoryProfile:
+      type: object
+      required: [material_id, tracking_mode]
+      properties:
+        material_id: { type: string, format: uuid }
+        tracking_mode: { type: string, enum: [NONE, LOT, SERIAL, LOT_AND_SERIAL] }
+        updated_by: { type: ["string", "null"], format: uuid }
+        updated_at: { type: string, format: date-time }
+
+    UpsertMaterialInventoryProfileBody:
+      type: object
+      required: [tracking_mode]
+      properties:
+        tracking_mode: { type: string, enum: [NONE, LOT, SERIAL, LOT_AND_SERIAL] }
+
+    TemplateResolution:
+      oneOf:
+        - type: object
+          required: [kind, template_id, template_version_id]
+          properties:
+            kind: { type: string, enum: [OK] }
+            template_id: { type: string, format: uuid }
+            template_version_id: { type: string, format: uuid }
+        - type: object
+          required: [kind]
+          properties:
+            kind: { type: string, enum: [NO_TEMPLATE] }
+        - type: object
+          required: [kind, reason]
+          properties:
+            kind: { type: string, enum: [ERROR] }
+            reason: { type: string }
+
+    # ─── Universal Capture — Canonical Values, Imports, and Scans ──────────────
+    CanonicalAttributeValue:
+      type: object
+      required: [attribute_code]
+      properties:
+        attribute_code: { type: string, minLength: 1, maxLength: 60 }
+        raw: {}
+        value: {}
+        supplied_unit: { type: ["string", "null"], maxLength: 20 }
+
+    GrnLineCaptureValues:
+      type: object
+      required: [line_number, attributes]
+      properties:
+        line_number: { type: integer, minimum: 1 }
+        attributes:
+          type: array
+          items: { $ref: "#/components/schemas/CanonicalAttributeValue" }
+
+    GrnLineCaptureProjection:
+      type: object
+      required: [template_version_id, template_id, template_code, version_no, fields]
+      properties:
+        template_version_id: { type: string, format: uuid }
+        template_id: { type: string, format: uuid }
+        template_code: { type: string }
+        version_no: { type: integer }
+        fields:
+          type: array
+          items:
+            type: object
+            required: [attribute_code, name, data_type]
+            properties:
+              attribute_code: { type: string }
+              name: { type: string }
+              data_type: { type: string }
+              value_text: { type: ["string", "null"] }
+              value_num: { type: ["number", "null"] }
+              value_bool: { type: ["boolean", "null"] }
+              value_date: { type: ["string", "null"], format: date-time }
+              unit: { type: ["string", "null"] }
+              value_origin: { type: string, enum: [EXPLICIT, DEFAULT, NORMALIZED] }
+              display: { type: ["string", "null"] }
+
+    ImportCsvBody:
+      type: object
+      required: [csv]
+      properties:
+        csv: { type: string, minLength: 1, maxLength: 10000000 }
+        filename: { type: string, maxLength: 255 }
+
+    CaptureError:
+      type: object
+      required: [attribute_code, rule, message]
+      properties:
+        attribute_code: { type: string }
+        rule: { type: string }
+        input: {}
+        normalized: {}
+        message: { type: string }
+        row: { type: integer }
+        column: { type: string }
+
+    ImportSession:
+      type: object
+      required: [id, import_number, file_hash, template_version_id, status, total_rows, valid_rows, invalid_rows]
+      properties:
+        id: { type: string, format: uuid }
+        import_number: { type: string }
+        file_hash: { type: string }
+        filename: { type: ["string", "null"] }
+        template_version_id: { type: string, format: uuid }
+        status: { type: string, enum: [DRAFT, VALIDATED, CONFIRMED, CANCELLED] }
+        total_rows: { type: integer }
+        valid_rows: { type: integer }
+        invalid_rows: { type: integer }
+        confirm_key: { type: ["string", "null"] }
+        downstream_document_id: { type: ["string", "null"], format: uuid }
+        created_by: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+
+    ImportRow:
+      type: object
+      required: [id, row_number, raw, status]
+      properties:
+        id: { type: string, format: uuid }
+        row_number: { type: integer }
+        raw: { type: object, additionalProperties: true }
+        canonical: { type: object, additionalProperties: true }
+        status: { type: string, enum: [PENDING, VALID, INVALID] }
+        errors:
+          type: ["array", "null"]
+          items: { $ref: "#/components/schemas/CaptureError" }
+        grn_line_id: { type: ["string", "null"], format: uuid }
+
+    ImportDetail:
+      type: object
+      required: [session, rows]
+      properties:
+        session: { $ref: "#/components/schemas/ImportSession" }
+        rows:
+          type: array
+          items: { $ref: "#/components/schemas/ImportRow" }
+
+    EmptyObject:
+      type: object
+      additionalProperties: false
+
+    ImportConfirmResponse:
+      type: object
+      required: [import_session_id, document_id, replay]
+      properties:
+        import_session_id: { type: string, format: uuid }
+        document_id: { type: string, format: uuid }
+        replay: { type: boolean }
+
+    ScanSessionCreateBody:
+      type: object
+      required: [supplier_id]
+      additionalProperties: false
+      properties:
+        supplier_id: { type: string, format: uuid }
+        material_id: { type: string, format: uuid }
+        template_version_id: { type: string, format: uuid }
+
+    ScanBody:
+      type: object
+      required: [payload]
+      additionalProperties: false
+      properties:
+        payload: { type: string, minLength: 1, maxLength: 10000 }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        attributes:
+          type: array
+          items: { $ref: "#/components/schemas/CanonicalAttributeValue" }
+
+    ScanSession:
+      type: object
+      required: [id, session_number, status, supplier_id, total, ready, unknown, duplicate, removed]
+      properties:
+        id: { type: string, format: uuid }
+        session_number: { type: string }
+        status: { type: string, enum: [DRAFT, READY, CONFIRMED, CANCELLED] }
+        supplier_id: { type: string, format: uuid }
+        template_version_id: { type: ["string", "null"], format: uuid }
+        total: { type: integer }
+        ready: { type: integer }
+        unknown: { type: integer }
+        duplicate: { type: integer }
+        removed: { type: integer }
+        confirm_key: { type: ["string", "null"] }
+        downstream_document_id: { type: ["string", "null"], format: uuid }
+        created_by: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        confirmed_at: { type: ["string", "null"], format: date-time }
+        cancelled_at: { type: ["string", "null"], format: date-time }
+
+    ScanItem:
+      type: object
+      required: [id, item_number, payload_raw, state, quantity, duplicate_scan_count, attributes]
+      properties:
+        id: { type: string, format: uuid }
+        item_number: { type: integer }
+        payload_raw: { type: string }
+        entity_type: { type: ["string", "null"] }
+        entity_id: { type: ["string", "null"], format: uuid }
+        state: { type: string, enum: [SCANNED, UNKNOWN, RESOLVED, VALIDATED, READY, CONFIRMED, REMOVED] }
+        material_id: { type: ["string", "null"], format: uuid }
+        lot_number: { type: ["string", "null"] }
+        serial_number: { type: ["string", "null"] }
+        quantity: { type: ["number", "null"] }
+        duplicate_scan_count: { type: integer }
+        attributes:
+          type: array
+          items: { $ref: "#/components/schemas/CanonicalAttributeValue" }
+        canonical: { type: object, additionalProperties: true }
+        errors:
+          type: ["array", "null"]
+          items: { $ref: "#/components/schemas/CaptureError" }
+        grn_line_id: { type: ["string", "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ScanSessionDetail:
+      type: object
+      required: [session, items]
+      properties:
+        session: { $ref: "#/components/schemas/ScanSession" }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ScanItem" }
+
+    ScanConfirmResponse:
+      type: object
+      required: [scan_session_id, document_id, replay]
+      properties:
+        scan_session_id: { type: string, format: uuid }
+        document_id: { type: string, format: uuid }
+        replay: { type: boolean }
+
     GrnStatus:
       type: string
       enum: [draft, posted]
@@ -6836,6 +8084,10 @@ components:
         put_away_qty: { type: number }
         inspection_status: { $ref: "#/components/schemas/GrnInspectionStatus" }
         remarks: { type: ["string", "null"] }
+        capture:
+          oneOf:
+            - $ref: "#/components/schemas/GrnLineCaptureProjection"
+            - type: "null"
         created_at: { type: string, format: date-time }
 
     GrnLineItemInput:
@@ -6891,6 +8143,9 @@ components:
           type: array
           minItems: 1
           items: { $ref: "#/components/schemas/GrnLineItemInput" }
+        attribute_values:
+          type: array
+          items: { $ref: "#/components/schemas/GrnLineCaptureValues" }
 
     # ─── Inventory Platform — Cell Stock & Material Transfer ───────────────────
     CellStockLine:
