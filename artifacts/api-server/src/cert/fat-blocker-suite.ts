@@ -623,28 +623,24 @@ async function main() {
         });
 
       const invalid = await issue("00000000-0000-0000-0000-000000000000", "NONEXISTENT-LOT");
-      if (invalid.status === 422 && (invalid.body as { error_code?: string })?.error_code === "lot_validation_failed") {
-        pass("H11: Nonexistent lot reference rejected before MIN commit", "HTTP 422 lot_validation_failed");
+      if (invalid.status === 410 && (invalid.body as { code?: string })?.code === "MIN_DEPRECATED") {
+        pass("H11: MIN creation is retired before lot validation", "HTTP 410 MIN_DEPRECATED");
       } else {
-        fail("H11: Nonexistent lot reference rejection", `HTTP ${invalid.status}; body=${JSON.stringify(invalid.body)}`);
+        fail("H11: MIN deprecation contract", `HTTP ${invalid.status}; body=${JSON.stringify(invalid.body)}`);
       }
 
       const insufficient = await issue(smallLot.id, smallLot.supplierLotNumber!);
-      if (
-        insufficient.status === 422 &&
-        (insufficient.body as { error_code?: string })?.error_code === "lot_validation_failed" &&
-        String((insufficient.body as { error?: unknown })?.error).includes("Insufficient lot balance")
-      ) {
-        pass("H11: Selected lot with insufficient balance rejected", "HTTP 422 lot_validation_failed");
+      if (insufficient.status === 410 && (insufficient.body as { code?: string })?.code === "MIN_DEPRECATED") {
+        pass("H11: Deprecated MIN ignores insufficient-lot payload", "HTTP 410 MIN_DEPRECATED");
       } else {
-        fail("H11: Insufficient lot balance rejection", `HTTP ${insufficient.status}; body=${JSON.stringify(insufficient.body)}`);
+        fail("H11: Deprecated MIN stable response", `HTTP ${insufficient.status}; body=${JSON.stringify(insufficient.body)}`);
       }
 
       const valid = await issue(validLot.id, validLot.supplierLotNumber!);
-      if (valid.status === 201 && (valid.body as { id?: string })?.id) {
-        pass("H11: Valid lot with sufficient balance creates MIN", "HTTP 201");
+      if (valid.status === 410 && (valid.body as { code?: string })?.code === "MIN_DEPRECATED") {
+        pass("H11: Valid MIN-create payload also returns stable deprecation", "HTTP 410 MIN_DEPRECATED");
       } else {
-        fail("H11: Valid lot issuance", `HTTP ${valid.status}; body=${JSON.stringify(valid.body)}`);
+        fail("H11: Valid MIN-create deprecation", `HTTP ${valid.status}; body=${JSON.stringify(valid.body)}`);
       }
     } finally {
       if (materialId) {

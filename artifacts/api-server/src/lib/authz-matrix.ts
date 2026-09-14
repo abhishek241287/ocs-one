@@ -680,7 +680,7 @@ export const AUTHZ_MATRIX: AuthzEndpoint[] = [
     method: "POST",
     path: `/api/manufacturing/orders/${DUMMY_ID}/material-issues`,
     group: "Material Issue",
-    description: "Issue BOM materials against an order (write)",
+    description: "Deprecated MIN creation — stable HTTP 410 contract (write gate)",
     guard: "requireWriteRole(supervisor,director)",
     body: {},
     expected: roles(P, P, F, F),

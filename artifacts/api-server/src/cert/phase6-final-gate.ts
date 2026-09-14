@@ -24,6 +24,7 @@ const PREFIX = `P71H-${randomUUID().slice(0, 8).toUpperCase()}`;
 const CODE_PREFIX = PREFIX;
 const LOWER_PREFIX = PREFIX.toLowerCase();
 const EMAIL = `${LOWER_PREFIX}-director@cert.local`;
+const LOT_NUMBER = `${PREFIX}-LOT-R1`;
 
 type Result = { response: Response; body: any };
 type Field = {
@@ -667,7 +668,7 @@ async function main(): Promise<void> {
        (id, lot_number, material_id, supplier_lot_number, supplier_id, status,
         total_received_qty, remaining_qty, uom)
        VALUES ($1, $2, $3, $2, $4, 'active', 200, 200, 'PCS')`,
-      [lotId, "LOT-R1", materialIds.battery, supplierId],
+       [lotId, LOT_NUMBER, materialIds.battery, supplierId],
     );
     await client.query("COMMIT");
 
@@ -699,13 +700,13 @@ async function main(): Promise<void> {
       manufacturing_date: "2026-09-14",
     };
     await run("S1 manual canonical capture", async () => {
-      const result = await createManual(materialIds.battery, 200, "LOT-R1", attrs(battery, batteryValues, { nominal_voltage: code("V"), capacity: code("AH") }));
+       const result = await createManual(materialIds.battery, 200, LOT_NUMBER, attrs(battery, batteryValues, { nominal_voltage: code("V"), capacity: code("AH") }));
       assert(result.lines?.[0]?.capture, "Manual GRN did not expose its capture projection");
       s1GrnIds.push(result.id);
       scenarioStatus["manual"] = "PASS";
     });
     await run("S1 CSV canonical capture", async () => {
-      const csv = await createCsv(battery, code("BATTERY-CELL"), 200, "LOT-R1", batteryValues, { nominal_voltage: code("V"), capacity: code("AH") }, "s1");
+       const csv = await createCsv(battery, code("BATTERY-CELL"), 200, LOT_NUMBER, batteryValues, { nominal_voltage: code("V"), capacity: code("AH") }, "s1");
       assert(csv.status === 201 && csv.session.status === "VALIDATED" && Number(csv.session.valid_rows) === 1, `CSV staging failed: ${JSON.stringify(csv.session)}`);
       const first = await confirmImport(csv.session.id, `${PREFIX}-S1-CSV`);
       assert(first.document_id, "CSV confirmation did not create a GRN");
@@ -713,7 +714,7 @@ async function main(): Promise<void> {
       scenarioStatus["csv"] = "PASS";
     });
     await run("S1 keyboard-wedge scan canonical capture", async () => {
-      const scan = await createScan(battery, attrs(battery, batteryValues, { nominal_voltage: code("V"), capacity: code("AH") }), "LOT-R1", `${PREFIX}-S1-SCAN`);
+       const scan = await createScan(battery, attrs(battery, batteryValues, { nominal_voltage: code("V"), capacity: code("AH") }), LOT_NUMBER, `${PREFIX}-S1-SCAN`);
       assert(scan.confirmed.document_id, "Scan confirmation did not create a GRN");
       s1GrnIds.push(scan.confirmed.document_id);
       scenarioStatus["scan"] = "PASS";

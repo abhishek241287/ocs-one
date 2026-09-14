@@ -2,12 +2,13 @@
 /**
  * MAS-N04 focused certification.
  *
- * Creates an isolated BOM, approves it, creates a production order, and posts
- * the material issue through the real HTTP routes. It then proves the used BOM
- * cannot be obsoleted and tears down only the isolated records.
+ * Creates an isolated BOM, approves it, creates a production order, verifies
+ * MIN creation is retired, then directly inserts the historical MIN fixture
+ * needed to prove the used BOM cannot be obsoleted.
  */
 
 import { mkdir, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { pool } from "@workspace/db";
 import { FAT_IDS, actorEmail } from "./fat-fixture-manifest";
@@ -248,10 +249,70 @@ async function main(): Promise<void> {
         ],
         notes: `${prefix} controlled production use`,
       });
-      if (issued.status !== 201 || !issued.body?.id) {
-        throw new Error(`Material issue failed: HTTP ${issued.status}`);
+      if (
+        issued.status !== 410 ||
+        issued.body?.code !== "MIN_DEPRECATED" ||
+        issued.body?.replacement !== "POST /api/manufacturing/orders/:id/issues/bulk"
+      ) {
+        throw new Error(`MIN deprecation contract failed: HTTP ${issued.status}`);
       }
-      ids.minId = issued.body.id;
+
+      const historicalMinId = randomUUID();
+      const historicalLineId = randomUUID();
+      const bomRevision = Number(
+        (await query(`SELECT revision FROM bom_headers WHERE id = $1`, [ids.bomId]))[0]?.revision ?? 1,
+      );
+      await query(
+        `INSERT INTO material_issue_notes
+          (id, min_number, source_type, source_ref_id, bom_header_id, bom_revision,
+           status, issued_by, notes)
+         VALUES ($1, $2, 'PRODUCTION_ORDER', $3, $4, $5, 'posted', $6, $7)`,
+        [
+          historicalMinId,
+          `${prefix.slice(0, 24)}-HMIN`,
+          ids.orderId,
+          ids.bomId,
+          bomRevision,
+          FAT_IDS.users.director,
+          `${prefix} direct historical MIN fixture`,
+        ],
+      );
+      await query(
+        `INSERT INTO material_issue_note_lines
+          (id, min_id, line_number, material_id, source_bom_line_id, required_qty,
+           issued_qty, uom, grn_id, grn_line_id, supplier_lot_number,
+           is_critical_component, traceability_required)
+         VALUES ($1, $2, 1, $3, $4, $5, $5, $6::material_uom, $7, $8, $9, $10, $11)`,
+        [
+          historicalLineId,
+          historicalMinId,
+          requirement.material_id,
+          requirement.bom_line_id,
+          requirement.required_qty,
+          requirement.uom,
+          requirement.suggested_grn_id,
+          requirement.suggested_grn_line_id,
+          requirement.suggested_supplier_lot_number,
+          requirement.is_critical_component,
+          requirement.traceability_required,
+        ],
+      );
+      await query(
+        `INSERT INTO inventory_transactions
+          (transaction_type, material_id, quantity, uom, stock_state,
+           source_document_type, source_document_id, source_line_id, created_by)
+         VALUES ('PRODUCTION_ISSUE', $1, $2, $3::material_uom, 'available',
+                 'MIN', $4, $5, $6)`,
+        [
+          requirement.material_id,
+          -Number(requirement.required_qty),
+          requirement.uom,
+          historicalMinId,
+          historicalLineId,
+          FAT_IDS.users.director,
+        ],
+      );
+      ids.minId = historicalMinId;
 
       before = (await query(
         `SELECT h.id, h.status::text AS status, h.revision, h.bom_number,

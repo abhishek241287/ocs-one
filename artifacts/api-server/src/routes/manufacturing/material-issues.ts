@@ -238,6 +238,17 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
 });
 
 // ─── POST / — issue BOM-driven materials (supervisor/director; atomic) ─────────
+router.post("/", async (_req: Request, res: Response): Promise<void> => {
+  res.status(410).json({
+    error: "DEPRECATED",
+    code: "MIN_DEPRECATED",
+    replacement: "POST /api/manufacturing/orders/:id/issues/bulk",
+    message: "Material issue via MIN is retired. Use the certified bulk issue endpoint (reservation → allocation → WIP issue).",
+  });
+});
+
+// Legacy MIN creation implementation retained below for historical source
+// reference only; the stable deprecation route above always handles this path.
 router.post("/", async (req: Request, res: Response): Promise<void> => {
   const orderId = req.params.id as string;
   const parsed = IssueMaterialsBody.safeParse(req.body ?? {});

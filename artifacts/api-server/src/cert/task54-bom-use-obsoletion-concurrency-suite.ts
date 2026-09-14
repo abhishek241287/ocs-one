@@ -3,9 +3,8 @@
  * Task #54 focused development regression.
  *
  * Creates two isolated BOM/order fixtures and exercises the real HTTP routes.
- * A held BOM-row lock makes each race ordering deterministic:
- *   A — material use queues first, then obsoletion;
- *   B — obsoletion queues first, then material use.
+ * MIN creation is now retired, so both orderings prove the safe result:
+ * MIN returns the stable 410 contract and obsoletion proceeds without a MIN.
  *
  * Only the isolated rows created by this suite are removed. Historical FAT
  * fixtures and evidence are not touched.
@@ -385,50 +384,21 @@ async function runRace(
   const materialFirst = ordering === "material_use_first";
   const firstOperation = materialFirst ? "material_issue" : "obsolete";
   const secondOperation = materialFirst ? "obsolete" : "material_issue";
-  const locker = await pool.connect();
-  let released = false;
   let materialResponse: HttpResult | null = null;
   let obsoleteResponse: HttpResult | null = null;
-  const pendingRequests: Promise<HttpResult>[] = [];
-
-  try {
-    await locker.query("BEGIN");
-    await locker.query(`SELECT id FROM bom_headers WHERE id = $1 FOR UPDATE`, [fixture.bomId]);
-
-    const firstPromise = materialFirst
-      ? request(
-          cookie,
-          "POST",
-          `/api/manufacturing/orders/${fixture.orderId}/material-issues`,
-          materialBody,
-        )
-      : request(cookie, "POST", `/api/boms/${fixture.bomId}/obsolete`);
-    pendingRequests.push(firstPromise);
-    await waitForBomLockWaiters(1);
-
-    const secondPromise = materialFirst
-      ? request(cookie, "POST", `/api/boms/${fixture.bomId}/obsolete`)
-      : request(
-          cookie,
-          "POST",
-          `/api/manufacturing/orders/${fixture.orderId}/material-issues`,
-          materialBody,
-        );
-    pendingRequests.push(secondPromise);
-    await waitForBomLockWaiters(2);
-
-    await locker.query("COMMIT");
-    released = true;
-    const [first, second] = await Promise.all([firstPromise, secondPromise]);
-    materialResponse = materialFirst ? first : second;
-    obsoleteResponse = materialFirst ? second : first;
-  } finally {
-    if (!released) {
-      await locker.query("ROLLBACK").catch(() => undefined);
-    }
-    locker.release();
-    await Promise.allSettled(pendingRequests);
-  }
+  const [first, second] = await Promise.all(
+    materialFirst
+      ? [
+          request(cookie, "POST", `/api/manufacturing/orders/${fixture.orderId}/material-issues`, materialBody),
+          request(cookie, "POST", `/api/boms/${fixture.bomId}/obsolete`),
+        ]
+      : [
+          request(cookie, "POST", `/api/boms/${fixture.bomId}/obsolete`),
+          request(cookie, "POST", `/api/manufacturing/orders/${fixture.orderId}/material-issues`, materialBody),
+        ],
+  );
+  materialResponse = materialFirst ? first : second;
+  obsoleteResponse = materialFirst ? second : first;
 
   assert(materialResponse && obsoleteResponse, `Task #54 ${ordering} did not return both responses`);
   const finalState = await readState(fixture);
@@ -438,45 +408,26 @@ async function runRace(
       : null;
   if (materialId) fixture.minId = materialId;
 
-  const materialWon = materialResponse.status === 201;
-  const obsoleteWon = obsoleteResponse.status === 200;
-  const assertions: Record<string, boolean> =
-    ordering === "material_use_first"
-      ? {
-          material_use_committed: materialWon,
-          obsoletion_rejected_as_used:
-            obsoleteResponse.status === 422 &&
-            errorText(obsoleteResponse.body)?.includes("used by production") === true,
-          bom_remained_approved: finalState.bomStatus === "approved",
-          exactly_one_material_issue: finalState.materialIssueCount === 1,
-          exactly_one_material_issue_line: finalState.materialIssueLineCount === 1,
-          exactly_one_inventory_movement: finalState.inventoryMovementCount === 1,
-          exactly_one_material_issue_timeline: finalState.materialIssueTimelineCount === 1,
-          transaction_atomicity:
-            finalState.materialIssueCount === 1 &&
-            finalState.materialIssueLineCount === 1 &&
-            finalState.inventoryMovementCount === 1 &&
-            finalState.materialIssueTimelineCount === 1,
-        }
-      : {
-          obsoletion_committed: obsoleteWon && obsoleteResponse.body?.status === "obsolete",
-          material_use_rejected:
-            materialResponse.status === 404 &&
-            errorText(materialResponse.body)?.includes("No approved BOM") === true,
-          bom_is_obsolete: finalState.bomStatus === "obsolete",
-          no_material_issue: finalState.materialIssueCount === 0,
-          no_material_issue_lines: finalState.materialIssueLineCount === 0,
-          no_inventory_movement: finalState.inventoryMovementCount === 0,
-          no_material_issue_timeline: finalState.materialIssueTimelineCount === 0,
-          transaction_atomicity:
-            finalState.materialIssueCount === 0 &&
-            finalState.materialIssueLineCount === 0 &&
-            finalState.inventoryMovementCount === 0 &&
-            finalState.materialIssueTimelineCount === 0,
-        };
-  const exactOutcome =
-    [materialWon, obsoleteWon].filter(Boolean).length === 1 &&
-    Object.values(assertions).every(Boolean);
+  const minDeprecated =
+    materialResponse.status === 410 &&
+    materialResponse.body?.code === "MIN_DEPRECATED" &&
+    materialResponse.body?.replacement === "POST /api/manufacturing/orders/:id/issues/bulk";
+  const obsoleteWon = obsoleteResponse.status === 200 && obsoleteResponse.body?.status === "obsolete";
+  const assertions: Record<string, boolean> = {
+    min_creation_deprecated: minDeprecated,
+    obsoletion_committed: obsoleteWon,
+    bom_is_obsolete: finalState.bomStatus === "obsolete",
+    no_material_issue: finalState.materialIssueCount === 0,
+    no_material_issue_lines: finalState.materialIssueLineCount === 0,
+    no_inventory_movement: finalState.inventoryMovementCount === 0,
+    no_material_issue_timeline: finalState.materialIssueTimelineCount === 0,
+    transaction_atomicity:
+      finalState.materialIssueCount === 0 &&
+      finalState.materialIssueLineCount === 0 &&
+      finalState.inventoryMovementCount === 0 &&
+      finalState.materialIssueTimelineCount === 0,
+  };
+  const exactOutcome = minDeprecated && obsoleteWon && Object.values(assertions).every(Boolean);
   const forbiddenState =
     finalState.bomStatus === "obsolete" && finalState.materialIssueCount > 0;
 

@@ -3,8 +3,8 @@ name: Phase 6 fixed-lot residue
 description: Certification rerun behavior when the Phase 6 fixture setup is interrupted.
 ---
 
-The Phase 6 final gate uses a fixed internal lot number (`LOT-R1`) for its setup fixture. If the process is interrupted after that lot is inserted but before the `finally` teardown runs, the next gate can fail at fixture creation with a unique-lot constraint before it reaches its own cleanup.
+The Phase 6 final gate now uses a run-unique internal lot number derived from its fixture prefix. An older interrupted run can still leave a `LOT-R1`/`P71H-*` graph behind, so the first clean rerun may require scoped development cleanup.
 
-**Why:** A timed-out gate left its fixture lot and related capture data in the development database; the next run failed before producing a verdict.
+**Why:** A timed-out gate left its fixture lot, capture data, GRNs, and users in the development database; the next run failed before producing a verdict. Cleanup must respect child-before-parent foreign keys and the attribute-definition/unit dependency.
 
-**How to apply:** When a Phase 6 rerun fails on the lot uniqueness constraint, inspect and remove only the interrupted `P71H-*` fixture graph and `LOT-R1` in development, then rerun the gate. Prefer making the fixture lot number run-unique in a future fixture-hardening task.
+**How to apply:** If stale residue is found, inspect and remove only the interrupted `P71H-*` fixture graph and `LOT-R1` in development, deleting capture values, GRN/capture evidence, master dependents, lowercase attribute definitions/templates, uppercase units/masters, audit actors, and users in dependency order. Then rerun the gate.
