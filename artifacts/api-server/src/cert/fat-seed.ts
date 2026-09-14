@@ -14,7 +14,8 @@
  */
 
 import bcrypt from "bcryptjs";
-import { pool } from "@workspace/db";
+import { db, pool } from "@workspace/db";
+import { executeBulkIssueInTx } from "../lib/bulk-issue-engine";
 import {
   FAT_FIXTURE_CONTRACT,
   FAT_IDS,
@@ -376,7 +377,7 @@ async function seedProcurement(client: SqlClient): Promise<void> {
      VALUES
       ($1, $2, 1, $3, 16, 'PCS', $4, NULL, 'Valid draft line'),
       ($5, $6, 1, $7, ${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, 'PCS', $8, 'passed', 'Cell stock for transfer and grading'),
-      ($9, $6, 2, $10, ${FAT_FIXTURE_CONTRACT.ledger.bmsReceivedUnits}, 'PCS', $11, 'passed', 'BMS stock for MIN'),
+       ($9, $6, 2, $10, ${FAT_FIXTURE_CONTRACT.ledger.bmsReceivedUnits}, 'PCS', $11, 'passed', 'BMS stock for certified bulk issue'),
       ($12, $13, 1, $14, 1, 'PCS', $15, 'rejected', 'Rejected inspection case')`,
     [
       FAT_IDS.procurement.validDraftLine,
@@ -412,8 +413,7 @@ async function seedProcurement(client: SqlClient): Promise<void> {
       ('INSPECTION_RELEASE', $6, -1, 'PCS', 'inspection_pending', 'INSPECTION', $10, $8, $4),
       ('INSPECTION_REJECT', $6, 1, 'PCS', 'rejected', 'INSPECTION', $10, $8, $4),
       ('MATERIAL_TRANSFER_TO_CELL_PROCESSING', $1, -${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, 'PCS', 'available', 'TRANSFER', $11, $3, $4),
-      ('MATERIAL_TRANSFER_TO_CELL_PROCESSING', $1, ${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, 'PCS', 'available', 'TRANSFER', $11, $3, $4),
-      ('PRODUCTION_ISSUE', $6, -1, 'PCS', 'available', 'MIN', $12, $13, $4)`,
+       ('MATERIAL_TRANSFER_TO_CELL_PROCESSING', $1, ${FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits}, 'PCS', 'available', 'TRANSFER', $11, $3, $4)`,
     [
       FAT_IDS.masters.materialCell,
       FAT_IDS.procurement.posted,
@@ -426,8 +426,6 @@ async function seedProcurement(client: SqlClient): Promise<void> {
       FAT_IDS.procurement.inspection,
       FAT_IDS.procurement.inspection,
       FAT_IDS.procurement.transfer,
-      "fa1b0000-0000-4000-8000-000000000001",
-      "fa1b0000-0000-4000-8000-000000000002",
     ],
   );
   await query(
@@ -500,6 +498,56 @@ async function seedProcurement(client: SqlClient): Promise<void> {
       FAT_IDS.procurement.cellLine,
       FAT_IDS.masters.supplier,
       FAT_IDS.users.supervisor,
+    ],
+  );
+}
+
+async function seedInventoryPlatform(client: SqlClient): Promise<void> {
+  await query(
+    client,
+    `INSERT INTO warehouses
+      (id, code, name, type, address, is_active)
+     VALUES ($1, $2, 'FAT E2E Main Store', 'main_store', 'FAT E2E Controlled Store', true)`,
+    [FAT_IDS.inventory.warehouse, `${FAT_PREFIX}MAIN-W`],
+  );
+  await query(
+    client,
+    `INSERT INTO locations
+      (id, warehouse_id, code, name, type, is_active)
+     VALUES ($1, $2, $3, 'FAT E2E BMS Storage', 'storage', true)`,
+    [FAT_IDS.inventory.location, FAT_IDS.inventory.warehouse, `${FAT_PREFIX}BMS-L`],
+  );
+  await query(
+    client,
+    `INSERT INTO inventory_lots
+      (id, lot_number, material_id, supplier_lot_number, supplier_id, grn_line_id,
+       received_date, status, total_received_qty, remaining_qty, uom, warehouse_id, location_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', $8, $8, 'PCS', $9, $10)`,
+    [
+      FAT_IDS.inventory.bmsLot,
+      `${FAT_PREFIX}LOT-BMS-001`,
+      FAT_IDS.masters.materialBms,
+      `${FAT_PREFIX}SUP-LOT-BMS-001`,
+      FAT_IDS.masters.supplier,
+      FAT_IDS.procurement.bmsLine,
+      `${DATE}T00:00:00Z`,
+      FAT_FIXTURE_CONTRACT.ledger.bmsReceivedUnits,
+      FAT_IDS.inventory.warehouse,
+      FAT_IDS.inventory.location,
+    ],
+  );
+  await query(
+    client,
+    `UPDATE grn_line_items
+     SET lot_id = $1, warehouse_id = $2, location_id = $3,
+         accepted_qty = $4, put_away_qty = $4
+     WHERE id = $5`,
+    [
+      FAT_IDS.inventory.bmsLot,
+      FAT_IDS.inventory.warehouse,
+      FAT_IDS.inventory.location,
+      FAT_FIXTURE_CONTRACT.ledger.bmsReceivedUnits,
+      FAT_IDS.procurement.bmsLine,
     ],
   );
 }
@@ -815,37 +863,6 @@ async function seedManufacturing(client: SqlClient): Promise<void> {
       ($1, 'qc_approved', 'quality_control', $2, 'FAT QC approved', $3::jsonb)`,
     [FAT_IDS.orders.clean, actorEmail("supervisor"), JSON.stringify({ fixture: FAT_PREFIX })],
   );
-  await query(
-    client,
-    `INSERT INTO material_issue_notes
-      (id, min_number, source_type, source_ref_id, bom_header_id, bom_revision,
-       status, issued_by, notes)
-     VALUES ($1, $2, 'PRODUCTION_ORDER', $3, $4, 1, 'posted', $5, 'FAT non-cell BOM issue')`,
-    [
-      "fa1b0000-0000-4000-8000-000000000001",
-      `${FAT_PREFIX}MIN-001`,
-      FAT_IDS.orders.clean,
-      FAT_IDS.bom.header,
-      FAT_IDS.users.supervisor,
-    ],
-  );
-  await query(
-    client,
-    `INSERT INTO material_issue_note_lines
-      (id, min_id, line_number, material_id, source_bom_line_id, required_qty,
-       issued_qty, uom, grn_id, grn_line_id, supplier_lot_number,
-       is_critical_component, traceability_required)
-     VALUES ($1, $2, 1, $3, $4, 1, 1, 'PCS', $5, $6, $7, true, true)`,
-    [
-      "fa1b0000-0000-4000-8000-000000000002",
-      "fa1b0000-0000-4000-8000-000000000001",
-      FAT_IDS.masters.materialBms,
-      FAT_IDS.bom.bmsLine,
-      FAT_IDS.procurement.posted,
-      FAT_IDS.procurement.bmsLine,
-      `${FAT_PREFIX}SUP-LOT-BMS-001`,
-    ],
-  );
 }
 
 async function seedFulfillment(client: SqlClient): Promise<void> {
@@ -1018,6 +1035,10 @@ async function collectManifest(client: SqlClient): Promise<Record<string, unknow
     supplier: FAT_IDS.masters.supplier,
     cellMaterial: FAT_IDS.masters.materialCell,
     bmsMaterial: FAT_IDS.masters.materialBms,
+    bmsWarehouse: FAT_IDS.inventory.warehouse,
+    bmsLocation: FAT_IDS.inventory.location,
+    bmsLot: FAT_IDS.inventory.bmsLot,
+    bmsBulkIdempotencyKey: `${FAT_PREFIX}BULK-BMS-001`,
     approvedBom: FAT_IDS.bom.header,
     postedGrn: FAT_IDS.procurement.posted,
     inspection: FAT_IDS.procurement.inspection,
@@ -1206,11 +1227,14 @@ async function preflight(): Promise<void> {
     const inventory = (
       await query(
         client,
-        `SELECT material_id, sum(quantity)::numeric AS quantity
+         `SELECT material_id, sum(quantity)::numeric AS quantity
          FROM inventory_transactions
          WHERE material_id IN ($1, $2)
            AND stock_state = 'available'
-           AND source_document_id IN ($3, $4, $5, $6, $7)
+           AND (
+             source_document_id IN ($3, $4, $5, $6)
+             OR (source_document_type = 'wip_issue_note' AND production_order_id = $7)
+           )
          GROUP BY material_id
          ORDER BY material_id`,
         [
@@ -1220,18 +1244,45 @@ async function preflight(): Promise<void> {
           FAT_IDS.procurement.rejected,
           FAT_IDS.procurement.inspection,
           FAT_IDS.procurement.transfer,
-          "fa1b0000-0000-4000-8000-000000000001",
+           FAT_IDS.orders.clean,
         ],
       )
     ).rows;
     const inventoryByMaterial = new Map(inventory.map((row) => [String(row.material_id), Number(row.quantity)]));
     preflightCheck(checks, "ledger", "cell signed-ledger projection has the expected available units", inventoryByMaterial.get(FAT_IDS.masters.materialCell) === FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits, FAT_FIXTURE_CONTRACT.ledger.cellAvailableUnits, inventoryByMaterial.get(FAT_IDS.masters.materialCell));
-    preflightCheck(checks, "ledger", "BMS signed-ledger projection has the expected available units", inventoryByMaterial.get(FAT_IDS.masters.materialBms) === FAT_FIXTURE_CONTRACT.ledger.bmsAvailableUnits, FAT_FIXTURE_CONTRACT.ledger.bmsAvailableUnits, inventoryByMaterial.get(FAT_IDS.masters.materialBms));
+    const bmsStates = (
+      await query(
+        client,
+        `SELECT stock_state, sum(quantity)::numeric AS quantity
+         FROM inventory_transactions
+         WHERE material_id = $1
+         GROUP BY stock_state`,
+        [FAT_IDS.masters.materialBms],
+      )
+    ).rows;
+    const bmsByState = new Map(bmsStates.map((row) => [String(row.stock_state), Number(row.quantity)]));
+    const expectedBmsStates = {
+      available: FAT_FIXTURE_CONTRACT.ledger.bmsAvailableUnits,
+      wip: FAT_FIXTURE_CONTRACT.ledger.bmsWipUnits,
+      rejected: FAT_FIXTURE_CONTRACT.ledger.bmsRejectedUnits,
+      inspection_pending: FAT_FIXTURE_CONTRACT.ledger.bmsInspectionPendingUnits,
+    };
+    const actualBmsStates = {
+      available: bmsByState.get("available") ?? 0,
+      wip: bmsByState.get("wip") ?? 0,
+      rejected: bmsByState.get("rejected") ?? 0,
+      inspection_pending: bmsByState.get("inspection_pending") ?? 0,
+    };
+    preflightCheck(checks, "ledger", "BMS signed-ledger state projections have the expected available, WIP, rejected, and pending units", JSON.stringify(actualBmsStates) === JSON.stringify(expectedBmsStates), expectedBmsStates, actualBmsStates);
     const txCount = Number((
       await query(
         client,
-        `SELECT count(*) AS n FROM inventory_transactions
-         WHERE material_id IN ($1, $2) AND source_document_id IN ($3, $4, $5, $6, $7)`,
+         `SELECT count(*) AS n FROM inventory_transactions
+          WHERE material_id IN ($1, $2)
+            AND (
+              source_document_id IN ($3, $4, $5, $6)
+              OR (source_document_type = 'wip_issue_note' AND production_order_id = $7)
+            )`,
         [
           FAT_IDS.masters.materialCell,
           FAT_IDS.masters.materialBms,
@@ -1239,7 +1290,7 @@ async function preflight(): Promise<void> {
           FAT_IDS.procurement.rejected,
           FAT_IDS.procurement.inspection,
           FAT_IDS.procurement.transfer,
-          "fa1b0000-0000-4000-8000-000000000001",
+           FAT_IDS.orders.clean,
         ],
       )
     ).rows[0]?.n ?? 0);
@@ -1393,6 +1444,7 @@ async function seed(): Promise<void> {
     await seedUsers(client);
     await seedBom(client);
     await seedProcurement(client);
+    await seedInventoryPlatform(client);
     await seedCells(client);
     await seedManufacturing(client);
     await seedFulfillment(client);
@@ -1403,6 +1455,19 @@ async function seed(): Promise<void> {
   } finally {
     client.release();
   }
+
+  await db.transaction(async (tx) => {
+    const outcome = await executeBulkIssueInTx(tx, {
+      productionOrderId: FAT_IDS.orders.clean,
+      idempotencyKey: `${FAT_PREFIX}BULK-BMS-001`,
+      actorId: FAT_IDS.users.supervisor,
+      actorName: actorEmail("supervisor"),
+      notes: `${FAT_PREFIX} certified bulk issue`,
+    });
+    if (outcome.status !== 201 || !outcome.projection) {
+      throw new Error(`FAT bulk issue fixture did not create: ${JSON.stringify(outcome)}`);
+    }
+  });
 
   const verifyClient = await pool.connect();
   try {

@@ -93,6 +93,11 @@ export const FAT_IDS = {
     registration: "fa1a0000-0000-4000-8000-000000000003",
     warranty: "fa1a0000-0000-4000-8000-000000000004",
   },
+  inventory: {
+    warehouse: "fa1b0000-0000-4000-8000-000000000003",
+    location: "fa1b0000-0000-4000-8000-000000000004",
+    bmsLot: "fa1b0000-0000-4000-8000-000000000005",
+  },
 } as const;
 
 export type FatRole = "owner" | "director" | "supervisor" | "operator" | "viewer" | "dealer";
@@ -111,6 +116,9 @@ export type FatFixtureContract = {
     cellAvailableUnits: number;
     bmsReceivedUnits: number;
     bmsAvailableUnits: number;
+    bmsWipUnits: number;
+    bmsRejectedUnits: number;
+    bmsInspectionPendingUnits: number;
     transactionCount: number;
     grnLines: number;
     inspectionCount: number;
@@ -214,7 +222,10 @@ export const FAT_FIXTURE_CONTRACT = {
     cellAvailableUnits: 64,
     bmsReceivedUnits: 2,
     bmsAvailableUnits: 1,
-    transactionCount: 12,
+    bmsWipUnits: 1,
+    bmsRejectedUnits: 1,
+    bmsInspectionPendingUnits: 0,
+    transactionCount: 13,
     grnLines: 2,
     inspectionCount: 1,
     inspectionLines: 2,
@@ -292,7 +303,7 @@ export const FAT_FIXTURE_CONTRACT = {
       materials: 2,
       bomLines: 2,
       grnLines: 2,
-      inventoryTransactions: 12,
+      inventoryTransactions: 13,
       cells: 64,
       stages: 54,
       genealogyRows: 5,
@@ -339,6 +350,11 @@ const residualChecks: ResidualCheck[] = [
   { name: "materials", sql: `SELECT count(*)::int AS n FROM master_materials WHERE code LIKE $1`, values: [`${FAT_PREFIX}%`] },
   { name: "boms", sql: `SELECT count(*)::int AS n FROM bom_headers WHERE bom_number LIKE $1`, values: [`${FAT_PREFIX}%`] },
   { name: "grns", sql: `SELECT count(*)::int AS n FROM grn_headers WHERE grn_number LIKE $1`, values: [`${FAT_PREFIX}%`] },
+      { name: "warehouses", sql: `SELECT count(*)::int AS n FROM warehouses WHERE code LIKE $1`, values: [`${FAT_PREFIX}%`] },
+      { name: "locations", sql: `SELECT count(*)::int AS n FROM locations WHERE code LIKE $1`, values: [`${FAT_PREFIX}%`] },
+      { name: "inventoryLots", sql: `SELECT count(*)::int AS n FROM inventory_lots WHERE lot_number LIKE $1`, values: [`${FAT_PREFIX}%`] },
+      { name: "bulkBatches", sql: `SELECT count(*)::int AS n FROM bulk_batches WHERE idempotency_key LIKE $1`, values: [`${FAT_PREFIX}%`] },
+      { name: "wipIssues", sql: `SELECT count(*)::int AS n FROM wip_issue_notes WHERE notes LIKE $1`, values: [`${FAT_PREFIX}%`] },
   { name: "inspections", sql: `SELECT count(*)::int AS n FROM incoming_inspections WHERE inspection_number LIKE $1`, values: [`${FAT_PREFIX}%`] },
   { name: "transfers", sql: `SELECT count(*)::int AS n FROM material_transfers WHERE transfer_number LIKE $1`, values: [`${FAT_PREFIX}%`] },
   { name: "lots", sql: `SELECT count(*)::int AS n FROM cell_lots WHERE lot_number LIKE $1`, values: [`${FAT_PREFIX}%`] },
@@ -393,6 +409,24 @@ export async function teardownFatDataset(client: SqlClient): Promise<void> {
     `DELETE FROM material_issue_reversals WHERE min_id IN (SELECT id FROM material_issue_notes WHERE min_number LIKE '${FAT_PREFIX}%')`,
     `DELETE FROM material_issue_note_lines WHERE min_id IN (SELECT id FROM material_issue_notes WHERE min_number LIKE '${FAT_PREFIX}%')`,
     `DELETE FROM material_issue_notes WHERE min_number LIKE '${FAT_PREFIX}%'`,
+    `DELETE FROM inventory_transactions
+     WHERE source_document_type = 'wip_issue_note'
+       AND source_document_id IN (SELECT id FROM wip_issue_notes WHERE production_order_id IN (SELECT id FROM mfg_production_orders WHERE order_number LIKE '${FAT_PREFIX}%'))`,
+    `DELETE FROM outbox_events
+     WHERE aggregate_id IN (
+       SELECT id FROM bulk_batches WHERE idempotency_key LIKE '${FAT_PREFIX}%'
+       UNION SELECT reservation_id FROM bulk_batch_lines WHERE batch_id IN (SELECT id FROM bulk_batches WHERE idempotency_key LIKE '${FAT_PREFIX}%')
+       UNION SELECT wip_issue_note_id FROM bulk_batch_lines WHERE batch_id IN (SELECT id FROM bulk_batches WHERE idempotency_key LIKE '${FAT_PREFIX}%')
+       UNION SELECT id FROM wip_issue_notes WHERE production_order_id IN (SELECT id FROM mfg_production_orders WHERE order_number LIKE '${FAT_PREFIX}%')
+     )`,
+    `DELETE FROM wip_inventory
+     WHERE wip_issue_note_id IN (SELECT id FROM wip_issue_notes WHERE production_order_id IN (SELECT id FROM mfg_production_orders WHERE order_number LIKE '${FAT_PREFIX}%'))`,
+    `DELETE FROM bulk_batch_lines WHERE batch_id IN (SELECT id FROM bulk_batches WHERE idempotency_key LIKE '${FAT_PREFIX}%')`,
+    `DELETE FROM wip_issue_lines WHERE wip_issue_note_id IN (SELECT id FROM wip_issue_notes WHERE production_order_id IN (SELECT id FROM mfg_production_orders WHERE order_number LIKE '${FAT_PREFIX}%'))`,
+    `DELETE FROM wip_issue_notes WHERE production_order_id IN (SELECT id FROM mfg_production_orders WHERE order_number LIKE '${FAT_PREFIX}%') OR notes LIKE '${FAT_PREFIX}%'`,
+    `DELETE FROM inventory_reservation_allocations WHERE reservation_id IN (SELECT id FROM inventory_reservations WHERE production_order_id IN (SELECT id FROM mfg_production_orders WHERE order_number LIKE '${FAT_PREFIX}%'))`,
+    `DELETE FROM inventory_reservations WHERE production_order_id IN (SELECT id FROM mfg_production_orders WHERE order_number LIKE '${FAT_PREFIX}%')`,
+    `DELETE FROM bulk_batches WHERE idempotency_key LIKE '${FAT_PREFIX}%'`,
     `DELETE FROM mfg_rework_tickets WHERE ticket_number LIKE '${FAT_PREFIX}%'`,
     `DELETE FROM mfg_test_results WHERE production_order_id IN (SELECT id FROM mfg_production_orders WHERE order_number LIKE '${FAT_PREFIX}%')`,
     `DELETE FROM mfg_qc_approvals WHERE production_order_id IN (SELECT id FROM mfg_production_orders WHERE order_number LIKE '${FAT_PREFIX}%')`,
@@ -407,6 +441,7 @@ export async function teardownFatDataset(client: SqlClient): Promise<void> {
     `DELETE FROM cells WHERE cell_id LIKE '${FAT_PREFIX}%' OR lot_id IN (SELECT id FROM cell_lots WHERE lot_number LIKE '${FAT_PREFIX}%' OR transfer_id IN (SELECT id FROM material_transfers WHERE material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%')))`,
     `DELETE FROM cell_lots WHERE lot_number LIKE '${FAT_PREFIX}%' OR transfer_id IN (SELECT id FROM material_transfers WHERE material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%'))`,
     `DELETE FROM inventory_transactions WHERE source_document_id IN (SELECT id FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%' OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%')) OR source_document_id IN (SELECT id FROM material_transfers WHERE transfer_number LIKE '${FAT_PREFIX}%' OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%')) OR material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%')`,
+    `DELETE FROM inventory_lots WHERE lot_number LIKE '${FAT_PREFIX}%' OR material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%') OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%')`,
     `DELETE FROM incoming_inspection_lines WHERE inspection_id IN (SELECT id FROM incoming_inspections WHERE inspection_number LIKE '${FAT_PREFIX}%' OR grn_id IN (SELECT id FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%' OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%'))) OR material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%')`,
     `DELETE FROM incoming_inspections WHERE inspection_number LIKE '${FAT_PREFIX}%' OR grn_id IN (SELECT id FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%' OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%'))`,
     `DELETE FROM material_transfers WHERE transfer_number LIKE '${FAT_PREFIX}%' OR material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%') OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%')`,
@@ -416,6 +451,8 @@ export async function teardownFatDataset(client: SqlClient): Promise<void> {
     // leave the unrelated document header intact.
     `DELETE FROM grn_line_items WHERE grn_id IN (SELECT id FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%' OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%')) OR material_id IN (SELECT id FROM master_materials WHERE code LIKE '${FAT_PREFIX}%')`,
     `DELETE FROM grn_headers WHERE grn_number LIKE '${FAT_PREFIX}%' OR supplier_id IN (SELECT id FROM master_suppliers WHERE code LIKE '${FAT_PREFIX}%')`,
+    `DELETE FROM locations WHERE code LIKE '${FAT_PREFIX}%'`,
+    `DELETE FROM warehouses WHERE code LIKE '${FAT_PREFIX}%'`,
     `DELETE FROM material_workflow_assignments
      WHERE id IN ('${FAT_IDS.masters.assignmentCell}', '${FAT_IDS.masters.assignmentBms}')
         OR category_id IN (SELECT id FROM master_material_categories WHERE code LIKE '${FAT_PREFIX}%')
