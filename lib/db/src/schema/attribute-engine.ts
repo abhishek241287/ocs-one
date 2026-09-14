@@ -17,6 +17,7 @@ import {
   index,
   uniqueIndex,
   check,
+  foreignKey,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { materialsTable, materialCategoriesTable } from "./inventory";
@@ -126,9 +127,7 @@ export const attributeDefinitionsTable = pgTable(
     name: varchar("name", { length: 120 }).notNull(), // display name may change
     dataType: attributeDataTypeEnum("data_type").notNull(),
     scope: attributeScopeEnum("scope").notNull().default("RECEIPT_LINE"),
-    unitCode: varchar("unit_code", { length: 20 }).references(
-      () => unitDefinitionsTable.unitCode,
-    ),
+    unitCode: varchar("unit_code", { length: 20 }),
     allowedUnits: jsonb("allowed_units"), // subset of registry acceptable here
     precision: integer("precision"),
     scale: integer("scale"),
@@ -146,6 +145,11 @@ export const attributeDefinitionsTable = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    foreignKey({
+      columns: [t.unitCode],
+      foreignColumns: [unitDefinitionsTable.unitCode],
+      name: "attribute_definitions_unit_code_fk",
+    }),
     check(
       "attribute_definitions_reserved_codes",
       sql`${t.code} NOT IN (${RESERVED_ATTRIBUTE_CODES_SQL})`,
@@ -171,9 +175,7 @@ export const attributeTemplateVersionsTable = pgTable(
   "attribute_template_versions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    templateId: uuid("template_id")
-      .notNull()
-      .references(() => attributeTemplatesTable.id),
+    templateId: uuid("template_id").notNull(),
     versionNo: integer("version_no").notNull(),
     status: attributeLifecycleEnum("status").notNull().default("DRAFT"),
     effectiveFrom: timestamp("effective_from", { withTimezone: true }).notNull(),
@@ -182,6 +184,11 @@ export const attributeTemplateVersionsTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    foreignKey({
+      columns: [t.templateId],
+      foreignColumns: [attributeTemplatesTable.id],
+      name: "attribute_template_versions_template_fk",
+    }),
     uniqueIndex("template_versions_unique_no").on(t.templateId, t.versionNo),
     index("template_versions_resolution_idx").on(
       t.templateId,
@@ -196,12 +203,8 @@ export const attributeTemplateAttributesTable = pgTable(
   "attribute_template_attributes",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    templateVersionId: uuid("template_version_id")
-      .notNull()
-      .references(() => attributeTemplateVersionsTable.id),
-    attributeId: uuid("attribute_id")
-      .notNull()
-      .references(() => attributeDefinitionsTable.id),
+    templateVersionId: uuid("template_version_id").notNull(),
+    attributeId: uuid("attribute_id").notNull(),
     required: boolean("required").notNull().default(false),
     sequence: integer("sequence").notNull().default(0),
     defaultValue: text("default_value"), // A: default ≠ captured fact (value_origin)
@@ -210,6 +213,16 @@ export const attributeTemplateAttributesTable = pgTable(
     validationOverride: jsonb("validation_override"), // future conditional rules extension point
   },
   (t) => [
+    foreignKey({
+      columns: [t.templateVersionId],
+      foreignColumns: [attributeTemplateVersionsTable.id],
+      name: "attribute_template_attributes_version_fk",
+    }),
+    foreignKey({
+      columns: [t.attributeId],
+      foreignColumns: [attributeDefinitionsTable.id],
+      name: "attribute_template_attributes_attribute_fk",
+    }),
     uniqueIndex("template_attributes_unique").on(t.templateVersionId, t.attributeId),
     index("template_attributes_order_idx").on(t.templateVersionId, t.sequence),
   ],
@@ -221,11 +234,9 @@ export const materialTemplateMappingsTable = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     scope: mappingScopeEnum("scope").notNull(),
-    materialId: uuid("material_id").references(() => materialsTable.id),
-    categoryId: uuid("category_id").references(() => materialCategoriesTable.id),
-    templateId: uuid("template_id")
-      .notNull()
-      .references(() => attributeTemplatesTable.id),
+    materialId: uuid("material_id"),
+    categoryId: uuid("category_id"),
+    templateId: uuid("template_id").notNull(),
     status: attributeLifecycleEnum("status").notNull().default("ACTIVE"),
     effectiveFrom: timestamp("effective_from", { withTimezone: true })
       .notNull()
@@ -235,6 +246,21 @@ export const materialTemplateMappingsTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    foreignKey({
+      columns: [t.materialId],
+      foreignColumns: [materialsTable.id],
+      name: "material_template_mappings_material_fk",
+    }),
+    foreignKey({
+      columns: [t.categoryId],
+      foreignColumns: [materialCategoriesTable.id],
+      name: "material_template_mappings_category_fk",
+    }),
+    foreignKey({
+      columns: [t.templateId],
+      foreignColumns: [attributeTemplatesTable.id],
+      name: "material_template_mappings_template_fk",
+    }),
     check(
       "mapping_scope_shape",
       sql`((${t.scope} = 'MATERIAL' AND ${t.materialId} IS NOT NULL AND ${t.categoryId} IS NULL)
@@ -252,12 +278,17 @@ export const materialTemplateMappingsTable = pgTable(
 // ─── Tracking profiles (A12) ─────────────────────────────────────────────────
 export const materialInventoryProfilesTable = pgTable("material_inventory_profiles", {
   materialId: uuid("material_id")
-    .primaryKey()
-    .references(() => materialsTable.id),
+    .primaryKey(),
   trackingMode: trackingModeEnum("tracking_mode").notNull().default("NONE"),
   updatedBy: uuid("updated_by"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  foreignKey({
+    columns: [t.materialId],
+    foreignColumns: [materialsTable.id],
+    name: "material_inventory_profiles_material_fk",
+  }),
+]);
 
 // ─── Capture instances + typed values (A1/A3/A9/A11/A13) ────────────────────
 export const attributeCaptureInstancesTable = pgTable(
@@ -266,12 +297,8 @@ export const attributeCaptureInstancesTable = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     targetType: captureTargetTypeEnum("target_type").notNull(), // A3 allowlist; adapter registry validates
     targetId: uuid("target_id").notNull(), // polymorphic; GRN line id in Phase 6
-    templateVersionId: uuid("template_version_id")
-      .notNull()
-      .references(() => attributeTemplateVersionsTable.id), // pinned at session creation (A11)
-    materialId: uuid("material_id")
-      .notNull()
-      .references(() => materialsTable.id),
+    templateVersionId: uuid("template_version_id").notNull(), // pinned at session creation (A11)
+    materialId: uuid("material_id").notNull(),
     status: captureStatusEnum("status").notNull().default("DRAFT"),
     sourceType: captureSourceTypeEnum("source_type").notNull(), // A13 provenance, immutable from VALIDATED
     sourceSessionId: uuid("source_session_id"),
@@ -280,6 +307,16 @@ export const attributeCaptureInstancesTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    foreignKey({
+      columns: [t.templateVersionId],
+      foreignColumns: [attributeTemplateVersionsTable.id],
+      name: "attribute_capture_instances_version_fk",
+    }),
+    foreignKey({
+      columns: [t.materialId],
+      foreignColumns: [materialsTable.id],
+      name: "attribute_capture_instances_material_fk",
+    }),
     index("capture_instances_target_idx").on(t.targetType, t.targetId),
     index("capture_instances_status_idx").on(t.status),
   ],
@@ -289,12 +326,8 @@ export const attributeCaptureValuesTable = pgTable(
   "attribute_capture_values",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    captureInstanceId: uuid("capture_instance_id")
-      .notNull()
-      .references(() => attributeCaptureInstancesTable.id),
-    attributeId: uuid("attribute_id")
-      .notNull()
-      .references(() => attributeDefinitionsTable.id),
+    captureInstanceId: uuid("capture_instance_id").notNull(),
+    attributeId: uuid("attribute_id").notNull(),
     valueText: text("value_text"),
     valueNum: numeric("value_num", { precision: 18, scale: 6 }),
     valueBool: boolean("value_bool"),
@@ -306,6 +339,16 @@ export const attributeCaptureValuesTable = pgTable(
     displayCache: jsonb("display_cache"), // derived only, never authoritative
   },
   (t) => [
+    foreignKey({
+      columns: [t.captureInstanceId],
+      foreignColumns: [attributeCaptureInstancesTable.id],
+      name: "attribute_capture_values_instance_fk",
+    }),
+    foreignKey({
+      columns: [t.attributeId],
+      foreignColumns: [attributeDefinitionsTable.id],
+      name: "attribute_capture_values_attribute_fk",
+    }),
     uniqueIndex("capture_values_unique").on(t.captureInstanceId, t.attributeId),
     index("capture_values_attr_num_idx").on(t.attributeId, t.valueNum),
     index("capture_values_attr_text_idx").on(t.attributeId, t.valueText),
