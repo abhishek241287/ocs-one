@@ -170,7 +170,7 @@ async function receive(
   quantity: number,
   suffix: string,
   receivedDate = "2026-09-12",
-): Promise<{ lineId: string; lotId: string }> {
+): Promise<{ grnId: string; lineId: string; lotId: string }> {
   const grnId = randomUUID();
   const lineId = randomUUID();
   const lotId = randomUUID();
@@ -203,10 +203,14 @@ async function receive(
      VALUES ('GRN_RECEIPT', $1, $2, 'PCS', 'available', 'GRN', $3, $4, $5)`,
     [materialId, quantity, grnId, lineId, supervisorId],
   );
+  await pool.query(
+    "UPDATE grn_line_items SET lot_id = $1 WHERE id = $2",
+    [lotId, lineId],
+  );
   grnIds.push(grnId);
   lineIds.push(lineId);
   lotIds.push(lotId);
-  return { lineId, lotId };
+  return { grnId, lineId, lotId };
 }
 
 async function reserve(orderId: string, materialId: string, quantity: number): Promise<ApiResult> {
@@ -553,16 +557,15 @@ async function main(): Promise<void> {
       const late = await receive(material.id, 20, "P03-LATE", "2026-09-12");
       const reservation = await reserve(order, material.id, 50);
       await allocate(reservation.json.id);
-      const lots = await call("supervisor", "GET", `/inventory/lots?material_id=${material.id}`);
-      const forced = (lots.json?.items ?? []).reduce((a: any, b: any) =>
-        new Date(a.received_date ?? a.created_at) > new Date(b.received_date ?? b.created_at) ? a : b,
-      ).id ?? late.lotId;
+      const lateGrn = await call("supervisor", "GET", `/inventory/grns/${late.grnId}`);
+      const forced = lateGrn.json?.lines?.find((line: any) => line.id === late.lineId)?.lot_id;
       const issue = await call("supervisor", "POST", `/inventory/reservations/${reservation.json.id}/issue`, {
         quantity: 10,
         lot_id: forced,
       });
-      check("PH4-03", issue.status === 201 && issue.json?.lines?.[0]?.lot_id === forced,
-        JSON.stringify(issue.json?.lines));
+      check("PH4-03", lateGrn.status === 200 && forced === late.lotId &&
+        issue.status === 201 && issue.json?.lines?.[0]?.lot_id === forced,
+      JSON.stringify({ lateGrn: lateGrn.json, forced, issue: issue.json }));
     }
 
     // PH4-04 Reservation interaction.

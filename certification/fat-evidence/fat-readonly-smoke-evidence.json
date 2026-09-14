@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-09-13T17:33:04.425Z",
+  "run_at": "2026-09-14T09:43:26.744Z",
   "environment": "http://localhost:8080",
   "dataset": "FAT-E2E-",
   "mode": "read-only-route-smoke",
@@ -150,8 +150,8 @@
           "role": "owner",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789320784,
-          "exp": 1789349584
+          "iat": 1789379007,
+          "exp": 1789407807
         }
       }
     },
@@ -179,8 +179,8 @@
           "role": "owner",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789320784,
-          "exp": 1789349584
+          "iat": 1789379007,
+          "exp": 1789407807
         }
       },
       "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
@@ -203,8 +203,8 @@
           "role": "director",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789320785,
-          "exp": 1789349585
+          "iat": 1789379007,
+          "exp": 1789407807
         }
       }
     },
@@ -232,8 +232,8 @@
           "role": "director",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789320785,
-          "exp": 1789349585
+          "iat": 1789379007,
+          "exp": 1789407807
         }
       },
       "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
@@ -256,8 +256,8 @@
           "role": "supervisor",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789320785,
-          "exp": 1789349585
+          "iat": 1789379007,
+          "exp": 1789407807
         }
       }
     },
@@ -285,8 +285,8 @@
           "role": "supervisor",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789320785,
-          "exp": 1789349585
+          "iat": 1789379007,
+          "exp": 1789407807
         }
       },
       "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
@@ -309,8 +309,8 @@
           "role": "operator",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789320785,
-          "exp": 1789349585
+          "iat": 1789379008,
+          "exp": 1789407808
         }
       }
     },
@@ -338,8 +338,8 @@
           "role": "operator",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789320785,
-          "exp": 1789349585
+          "iat": 1789379008,
+          "exp": 1789407808
         }
       },
       "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
@@ -362,8 +362,8 @@
           "role": "viewer",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789320785,
-          "exp": 1789349585
+          "iat": 1789379008,
+          "exp": 1789407808
         }
       }
     },
@@ -391,8 +391,8 @@
           "role": "viewer",
           "dealerId": null,
           "sessionVersion": 0,
-          "iat": 1789320785,
-          "exp": 1789349585
+          "iat": 1789379008,
+          "exp": 1789407808
         }
       },
       "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
@@ -415,8 +415,8 @@
           "role": "dealer",
           "dealerId": "fa120000-0000-4000-8000-000000000001",
           "sessionVersion": 0,
-          "iat": 1789320786,
-          "exp": 1789349586
+          "iat": 1789379008,
+          "exp": 1789407808
         }
       }
     },
@@ -444,8 +444,8 @@
           "role": "dealer",
           "dealerId": "fa120000-0000-4000-8000-000000000001",
           "sessionVersion": 0,
-          "iat": 1789320786,
-          "exp": 1789349586
+          "iat": 1789379008,
+          "exp": 1789407808
         }
       },
       "note": "Every seeded role must authenticate and receive the expected scoped identity from /auth/me."
@@ -481,9 +481,9 @@
             "product_status": "dispatched",
             "current_location": "FAT E2E Dealer Alpha",
             "dealer_id": "fa120000-0000-4000-8000-000000000001",
-            "manufacturing_completed_at": "2026-09-13T11:42:56.669Z",
-            "created_at": "2026-09-13T11:42:56.698Z",
-            "updated_at": "2026-09-13T11:42:56.698Z",
+            "manufacturing_completed_at": "2026-09-14T01:36:42.549Z",
+            "created_at": "2026-09-14T01:36:42.588Z",
+            "updated_at": "2026-09-14T01:36:42.588Z",
             "category_name": "FAT E2E Battery Pack",
             "model_code": "FAT-E2E-MODEL-16S280",
             "model_name": "FAT E2E 16S 280Ah Battery Pack",
@@ -529,9 +529,9 @@
               "product_status": "dispatched",
               "current_location": "FAT E2E Dealer Alpha",
               "dealer_id": "fa120000-0000-4000-8000-000000000001",
-              "manufacturing_completed_at": "2026-09-13T11:42:56.669Z",
-              "created_at": "2026-09-13T11:42:56.698Z",
-              "updated_at": "2026-09-13T11:42:56.698Z",
+              "manufacturing_completed_at": "2026-09-14T01:36:42.549Z",
+              "created_at": "2026-09-14T01:36:42.588Z",
+              "updated_at": "2026-09-14T01:36:42.588Z",
               "category_name": "FAT E2E Battery Pack",
               "model_code": "FAT-E2E-MODEL-16S280",
               "model_name": "FAT E2E 16S 280Ah Battery Pack",
@@ -562,7 +562,7 @@
         "total": 1,
         "items": [
           {
-            "event_id": "ceceab3f-ef42-4dd4-b893-f95157fdc198",
+            "event_id": "0f42329a-b37c-4af5-86b1-112e7a74d655",
             "product_id": "fa190000-0000-4000-8000-000000000001",
             "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
             "category_name": "FAT E2E Battery Pack",
@@ -570,7 +570,7 @@
             "dispatch_number": null,
             "dispatch_date": null,
             "invoice_number": null,
-            "dispatched_at": "2026-09-13T11:42:56.698Z",
+            "dispatched_at": "2026-09-14T01:36:42.588Z",
             "actor": "fat.director@fat.local"
           }
         ]
@@ -601,7 +601,7 @@
           "total": 1,
           "items": [
             {
-              "event_id": "ceceab3f-ef42-4dd4-b893-f95157fdc198",
+              "event_id": "0f42329a-b37c-4af5-86b1-112e7a74d655",
               "product_id": "fa190000-0000-4000-8000-000000000001",
               "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
               "category_name": "FAT E2E Battery Pack",
@@ -609,7 +609,7 @@
               "dispatch_number": null,
               "dispatch_date": null,
               "invoice_number": null,
-              "dispatched_at": "2026-09-13T11:42:56.698Z",
+              "dispatched_at": "2026-09-14T01:36:42.588Z",
               "actor": "fat.director@fat.local"
             }
           ]
@@ -637,11 +637,11 @@
             "status": "approved",
             "operatorName": "fat.operator@fat.local",
             "supervisorName": "fat.supervisor@fat.local",
-            "startedAt": "2026-09-13T11:42:56.669Z",
+            "startedAt": "2026-09-14T01:36:42.549Z",
             "pausedAt": null,
             "resumedAt": null,
-            "completedAt": "2026-09-13T11:42:56.669Z",
-            "approvedAt": "2026-09-13T11:42:56.669Z",
+            "completedAt": "2026-09-14T01:36:42.549Z",
+            "approvedAt": "2026-09-14T01:36:42.549Z",
             "notes": "FAT-E2E-cell_allocation-fixture",
             "photos": [],
             "stageData": {
@@ -649,8 +649,8 @@
               "valid": true,
               "fixture": "FAT-E2E-"
             },
-            "createdAt": "2026-09-13T11:42:56.698Z",
-            "updatedAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z",
+            "updatedAt": "2026-09-14T01:36:42.588Z"
           },
           {
             "id": "fa180000-0000-4000-8001-000000000002",
@@ -660,11 +660,11 @@
             "status": "approved",
             "operatorName": "fat.operator@fat.local",
             "supervisorName": "fat.supervisor@fat.local",
-            "startedAt": "2026-09-13T11:42:56.669Z",
+            "startedAt": "2026-09-14T01:36:42.549Z",
             "pausedAt": null,
             "resumedAt": null,
-            "completedAt": "2026-09-13T11:42:56.669Z",
-            "approvedAt": "2026-09-13T11:42:56.669Z",
+            "completedAt": "2026-09-14T01:36:42.549Z",
+            "approvedAt": "2026-09-14T01:36:42.549Z",
             "notes": "FAT-E2E-assembly-fixture",
             "photos": [],
             "stageData": {
@@ -672,8 +672,8 @@
               "valid": true,
               "fixture": "FAT-E2E-"
             },
-            "createdAt": "2026-09-13T11:42:56.698Z",
-            "updatedAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z",
+            "updatedAt": "2026-09-14T01:36:42.588Z"
           },
           {
             "id": "fa180000-0000-4000-8001-000000000003",
@@ -683,11 +683,11 @@
             "status": "approved",
             "operatorName": "fat.operator@fat.local",
             "supervisorName": "fat.supervisor@fat.local",
-            "startedAt": "2026-09-13T11:42:56.669Z",
+            "startedAt": "2026-09-14T01:36:42.549Z",
             "pausedAt": null,
             "resumedAt": null,
-            "completedAt": "2026-09-13T11:42:56.669Z",
-            "approvedAt": "2026-09-13T11:42:56.669Z",
+            "completedAt": "2026-09-14T01:36:42.549Z",
+            "approvedAt": "2026-09-14T01:36:42.549Z",
             "notes": "FAT-E2E-compression-fixture",
             "photos": [],
             "stageData": {
@@ -695,8 +695,8 @@
               "valid": true,
               "fixture": "FAT-E2E-"
             },
-            "createdAt": "2026-09-13T11:42:56.698Z",
-            "updatedAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z",
+            "updatedAt": "2026-09-14T01:36:42.588Z"
           },
           {
             "id": "fa180000-0000-4000-8001-000000000004",
@@ -706,11 +706,11 @@
             "status": "approved",
             "operatorName": "fat.operator@fat.local",
             "supervisorName": "fat.supervisor@fat.local",
-            "startedAt": "2026-09-13T11:42:56.669Z",
+            "startedAt": "2026-09-14T01:36:42.549Z",
             "pausedAt": null,
             "resumedAt": null,
-            "completedAt": "2026-09-13T11:42:56.669Z",
-            "approvedAt": "2026-09-13T11:42:56.669Z",
+            "completedAt": "2026-09-14T01:36:42.549Z",
+            "approvedAt": "2026-09-14T01:36:42.549Z",
             "notes": "FAT-E2E-bms_allocation-fixture",
             "photos": [],
             "stageData": {
@@ -718,8 +718,8 @@
               "valid": true,
               "fixture": "FAT-E2E-"
             },
-            "createdAt": "2026-09-13T11:42:56.698Z",
-            "updatedAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z",
+            "updatedAt": "2026-09-14T01:36:42.588Z"
           },
           {
             "id": "fa180000-0000-4000-8001-000000000005",
@@ -729,11 +729,11 @@
             "status": "approved",
             "operatorName": "fat.operator@fat.local",
             "supervisorName": "fat.supervisor@fat.local",
-            "startedAt": "2026-09-13T11:42:56.669Z",
+            "startedAt": "2026-09-14T01:36:42.549Z",
             "pausedAt": null,
             "resumedAt": null,
-            "completedAt": "2026-09-13T11:42:56.669Z",
-            "approvedAt": "2026-09-13T11:42:56.669Z",
+            "completedAt": "2026-09-14T01:36:42.549Z",
+            "approvedAt": "2026-09-14T01:36:42.549Z",
             "notes": "FAT-E2E-bms_programming-fixture",
             "photos": [],
             "stageData": {
@@ -741,8 +741,8 @@
               "valid": true,
               "fixture": "FAT-E2E-"
             },
-            "createdAt": "2026-09-13T11:42:56.698Z",
-            "updatedAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z",
+            "updatedAt": "2026-09-14T01:36:42.588Z"
           },
           {
             "id": "fa180000-0000-4000-8001-000000000006",
@@ -752,11 +752,11 @@
             "status": "approved",
             "operatorName": "fat.operator@fat.local",
             "supervisorName": "fat.supervisor@fat.local",
-            "startedAt": "2026-09-13T11:42:56.669Z",
+            "startedAt": "2026-09-14T01:36:42.549Z",
             "pausedAt": null,
             "resumedAt": null,
-            "completedAt": "2026-09-13T11:42:56.669Z",
-            "approvedAt": "2026-09-13T11:42:56.669Z",
+            "completedAt": "2026-09-14T01:36:42.549Z",
+            "approvedAt": "2026-09-14T01:36:42.549Z",
             "notes": "FAT-E2E-charging-fixture",
             "photos": [],
             "stageData": {
@@ -764,8 +764,8 @@
               "valid": true,
               "fixture": "FAT-E2E-"
             },
-            "createdAt": "2026-09-13T11:42:56.698Z",
-            "updatedAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z",
+            "updatedAt": "2026-09-14T01:36:42.588Z"
           },
           {
             "id": "fa180000-0000-4000-8001-000000000007",
@@ -775,11 +775,11 @@
             "status": "approved",
             "operatorName": "fat.operator@fat.local",
             "supervisorName": "fat.supervisor@fat.local",
-            "startedAt": "2026-09-13T11:42:56.669Z",
+            "startedAt": "2026-09-14T01:36:42.549Z",
             "pausedAt": null,
             "resumedAt": null,
-            "completedAt": "2026-09-13T11:42:56.669Z",
-            "approvedAt": "2026-09-13T11:42:56.669Z",
+            "completedAt": "2026-09-14T01:36:42.549Z",
+            "approvedAt": "2026-09-14T01:36:42.549Z",
             "notes": "FAT-E2E-testing-fixture",
             "photos": [],
             "stageData": {
@@ -787,8 +787,8 @@
               "valid": true,
               "fixture": "FAT-E2E-"
             },
-            "createdAt": "2026-09-13T11:42:56.698Z",
-            "updatedAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z",
+            "updatedAt": "2026-09-14T01:36:42.588Z"
           },
           {
             "id": "fa180000-0000-4000-8001-000000000008",
@@ -798,11 +798,11 @@
             "status": "approved",
             "operatorName": "fat.operator@fat.local",
             "supervisorName": "fat.supervisor@fat.local",
-            "startedAt": "2026-09-13T11:42:56.669Z",
+            "startedAt": "2026-09-14T01:36:42.549Z",
             "pausedAt": null,
             "resumedAt": null,
-            "completedAt": "2026-09-13T11:42:56.669Z",
-            "approvedAt": "2026-09-13T11:42:56.669Z",
+            "completedAt": "2026-09-14T01:36:42.549Z",
+            "approvedAt": "2026-09-14T01:36:42.549Z",
             "notes": "FAT-E2E-quality_control-fixture",
             "photos": [],
             "stageData": {
@@ -810,8 +810,8 @@
               "valid": true,
               "fixture": "FAT-E2E-"
             },
-            "createdAt": "2026-09-13T11:42:56.698Z",
-            "updatedAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z",
+            "updatedAt": "2026-09-14T01:36:42.588Z"
           },
           {
             "id": "fa180000-0000-4000-8001-000000000009",
@@ -821,11 +821,11 @@
             "status": "approved",
             "operatorName": "fat.operator@fat.local",
             "supervisorName": "fat.supervisor@fat.local",
-            "startedAt": "2026-09-13T11:42:56.669Z",
+            "startedAt": "2026-09-14T01:36:42.549Z",
             "pausedAt": null,
             "resumedAt": null,
-            "completedAt": "2026-09-13T11:42:56.669Z",
-            "approvedAt": "2026-09-13T11:42:56.669Z",
+            "completedAt": "2026-09-14T01:36:42.549Z",
+            "approvedAt": "2026-09-14T01:36:42.549Z",
             "notes": "FAT-E2E-packing-fixture",
             "photos": [],
             "stageData": {
@@ -833,8 +833,8 @@
               "valid": true,
               "fixture": "FAT-E2E-"
             },
-            "createdAt": "2026-09-13T11:42:56.698Z",
-            "updatedAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z",
+            "updatedAt": "2026-09-14T01:36:42.588Z"
           }
         ]
       }
@@ -864,11 +864,11 @@
               "status": "approved",
               "operatorName": "fat.operator@fat.local",
               "supervisorName": "fat.supervisor@fat.local",
-              "startedAt": "2026-09-13T11:42:56.669Z",
+              "startedAt": "2026-09-14T01:36:42.549Z",
               "pausedAt": null,
               "resumedAt": null,
-              "completedAt": "2026-09-13T11:42:56.669Z",
-              "approvedAt": "2026-09-13T11:42:56.669Z",
+              "completedAt": "2026-09-14T01:36:42.549Z",
+              "approvedAt": "2026-09-14T01:36:42.549Z",
               "notes": "FAT-E2E-cell_allocation-fixture",
               "photos": [],
               "stageData": {
@@ -876,8 +876,8 @@
                 "valid": true,
                 "fixture": "FAT-E2E-"
               },
-              "createdAt": "2026-09-13T11:42:56.698Z",
-              "updatedAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z",
+              "updatedAt": "2026-09-14T01:36:42.588Z"
             },
             {
               "id": "fa180000-0000-4000-8001-000000000002",
@@ -887,11 +887,11 @@
               "status": "approved",
               "operatorName": "fat.operator@fat.local",
               "supervisorName": "fat.supervisor@fat.local",
-              "startedAt": "2026-09-13T11:42:56.669Z",
+              "startedAt": "2026-09-14T01:36:42.549Z",
               "pausedAt": null,
               "resumedAt": null,
-              "completedAt": "2026-09-13T11:42:56.669Z",
-              "approvedAt": "2026-09-13T11:42:56.669Z",
+              "completedAt": "2026-09-14T01:36:42.549Z",
+              "approvedAt": "2026-09-14T01:36:42.549Z",
               "notes": "FAT-E2E-assembly-fixture",
               "photos": [],
               "stageData": {
@@ -899,8 +899,8 @@
                 "valid": true,
                 "fixture": "FAT-E2E-"
               },
-              "createdAt": "2026-09-13T11:42:56.698Z",
-              "updatedAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z",
+              "updatedAt": "2026-09-14T01:36:42.588Z"
             },
             {
               "id": "fa180000-0000-4000-8001-000000000003",
@@ -910,11 +910,11 @@
               "status": "approved",
               "operatorName": "fat.operator@fat.local",
               "supervisorName": "fat.supervisor@fat.local",
-              "startedAt": "2026-09-13T11:42:56.669Z",
+              "startedAt": "2026-09-14T01:36:42.549Z",
               "pausedAt": null,
               "resumedAt": null,
-              "completedAt": "2026-09-13T11:42:56.669Z",
-              "approvedAt": "2026-09-13T11:42:56.669Z",
+              "completedAt": "2026-09-14T01:36:42.549Z",
+              "approvedAt": "2026-09-14T01:36:42.549Z",
               "notes": "FAT-E2E-compression-fixture",
               "photos": [],
               "stageData": {
@@ -922,8 +922,8 @@
                 "valid": true,
                 "fixture": "FAT-E2E-"
               },
-              "createdAt": "2026-09-13T11:42:56.698Z",
-              "updatedAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z",
+              "updatedAt": "2026-09-14T01:36:42.588Z"
             },
             {
               "id": "fa180000-0000-4000-8001-000000000004",
@@ -933,11 +933,11 @@
               "status": "approved",
               "operatorName": "fat.operator@fat.local",
               "supervisorName": "fat.supervisor@fat.local",
-              "startedAt": "2026-09-13T11:42:56.669Z",
+              "startedAt": "2026-09-14T01:36:42.549Z",
               "pausedAt": null,
               "resumedAt": null,
-              "completedAt": "2026-09-13T11:42:56.669Z",
-              "approvedAt": "2026-09-13T11:42:56.669Z",
+              "completedAt": "2026-09-14T01:36:42.549Z",
+              "approvedAt": "2026-09-14T01:36:42.549Z",
               "notes": "FAT-E2E-bms_allocation-fixture",
               "photos": [],
               "stageData": {
@@ -945,8 +945,8 @@
                 "valid": true,
                 "fixture": "FAT-E2E-"
               },
-              "createdAt": "2026-09-13T11:42:56.698Z",
-              "updatedAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z",
+              "updatedAt": "2026-09-14T01:36:42.588Z"
             },
             {
               "id": "fa180000-0000-4000-8001-000000000005",
@@ -956,11 +956,11 @@
               "status": "approved",
               "operatorName": "fat.operator@fat.local",
               "supervisorName": "fat.supervisor@fat.local",
-              "startedAt": "2026-09-13T11:42:56.669Z",
+              "startedAt": "2026-09-14T01:36:42.549Z",
               "pausedAt": null,
               "resumedAt": null,
-              "completedAt": "2026-09-13T11:42:56.669Z",
-              "approvedAt": "2026-09-13T11:42:56.669Z",
+              "completedAt": "2026-09-14T01:36:42.549Z",
+              "approvedAt": "2026-09-14T01:36:42.549Z",
               "notes": "FAT-E2E-bms_programming-fixture",
               "photos": [],
               "stageData": {
@@ -968,8 +968,8 @@
                 "valid": true,
                 "fixture": "FAT-E2E-"
               },
-              "createdAt": "2026-09-13T11:42:56.698Z",
-              "updatedAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z",
+              "updatedAt": "2026-09-14T01:36:42.588Z"
             },
             {
               "id": "fa180000-0000-4000-8001-000000000006",
@@ -979,11 +979,11 @@
               "status": "approved",
               "operatorName": "fat.operator@fat.local",
               "supervisorName": "fat.supervisor@fat.local",
-              "startedAt": "2026-09-13T11:42:56.669Z",
+              "startedAt": "2026-09-14T01:36:42.549Z",
               "pausedAt": null,
               "resumedAt": null,
-              "completedAt": "2026-09-13T11:42:56.669Z",
-              "approvedAt": "2026-09-13T11:42:56.669Z",
+              "completedAt": "2026-09-14T01:36:42.549Z",
+              "approvedAt": "2026-09-14T01:36:42.549Z",
               "notes": "FAT-E2E-charging-fixture",
               "photos": [],
               "stageData": {
@@ -991,8 +991,8 @@
                 "valid": true,
                 "fixture": "FAT-E2E-"
               },
-              "createdAt": "2026-09-13T11:42:56.698Z",
-              "updatedAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z",
+              "updatedAt": "2026-09-14T01:36:42.588Z"
             },
             {
               "id": "fa180000-0000-4000-8001-000000000007",
@@ -1002,11 +1002,11 @@
               "status": "approved",
               "operatorName": "fat.operator@fat.local",
               "supervisorName": "fat.supervisor@fat.local",
-              "startedAt": "2026-09-13T11:42:56.669Z",
+              "startedAt": "2026-09-14T01:36:42.549Z",
               "pausedAt": null,
               "resumedAt": null,
-              "completedAt": "2026-09-13T11:42:56.669Z",
-              "approvedAt": "2026-09-13T11:42:56.669Z",
+              "completedAt": "2026-09-14T01:36:42.549Z",
+              "approvedAt": "2026-09-14T01:36:42.549Z",
               "notes": "FAT-E2E-testing-fixture",
               "photos": [],
               "stageData": {
@@ -1014,8 +1014,8 @@
                 "valid": true,
                 "fixture": "FAT-E2E-"
               },
-              "createdAt": "2026-09-13T11:42:56.698Z",
-              "updatedAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z",
+              "updatedAt": "2026-09-14T01:36:42.588Z"
             },
             {
               "id": "fa180000-0000-4000-8001-000000000008",
@@ -1025,11 +1025,11 @@
               "status": "approved",
               "operatorName": "fat.operator@fat.local",
               "supervisorName": "fat.supervisor@fat.local",
-              "startedAt": "2026-09-13T11:42:56.669Z",
+              "startedAt": "2026-09-14T01:36:42.549Z",
               "pausedAt": null,
               "resumedAt": null,
-              "completedAt": "2026-09-13T11:42:56.669Z",
-              "approvedAt": "2026-09-13T11:42:56.669Z",
+              "completedAt": "2026-09-14T01:36:42.549Z",
+              "approvedAt": "2026-09-14T01:36:42.549Z",
               "notes": "FAT-E2E-quality_control-fixture",
               "photos": [],
               "stageData": {
@@ -1037,8 +1037,8 @@
                 "valid": true,
                 "fixture": "FAT-E2E-"
               },
-              "createdAt": "2026-09-13T11:42:56.698Z",
-              "updatedAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z",
+              "updatedAt": "2026-09-14T01:36:42.588Z"
             },
             {
               "id": "fa180000-0000-4000-8001-000000000009",
@@ -1048,11 +1048,11 @@
               "status": "approved",
               "operatorName": "fat.operator@fat.local",
               "supervisorName": "fat.supervisor@fat.local",
-              "startedAt": "2026-09-13T11:42:56.669Z",
+              "startedAt": "2026-09-14T01:36:42.549Z",
               "pausedAt": null,
               "resumedAt": null,
-              "completedAt": "2026-09-13T11:42:56.669Z",
-              "approvedAt": "2026-09-13T11:42:56.669Z",
+              "completedAt": "2026-09-14T01:36:42.549Z",
+              "approvedAt": "2026-09-14T01:36:42.549Z",
               "notes": "FAT-E2E-packing-fixture",
               "photos": [],
               "stageData": {
@@ -1060,8 +1060,8 @@
                 "valid": true,
                 "fixture": "FAT-E2E-"
               },
-              "createdAt": "2026-09-13T11:42:56.698Z",
-              "updatedAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z",
+              "updatedAt": "2026-09-14T01:36:42.588Z"
             }
           ]
         }
@@ -1081,7 +1081,7 @@
       "response_body": {
         "items": [
           {
-            "id": "4064fe1c-154b-4a9c-bfef-24cb2a55d267",
+            "id": "f26c0eca-4c45-4d42-9bcf-05c524629c17",
             "productionOrderId": "fa180000-0000-4000-8000-000000000001",
             "componentType": "CELL",
             "componentId": "fa130000-0000-4000-8000-000000000003",
@@ -1089,10 +1089,10 @@
             "quantity": 16,
             "serialNumber": "FAT-E2E-CELL-001",
             "notes": "FAT-E2E-genealogy",
-            "createdAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z"
           },
           {
-            "id": "9ba519d1-7504-4f1d-93a7-2330b0f8d2f6",
+            "id": "fc6530e3-2ebe-42bb-80c2-2d638a2b21f5",
             "productionOrderId": "fa180000-0000-4000-8000-000000000001",
             "componentType": "BMS",
             "componentId": "fa130000-0000-4000-8000-000000000004",
@@ -1100,10 +1100,10 @@
             "quantity": 1,
             "serialNumber": "FAT-E2E-BMS-001",
             "notes": "FAT-E2E-genealogy",
-            "createdAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z"
           },
           {
-            "id": "5936ddbb-a8b1-480a-a981-a79d42b1c4f1",
+            "id": "1c8dfba3-3ace-4fe0-b277-881c215e7d5a",
             "productionOrderId": "fa180000-0000-4000-8000-000000000001",
             "componentType": "CABINET",
             "componentId": "fa130000-0000-4000-8000-000000000005",
@@ -1111,10 +1111,10 @@
             "quantity": 1,
             "serialNumber": "FAT-E2E-CAB-001",
             "notes": "FAT-E2E-genealogy",
-            "createdAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z"
           },
           {
-            "id": "3fe717b7-5262-49b8-82fa-cebe923e4b47",
+            "id": "d914b983-06ee-40f4-a6d5-fd46997f84c3",
             "productionOrderId": "fa180000-0000-4000-8000-000000000001",
             "componentType": "CONNECTOR",
             "componentId": "fa130000-0000-4000-8000-000000000006",
@@ -1122,10 +1122,10 @@
             "quantity": 1,
             "serialNumber": "FAT-E2E-CON-001",
             "notes": "FAT-E2E-genealogy",
-            "createdAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z"
           },
           {
-            "id": "df31783e-1783-48de-8ab0-385076ee4c3c",
+            "id": "938a76ff-2147-4885-a54d-f52faf911ba6",
             "productionOrderId": "fa180000-0000-4000-8000-000000000001",
             "componentType": "CABLE",
             "componentId": "fa130000-0000-4000-8000-000000000007",
@@ -1133,7 +1133,7 @@
             "quantity": 1,
             "serialNumber": "FAT-E2E-CABLE-001",
             "notes": "FAT-E2E-genealogy",
-            "createdAt": "2026-09-13T11:42:56.698Z"
+            "createdAt": "2026-09-14T01:36:42.588Z"
           }
         ]
       }
@@ -1157,7 +1157,7 @@
         "actual": {
           "items": [
             {
-              "id": "4064fe1c-154b-4a9c-bfef-24cb2a55d267",
+              "id": "f26c0eca-4c45-4d42-9bcf-05c524629c17",
               "productionOrderId": "fa180000-0000-4000-8000-000000000001",
               "componentType": "CELL",
               "componentId": "fa130000-0000-4000-8000-000000000003",
@@ -1165,10 +1165,10 @@
               "quantity": 16,
               "serialNumber": "FAT-E2E-CELL-001",
               "notes": "FAT-E2E-genealogy",
-              "createdAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z"
             },
             {
-              "id": "9ba519d1-7504-4f1d-93a7-2330b0f8d2f6",
+              "id": "fc6530e3-2ebe-42bb-80c2-2d638a2b21f5",
               "productionOrderId": "fa180000-0000-4000-8000-000000000001",
               "componentType": "BMS",
               "componentId": "fa130000-0000-4000-8000-000000000004",
@@ -1176,10 +1176,10 @@
               "quantity": 1,
               "serialNumber": "FAT-E2E-BMS-001",
               "notes": "FAT-E2E-genealogy",
-              "createdAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z"
             },
             {
-              "id": "5936ddbb-a8b1-480a-a981-a79d42b1c4f1",
+              "id": "1c8dfba3-3ace-4fe0-b277-881c215e7d5a",
               "productionOrderId": "fa180000-0000-4000-8000-000000000001",
               "componentType": "CABINET",
               "componentId": "fa130000-0000-4000-8000-000000000005",
@@ -1187,10 +1187,10 @@
               "quantity": 1,
               "serialNumber": "FAT-E2E-CAB-001",
               "notes": "FAT-E2E-genealogy",
-              "createdAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z"
             },
             {
-              "id": "3fe717b7-5262-49b8-82fa-cebe923e4b47",
+              "id": "d914b983-06ee-40f4-a6d5-fd46997f84c3",
               "productionOrderId": "fa180000-0000-4000-8000-000000000001",
               "componentType": "CONNECTOR",
               "componentId": "fa130000-0000-4000-8000-000000000006",
@@ -1198,10 +1198,10 @@
               "quantity": 1,
               "serialNumber": "FAT-E2E-CON-001",
               "notes": "FAT-E2E-genealogy",
-              "createdAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z"
             },
             {
-              "id": "df31783e-1783-48de-8ab0-385076ee4c3c",
+              "id": "938a76ff-2147-4885-a54d-f52faf911ba6",
               "productionOrderId": "fa180000-0000-4000-8000-000000000001",
               "componentType": "CABLE",
               "componentId": "fa130000-0000-4000-8000-000000000007",
@@ -1209,7 +1209,7 @@
               "quantity": 1,
               "serialNumber": "FAT-E2E-CABLE-001",
               "notes": "FAT-E2E-genealogy",
-              "createdAt": "2026-09-13T11:42:56.698Z"
+              "createdAt": "2026-09-14T01:36:42.588Z"
             }
           ]
         }
@@ -1235,7 +1235,7 @@
         "dispatched_by": "fat.supervisor@fat.local",
         "item_count": 1,
         "status": "dispatched",
-        "created_at": "2026-09-13T11:42:56.698Z",
+        "created_at": "2026-09-14T01:36:42.588Z",
         "dealer": {
           "code": "FAT-E2E-DLR-A",
           "name": "FAT E2E Dealer Alpha",
@@ -1283,7 +1283,7 @@
           "dispatched_by": "fat.supervisor@fat.local",
           "item_count": 1,
           "status": "dispatched",
-          "created_at": "2026-09-13T11:42:56.698Z",
+          "created_at": "2026-09-14T01:36:42.588Z",
           "dealer": {
             "code": "FAT-E2E-DLR-A",
             "name": "FAT E2E Dealer Alpha",
@@ -1328,8 +1328,8 @@
         "address": "99 FAT E2E Customer Road, Bengaluru",
         "installation_date": "2026-09-08",
         "registered_by": "fat.supervisor@fat.local",
-        "created_at": "2026-09-13T11:42:56.698Z",
-        "updated_at": "2026-09-13T11:42:56.698Z",
+        "created_at": "2026-09-14T01:36:42.588Z",
+        "updated_at": "2026-09-14T01:36:42.588Z",
         "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
         "product_status": "dispatched",
         "category_name": "FAT E2E Battery Pack",
@@ -1346,8 +1346,8 @@
           "voided_at": null,
           "void_reason": null,
           "voided_by": null,
-          "created_at": "2026-09-13T11:42:56.698Z",
-          "updated_at": "2026-09-13T11:42:56.698Z",
+          "created_at": "2026-09-14T01:36:42.588Z",
+          "updated_at": "2026-09-14T01:36:42.588Z",
           "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
           "customer_name": "FAT E2E Customer",
           "category_name": "FAT E2E Battery Pack",
@@ -1382,8 +1382,8 @@
           "address": "99 FAT E2E Customer Road, Bengaluru",
           "installation_date": "2026-09-08",
           "registered_by": "fat.supervisor@fat.local",
-          "created_at": "2026-09-13T11:42:56.698Z",
-          "updated_at": "2026-09-13T11:42:56.698Z",
+          "created_at": "2026-09-14T01:36:42.588Z",
+          "updated_at": "2026-09-14T01:36:42.588Z",
           "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
           "product_status": "dispatched",
           "category_name": "FAT E2E Battery Pack",
@@ -1400,8 +1400,8 @@
             "voided_at": null,
             "void_reason": null,
             "voided_by": null,
-            "created_at": "2026-09-13T11:42:56.698Z",
-            "updated_at": "2026-09-13T11:42:56.698Z",
+            "created_at": "2026-09-14T01:36:42.588Z",
+            "updated_at": "2026-09-14T01:36:42.588Z",
             "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
             "customer_name": "FAT E2E Customer",
             "category_name": "FAT E2E Battery Pack",
@@ -1433,8 +1433,8 @@
         "voided_at": null,
         "void_reason": null,
         "voided_by": null,
-        "created_at": "2026-09-13T11:42:56.698Z",
-        "updated_at": "2026-09-13T11:42:56.698Z",
+        "created_at": "2026-09-14T01:36:42.588Z",
+        "updated_at": "2026-09-14T01:36:42.588Z",
         "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
         "customer_name": "FAT E2E Customer",
         "category_name": "FAT E2E Battery Pack",
@@ -1469,8 +1469,8 @@
           "voided_at": null,
           "void_reason": null,
           "voided_by": null,
-          "created_at": "2026-09-13T11:42:56.698Z",
-          "updated_at": "2026-09-13T11:42:56.698Z",
+          "created_at": "2026-09-14T01:36:42.588Z",
+          "updated_at": "2026-09-14T01:36:42.588Z",
           "product_serial": "FAT-E2E-BATTERY-SERIAL-001",
           "customer_name": "FAT E2E Customer",
           "category_name": "FAT E2E Battery Pack",

@@ -562,6 +562,7 @@ async function runRegressionWall(): Promise<void> {
       cwd: process.cwd(),
       env: { ...process.env, PORT: String(port) },
       stdio: "ignore",
+      detached: true,
     });
     for (let attempt = 0; attempt < 60; attempt += 1) {
       try {
@@ -576,7 +577,13 @@ async function runRegressionWall(): Promise<void> {
   };
 
   const restartServer = async (): Promise<void> => {
-    server?.kill("SIGTERM");
+    if (server?.pid) {
+      try {
+        process.kill(-server.pid, "SIGTERM");
+      } catch {
+        server.kill("SIGTERM");
+      }
+    }
     await new Promise((resolve) => setTimeout(resolve, 1_000));
     await startServer();
   };
@@ -592,9 +599,9 @@ async function runRegressionWall(): Promise<void> {
         stdio: "inherit",
       });
       console.log(`REGRESSION ${script} PASS`);
-      if (script === "test:audit" && index < scripts.length - 1) {
-        // Authz and audit are the heaviest authentication suites. A fresh API
-        // process resets the in-memory limiter between them.
+      if (index < scripts.length - 1) {
+        // Every legacy suite gets a fresh API process so its in-memory auth
+        // limiter cannot accumulate login attempts from earlier suites.
         await restartServer();
       }
       if (index < scripts.length - 1) {
@@ -605,7 +612,13 @@ async function runRegressionWall(): Promise<void> {
     }
     regressionWallStatus = "PASS";
   } finally {
-    server?.kill("SIGTERM");
+    if (server?.pid) {
+      try {
+        process.kill(-server.pid, "SIGTERM");
+      } catch {
+        server.kill("SIGTERM");
+      }
+    }
   }
 }
 
