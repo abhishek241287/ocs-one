@@ -95,9 +95,9 @@ The earlier 73-D smoke run on 2026-09-14 recorded:
 | GQ-06 missing template scope and cap metadata | PASS | Missing `template_id` returned 422; recall responses carried boolean `truncated` metadata. |
 | GQ-07 RBAC/read-only verbs | PASS | The P73F battery verified viewer read access and authenticated POST 405; the earlier anonymous 401 smoke check also passed. |
 | GQ-08 recall performance | PASS | Live recall completed under the 2-second bound. |
-| GQ-09 regression wall | PARTIAL | Reservation 15/15, receiving 12/12, Phase 4 17/17, Phase 5 15/15, Phase 6 71-C 10/10, 71-D 9/9, 71-F 9/9, SS-03 13/13, and SS-04 31 pass / 3 warn / 0 fail passed. The long Phase 6 final-gate wall was interrupted by a workspace restart after the Phase 7 transfer segment passed. Batch 72-A/72-B could not run because the current DB has no FAT manifest director account; SS-02 stopped under the shared rate limiter. |
+| GQ-09 regression wall | PASS | Fresh isolated Phase 6 wall passed Phase 4–6 regressions, SS-02 with 777 authorization assertions plus 12 dealer-assignment checks, SS-03, SS-04 (31 pass / 3 documented development warnings / 0 fail), and FAT smoke 32/32. Batch 72-A and 72-B then passed with limiter-aware spacing. |
 | GQ-10 scope control | PASS | 73-F added only the isolated battery suite, required genealogy projection fixes, package aliases, and this append-only evidence update; no commit was made. |
 
-The Manufacturing Genealogy gate itself is PASS. The broader project release
-wall remains PARTIAL until the FAT manifest is restored and the limiter-aware
-SS-02/Phase 6 final-gate wall completes end-to-end.
+The Manufacturing Genealogy gate and the broader project release wall are
+PASS. FAT preflight is 67/67 and FAT verification is ready with all controlled
+role accounts, including `fat.director@fat.local`.
