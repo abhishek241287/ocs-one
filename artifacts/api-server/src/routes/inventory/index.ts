@@ -13,6 +13,7 @@ import returnsRouter from "./returns";
 import scrapRouter from "./scrap";
 import adjustmentsRouter from "./adjustments";
 import transferRequestsRouter from "./transfer-requests";
+import importsRouter from "./imports";
 
 // Inventory Platform routes. Each sub-router carries its own RBAC guard and is mounted
 // at a distinct path, so guards never shadow one another.
@@ -33,5 +34,6 @@ router.use("/returns", returnsRouter);
 router.use("/scrap", scrapRouter);
 router.use("/adjustments", adjustmentsRouter);
 router.use("/transfer-requests", transferRequestsRouter);
+router.use("/imports", importsRouter);
 
 export default router;

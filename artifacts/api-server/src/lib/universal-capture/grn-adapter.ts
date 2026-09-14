@@ -497,9 +497,74 @@ type GrnAdapterInput = CanonicalCaptureInput & {
   remarks?: string | null;
 };
 
-registerCaptureAdapter({
+export interface GrnBatchContext {
+  supplierId: string;
+  receivedDate: string;
+  actorId?: string | null;
+  templateVersionId: string;
+}
+
+export async function confirmBatch(
+  tx: Transaction,
+  inputs: CanonicalCaptureInput[],
+  validatedRows: ValidatedValue[][],
+  context: GrnBatchContext,
+): Promise<{ documentId: string; lineIds: string[] }> {
+  if (inputs.length === 0 || inputs.length !== validatedRows.length) {
+    throw new Error("GRN_BATCH_INPUT_MISMATCH");
+  }
+  const materials = await tx
+    .select({ id: materialsTable.id, code: materialsTable.code, uom: materialsTable.uom })
+    .from(materialsTable)
+    .where(inArray(materialsTable.id, inputs.map((input) => input.material_id)));
+  const materialById = new Map(materials.map((material) => [material.id, material]));
+  const lines = inputs.map((input) => {
+    const material = materialById.get(input.material_id);
+    if (!material) throw new Error(`Unknown material id '${input.material_id}'`);
+    return {
+      materialId: material.id,
+      quantityReceived: input.quantity,
+      uom: material.uom,
+      supplierLotNumber: input.lot_number ?? null,
+    };
+  });
+  const grnId = await insertGrnDraft(tx, {
+    grnNumber: await nextGrnNumber(),
+    supplierId: context.supplierId,
+    receivedDate: context.receivedDate,
+    actorId: context.actorId,
+    lines,
+  });
+  const insertedLines = await tx
+    .select({ id: grnLineItemsTable.id, lineNumber: grnLineItemsTable.lineNumber })
+    .from(grnLineItemsTable)
+    .where(eq(grnLineItemsTable.grnId, grnId))
+    .orderBy(asc(grnLineItemsTable.lineNumber));
+  if (insertedLines.length !== inputs.length) {
+    throw new Error("GRN_BATCH_LINE_COUNT_MISMATCH");
+  }
+  for (let index = 0; index < inputs.length; index += 1) {
+    await persistCapture(
+      tx,
+      {
+        lineId: insertedLines[index]!.id,
+        materialId: inputs[index]!.material_id,
+        templateVersionId: context.templateVersionId,
+        sourceType: "CSV",
+        sourceSessionId: inputs[index]!.source.session_id,
+        sourceRowRef: inputs[index]!.source.row_ref,
+        createdBy: context.actorId,
+      },
+      validatedRows[index]!,
+    );
+  }
+  return { documentId: grnId, lineIds: insertedLines.map((line) => line.id) };
+}
+
+const batchAdapter = {
   targetType: "GRN_LINE",
-  confirm: async (input, validated) => {
+  confirmBatch,
+  confirm: async (input: CanonicalCaptureInput, validated: ValidatedValue[]) => {
     const context = input as GrnAdapterInput;
     if (!context.supplier_id || !context.received_date) {
       throw new Error(
@@ -557,4 +622,6 @@ registerCaptureAdapter({
     });
     return { documentId };
   },
-});
+};
+
+registerCaptureAdapter(batchAdapter as any);

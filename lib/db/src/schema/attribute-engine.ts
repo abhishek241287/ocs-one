@@ -6,6 +6,7 @@
 import {
   pgTable,
   pgEnum,
+  pgSequence,
   uuid,
   varchar,
   integer,
@@ -355,6 +356,66 @@ export const attributeCaptureValuesTable = pgTable(
   ],
 );
 
+// ─── Universal CSV import staging (71-E, A9/A10/A11/A14/A16) ────────────────
+export const importSessionStatusEnum = pgEnum("import_session_status", [
+  "DRAFT",
+  "VALIDATED",
+  "CONFIRMED",
+  "CANCELLED",
+]);
+export const importRowStatusEnum = pgEnum("import_row_status", [
+  "PENDING",
+  "VALID",
+  "INVALID",
+]);
+
+export const importNumberSequence = pgSequence("import_seq");
+
+export const importSessionsTable = pgTable(
+  "import_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    importNumber: varchar("import_number", { length: 50 }).unique().notNull(),
+    fileHash: varchar("file_hash", { length: 64 }).notNull(),
+    filename: varchar("filename", { length: 255 }),
+    templateVersionId: uuid("template_version_id")
+      .notNull()
+      .references(() => attributeTemplateVersionsTable.id),
+    status: importSessionStatusEnum("status").notNull().default("DRAFT"),
+    totalRows: integer("total_rows").notNull().default(0),
+    validRows: integer("valid_rows").notNull().default(0),
+    invalidRows: integer("invalid_rows").notNull().default(0),
+    confirmKey: varchar("confirm_key", { length: 100 }).unique(),
+    downstreamDocumentId: uuid("downstream_document_id"),
+    createdBy: uuid("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("import_sessions_status_idx").on(t.status),
+    index("import_sessions_file_hash_idx").on(t.fileHash),
+  ],
+);
+
+export const importRowsTable = pgTable(
+  "import_rows",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    importSessionId: uuid("import_session_id")
+      .notNull()
+      .references(() => importSessionsTable.id, { onDelete: "cascade" }),
+    rowNumber: integer("row_number").notNull(),
+    raw: jsonb("raw").notNull(),
+    canonical: jsonb("canonical"),
+    status: importRowStatusEnum("status").notNull().default("PENDING"),
+    errors: jsonb("errors"),
+    grnLineId: uuid("grn_line_id"),
+  },
+  (t) => [
+    uniqueIndex("import_rows_session_row_unique").on(t.importSessionId, t.rowNumber),
+    index("import_rows_session_status_idx").on(t.importSessionId, t.status),
+  ],
+);
+
 export type AttributeDefinition = typeof attributeDefinitionsTable.$inferSelect;
 export type UnitDefinition = typeof unitDefinitionsTable.$inferSelect;
 export type AttributeTemplate = typeof attributeTemplatesTable.$inferSelect;
@@ -363,3 +424,5 @@ export type MaterialTemplateMapping = typeof materialTemplateMappingsTable.$infe
 export type MaterialInventoryProfile = typeof materialInventoryProfilesTable.$inferSelect;
 export type AttributeCaptureInstance = typeof attributeCaptureInstancesTable.$inferSelect;
 export type AttributeCaptureValue = typeof attributeCaptureValuesTable.$inferSelect;
+export type ImportSession = typeof importSessionsTable.$inferSelect;
+export type ImportRow = typeof importRowsTable.$inferSelect;

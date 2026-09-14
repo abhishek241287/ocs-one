@@ -34,3 +34,12 @@ export const GrnLineCaptureValues = zod.object({
   attributes: zod.array(CanonicalAttributeValue).default([]),
 });
 export type GrnLineCaptureValues = zod.infer<typeof GrnLineCaptureValues>;
+
+export const ImportCsvBody = zod.object({
+  csv: zod.string().min(1).max(10_000_000),
+  filename: zod.string().trim().max(255).optional(),
+});
+export type ImportCsvBody = zod.infer<typeof ImportCsvBody>;
+
+export const ImportConfirmBody = zod.object({}).strict();
+export type ImportConfirmBody = zod.infer<typeof ImportConfirmBody>;
