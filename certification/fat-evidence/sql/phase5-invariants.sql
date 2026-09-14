@@ -2,8 +2,6 @@
 
 -- Phase 5 invariant pack.
 -- Development database only. Every SELECT returns zero for a clean gate.
--- The sole global ledger exception is the pre-existing FAT-E2E-MATERIAL-BMS
--- WIP balance of -0.500, documented in the Phase 4/70-J evidence.
 
 CREATE TEMP TABLE phase5_invariant_results (
   check_id text PRIMARY KEY,
@@ -208,12 +206,7 @@ FROM (
   GROUP BY t.material_id, t.stock_state
 ) x
 JOIN master_materials m ON m.id = x.material_id
-WHERE x.balance < 0
-  AND NOT (
-    m.code = 'FAT-E2E-MATERIAL-BMS'
-    AND x.stock_state = 'wip'
-    AND x.balance = -0.500
-  );
+WHERE x.balance < 0;
 
 SELECT check_id, violation_count
 FROM phase5_invariant_results

@@ -393,6 +393,10 @@ router.post(
         }
 
         if (document.lotId) {
+          const key = `inventory-lot:${document.lotId}`;
+          await tx.execute(
+            sql`SELECT pg_advisory_xact_lock(hashtext(${key}))`,
+          );
           const [lot] = await tx
             .select()
             .from(inventoryLotsTable)

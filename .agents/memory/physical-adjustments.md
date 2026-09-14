@@ -14,3 +14,9 @@ Transferred lots retain their original receipt warehouse on the lot header while
 **Why:** The Phase 5 cross-domain gate must allow a physical adjustment at a transfer destination without rewriting immutable receipt provenance or accepting stock that is not actually available there.
 
 **How to apply:** For post-transfer adjustments, lock the lot/GRN source for traceability, then use the document warehouse/location ledger balance as the authoritative availability check. Keep read projections explicit about provenance versus current location.
+
+Lot-scoped negative adjustments and transfer issue must share a transaction-scoped lot lock, and transfer availability must include broader-scope ledger rows (such as warehouse-level rows with null location) when evaluating a location-specific request.
+
+**Why:** A serialized adjustment can still be ignored by a transfer balance query if the two writers use different dimensional scopes; the combined movement can then produce a negative signed-ledger balance.
+
+**How to apply:** Lock the common lot before checking or posting either movement. When a request has a location or bin, match exact rows plus rows whose corresponding dimension is null, because null represents a broader warehouse/location scope.

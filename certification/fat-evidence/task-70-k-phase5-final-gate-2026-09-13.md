@@ -121,3 +121,52 @@ These are documented existing release blockers. No FAT reset or production-data 
 **PARTIAL / RELEASE SIGN-OFF BLOCKED.**
 
 The Phase 5 implementation, focused certification, invariant pack, regression suites, MIN smoke, schema checks, typecheck, health check, and fixture teardown are green. Final release sign-off remains blocked by the pre-existing FAT fixture drift and the pre-existing FAT BMS `-0.500` WIP baseline. Existing project tasks track the fixture reset and release-blocker cleanup.
+## 2026-09-14 clean-baseline release addendum
+
+The earlier sections of this file preserve the pre-reset historical record. The certified B1 reset/reseed and the final gate below supersede the former FAT drift/BMS exception disposition.
+
+### B1 reset and report determinism
+
+- Base FAT seed now creates exactly six core orders; report-boundary orders are created idempotently only by the reports-only harness.
+- Two reports-only runs passed **69/69** each.
+- Certified reset/reseed after each run returned to six core orders and FAT preflight **67/67**.
+- Final BMS decomposition contains exactly seven deterministic seed transactions, no orphaned `CONSUMPTION` row, and WIP balance `0`.
+
+### Final certification results
+
+| Gate | Result |
+|---|---|
+| Invariant SQL pack, exception removed | **20/20 zero violations** |
+| Phase 4 WIP consumption | **17/17** |
+| 70-G WIP returns | **11/11** plus residue PASS |
+| 70-H WIP scrap | **10/10** plus residue PASS |
+| 70-I physical adjustments | **11/11** plus residue PASS |
+| 70-J transfer lifecycle | **12/12** plus residue PASS after namespace teardown fix |
+| 70-K cross-domain final gate | **15/15**; FK-10 exactly one winner and one 409; FK-LEDGER PASS |
+| SS-02 authorization | **777 + 12** |
+| SS-03 audit | **13/13**; immutability checks PASS |
+| SS-04 configuration | **31 pass / 3 warnings / 0 fail** |
+| FAT read-only/MIN smoke | **32/32** |
+| FAT preflight | **67/67** |
+| Typecheck and diff check | PASS |
+
+### Final residue and baseline checks
+
+- FAT core orders: **6**.
+- FAT report-boundary orders: **0**.
+- BMS transaction rows: **7**.
+- BMS WIP balance: **0**.
+- Orphaned BMS consumption rows: **0**.
+- P5, 70-G, 70-H, 70-I, and 70-J material residue: **0**.
+- 70-J category residue: **0**.
+
+### Corrective implementation notes
+
+- Transfer issue and lot-scoped negative adjustment now share a transaction-scoped lot lock.
+- Transfer availability now includes warehouse-wide/null-location and broader null-bin ledger rows when evaluating a scoped request, so a warehouse-level physical adjustment cannot be ignored by a location-specific transfer.
+- The 70-J teardown now sweeps its reserved namespace and asserts category residue as well as material/request/ledger residue.
+- The Phase 5 invariant SQL no longer excludes the former BMS baseline.
+
+## Final disposition
+
+**PASS / release gate clear for the development FAT candidate.** The former report-order drift and BMS `-0.500` exception are resolved through the certified reset/reseed path; no production changes were made.

@@ -241,6 +241,31 @@ async function cleanup(): Promise<void> {
         [userIds, `%${prefix}%`],
       );
     }
+    const namespaceMaterials = await pool.query<{ id: string; category_id: string | null }>(
+      "SELECT id, category_id FROM master_materials WHERE code LIKE '70J-%'",
+    );
+    if (namespaceMaterials.rows.length) {
+      const namespaceMaterialIds = namespaceMaterials.rows.map((row) => row.id);
+      const namespaceCategoryIds = namespaceMaterials.rows
+        .map((row) => row.category_id)
+        .filter((id): id is string => Boolean(id));
+      await pool.query(
+        "DELETE FROM inventory_transactions WHERE material_id = ANY($1::uuid[])",
+        [namespaceMaterialIds],
+      );
+      await pool.query("DELETE FROM inventory_lots WHERE material_id = ANY($1::uuid[])", [namespaceMaterialIds]);
+      await pool.query("DELETE FROM master_materials WHERE id = ANY($1::uuid[])", [namespaceMaterialIds]);
+      if (namespaceCategoryIds.length) {
+        await pool.query(
+          `DELETE FROM master_material_categories
+           WHERE id = ANY($1::uuid[])
+             AND NOT EXISTS (
+               SELECT 1 FROM master_materials m WHERE m.category_id = master_material_categories.id
+             )`,
+          [namespaceCategoryIds],
+        );
+      }
+    }
     if (locationIds.length) await pool.query("DELETE FROM locations WHERE id = ANY($1::uuid[])", [locationIds]);
     if (warehouseIds.length) await pool.query("DELETE FROM warehouses WHERE id = ANY($1::uuid[])", [warehouseIds]);
     if (supplierIds.length) await pool.query("DELETE FROM master_suppliers WHERE id = ANY($1::uuid[])", [supplierIds]);
@@ -663,13 +688,14 @@ async function main(): Promise<void> {
     `SELECT
        (SELECT count(*)::text FROM users WHERE email LIKE $1) AS users,
        (SELECT count(*)::text FROM master_materials WHERE code LIKE $2) AS materials,
+       (SELECT count(*)::text FROM master_material_categories WHERE code LIKE $2) AS categories,
        (SELECT count(*)::text FROM transfer_requests WHERE transfer_number LIKE $3) AS requests,
        (SELECT count(*)::text FROM inventory_transactions it
           WHERE it.source_document_type = 'transfer_request'
             AND it.source_document_id IN (
               SELECT id FROM transfer_requests WHERE transfer_number LIKE $3
             )) AS ledger_rows`,
-    [`${prefix.toLowerCase()}-%@cert.local`, `${prefix}-%`, `${prefix}-%`],
+    [`${prefix.toLowerCase()}-%@cert.local`, "70J-%", `${prefix}-%`],
   );
   const zeroResidue = Object.values(residue[0] ?? {}).every((value) => Number(value) === 0);
   console.log(`70J-RESIDUE: ${zeroResidue ? "PASS" : "FAIL"} ${JSON.stringify(residue[0])}`);

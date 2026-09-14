@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import {
   db,
   grnLineItemsTable,
@@ -151,8 +151,22 @@ async function matchingAvailable(
     eq(inventoryTransactionsTable.stockState, stockState),
     eq(inventoryTransactionsTable.warehouseId, warehouseId),
   ];
-  if (locationId) conditions.push(eq(inventoryTransactionsTable.locationId, locationId));
-  if (binId) conditions.push(eq(inventoryTransactionsTable.binId, binId));
+  if (locationId) {
+    conditions.push(
+      or(
+        eq(inventoryTransactionsTable.locationId, locationId),
+        isNull(inventoryTransactionsTable.locationId),
+      )!,
+    );
+  }
+  if (binId) {
+    conditions.push(
+      or(
+        eq(inventoryTransactionsTable.binId, binId),
+        isNull(inventoryTransactionsTable.binId),
+      )!,
+    );
+  }
   if (lotId) conditions.push(eq(inventoryTransactionsTable.lotId, lotId));
   const [balance] = await tx
     .select({
@@ -165,6 +179,10 @@ async function matchingAvailable(
 
 async function lockLotSource(tx: any, lotId: string | null) {
   if (!lotId) return null;
+  const key = `inventory-lot:${lotId}`;
+  await tx.execute(
+    sql`SELECT pg_advisory_xact_lock(hashtext(${key}))`,
+  );
   const [lot] = await tx
     .select()
     .from(inventoryLotsTable)
