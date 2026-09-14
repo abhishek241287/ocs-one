@@ -21,6 +21,7 @@ import {
   materialsTable,
   suppliersTable,
 } from "./inventory";
+import { attributeCaptureInstancesTable } from "./attribute-engine";
 import { bomHeadersTable } from "./bom";
 import {
   materialIssueNotesTable,
@@ -29,6 +30,7 @@ import {
   mfgOrderStagesTable,
   mfgProductionOrdersTable,
 } from "./manufacturing";
+import { productsTable } from "./products";
 import { usersTable } from "./users";
 
 // ─── Full Inventory Management — Phase 0 foundation ──────────────────────────
@@ -245,6 +247,45 @@ export const inventoryLotsTable = pgTable(
     ),
     check("inventory_lots_total_received_nonnegative", sql`${table.totalReceivedQty} >= 0`),
     check("inventory_lots_remaining_nonnegative", sql`${table.remainingQty} >= 0`),
+  ],
+);
+
+export const serialStatusEnum = pgEnum("serial_status", [
+  "ACTIVE",
+  "CONSUMED",
+  "RETIRED",
+]);
+
+// Durable identity index for serial-bearing receipts, scans, and manufactured
+// output. This table records observations; it does not create or infer stock
+// movement. Output serials may have no input lot, while every identity remains
+// tied to a material master for deterministic resolution.
+export const serialUnitsTable = pgTable(
+  "serial_units",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    serialNumber: varchar("serial_number", { length: 100 }).notNull().unique(),
+    materialId: uuid("material_id")
+      .notNull()
+      .references(() => materialsTable.id),
+    lotId: uuid("lot_id").references(() => inventoryLotsTable.id),
+    captureInstanceId: uuid("capture_instance_id").references(
+      () => attributeCaptureInstancesTable.id,
+    ),
+    productionOrderId: uuid("production_order_id").references(
+      () => mfgProductionOrdersTable.id,
+    ),
+    productId: uuid("product_id").references(() => productsTable.id),
+    sourceDocumentType: varchar("source_document_type", { length: 50 }).notNull(),
+    sourceDocumentId: uuid("source_document_id").notNull(),
+    status: serialStatusEnum("status").notNull().default("ACTIVE"),
+    createdBy: uuid("created_by").references(() => usersTable.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("serial_units_material_idx").on(table.materialId),
+    index("serial_units_lot_idx").on(table.lotId),
+    index("serial_units_status_idx").on(table.status),
   ],
 );
 

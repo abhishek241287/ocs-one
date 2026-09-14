@@ -84,6 +84,10 @@ function lotQr(lotId: string): string {
   return JSON.stringify({ v: 1, entity: "lot", id: lotId });
 }
 
+function serialQr(serialNumber: string): string {
+  return JSON.stringify({ v: 1, entity: "serial", id: serialNumber });
+}
+
 function validAttributes(prefix: string) {
   return [
     { attribute_code: `${prefix.toLowerCase()}_capacity`, raw: "280", value: "280", supplied_unit: `${prefix}-AH` },
@@ -396,6 +400,16 @@ async function main(): Promise<void> {
         body: "{}",
       });
       assert(confirmed.response.status === 200, `Serial undo confirm failed: ${JSON.stringify(confirmed.body)}`);
+      const directSession = await createSession(fixture.directorCookie!);
+      const direct = await scan(directSession.id, fixture.directorCookie!, serialQr("SER-001"), {
+        attributes: validAttributes(fixture.prefix),
+      });
+      assert(
+        direct.response.status === 201 &&
+          direct.body.state === "READY" &&
+          direct.body.material_id === fixture.materialId,
+        `Direct serial QR did not resolve: ${JSON.stringify(direct.body)}`,
+      );
     });
 
     await run("SF-05 LOT scans accumulate", async () => {
@@ -477,6 +491,37 @@ async function main(): Promise<void> {
   } finally {
     await client.query("BEGIN").catch(() => undefined);
     try {
+      await client.query(
+        `DELETE FROM outbox_events
+         WHERE aggregate_id IN (
+           SELECT id FROM serial_units
+           WHERE capture_instance_id IN (
+             SELECT id FROM attribute_capture_instances
+             WHERE target_id IN (
+               SELECT id FROM grn_line_items
+               WHERE grn_id IN (SELECT id FROM grn_headers WHERE created_by = $1)
+             )
+           )
+           OR source_document_id IN (
+             SELECT id FROM scan_sessions WHERE created_by = $1
+           )
+         )`,
+        [fixture.directorId],
+      );
+      await client.query(
+        `DELETE FROM serial_units
+         WHERE capture_instance_id IN (
+           SELECT id FROM attribute_capture_instances
+           WHERE target_id IN (
+             SELECT id FROM grn_line_items
+             WHERE grn_id IN (SELECT id FROM grn_headers WHERE created_by = $1)
+           )
+         )
+         OR source_document_id IN (
+           SELECT id FROM scan_sessions WHERE created_by = $1
+         )`,
+        [fixture.directorId],
+      );
       await client.query(
         `DELETE FROM attribute_capture_values
          WHERE capture_instance_id IN (

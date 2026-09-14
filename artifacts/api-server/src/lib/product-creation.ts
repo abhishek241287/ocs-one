@@ -9,7 +9,10 @@ import {
   mfgProductionOrdersTable,
   mfgOrderStagesTable,
   mfgBatteryGenealogyTable,
+  bomSnapshotLinesTable,
+  bomSnapshotsTable,
 } from "@workspace/db";
+import { indexSerialInTx } from "./serial-index";
 
 // ─── Unified Product Platform — generic Product creation engine ───────────────
 // The single creation path for serialized Products. Used by BOTH the QC-PASS emit
@@ -73,6 +76,26 @@ export class OrderCompletionBlockedError extends Error {
     super(message);
     this.name = "OrderCompletionBlockedError";
   }
+}
+
+async function resolveOutputMaterialId(
+  tx: Transaction,
+  orderId: string,
+): Promise<string | null> {
+  const snapshotMaterials = await tx
+    .select({ materialId: bomSnapshotLinesTable.materialId })
+    .from(bomSnapshotLinesTable)
+    .innerJoin(
+      bomSnapshotsTable,
+      eq(bomSnapshotsTable.id, bomSnapshotLinesTable.bomSnapshotId),
+    )
+    .where(eq(bomSnapshotsTable.productionOrderId, orderId));
+  const snapshotIds = [...new Set(snapshotMaterials.map((row) => row.materialId))];
+  if (snapshotIds.length === 1) return snapshotIds[0]!;
+  // The current schema has no finished-product material mapping beyond a BOM
+  // snapshot. Do not infer an output material from a model/SKU or genealogy
+  // component ID when the snapshot is absent or contains multiple materials.
+  return null;
 }
 
 /**
@@ -227,6 +250,19 @@ export async function createProductFromOrder(
       manufacturingCompletedAt: manufacturingCompletedAt.toISOString(),
     },
   });
+
+  const outputMaterialId = await resolveOutputMaterialId(tx, order.id);
+  if (outputMaterialId) {
+    await indexSerialInTx(tx, {
+      serialNumber: order.batteryNumber,
+      materialId: outputMaterialId,
+      productionOrderId: order.id,
+      productId,
+      sourceDocumentType: "product",
+      sourceDocumentId: productId,
+      actorEmail: actor,
+    });
+  }
 
   return { status: "created", productId, serial: order.batteryNumber };
 }

@@ -3,6 +3,7 @@ import type { Executor } from "@workspace/db";
 import {
   inventoryLotsTable,
   materialsTable,
+  serialUnitsTable,
 } from "@workspace/db";
 
 export const QR_ENTITIES = [
@@ -27,6 +28,8 @@ export type ResolvedEntity =
       materialId?: string;
       lotNumber?: string;
       serialNumber?: string;
+      productionOrderId?: string;
+      productId?: string;
       confirmable: boolean;
       state: "RESOLVED";
       errors?: Array<{ rule: string; message: string }>;
@@ -53,13 +56,17 @@ export function decodePayload(raw: string): DecodedPayload {
   }
   if (!parsed || typeof parsed !== "object") return { ok: false };
   const envelope = parsed as Record<string, unknown>;
-  if (envelope.v !== 1 || !QR_ENTITIES.includes(envelope.entity as QrEntity) || !isUuid(envelope.id)) {
+  const entity = envelope.entity as QrEntity;
+  const validId = entity === "serial"
+    ? typeof envelope.id === "string" && envelope.id.trim().length > 0
+    : isUuid(envelope.id);
+  if (envelope.v !== 1 || !QR_ENTITIES.includes(entity) || !validId) {
     return { ok: false };
   }
   return {
     ok: true,
-    entity: envelope.entity as QrEntity,
-    id: envelope.id,
+    entity,
+    id: envelope.id as string,
     ...(typeof envelope.label === "string" ? { label: envelope.label } : {}),
   };
 }
@@ -118,7 +125,33 @@ export async function resolveEntity(
   }
 
   if (entity === "serial") {
-    return unknown(entity, id, "Serial QR cannot be resolved until a serial index exists");
+    const [serial] = await executor
+      .select({
+        id: serialUnitsTable.id,
+        serialNumber: serialUnitsTable.serialNumber,
+        materialId: serialUnitsTable.materialId,
+        lotNumber: inventoryLotsTable.lotNumber,
+        productionOrderId: serialUnitsTable.productionOrderId,
+        productId: serialUnitsTable.productId,
+      })
+      .from(serialUnitsTable)
+      .leftJoin(inventoryLotsTable, eq(inventoryLotsTable.id, serialUnitsTable.lotId))
+      .where(eq(serialUnitsTable.serialNumber, id))
+      .limit(1);
+    return serial
+      ? {
+          ok: true,
+          entity,
+          id: serial.id,
+          materialId: serial.materialId,
+          lotNumber: serial.lotNumber ?? undefined,
+          serialNumber: serial.serialNumber,
+        productionOrderId: serial.productionOrderId ?? undefined,
+        productId: serial.productId ?? undefined,
+          confirmable: true,
+          state: "RESOLVED",
+        }
+      : unknown(entity, id, "Serial QR does not identify an indexed serial");
   }
 
   return {

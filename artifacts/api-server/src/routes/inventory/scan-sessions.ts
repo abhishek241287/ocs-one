@@ -4,6 +4,7 @@ import {
   attributeCaptureInstancesTable,
   attributeTemplateVersionsTable,
   db,
+  grnLineItemsTable,
   materialInventoryProfilesTable,
   materialsTable,
   outboxEventsTable,
@@ -27,6 +28,7 @@ import {
 } from "../../lib/universal-capture/grn-adapter";
 import { validateCapture, type CaptureError, type ValidatedValue } from "../../lib/universal-capture/validate";
 import { decodePayload, resolveEntity, type QrEntity, type ResolvedEntity } from "../../lib/universal-capture/qr";
+import { indexSerialInTx } from "../../lib/serial-index";
 
 const router = Router();
 router.use(requireAuth);
@@ -623,6 +625,40 @@ router.post("/:id/confirm", requireWriteRole("supervisor", "director"), async (r
         actorId: req.user?.userId ?? null,
         templateVersionId,
       });
+      for (let index = 0; index < active.length; index += 1) {
+        const item = active[index]!;
+        const serialNumber = item.serialNumber?.trim();
+        if (!serialNumber) continue;
+        const lineId = confirmed.lineIds[index]!;
+        const [capture] = await tx
+          .select({ id: attributeCaptureInstancesTable.id })
+          .from(attributeCaptureInstancesTable)
+          .where(
+            and(
+              eq(attributeCaptureInstancesTable.targetId, lineId),
+              eq(attributeCaptureInstancesTable.materialId, item.materialId!),
+            ),
+          )
+          .orderBy(desc(attributeCaptureInstancesTable.createdAt))
+          .limit(1);
+        const [line] = await tx
+          .select({ lotId: grnLineItemsTable.lotId })
+          .from(grnLineItemsTable)
+          .where(eq(grnLineItemsTable.id, lineId))
+          .limit(1);
+        await indexSerialInTx(tx, {
+          serialNumber,
+          materialId: item.materialId!,
+          lotId: line?.lotId ?? null,
+          captureInstanceId: capture?.id ?? null,
+          sourceDocumentType: "scan_session",
+          sourceDocumentId: session.id,
+          createdBy: req.user?.userId ?? null,
+          actorId: req.user?.userId ?? null,
+          actorEmail: req.user?.email ?? null,
+          actorRole: req.user?.role ?? null,
+        });
+      }
       await tx
         .update(attributeCaptureInstancesTable)
         .set({ sourceType: "SCAN" })

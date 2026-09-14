@@ -137,6 +137,14 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     res.status(400).json({ error: "Validation failed", issues: err.issues });
     return;
   }
+  if ((err as any)?.code === "SERIAL_CONFLICT" && (err as any)?.statusCode === 409) {
+    res.status(409).json({
+      error: "SERIAL_CONFLICT",
+      serial_number: (err as any)?.serialNumber,
+      message: err.message,
+    });
+    return;
+  }
   // PostgreSQL constraint violations — Drizzle wraps pg errors in _DrizzleQueryError
   // so check both err and err.cause for the error code.
   const pgCode = (err as any)?.code ?? (err as any)?.cause?.code;

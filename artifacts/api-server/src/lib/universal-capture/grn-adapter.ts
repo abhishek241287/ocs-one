@@ -22,6 +22,7 @@ import { resolveTemplate, type TemplateResolution } from "./resolve";
 import { validateCapture, type CaptureAttribute, type TemplateField, type ValidatedValue } from "./validate";
 import type { UnitRow } from "./units";
 import { registerCaptureAdapter } from "./adapters";
+import { indexSerialInTx } from "../serial-index";
 
 type CaptureSourceType = "MANUAL" | "CSV" | "SCAN" | "API" | "SYSTEM";
 
@@ -292,6 +293,49 @@ export async function persistCapture(
       })),
     );
   }
+
+  const serialAttributeIds = values.length > 0
+    ? new Set(
+        (
+          await tx
+            .select({
+              id: attributeDefinitionsTable.id,
+              code: attributeDefinitionsTable.code,
+              scope: attributeDefinitionsTable.scope,
+            })
+            .from(attributeDefinitionsTable)
+            .where(inArray(attributeDefinitionsTable.id, values.map((value) => value.attributeId)))
+        )
+          .filter((definition) => definition.scope === "SERIAL" || definition.code === "serial_number")
+          .map((definition) => definition.id),
+      )
+    : new Set<string>();
+
+  if (serialAttributeIds.size > 0) {
+    const [line] = await tx
+      .select({ lotId: grnLineItemsTable.lotId })
+      .from(grnLineItemsTable)
+      .where(eq(grnLineItemsTable.id, params.lineId))
+      .limit(1);
+
+    for (const value of values) {
+      if (!serialAttributeIds.has(value.attributeId)) continue;
+      const raw = value.valueText ?? displayValue(value);
+      const serialNumber = raw == null ? "" : String(raw).trim();
+      if (!serialNumber) continue;
+      await indexSerialInTx(tx, {
+        serialNumber,
+        materialId: params.materialId,
+        lotId: line?.lotId ?? null,
+        captureInstanceId: instance.id,
+        sourceDocumentType: "grn_line",
+        sourceDocumentId: params.lineId,
+        createdBy: params.createdBy ?? null,
+        actorId: params.createdBy ?? null,
+      });
+    }
+  }
+
   await tx.insert(outboxEventsTable).values({
     aggregateType: "grn_line",
     aggregateId: params.lineId,
