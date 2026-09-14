@@ -284,3 +284,35 @@ certification/fat-evidence/sql/phase5-invariants.sql:5:-- The sole global ledger
 certification/fat-evidence/sql/phase5-invariants.sql:213:    m.code = 'FAT-E2E-MATERIAL-BMS'
 certification/fat-evidence/task-70-k-phase5-final-gate-2026-09-13.md:70:The global ledger check excludes only the documented pre-existing `FAT-E2E-MATERIAL-BMS` WIP balance of `-0.500`. No Phase 5 fixture contributed a negative balance.
 ```
+
+## B2 CLASSIFICATION — FAT BMS -0.500 = CASE B (stale fixture artifact)
+
+OCS One · 2026-09-14 · Architect classification on the captured trace.
+
+**VERDICT: CASE B — leaked non-seed artifact. The correct baseline is 0.**
+
+The seeded FAT baseline contains no WIP for the BMS material.
+
+### Evidence
+
+1. The seven rows timestamped `2026-09-13 11:42:56` are the deterministic seed: two GRN receipts, the inspection release/accept/reject movements, and the legacy MIN issue. Their FAT-prefixed document IDs are internally consistent: `inspection_pending = 0`, `rejected = 1`, `available = 1`, and `wip = 0`.
+2. The eighth row, timestamped `11:44:24`, is the anomaly: `CONSUMPTION | wip | -0.500`, with uppercase `source_document_type = 'CONSUMPTION'`, a random orphaned source document ID, actor `fat.director@fat.local`, and FAT fixture source-line/lot IDs. The source ID is absent from every permitted document table.
+3. The certified Phase 4 consumption endpoint could not have produced this row because confirmation requires an active WIP row with sufficient remaining quantity, while `wip_inventory` has zero rows for this material. The row is a direct fixture-harness ledger artifact whose parent document was later cleaned up.
+4. The row violates INV-P4-03 by construction: `sum(remaining) = 0` but the WIP ledger balance is `-0.500`.
+5. The discriminator is unnecessary. The seven seed rows are one timestamped FAT-prefixed batch; the anomaly is later, orphaned, and convention-breaking. The seed baseline is WIP `0`.
+
+### Disposition — Case B
+
+The orphaned row belongs to the FAT fixture namespace and must be removed by the certified fixture teardown/reseed path, not by a hand delete. No compensating ledger movement is required because the correct baseline is `0`.
+
+The B1 teardown already demonstrated the removal; this classification supplies the missing evidence. No invariant allowance is required after reseed.
+
+### Required next steps
+
+- Reapply the deterministic B1 FAT reset so report-boundary orders are transient report-harness fixtures only and the base seed contains exactly six core FAT orders.
+- Execute the reset/teardown path and verify the BMS decomposition contains exactly the seven seed rows, WIP `0`, and no orphan.
+- Verify exactly six core `FAT-E2E-ORD-` orders and FAT preflight `67/67`.
+- Run the report-order determinism cycle twice: evidence suites, certified reset, six orders, and preflight `67/67`.
+- Run the full release gate: invariant pack, Phase 4, Phase 5 suites, 70-K, SS-02, SS-03, SS-04, FAT read-only/MIN smoke, and residue checks.
+
+Boundaries: development database only, no commits, append-only evidence, and no direct edits to ledger rows.
