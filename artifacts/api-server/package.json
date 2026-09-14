@@ -27,6 +27,7 @@
     "test:task54-bom-use-obsoletion": "tsx src/cert/task54-bom-use-obsoletion-concurrency-suite.ts",
     "test:config": "tsx src/cert/config-suite.ts",
     "test:phase6-71c": "tsx src/cert/phase6-71c-suite.ts",
+    "test:phase6-71d": "tsx src/cert/phase6-71d-suite.ts",
     "cert:fat:seed": "tsx src/cert/fat-seed.ts --action=seed",
     "cert:fat:verify": "tsx src/cert/fat-seed.ts --action=verify",
     "cert:fat:preflight": "tsx src/cert/fat-seed.ts --action=preflight",
