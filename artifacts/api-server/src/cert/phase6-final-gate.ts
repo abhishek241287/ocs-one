@@ -816,7 +816,7 @@ async function main(): Promise<void> {
     });
 
     await runConstitutional({ battery, transformer });
-    await run("20-invariant pack plus Phase 6 ledger wall", async () => {
+    await run("22-invariant pack plus Phase 6 ledger wall", async () => {
       const checks: Array<[string, boolean, string]> = [
         ["I01", Boolean((await client.query("SELECT 1")).rows.length), "database reachable"],
         ["I02", Boolean((await client.query("SELECT 1 FROM users WHERE id = $1", [directorId])).rows.length), "fixture actor"],
@@ -838,6 +838,20 @@ async function main(): Promise<void> {
         ["I18", Number((await client.query("SELECT count(*)::int AS count FROM attribute_capture_instances WHERE template_version_id IS NULL AND created_by = $1", [directorId])).rows[0].count) === 0, "version pinning"],
         ["I19", Number((await client.query("SELECT count(*)::int AS count FROM import_rows WHERE import_session_id IN (SELECT id FROM import_sessions WHERE created_by = $1) AND status = 'INVALID'", [directorId])).rows[0].count) >= 1, "invalid rows retained"],
         ["I20", Number((await client.query("SELECT count(*)::int AS count FROM inventory_transactions it WHERE it.source_document_id IN (SELECT id FROM import_sessions WHERE created_by = $1 UNION SELECT id FROM scan_sessions WHERE created_by = $1)", [directorId])).rows[0].count) === 0, "Phase 6 ledger wall"],
+        ["I21", (await client.query(
+          `SELECT material_id, warehouse_id, stock_state, SUM(quantity)::numeric
+             FROM inventory_transactions
+            WHERE stock_state IN ('available', 'in_transit')
+            GROUP BY 1, 2, 3
+           HAVING SUM(quantity) < 0`,
+        )).rows.length === 0, "global negative available/in-transit balance"],
+        ["I22", (await client.query(
+          `SELECT material_id, lot_id, stock_state, SUM(quantity)::numeric
+             FROM inventory_transactions
+            WHERE lot_id IS NOT NULL
+            GROUP BY 1, 2, 3
+           HAVING SUM(quantity) < 0`,
+        )).rows.length === 0, "global negative lot balance"],
       ];
       for (const [name, ok, detail] of checks) {
         assert(ok, `${name} failed: ${detail}`);
