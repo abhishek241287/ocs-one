@@ -78,3 +78,15 @@ occurred in the first 70-G runner pass.
 
 **How to apply:** cast numeric SQL expressions when practical, and use `Number(...)` at the
 assertion boundary for counts, quantities, and reconciliation totals.
+
+# GRN proof teardown must remove generated lots before receipt lines
+
+Posting a GRN creates an `inventory_lots` row that references its GRN line, so a harness
+that proves posting cannot delete the GRN header/lines until those generated lots are removed.
+
+**Why:** the first 71-D proof passed its behavior checks but its cleanup rolled back on the
+lot foreign key, leaving the fixture behind even though the route was correct.
+
+**How to apply:** in GRN certification cleanup, delete dependent outbox/audit/ledger rows,
+then generated `inventory_lots` by GRN-line relationship, then capture rows, GRNs, and
+controlled masters; finish with residual assertions.

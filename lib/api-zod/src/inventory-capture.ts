@@ -28,3 +28,9 @@ export const CanonicalCaptureInput = zod.object({
   }),
 });
 export type CanonicalCaptureInput = zod.infer<typeof CanonicalCaptureInput>;
+
+export const GrnLineCaptureValues = zod.object({
+  line_number: zod.number().int().min(1),
+  attributes: zod.array(CanonicalAttributeValue).default([]),
+});
+export type GrnLineCaptureValues = zod.infer<typeof GrnLineCaptureValues>;

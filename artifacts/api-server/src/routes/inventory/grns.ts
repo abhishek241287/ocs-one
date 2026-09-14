@@ -14,11 +14,19 @@ import {
   locationsTable,
   binsTable,
 } from "@workspace/db";
-import { CreateGrnBody } from "@workspace/api-zod";
+import { CreateGrnBody, GrnLineCaptureValues } from "@workspace/api-zod";
 import { requireWriteRole } from "../../middleware/auth";
 import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
 import { postGrn } from "../../lib/grn-posting";
 import { recordInspection } from "../../lib/incoming-inspection";
+import {
+  GrnCaptureError,
+  type GrnLineCaptureProjection,
+  insertGrnDraft,
+  nextGrnNumber,
+  readGrnLineCaptures,
+  validateAndPersistGrnCapture,
+} from "../../lib/universal-capture/grn-adapter";
 import {
   resolveLinkedMaster,
   type LinkedMasterType,
@@ -65,7 +73,11 @@ function serializeHeader(h: Record<string, any>) {
   };
 }
 
-function serializeLine(l: Record<string, any>, e?: LineEnrichment) {
+function serializeLine(
+  l: Record<string, any>,
+  e?: LineEnrichment,
+  capture?: GrnLineCaptureProjection,
+) {
   return {
     id: l.id,
     grn_id: l.grnId,
@@ -86,6 +98,7 @@ function serializeLine(l: Record<string, any>, e?: LineEnrichment) {
     inspection_status: l.inspectionStatus ?? null,
     remarks: l.remarks,
     created_at: l.createdAt,
+    capture: capture ?? null,
   };
 }
 
@@ -119,9 +132,12 @@ async function readDetail(grnId: string) {
     .orderBy(asc(grnLineItemsTable.lineNumber));
 
   const enrichment = await buildLineEnrichment(lines.map((l) => l.materialId));
+  const captures = await readGrnLineCaptures(lines.map((l) => l.id));
   return {
     ...serializeHeader(header),
-    lines: lines.map((l) => serializeLine(l, enrichment.get(l.materialId))),
+    lines: lines.map((l) =>
+      serializeLine(l, enrichment.get(l.materialId), captures.get(l.id)),
+    ),
   };
 }
 
@@ -207,6 +223,32 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     return;
   }
   const body = parsed.data;
+  const rawAttributeValues = (req.body as Record<string, unknown> | null)?.attribute_values;
+  const captureValuesParsed =
+    rawAttributeValues === undefined
+      ? { success: true as const, data: [] as Array<GrnLineCaptureValues> }
+      : GrnLineCaptureValues.array().safeParse(rawAttributeValues);
+  if (!captureValuesParsed.success) {
+    res.status(400).json({ error: captureValuesParsed.error.message });
+    return;
+  }
+  const attributeValues = captureValuesParsed.data;
+  const captureLineNumbers = new Set<number>();
+  for (const capture of attributeValues) {
+    if (capture.line_number > body.lines.length) {
+      res.status(400).json({
+        error: `attribute_values line_number ${capture.line_number} does not reference a GRN line`,
+      });
+      return;
+    }
+    if (captureLineNumbers.has(capture.line_number)) {
+      res.status(400).json({
+        error: `attribute_values may contain only one entry for line ${capture.line_number}`,
+      });
+      return;
+    }
+    captureLineNumbers.add(capture.line_number);
+  }
 
   if (body.purchase_order_id) {
     const duplicateLineIds = body.lines
@@ -285,43 +327,60 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 
   // Race-safe GRN number (GRN-YYYYMMDD-NNNN) from a dedicated Postgres sequence.
   const now = new Date();
-  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
-  const { rows } = await pool.query("SELECT nextval('grn_seq') AS seq");
-  const grnNumber = `GRN-${dateStr}-${String(rows[0].seq).padStart(4, "0")}`;
+  const grnNumber = await nextGrnNumber(now);
   const actorId = req.user?.userId ?? null;
 
   let createdId: string;
   try {
     createdId = await db.transaction(async (tx) => {
-      const [header] = await tx
-        .insert(grnHeadersTable)
-        .values({
-          grnNumber,
-          supplierId: body.supplier_id,
-          purchaseOrderId: body.purchase_order_id ?? null,
-          invoiceNumber: body.invoice_number ?? null,
-          receivedDate: body.received_date,
-          status: "draft",
-          remarks: body.remarks ?? null,
-          createdBy: actorId,
-        })
-        .returning({ id: grnHeadersTable.id });
-
-      await tx.insert(grnLineItemsTable).values(
-        body.lines.map((l, i) => ({
-          grnId: header.id,
-          lineNumber: i + 1,
-          materialId: l.material_id,
-          purchaseOrderLineId: l.purchase_order_line_id ?? null,
-          quantityReceived: String(l.quantity_received),
-          uom: uomById.get(l.material_id)!,
-          supplierLotNumber: l.supplier_lot_number ?? null,
-          remarks: l.remarks ?? null,
+      const headerId = await insertGrnDraft(tx, {
+        grnNumber,
+        supplierId: body.supplier_id,
+        purchaseOrderId: body.purchase_order_id ?? null,
+        invoiceNumber: body.invoice_number ?? null,
+        receivedDate: body.received_date,
+        remarks: body.remarks ?? null,
+        actorId,
+        lines: body.lines.map((line) => ({
+          materialId: line.material_id,
+          quantityReceived: line.quantity_received,
+          uom: uomById.get(line.material_id)!,
+          purchaseOrderLineId: line.purchase_order_line_id ?? null,
+          supplierLotNumber: line.supplier_lot_number ?? null,
+          remarks: line.remarks ?? null,
         })),
-      );
-      return header.id;
+      });
+
+      if (attributeValues.length > 0) {
+        const insertedLines = await tx
+          .select({
+            id: grnLineItemsTable.id,
+            lineNumber: grnLineItemsTable.lineNumber,
+            materialId: grnLineItemsTable.materialId,
+          })
+          .from(grnLineItemsTable)
+          .where(eq(grnLineItemsTable.grnId, headerId));
+        for (const capture of attributeValues) {
+          const line = insertedLines.find((candidate) => candidate.lineNumber === capture.line_number);
+          if (!line) throw new Error(`GRN line ${capture.line_number} was not inserted`);
+          await validateAndPersistGrnCapture(tx, {
+            lineId: line.id,
+            materialId: line.materialId,
+            attributes: capture.attributes,
+            sourceType: "MANUAL",
+            sourceRowRef: String(capture.line_number),
+            createdBy: actorId,
+            resolutionDate: now,
+          });
+        }
+      }
+      return headerId;
     });
   } catch (err: any) {
+    if (err instanceof GrnCaptureError) {
+      res.status(err.statusCode).json(err.payload);
+      return;
+    }
     const pgCode = err?.code ?? err?.cause?.code;
     if (pgCode === "23503") {
       res.status(400).json({ error: "Invalid GRN: a referenced record does not exist" });
@@ -343,6 +402,17 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     statusCode: 201,
     detail: `GRN ${grnNumber} created (draft, ${body.lines.length} line(s))`,
   });
+  if (attributeValues.length > 0) {
+    void recordSecurityEvent({
+      eventType: "capture.grn_line.recorded",
+      actorId,
+      actorEmail: req.user?.email ?? null,
+      actorRole: req.user?.role ?? null,
+      ...reqMeta(req),
+      statusCode: 201,
+      detail: `Capture recorded for GRN ${createdId} (${attributeValues.length} line(s))`,
+    });
+  }
 
   const detail = await readDetail(createdId);
   res.status(201).json(detail);
