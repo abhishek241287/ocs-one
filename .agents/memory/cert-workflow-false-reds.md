@@ -26,3 +26,11 @@ description: Causes and fixes for cert suite false failures unrelated to code re
 **Why:** Seeded development passwords may differ from the documented defaults, and direct authorization cases can create reservations without passing through the normal fixture helper; either condition otherwise causes false setup failures or leaves foreign-key-blocking residue after a passing run.
 
 **How to apply:** Keep temporary-account cleanup in the suite's `finally` path, run concurrent allocation cases only after creating valid reservations, and use a tracked signed ledger adjustment when the test must exercise allocation scarcity below the creation-time availability check.
+
+## Cross-suite regression walls
+
+**Rule:** A certification wall that follows a large capture workload must run legacy suites against a separate API process and restart that process between the heaviest authentication suites; otherwise shared in-memory limiter state and process-local test state can create false reds.
+
+**Why:** Port-based separation alone does not isolate the in-process Express limiter, and running the wall on the scenario server couples otherwise independent fixture lifecycles.
+
+**How to apply:** Keep the product scenarios on the requested running server, then start a temporary API for child regression processes, space them sequentially, and restart it between authz/audit-heavy suites.
