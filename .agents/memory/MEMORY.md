@@ -69,3 +69,4 @@
 - [Serial index boundaries](serial-index-boundaries.md) — serial identity is transactional and movement-free; teardown source rows only after dependent serial units, and never infer W3 material identity.
 - [Genealogy serial-edge boundary](genealogy-serial-edge-boundary.md) — component serial snapshots and serial identity observations cannot prove document-cited consumption without an explicit certified edge.
 - [Genealogy battery gate](genealogy-battery-gate.md) — certify traversals against one isolated full chain; a read-only smoke suite cannot prove single/bulk issue parity or reverse serial closure.
+- [Dashboard queue alignment](dashboard-queue-alignment.md) — every My Work KPI must count the exact dataset consumed by its destination route, not an adjacent workflow milestone.

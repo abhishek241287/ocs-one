@@ -597,7 +597,7 @@ export default function DirectorDashboardPage() {
               href="/fulfillment/dispatch"
               label="Dispatch ready"
               value={data?.kpis.dispatchReady ?? 0}
-              detail="packing approved"
+                detail="packed products ready for dispatch"
               icon={Truck}
               tone="teal"
             />
@@ -640,7 +640,7 @@ export default function DirectorDashboardPage() {
                   value={data?.kpis.dispatchReady ?? 0}
                   icon={<Truck className="h-4 w-4 text-teal-600" />}
                   status="positive"
-                  footer="packing approved"
+                  footer="packed products ready for dispatch"
                   isLoading={isLoading}
                 />
                 <OdsMetricCard

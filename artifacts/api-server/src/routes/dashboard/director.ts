@@ -7,6 +7,7 @@ import {
   mfgTestResultsTable,
   mfgQcApprovalsTable,
   mfgReworkTicketsTable,
+  productsTable,
   cellLotsTable,
   cellsTable,
   cellMatchesTable,
@@ -35,7 +36,7 @@ router.get("/", async (req, res) => {
     _stageStats,
     qcPipeline,
     reworkStats,
-    packingReady,
+    dispatchReadyProducts,
     chargerStats,
     testEquipStats,
     testResultStats,
@@ -84,13 +85,13 @@ router.get("/", async (req, res) => {
       .from(mfgReworkTicketsTable)
       .where(sql`${mfgReworkTicketsTable.status} = 'open'`),
 
-    // 5. Packing approved (dispatch ready)
+    // 5. Dispatch-ready serialized Products.
+    // The dispatch workspace lists product_status=packed, so this KPI must use
+    // the same authoritative queue rather than counting approved order stages.
     db
       .select({ ready: count() })
-      .from(mfgOrderStagesTable)
-      .where(
-        sql`${mfgOrderStagesTable.stageType} = 'packing' and ${mfgOrderStagesTable.status} = 'approved'`
-      ),
+      .from(productsTable)
+      .where(eq(productsTable.productStatus, "packed")),
 
     // 6. Charger unit status breakdown
     db
@@ -238,7 +239,7 @@ router.get("/", async (req, res) => {
   const todayCompleted = Number(orderStats[0]?.todayCompleted ?? 0);
   const inProgress = Number(orderStats[0]?.inProgress ?? 0);
   const qcPending = Number(qcPipeline[0]?.qcPending ?? 0);
-  const dispatchReady = Number(packingReady[0]?.ready ?? 0);
+  const dispatchReady = Number(dispatchReadyProducts[0]?.ready ?? 0);
   const reworkQueue = Number(reworkStats[0]?.open ?? 0);
 
   const chargerTotal = Number(chargerStats[0]?.total ?? 0);

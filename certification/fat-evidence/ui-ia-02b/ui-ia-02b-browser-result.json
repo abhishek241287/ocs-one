@@ -1,0 +1,77 @@
+{
+  "base": "http://localhost",
+  "viewport": "1440x1100",
+  "screenshots": [
+    "director-dashboard.png",
+    "director-dashboard-wide.png",
+    "director-dashboard-pipeline-right.png",
+    "qc-orders.png",
+    "rework-queue.png",
+    "in-progress-orders.png",
+    "dispatch-ready.png"
+  ],
+  "cards": [
+    {
+      "label": "QC approvals",
+      "found": true,
+      "displayedText": "QC approvals awaiting approval 2",
+      "url": "http://localhost/manufacturing/orders?stage=quality_control&status=in_progress",
+      "pathMatch": true,
+      "query": {
+        "stage": "quality_control",
+        "status": "in_progress"
+      },
+      "queryMatch": true,
+      "destinationTotalText": "2 order(s)"
+    },
+    {
+      "label": "Rework queue",
+      "found": true,
+      "displayedText": "Rework queue open tickets 1",
+      "url": "http://localhost/manufacturing/rework",
+      "pathMatch": true,
+      "query": {},
+      "queryMatch": true,
+      "destinationTotalText": "1 open ticket"
+    },
+    {
+      "label": "Production in progress",
+      "found": true,
+      "displayedText": "Production in progress on the factory floor 7",
+      "url": "http://localhost/manufacturing/orders?status=in_progress",
+      "pathMatch": true,
+      "query": {
+        "status": "in_progress"
+      },
+      "queryMatch": true,
+      "destinationTotalText": "7 orders total"
+    },
+    {
+      "label": "Dispatch ready",
+      "found": true,
+      "displayedText": "Dispatch ready packed products ready for dispatch 0",
+      "url": "http://localhost/fulfillment/dispatch",
+      "pathMatch": true,
+      "query": {},
+      "queryMatch": true,
+      "destinationTotalText": "Packed (0)"
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [],
+  "dashboard": {
+    "url": "http://localhost/dashboard",
+    "hasNineStageLabels": true,
+    "hasProductHeading": true,
+    "hasProgress9": true,
+    "myWorkCount": 1,
+    "myWorkCards": [
+      "Rework queueopen tickets1",
+      "QC approvalsawaiting approval2",
+      "Rework queueopen tickets1",
+      "Production in progresson the factory floor7",
+      "Dispatch readypacked products ready for dispatch0"
+    ]
+  }
+}
