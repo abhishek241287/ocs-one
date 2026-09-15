@@ -101,10 +101,18 @@ import type {
   DownloadInventoryImportTemplateParams,
   EmptyObject,
   FormationReport,
+  GenealogyCompositionResponse,
+  GenealogyDownstreamResponse,
   GenealogyInput,
+  GenealogyRecallResponse,
   GenealogyRecord,
+  GenealogyUpstreamResponse,
   GetAllocatedCells200,
   GetCellLotHistory200,
+  GetGenealogyCompositionParams,
+  GetGenealogyDownstreamParams,
+  GetGenealogyRecallParams,
+  GetGenealogyUpstreamParams,
   GetInventoryLot200,
   GetOrderGenealogy200,
   GetOrderTimeline200,
@@ -18900,4 +18908,340 @@ export const useObsoleteBom = <TError = ErrorType<void>,
       > => {
       return useMutation(getObsoleteBomMutationOptions(options));
     }
+
+export const getGetGenealogyUpstreamUrl = (params: GetGenealogyUpstreamParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/genealogy/upstream?${stringifiedParams}` : `/api/genealogy/upstream`
+}
+
+/**
+ * @summary Trace a production order back to its cited material inputs
+ */
+export const getGenealogyUpstream = async (params: GetGenealogyUpstreamParams, options?: RequestInit): Promise<GenealogyUpstreamResponse> => {
+
+  return customFetch<GenealogyUpstreamResponse>(getGetGenealogyUpstreamUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGenealogyUpstreamQueryKey = (params?: GetGenealogyUpstreamParams,) => {
+    return [
+    `/api/genealogy/upstream`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetGenealogyUpstreamQueryOptions = <TData = Awaited<ReturnType<typeof getGenealogyUpstream>>, TError = ErrorType<void>>(params: GetGenealogyUpstreamParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenealogyUpstream>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGenealogyUpstreamQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGenealogyUpstream>>> = ({ signal }) => getGenealogyUpstream(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGenealogyUpstream>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGenealogyUpstreamQueryResult = NonNullable<Awaited<ReturnType<typeof getGenealogyUpstream>>>
+export type GetGenealogyUpstreamQueryError = ErrorType<void>
+
+
+/**
+ * @summary Trace a production order back to its cited material inputs
+ */
+
+export function useGetGenealogyUpstream<TData = Awaited<ReturnType<typeof getGenealogyUpstream>>, TError = ErrorType<void>>(
+ params: GetGenealogyUpstreamParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenealogyUpstream>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGenealogyUpstreamQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetGenealogyDownstreamUrl = (params: GetGenealogyDownstreamParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/genealogy/downstream?${stringifiedParams}` : `/api/genealogy/downstream`
+}
+
+/**
+ * @summary Trace a material lot to its cited downstream consumers
+ */
+export const getGenealogyDownstream = async (params: GetGenealogyDownstreamParams, options?: RequestInit): Promise<GenealogyDownstreamResponse> => {
+
+  return customFetch<GenealogyDownstreamResponse>(getGetGenealogyDownstreamUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGenealogyDownstreamQueryKey = (params?: GetGenealogyDownstreamParams,) => {
+    return [
+    `/api/genealogy/downstream`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetGenealogyDownstreamQueryOptions = <TData = Awaited<ReturnType<typeof getGenealogyDownstream>>, TError = ErrorType<void>>(params: GetGenealogyDownstreamParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenealogyDownstream>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGenealogyDownstreamQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGenealogyDownstream>>> = ({ signal }) => getGenealogyDownstream(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGenealogyDownstream>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGenealogyDownstreamQueryResult = NonNullable<Awaited<ReturnType<typeof getGenealogyDownstream>>>
+export type GetGenealogyDownstreamQueryError = ErrorType<void>
+
+
+/**
+ * @summary Trace a material lot to its cited downstream consumers
+ */
+
+export function useGetGenealogyDownstream<TData = Awaited<ReturnType<typeof getGenealogyDownstream>>, TError = ErrorType<void>>(
+ params: GetGenealogyDownstreamParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenealogyDownstream>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGenealogyDownstreamQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetGenealogyCompositionUrl = (params?: GetGenealogyCompositionParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/genealogy/composition?${stringifiedParams}` : `/api/genealogy/composition`
+}
+
+/**
+ * @summary Resolve a finished product serial or id to its consumed lots
+ */
+export const getGenealogyComposition = async (params?: GetGenealogyCompositionParams, options?: RequestInit): Promise<GenealogyCompositionResponse> => {
+
+  return customFetch<GenealogyCompositionResponse>(getGetGenealogyCompositionUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGenealogyCompositionQueryKey = (params?: GetGenealogyCompositionParams,) => {
+    return [
+    `/api/genealogy/composition`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetGenealogyCompositionQueryOptions = <TData = Awaited<ReturnType<typeof getGenealogyComposition>>, TError = ErrorType<void>>(params?: GetGenealogyCompositionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenealogyComposition>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGenealogyCompositionQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGenealogyComposition>>> = ({ signal }) => getGenealogyComposition(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGenealogyComposition>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGenealogyCompositionQueryResult = NonNullable<Awaited<ReturnType<typeof getGenealogyComposition>>>
+export type GetGenealogyCompositionQueryError = ErrorType<void>
+
+
+/**
+ * @summary Resolve a finished product serial or id to its consumed lots
+ */
+
+export function useGetGenealogyComposition<TData = Awaited<ReturnType<typeof getGenealogyComposition>>, TError = ErrorType<void>>(
+ params?: GetGenealogyCompositionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenealogyComposition>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGenealogyCompositionQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetGenealogyRecallUrl = (params: GetGenealogyRecallParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/genealogy/recall?${stringifiedParams}` : `/api/genealogy/recall`
+}
+
+/**
+ * @summary Find captured lot attributes and capped downstream consumers
+ */
+export const getGenealogyRecall = async (params: GetGenealogyRecallParams, options?: RequestInit): Promise<GenealogyRecallResponse> => {
+
+  return customFetch<GenealogyRecallResponse>(getGetGenealogyRecallUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGenealogyRecallQueryKey = (params?: GetGenealogyRecallParams,) => {
+    return [
+    `/api/genealogy/recall`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetGenealogyRecallQueryOptions = <TData = Awaited<ReturnType<typeof getGenealogyRecall>>, TError = ErrorType<void>>(params: GetGenealogyRecallParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenealogyRecall>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGenealogyRecallQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGenealogyRecall>>> = ({ signal }) => getGenealogyRecall(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGenealogyRecall>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGenealogyRecallQueryResult = NonNullable<Awaited<ReturnType<typeof getGenealogyRecall>>>
+export type GetGenealogyRecallQueryError = ErrorType<void>
+
+
+/**
+ * @summary Find captured lot attributes and capped downstream consumers
+ */
+
+export function useGetGenealogyRecall<TData = Awaited<ReturnType<typeof getGenealogyRecall>>, TError = ErrorType<void>>(
+ params: GetGenealogyRecallParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGenealogyRecall>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGenealogyRecallQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

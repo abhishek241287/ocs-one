@@ -10113,3 +10113,245 @@ export const ObsoleteBomResponse = zod.object({
 }))
 
 
+/**
+ * @summary Trace a production order back to its cited material inputs
+ */
+export const GetGenealogyUpstreamQueryParams = zod.object({
+  "production_order_id": zod.coerce.string().uuid()
+})
+
+export const GetGenealogyUpstreamResponse = zod.object({
+  "production_order_id": zod.string().uuid(),
+  "order_number": zod.string(),
+  "inputs": zod.array(zod.object({
+  "material_id": zod.string().uuid(),
+  "material_code": zod.string(),
+  "quantity_issued": zod.number(),
+  "uom": zod.string(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+}),
+  "issue": zod.object({
+  "note_id": zod.string().uuid(),
+  "note_number": zod.string(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+}),
+  "allocations": zod.array(zod.object({
+  "allocation_id": zod.string().uuid(),
+  "lot_id": zod.string().uuid(),
+  "lot_number": zod.string(),
+  "quantity": zod.number(),
+  "grn_line_id": zod.string().uuid(),
+  "grn_id": zod.string().uuid(),
+  "grn_number": zod.string(),
+  "supplier_id": zod.string().uuid(),
+  "supplier_name": zod.string(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+})),
+  "attributes": zod.array(zod.object({
+  "attribute_code": zod.string(),
+  "value": zod.union([zod.string(),zod.number(),zod.boolean()]).nullable(),
+  "unit": zod.string().nullish(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+})),
+  "bulk_issue": zod.union([zod.object({
+  "batch_id": zod.string().uuid(),
+  "batch_line_id": zod.string().uuid(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+}),zod.null()])
+}))
+})
+
+
+/**
+ * @summary Trace a material lot to its cited downstream consumers
+ */
+export const GetGenealogyDownstreamQueryParams = zod.object({
+  "lot_id": zod.coerce.string().uuid()
+})
+
+export const GetGenealogyDownstreamResponse = zod.object({
+  "lot_id": zod.string().uuid(),
+  "lot_number": zod.string(),
+  "material_id": zod.string().uuid(),
+  "reservations": zod.array(zod.object({
+  "reservation_id": zod.string().uuid(),
+  "number": zod.string(),
+  "production_order_id": zod.string().uuid(),
+  "quantity_active": zod.number(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+})),
+  "wip": zod.array(zod.object({
+  "wip_issue_note_id": zod.string().uuid(),
+  "production_order_id": zod.string().uuid(),
+  "quantity": zod.number(),
+  "consumed_qty": zod.number(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+})),
+  "consumptions": zod.array(zod.object({
+  "confirmation_id": zod.string().uuid(),
+  "number": zod.string(),
+  "actual_qty": zod.number(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+})),
+  "transfers": zod.array(zod.object({
+  "transfer_request_id": zod.string().uuid(),
+  "number": zod.string(),
+  "status": zod.string(),
+  "quantity": zod.number(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+})),
+  "outputs": zod.array(zod.object({
+  "production_order_id": zod.string().uuid(),
+  "product_id": zod.string().uuid(),
+  "serial_number": zod.string().nullable(),
+  "serial_unit_id": zod.string().uuid().nullable(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+}))
+})
+
+
+/**
+ * @summary Resolve a finished product serial or id to its consumed lots
+ */
+export const getGenealogyCompositionQuerySerialNumberMax = 100;
+
+
+
+export const GetGenealogyCompositionQueryParams = zod.object({
+  "product_id": zod.coerce.string().uuid().optional(),
+  "serial_number": zod.coerce.string().max(getGenealogyCompositionQuerySerialNumberMax).optional()
+})
+
+export const GetGenealogyCompositionResponse = zod.object({
+  "product": zod.object({
+  "product_id": zod.string().uuid(),
+  "serial_number": zod.string().nullable(),
+  "production_order_id": zod.string().uuid(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+}),
+  "order": zod.object({
+  "id": zod.string().uuid(),
+  "number": zod.string(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+}),
+  "consumed_lots": zod.array(zod.object({
+  "lot_id": zod.string().uuid(),
+  "lot_number": zod.string(),
+  "material_id": zod.string().uuid(),
+  "quantity": zod.number(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+})),
+  "cell_genealogy": zod.array(zod.object({
+  "cell_lot_id": zod.string().uuid(),
+  "transfer_id": zod.string().uuid(),
+  "grn_line_id": zod.string().uuid(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+}))
+})
+
+
+/**
+ * @summary Find captured lot attributes and capped downstream consumers
+ */
+export const GetGenealogyRecallQueryParams = zod.object({
+  "template_id": zod.coerce.string().uuid().describe('Attribute template version id used for the validated GRN-line capture'),
+  "attribute_code": zod.coerce.string(),
+  "min": zod.coerce.number(),
+  "max": zod.coerce.number(),
+  "date_from": zod.date().optional(),
+  "date_to": zod.date().optional()
+})
+
+export const GetGenealogyRecallResponse = zod.object({
+  "criteria": zod.object({
+  "template_id": zod.string().uuid(),
+  "attribute_code": zod.string(),
+  "min": zod.number(),
+  "max": zod.number(),
+  "date_from": zod.coerce.date().nullable(),
+  "date_to": zod.coerce.date().nullable()
+}),
+  "matches": zod.array(zod.object({
+  "material_id": zod.string().uuid(),
+  "lot_id": zod.string().uuid(),
+  "lot_number": zod.string(),
+  "grn_line_id": zod.string().uuid(),
+  "grn_id": zod.string().uuid(),
+  "value_num": zod.number(),
+  "unit": zod.string().nullable(),
+  "capture_instance_id": zod.string().uuid(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+})
+})),
+  "downstream": zod.array(zod.object({
+  "lot_id": zod.string().uuid(),
+  "consumers": zod.array(zod.object({
+  "kind": zod.string(),
+  "document_cited": zod.object({
+  "type": zod.string(),
+  "id": zod.string()
+}),
+  "reservation_id": zod.string().uuid().nullish(),
+  "number": zod.string().nullish(),
+  "production_order_id": zod.string().uuid().nullish(),
+  "quantity_active": zod.number().nullish(),
+  "wip_issue_note_id": zod.string().uuid().nullish(),
+  "quantity": zod.number().nullish(),
+  "consumed_qty": zod.number().nullish(),
+  "confirmation_id": zod.string().uuid().nullish(),
+  "actual_qty": zod.number().nullish(),
+  "transfer_request_id": zod.string().uuid().nullish(),
+  "status": zod.string().nullish()
+})),
+  "meta": zod.object({
+  "total": zod.number(),
+  "returned": zod.number(),
+  "truncated": zod.boolean()
+})
+}))
+})
+
+

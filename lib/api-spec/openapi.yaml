@@ -32,6 +32,8 @@ tags:
     description: Customer registration operations (product ownership)
   - name: warranties
     description: Warranty operations (common engine across all product types)
+  - name: genealogy
+    description: Read-only manufacturing genealogy and recall traceability
 paths:
   /healthz:
     get:
@@ -4935,6 +4937,107 @@ paths:
         "404": { description: BOM not found }
         "422": { description: Only approved BOMs can be made obsolete }
 
+  # Phase 8 Manufacturing Genealogy — authenticated read-only traversals
+  /genealogy/upstream:
+    get:
+      operationId: getGenealogyUpstream
+      tags: [genealogy]
+      summary: Trace a production order back to its cited material inputs
+      parameters:
+        - name: production_order_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Production order inputs with lot, GRN, supplier, and capture provenance
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GenealogyUpstreamResponse" }
+        "404": { description: Production order not found }
+        "422": { description: Invalid production order id }
+
+  /genealogy/downstream:
+    get:
+      operationId: getGenealogyDownstream
+      tags: [genealogy]
+      summary: Trace a material lot to its cited downstream consumers
+      parameters:
+        - name: lot_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Lot consumers grouped by reservation, WIP, consumption, transfer, and output
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GenealogyDownstreamResponse" }
+        "404": { description: Inventory lot not found }
+        "422": { description: Invalid lot id }
+
+  /genealogy/composition:
+    get:
+      operationId: getGenealogyComposition
+      tags: [genealogy]
+      summary: Resolve a finished product serial or id to its consumed lots
+      parameters:
+        - name: product_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: serial_number
+          in: query
+          required: false
+          schema: { type: string, maxLength: 100 }
+      responses:
+        "200":
+          description: Finished product, source order, consumed lots, and certified cell provenance
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GenealogyCompositionResponse" }
+        "404": { description: Manufactured product or production order not found }
+        "422": { description: Exactly one product_id or serial_number is required }
+
+  /genealogy/recall:
+    get:
+      operationId: getGenealogyRecall
+      tags: [genealogy]
+      summary: Find captured lot attributes and capped downstream consumers
+      parameters:
+        - name: template_id
+          in: query
+          required: true
+          description: Attribute template version id used for the validated GRN-line capture
+          schema: { type: string, format: uuid }
+        - name: attribute_code
+          in: query
+          required: true
+          schema: { type: string }
+        - name: min
+          in: query
+          required: true
+          schema: { type: number }
+        - name: max
+          in: query
+          required: true
+          schema: { type: number }
+        - name: date_from
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: date_to
+          in: query
+          required: false
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Deterministic attribute matches and capped downstream expansion
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GenealogyRecallResponse" }
+        "422": { description: "Invalid scope, range, or date filter" }
+
 components:
   parameters:
     IdParam:
@@ -8453,3 +8556,276 @@ components:
         receipts:
           type: array
           items: { $ref: "#/components/schemas/MaterialProvenanceReceipt" }
+
+    # ─── Phase 8 Manufacturing Genealogy — read-only projections ───────────────
+    GenealogyCitation:
+      type: object
+      required: [type, id]
+      properties:
+        type: { type: string }
+        id: { type: string }
+
+    GenealogyAttribute:
+      type: object
+      required: [attribute_code, value, document_cited]
+      properties:
+        attribute_code: { type: string }
+        value: { type: ["string", "number", "boolean", "null"] }
+        unit: { type: ["string", "null"] }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyUpstreamIssue:
+      type: object
+      required: [note_id, note_number, document_cited]
+      properties:
+        note_id: { type: string, format: uuid }
+        note_number: { type: string }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyUpstreamAllocation:
+      type: object
+      required: [allocation_id, lot_id, lot_number, quantity, grn_line_id, grn_id, grn_number, supplier_id, supplier_name, document_cited]
+      properties:
+        allocation_id: { type: string, format: uuid }
+        lot_id: { type: string, format: uuid }
+        lot_number: { type: string }
+        quantity: { type: number }
+        grn_line_id: { type: string, format: uuid }
+        grn_id: { type: string, format: uuid }
+        grn_number: { type: string }
+        supplier_id: { type: string, format: uuid }
+        supplier_name: { type: string }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyBulkIssue:
+      type: object
+      required: [batch_id, batch_line_id, document_cited]
+      properties:
+        batch_id: { type: string, format: uuid }
+        batch_line_id: { type: string, format: uuid }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyUpstreamInput:
+      type: object
+      required: [material_id, material_code, quantity_issued, uom, document_cited, issue, allocations, attributes, bulk_issue]
+      properties:
+        material_id: { type: string, format: uuid }
+        material_code: { type: string }
+        quantity_issued: { type: number }
+        uom: { type: string }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+        issue: { $ref: "#/components/schemas/GenealogyUpstreamIssue" }
+        allocations:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyUpstreamAllocation" }
+        attributes:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyAttribute" }
+        bulk_issue:
+          oneOf:
+            - $ref: "#/components/schemas/GenealogyBulkIssue"
+            - type: "null"
+
+    GenealogyUpstreamResponse:
+      type: object
+      required: [production_order_id, order_number, inputs]
+      properties:
+        production_order_id: { type: string, format: uuid }
+        order_number: { type: string }
+        inputs:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyUpstreamInput" }
+
+    GenealogyDownstreamReservation:
+      type: object
+      required: [reservation_id, number, production_order_id, quantity_active, document_cited]
+      properties:
+        reservation_id: { type: string, format: uuid }
+        number: { type: string }
+        production_order_id: { type: string, format: uuid }
+        quantity_active: { type: number }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyDownstreamWip:
+      type: object
+      required: [wip_issue_note_id, production_order_id, quantity, consumed_qty, document_cited]
+      properties:
+        wip_issue_note_id: { type: string, format: uuid }
+        production_order_id: { type: string, format: uuid }
+        quantity: { type: number }
+        consumed_qty: { type: number }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyDownstreamConsumption:
+      type: object
+      required: [confirmation_id, number, actual_qty, document_cited]
+      properties:
+        confirmation_id: { type: string, format: uuid }
+        number: { type: string }
+        actual_qty: { type: number }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyDownstreamTransfer:
+      type: object
+      required: [transfer_request_id, number, status, quantity, document_cited]
+      properties:
+        transfer_request_id: { type: string, format: uuid }
+        number: { type: string }
+        status: { type: string }
+        quantity: { type: number }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyDownstreamOutput:
+      type: object
+      required: [production_order_id, product_id, serial_number, serial_unit_id, document_cited]
+      properties:
+        production_order_id: { type: string, format: uuid }
+        product_id: { type: string, format: uuid }
+        serial_number: { type: ["string", "null"] }
+        serial_unit_id: { type: ["string", "null"], format: uuid }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyDownstreamResponse:
+      type: object
+      required: [lot_id, lot_number, material_id, reservations, wip, consumptions, transfers, outputs]
+      properties:
+        lot_id: { type: string, format: uuid }
+        lot_number: { type: string }
+        material_id: { type: string, format: uuid }
+        reservations:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyDownstreamReservation" }
+        wip:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyDownstreamWip" }
+        consumptions:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyDownstreamConsumption" }
+        transfers:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyDownstreamTransfer" }
+        outputs:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyDownstreamOutput" }
+
+    GenealogyCompositionProduct:
+      type: object
+      required: [product_id, serial_number, production_order_id, document_cited]
+      properties:
+        product_id: { type: string, format: uuid }
+        serial_number: { type: ["string", "null"] }
+        production_order_id: { type: string, format: uuid }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyCompositionOrder:
+      type: object
+      required: [id, number, document_cited]
+      properties:
+        id: { type: string, format: uuid }
+        number: { type: string }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyConsumedLot:
+      type: object
+      required: [lot_id, lot_number, material_id, quantity, document_cited]
+      properties:
+        lot_id: { type: string, format: uuid }
+        lot_number: { type: string }
+        material_id: { type: string, format: uuid }
+        quantity: { type: number }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyCellProvenance:
+      type: object
+      required: [cell_lot_id, transfer_id, grn_line_id, document_cited]
+      properties:
+        cell_lot_id: { type: string, format: uuid }
+        transfer_id: { type: string, format: uuid }
+        grn_line_id: { type: string, format: uuid }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyCompositionResponse:
+      type: object
+      required: [product, order, consumed_lots, cell_genealogy]
+      properties:
+        product: { $ref: "#/components/schemas/GenealogyCompositionProduct" }
+        order: { $ref: "#/components/schemas/GenealogyCompositionOrder" }
+        consumed_lots:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyConsumedLot" }
+        cell_genealogy:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyCellProvenance" }
+
+    GenealogyRecallMatch:
+      type: object
+      required: [material_id, lot_id, lot_number, grn_line_id, grn_id, value_num, unit, capture_instance_id, document_cited]
+      properties:
+        material_id: { type: string, format: uuid }
+        lot_id: { type: string, format: uuid }
+        lot_number: { type: string }
+        grn_line_id: { type: string, format: uuid }
+        grn_id: { type: string, format: uuid }
+        value_num: { type: number }
+        unit: { type: ["string", "null"] }
+        capture_instance_id: { type: string, format: uuid }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+
+    GenealogyRecallConsumer:
+      type: object
+      required: [kind, document_cited]
+      properties:
+        kind: { type: string }
+        document_cited: { $ref: "#/components/schemas/GenealogyCitation" }
+        reservation_id: { type: ["string", "null"], format: uuid }
+        number: { type: ["string", "null"] }
+        production_order_id: { type: ["string", "null"], format: uuid }
+        quantity_active: { type: ["number", "null"] }
+        wip_issue_note_id: { type: ["string", "null"], format: uuid }
+        quantity: { type: ["number", "null"] }
+        consumed_qty: { type: ["number", "null"] }
+        confirmation_id: { type: ["string", "null"], format: uuid }
+        actual_qty: { type: ["number", "null"] }
+        transfer_request_id: { type: ["string", "null"], format: uuid }
+        status: { type: ["string", "null"] }
+
+    GenealogyRecallDownstreamMeta:
+      type: object
+      required: [total, returned, truncated]
+      properties:
+        total: { type: integer }
+        returned: { type: integer }
+        truncated: { type: boolean }
+
+    GenealogyRecallDownstream:
+      type: object
+      required: [lot_id, consumers, meta]
+      properties:
+        lot_id: { type: string, format: uuid }
+        consumers:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyRecallConsumer" }
+        meta: { $ref: "#/components/schemas/GenealogyRecallDownstreamMeta" }
+
+    GenealogyRecallCriteria:
+      type: object
+      required: [template_id, attribute_code, min, max, date_from, date_to]
+      properties:
+        template_id: { type: string, format: uuid }
+        attribute_code: { type: string }
+        min: { type: number }
+        max: { type: number }
+        date_from: { type: ["string", "null"], format: date }
+        date_to: { type: ["string", "null"], format: date }
+
+    GenealogyRecallResponse:
+      type: object
+      required: [criteria, matches, downstream]
+      properties:
+        criteria: { $ref: "#/components/schemas/GenealogyRecallCriteria" }
+        matches:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyRecallMatch" }
+        downstream:
+          type: array
+          items: { $ref: "#/components/schemas/GenealogyRecallDownstream" }

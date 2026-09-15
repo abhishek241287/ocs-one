@@ -4086,6 +4086,220 @@ export interface MaterialProvenance {
   receipts: MaterialProvenanceReceipt[];
 }
 
+export interface GenealogyCitation {
+  type: string;
+  id: string;
+}
+
+export interface GenealogyAttribute {
+  attribute_code: string;
+  /** @nullable */
+  value: string | number | boolean | null;
+  /** @nullable */
+  unit?: string | null;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyUpstreamIssue {
+  note_id: string;
+  note_number: string;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyUpstreamAllocation {
+  allocation_id: string;
+  lot_id: string;
+  lot_number: string;
+  quantity: number;
+  grn_line_id: string;
+  grn_id: string;
+  grn_number: string;
+  supplier_id: string;
+  supplier_name: string;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyBulkIssue {
+  batch_id: string;
+  batch_line_id: string;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyUpstreamInput {
+  material_id: string;
+  material_code: string;
+  quantity_issued: number;
+  uom: string;
+  document_cited: GenealogyCitation;
+  issue: GenealogyUpstreamIssue;
+  allocations: GenealogyUpstreamAllocation[];
+  attributes: GenealogyAttribute[];
+  bulk_issue: GenealogyBulkIssue | null;
+}
+
+export interface GenealogyUpstreamResponse {
+  production_order_id: string;
+  order_number: string;
+  inputs: GenealogyUpstreamInput[];
+}
+
+export interface GenealogyDownstreamReservation {
+  reservation_id: string;
+  number: string;
+  production_order_id: string;
+  quantity_active: number;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyDownstreamWip {
+  wip_issue_note_id: string;
+  production_order_id: string;
+  quantity: number;
+  consumed_qty: number;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyDownstreamConsumption {
+  confirmation_id: string;
+  number: string;
+  actual_qty: number;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyDownstreamTransfer {
+  transfer_request_id: string;
+  number: string;
+  status: string;
+  quantity: number;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyDownstreamOutput {
+  production_order_id: string;
+  product_id: string;
+  /** @nullable */
+  serial_number: string | null;
+  /** @nullable */
+  serial_unit_id: string | null;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyDownstreamResponse {
+  lot_id: string;
+  lot_number: string;
+  material_id: string;
+  reservations: GenealogyDownstreamReservation[];
+  wip: GenealogyDownstreamWip[];
+  consumptions: GenealogyDownstreamConsumption[];
+  transfers: GenealogyDownstreamTransfer[];
+  outputs: GenealogyDownstreamOutput[];
+}
+
+export interface GenealogyCompositionProduct {
+  product_id: string;
+  /** @nullable */
+  serial_number: string | null;
+  production_order_id: string;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyCompositionOrder {
+  id: string;
+  number: string;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyConsumedLot {
+  lot_id: string;
+  lot_number: string;
+  material_id: string;
+  quantity: number;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyCellProvenance {
+  cell_lot_id: string;
+  transfer_id: string;
+  grn_line_id: string;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyCompositionResponse {
+  product: GenealogyCompositionProduct;
+  order: GenealogyCompositionOrder;
+  consumed_lots: GenealogyConsumedLot[];
+  cell_genealogy: GenealogyCellProvenance[];
+}
+
+export interface GenealogyRecallMatch {
+  material_id: string;
+  lot_id: string;
+  lot_number: string;
+  grn_line_id: string;
+  grn_id: string;
+  value_num: number;
+  /** @nullable */
+  unit: string | null;
+  capture_instance_id: string;
+  document_cited: GenealogyCitation;
+}
+
+export interface GenealogyRecallConsumer {
+  kind: string;
+  document_cited: GenealogyCitation;
+  /** @nullable */
+  reservation_id?: string | null;
+  /** @nullable */
+  number?: string | null;
+  /** @nullable */
+  production_order_id?: string | null;
+  /** @nullable */
+  quantity_active?: number | null;
+  /** @nullable */
+  wip_issue_note_id?: string | null;
+  /** @nullable */
+  quantity?: number | null;
+  /** @nullable */
+  consumed_qty?: number | null;
+  /** @nullable */
+  confirmation_id?: string | null;
+  /** @nullable */
+  actual_qty?: number | null;
+  /** @nullable */
+  transfer_request_id?: string | null;
+  /** @nullable */
+  status?: string | null;
+}
+
+export interface GenealogyRecallDownstreamMeta {
+  total: number;
+  returned: number;
+  truncated: boolean;
+}
+
+export interface GenealogyRecallDownstream {
+  lot_id: string;
+  consumers: GenealogyRecallConsumer[];
+  meta: GenealogyRecallDownstreamMeta;
+}
+
+export interface GenealogyRecallCriteria {
+  template_id: string;
+  attribute_code: string;
+  min: number;
+  max: number;
+  /** @nullable */
+  date_from: string | null;
+  /** @nullable */
+  date_to: string | null;
+}
+
+export interface GenealogyRecallResponse {
+  criteria: GenealogyRecallCriteria;
+  matches: GenealogyRecallMatch[];
+  downstream: GenealogyRecallDownstream[];
+}
+
 export type SearchParamParameter = string;
 
 export type StatusParamParameter = typeof StatusParamParameter[keyof typeof StatusParamParameter];
@@ -4776,5 +4990,33 @@ model_id?: string;
 status?: BomStatus;
 page?: number;
 pageSize?: number;
+};
+
+export type GetGenealogyUpstreamParams = {
+production_order_id: string;
+};
+
+export type GetGenealogyDownstreamParams = {
+lot_id: string;
+};
+
+export type GetGenealogyCompositionParams = {
+product_id?: string;
+/**
+ * @maxLength 100
+ */
+serial_number?: string;
+};
+
+export type GetGenealogyRecallParams = {
+/**
+ * Attribute template version id used for the validated GRN-line capture
+ */
+template_id: string;
+attribute_code: string;
+min: number;
+max: number;
+date_from?: string;
+date_to?: string;
 };
 
