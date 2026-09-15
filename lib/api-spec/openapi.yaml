@@ -916,9 +916,10 @@ paths:
             type: string
             enum:
               - cell_allocation
-              - bms_allocation
               - assembly
               - compression
+              - bms_allocation
+              - bms_programming
               - charging
               - testing
               - quality_control
@@ -5872,6 +5873,8 @@ components:
         orderNumber: { type: string }
         batteryNumber: { type: string }
         productId: { type: ["string", "null"], format: uuid }
+        productName: { type: ["string", "null"] }
+        productSku: { type: ["string", "null"] }
         cellMatchId: { type: ["string", "null"], format: uuid }
         factoryManager: { type: string }
         currentStage:

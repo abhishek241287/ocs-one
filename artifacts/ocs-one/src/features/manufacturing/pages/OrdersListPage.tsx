@@ -9,6 +9,12 @@ import {
 import { useListProductionOrders, ProductionOrder } from "@workspace/api-client-react";
 import { Link, useSearch } from "wouter";
 import CreateOrderDrawer from "../components/CreateOrderDrawer";
+import {
+  getStageProgress,
+  MANUFACTURING_STAGE_LABELS,
+  MANUFACTURING_STAGE_SEQUENCE,
+  type ManufacturingStage,
+} from "../stage-sequence";
 import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 import {
   ModuleHeader, OdsToolbar, OdsDataTable, OdsStatusBadge,
@@ -20,16 +26,22 @@ const PRIORITY_COLORS: Record<string, string> = {
   high:   "bg-red-100 text-red-700",
 };
 
-const STAGE_LABELS: Record<string, string> = {
-  cell_allocation: "Cell Allocation",
-  bms_allocation:  "BMS Allocation",
-  assembly:        "Assembly",
-  compression:     "Compression",
-  charging:        "Charging",
-  testing:         "Testing",
-  quality_control: "Quality Control",
-  packing:         "Packing",
-};
+function StageProgress({ stage }: { stage: string | null | undefined }) {
+  const progress = getStageProgress(stage);
+  if (!progress) return <span className="text-sm text-muted-foreground">—</span>;
+
+  return (
+    <div className="min-w-24" title={`Stage ${progress.step} of ${progress.total}`}>
+      <div className="mb-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+        <span>{progress.step}/{progress.total}</span>
+        <span>{progress.percent}%</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+        <div className="h-full rounded-full bg-orange-500" style={{ width: `${progress.percent}%` }} />
+      </div>
+    </div>
+  );
+}
 
 const COLUMNS: ColumnDef<ProductionOrder>[] = [
   {
@@ -51,6 +63,20 @@ const COLUMNS: ColumnDef<ProductionOrder>[] = [
     ),
   },
   {
+    id: "product",
+    header: "Product",
+    cell: ({ row }) => (
+      row.original.productName || row.original.productSku ? (
+        <div className="min-w-36">
+          <div className="truncate text-sm font-medium">{row.original.productName ?? "—"}</div>
+          <div className="truncate font-mono text-[11px] text-muted-foreground">{row.original.productSku ?? "—"}</div>
+        </div>
+      ) : (
+        <span className="text-sm text-muted-foreground">—</span>
+      )
+    ),
+  },
+  {
     accessorKey: "factoryManager",
     header: "Factory Manager",
   },
@@ -61,12 +87,17 @@ const COLUMNS: ColumnDef<ProductionOrder>[] = [
       const stage = row.original.currentStage;
       return stage ? (
         <span className="text-sm text-muted-foreground">
-          {STAGE_LABELS[stage] ?? stage}
+          {MANUFACTURING_STAGE_LABELS[stage as ManufacturingStage] ?? stage}
         </span>
       ) : (
         <span className="text-muted-foreground text-sm">—</span>
       );
     },
+  },
+  {
+    id: "progress",
+    header: "Progress",
+    cell: ({ row }) => <StageProgress stage={row.original.currentStage} />,
   },
   {
     accessorKey: "status",
@@ -96,22 +127,26 @@ const COLUMNS: ColumnDef<ProductionOrder>[] = [
 ];
 
 const STAGE_VALUES = [
-  "cell_allocation", "bms_allocation", "assembly", "compression",
-  "charging", "testing", "quality_control", "packing",
+  ...MANUFACTURING_STAGE_SEQUENCE,
 ] as const;
 type StageValue = (typeof STAGE_VALUES)[number];
 
 export default function OrdersListPage() {
   const rawSearch = useSearch();
-  const rawStage = new URLSearchParams(rawSearch).get("stage");
+  const params = new URLSearchParams(rawSearch);
+  const rawStage = params.get("stage");
+  const rawStatus = params.get("status");
   const stage = STAGE_VALUES.includes(rawStage as StageValue)
     ? (rawStage as StageValue)
     : undefined;
+  const initialStatus = ["draft", "released", "in_progress", "completed", "cancelled"].includes(rawStatus ?? "")
+    ? rawStatus!
+    : "all";
   const isQcView = stage === "quality_control";
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [status, setStatus] = useState<string>("all");
+  const [status, setStatus] = useState<string>(initialStatus);
   const [priority, setPriority] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
@@ -132,7 +167,7 @@ export default function OrdersListPage() {
     stage:
       stage as
         | "cell_allocation" | "bms_allocation" | "assembly" | "compression"
-        | "charging" | "testing" | "quality_control" | "packing" | undefined,
+        | "bms_programming" | "charging" | "testing" | "quality_control" | "packing" | undefined,
   });
 
   const handleSearch = (val: string) => {

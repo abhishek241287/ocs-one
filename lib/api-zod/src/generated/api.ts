@@ -2439,7 +2439,7 @@ export const ListProductionOrdersQueryParams = zod.object({
   "pageSize": zod.coerce.number().default(listProductionOrdersQueryPageSizeDefault),
   "status": zod.enum(['draft', 'released', 'in_progress', 'completed', 'cancelled']).optional(),
   "priority": zod.enum(['low', 'medium', 'high']).optional(),
-  "stage": zod.enum(['cell_allocation', 'bms_allocation', 'assembly', 'compression', 'charging', 'testing', 'quality_control', 'packing']).optional().describe('Filter orders to those currently at a given manufacturing stage (e.g. quality_control for the QC queue).')
+  "stage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing']).optional().describe('Filter orders to those currently at a given manufacturing stage (e.g. quality_control for the QC queue).')
 })
 
 export const ListProductionOrdersResponse = zod.object({
@@ -2448,6 +2448,8 @@ export const ListProductionOrdersResponse = zod.object({
   "orderNumber": zod.string(),
   "batteryNumber": zod.string(),
   "productId": zod.string().uuid().nullish(),
+  "productName": zod.string().nullish(),
+  "productSku": zod.string().nullish(),
   "cellMatchId": zod.string().uuid().nullish(),
   "factoryManager": zod.string(),
   "currentStage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
@@ -2487,6 +2489,8 @@ export const CreateProductionOrderResponse = zod.object({
   "orderNumber": zod.string(),
   "batteryNumber": zod.string(),
   "productId": zod.string().uuid().nullish(),
+  "productName": zod.string().nullish(),
+  "productSku": zod.string().nullish(),
   "cellMatchId": zod.string().uuid().nullish(),
   "factoryManager": zod.string(),
   "currentStage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
@@ -2537,6 +2541,8 @@ export const GetProductionOrderResponse = zod.object({
   "orderNumber": zod.string(),
   "batteryNumber": zod.string(),
   "productId": zod.string().uuid().nullish(),
+  "productName": zod.string().nullish(),
+  "productSku": zod.string().nullish(),
   "cellMatchId": zod.string().uuid().nullish(),
   "factoryManager": zod.string(),
   "currentStage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),
@@ -2596,6 +2602,8 @@ export const UpdateProductionOrderResponse = zod.object({
   "orderNumber": zod.string(),
   "batteryNumber": zod.string(),
   "productId": zod.string().uuid().nullish(),
+  "productName": zod.string().nullish(),
+  "productSku": zod.string().nullish(),
   "cellMatchId": zod.string().uuid().nullish(),
   "factoryManager": zod.string(),
   "currentStage": zod.enum(['cell_allocation', 'assembly', 'compression', 'bms_allocation', 'bms_programming', 'charging', 'testing', 'quality_control', 'packing', 'null']).nullish(),

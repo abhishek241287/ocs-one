@@ -27,6 +27,11 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { OdsMetricCard, OdsMetricGrid } from "@/components/ods";
+import { useListProductionOrders } from "@workspace/api-client-react";
+import {
+  getStageProgress,
+  MANUFACTURING_STAGE_SEQUENCE,
+} from "@/features/manufacturing/stage-sequence";
 
 const HEALTH_COLORS = {
   green: "border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-800",
@@ -43,6 +48,7 @@ const HEALTH_DOT = {
 const STAGE_LABEL: Record<string, string> = {
   cell_allocation: "Cell allocation",
   bms_allocation: "BMS install",
+  bms_programming: "BMS programming",
   assembly: "Assembly",
   compression: "Compression",
   charging: "Charging",
@@ -50,6 +56,31 @@ const STAGE_LABEL: Record<string, string> = {
   quality_control: "Quality control",
   packing: "Packing",
 };
+
+function getFrozenPipeline(stages: PipelineStage[] | undefined) {
+  const byKey = new Map((stages ?? []).map((stage) => [stage.key, stage]));
+  return MANUFACTURING_STAGE_SEQUENCE.flatMap((key) => {
+    const stage = byKey.get(key);
+    return stage ? [stage] : [];
+  });
+}
+
+function OrderProgress({ stage }: { stage: string | null }) {
+  const progress = getStageProgress(stage);
+  if (!progress) return <span className="text-xs text-muted-foreground">—</span>;
+
+  return (
+    <div className="min-w-20" title={`Stage ${progress.step} of ${progress.total}`}>
+      <div className="mb-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+        <span>{progress.step}/{progress.total}</span>
+        <span>{progress.percent}%</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+        <div className="h-full rounded-full bg-orange-500" style={{ width: `${progress.percent}%` }} />
+      </div>
+    </div>
+  );
+}
 
 function formatAge(createdAt: string) {
   const created = new Date(createdAt);
@@ -234,7 +265,21 @@ function LoadingRows({ count = 3 }: { count?: number }) {
 
 export default function DirectorDashboardPage() {
   const { data, isLoading, isError, refetch } = useDirectorDashboard();
+  const { data: qcOrders } = useListProductionOrders({
+    page: 1,
+    pageSize: 1,
+    stage: "quality_control",
+    status: "in_progress",
+  });
+  const { data: inProgressOrders } = useListProductionOrders({
+    page: 1,
+    pageSize: 1,
+    status: "in_progress",
+  });
+  const pipeline = getFrozenPipeline(data?.pipeline);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const qcWorkCount = qcOrders?.meta.total ?? 0;
+  const inProgressWorkCount = inProgressOrders?.meta.total ?? 0;
 
   const criticalAlerts = data?.alerts.filter((alert) => alert.severity === "critical").length ?? 0;
   const maintenanceTotal =
@@ -242,7 +287,7 @@ export default function DirectorDashboardPage() {
     (data?.equipmentStatus.testEquipment.maintenance ?? 0);
 
   const attentionStages =
-    data?.pipeline.filter((stage) => stage.blocked > 0).map((stage) => ({
+    pipeline.filter((stage) => stage.blocked > 0).map((stage) => ({
       stage,
       value: stage.blocked,
     })) ?? [];
@@ -347,12 +392,12 @@ export default function DirectorDashboardPage() {
                 <div className="flex gap-3 overflow-x-auto">
                   {Array.from({ length: 6 }).map((_, index) => <MetricSkeleton key={index} className="min-w-[150px]" />)}
                 </div>
-              ) : data?.pipeline.length ? (
+              ) : pipeline.length ? (
                 <div className="flex items-stretch gap-2 overflow-x-auto pb-1">
-                  {data.pipeline.map((stage, index) => (
+                  {pipeline.map((stage, index) => (
                     <div key={stage.key} className="flex shrink-0 items-center gap-2">
                       <StageCard stage={stage} />
-                      {index < data.pipeline.length - 1 && <ArrowRight className="h-4 w-4 text-muted-foreground" />}
+                      {index < pipeline.length - 1 && <ArrowRight className="h-4 w-4 text-muted-foreground" />}
                     </div>
                   ))}
                 </div>
@@ -385,7 +430,7 @@ export default function DirectorDashboardPage() {
                       <QueueLink
                         href="/manufacturing/orders?stage=quality_control"
                         label="QC approvals"
-                        value={data?.kpis.qcPending ?? 0}
+                      value={qcWorkCount}
                         detail="orders awaiting approval"
                         icon={ShieldCheck}
                         tone="yellow"
@@ -476,9 +521,10 @@ export default function DirectorDashboardPage() {
           </div>
           <Card>
             <CardContent className="p-0">
-              <div className="grid grid-cols-[minmax(8rem,1.4fr)_minmax(8rem,1fr)_minmax(5rem,.7fr)_4rem] gap-3 border-b px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <span>Order #</span>
+              <div className="grid grid-cols-[minmax(9rem,1.2fr)_minmax(8rem,1fr)_minmax(6rem,.8fr)_minmax(5rem,.7fr)_4rem] gap-3 border-b px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <span>Order / Product</span>
                 <span>Stage</span>
+                <span>Progress</span>
                 <span>Priority</span>
                 <span className="text-right">Age</span>
               </div>
@@ -490,10 +536,17 @@ export default function DirectorDashboardPage() {
                     <Link
                       key={order.id}
                       href={`/manufacturing/orders/${order.id}`}
-                      className="grid grid-cols-[minmax(8rem,1.4fr)_minmax(8rem,1fr)_minmax(5rem,.7fr)_4rem] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+                      className="grid grid-cols-[minmax(9rem,1.2fr)_minmax(8rem,1fr)_minmax(6rem,.8fr)_minmax(5rem,.7fr)_4rem] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
                     >
-                      <span className="truncate font-mono text-xs font-bold text-blue-700">{order.orderNumber}</span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-mono text-xs font-bold text-blue-700">{order.orderNumber}</span>
+                        <span className="block truncate text-[11px] text-muted-foreground">
+                          {order.productName ?? order.productSku ?? "—"}
+                          {order.productName && order.productSku ? ` · ${order.productSku}` : ""}
+                        </span>
+                      </span>
                       <span className="truncate text-sm">{order.currentStage ? STAGE_LABEL[order.currentStage] ?? order.currentStage : "—"}</span>
+                      <OrderProgress stage={order.currentStage} />
                       <span className="text-xs font-semibold capitalize">{order.priority}</span>
                       <span className="text-right text-xs text-muted-foreground">{formatAge(order.createdAt)}</span>
                     </Link>
@@ -505,7 +558,7 @@ export default function DirectorDashboardPage() {
             </CardContent>
           </Card>
           <p className="text-[11px] text-muted-foreground">
-            Age is calculated from each order&apos;s confirmed created time. Product identity and progress are intentionally not shown here.
+            Product identity is read-only Model/SKU data; progress is the current stage ordinal against the frozen nine-stage runtime sequence.
           </p>
         </section>
 
@@ -517,9 +570,9 @@ export default function DirectorDashboardPage() {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <QueueLink
-              href="/manufacturing/orders?stage=quality_control"
+              href="/manufacturing/orders?stage=quality_control&status=in_progress"
               label="QC approvals"
-              value={data?.kpis.qcPending ?? 0}
+              value={qcWorkCount}
               detail="awaiting approval"
               icon={ShieldCheck}
               tone="yellow"
@@ -533,9 +586,9 @@ export default function DirectorDashboardPage() {
               tone="orange"
             />
             <QueueLink
-              href="/manufacturing/orders"
+              href="/manufacturing/orders?status=in_progress"
               label="Production in progress"
-              value={data?.kpis.inProgress ?? 0}
+              value={inProgressWorkCount}
               detail="on the factory floor"
               icon={Factory}
               tone="blue"

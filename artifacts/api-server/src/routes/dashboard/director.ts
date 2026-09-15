@@ -10,6 +10,7 @@ import {
   cellLotsTable,
   cellsTable,
   cellMatchesTable,
+  masterProductsTable,
   masterTestEquipmentTable,
   logisticsDispatchOrdersTable,
   logisticsShipmentEventsTable,
@@ -188,10 +189,13 @@ router.get("/", async (req, res) => {
         status: mfgProductionOrdersTable.status,
         currentStage: mfgProductionOrdersTable.currentStage,
         priority: mfgProductionOrdersTable.priority,
+        productName: masterProductsTable.name,
+        productSku: masterProductsTable.code,
         createdAt: mfgProductionOrdersTable.createdAt,
         updatedAt: mfgProductionOrdersTable.updatedAt,
       })
       .from(mfgProductionOrdersTable)
+      .leftJoin(masterProductsTable, eq(mfgProductionOrdersTable.productId, masterProductsTable.id))
       .orderBy(sql`${mfgProductionOrdersTable.createdAt} desc`)
       .limit(10),
 
@@ -201,7 +205,7 @@ router.get("/", async (req, res) => {
         stageType: mfgOrderStagesTable.stageType,
         inProgress: sql<number>`count(*) filter (where ${mfgOrderStagesTable.status} = 'in_progress')`,
         waiting: sql<number>`count(*) filter (where ${mfgOrderStagesTable.status} = 'pending')`,
-        blocked: sql<number>`count(*) filter (where ${mfgOrderStagesTable.status} = 'rejected')`,
+        blocked: sql<number>`count(*) filter (where ${mfgOrderStagesTable.status} in ('rejected', 'paused'))`,
         completed: sql<number>`count(*) filter (where ${mfgOrderStagesTable.status} in ('completed', 'approved'))`,
         completedToday: sql<number>`count(*) filter (where ${mfgOrderStagesTable.status} in ('completed', 'approved') and ${mfgOrderStagesTable.completedAt} >= ${todayIso}::timestamptz)`,
       })
@@ -248,6 +252,7 @@ router.get("/", async (req, res) => {
   const STAGE_META = [
     { key: "cell_allocation", label: "Cell Allocation", href: "/cells/inventory" },
     { key: "bms_allocation", label: "BMS Installation", href: "/masters/bms" },
+    { key: "bms_programming", label: "BMS Programming", href: "/manufacturing/orders?stage=bms_programming" },
     { key: "assembly", label: "Assembly", href: "/manufacturing/orders" },
     { key: "compression", label: "Compression", href: "/manufacturing/orders" },
     { key: "charging", label: "Charging", href: "/manufacturing/charging-dashboard" },

@@ -16,6 +16,10 @@ export interface ProductionOrder {
   /** @nullable */
   productId?: string | null;
   /** @nullable */
+  productName?: string | null;
+  /** @nullable */
+  productSku?: string | null;
+  /** @nullable */
   cellMatchId?: string | null;
   factoryManager: string;
   /** @nullable */

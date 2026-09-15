@@ -95,6 +95,7 @@ const STAGE_LABELS: Record<string, string> = {
 const STATUS_BADGE: Record<string, { label: string; className: string; Icon: React.FC<{ className?: string }> }> = {
   pending: { label: "Pending", className: "bg-gray-100 text-gray-600", Icon: Circle },
   in_progress: { label: "In Progress", className: "bg-blue-100 text-blue-700", Icon: PlayCircle },
+  paused: { label: "Paused", className: "bg-yellow-100 text-yellow-700", Icon: Clock },
   completed: { label: "Completed", className: "bg-yellow-100 text-yellow-700", Icon: Clock },
   approved: { label: "Approved", className: "bg-green-100 text-green-700", Icon: CheckCircle2 },
   rejected: { label: "Rejected", className: "bg-red-100 text-red-700", Icon: XCircle },

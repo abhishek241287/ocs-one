@@ -1,6 +1,11 @@
 import { Router, IRouter } from "express";
 import { requireWriteRole } from "../../middleware/auth";
-import { db, mfgProductionOrdersTable, mfgOrderStagesTable } from "@workspace/db";
+import {
+  db,
+  masterProductsTable,
+  mfgProductionOrdersTable,
+  mfgOrderStagesTable,
+} from "@workspace/db";
 import { eq, ilike, and, desc, count, or } from "drizzle-orm";
 import {
   ListProductionOrdersQueryParams,
@@ -17,6 +22,27 @@ import {
 } from "./helpers";
 
 const router: IRouter = Router({ mergeParams: true });
+
+async function getOrderWithProduct(id: string) {
+  const [row] = await db
+    .select({
+      order: mfgProductionOrdersTable,
+      productName: masterProductsTable.name,
+      productSku: masterProductsTable.code,
+    })
+    .from(mfgProductionOrdersTable)
+    .leftJoin(masterProductsTable, eq(mfgProductionOrdersTable.productId, masterProductsTable.id))
+    .where(eq(mfgProductionOrdersTable.id, id))
+    .limit(1);
+
+  return row
+    ? {
+        ...row.order,
+        productName: row.productName,
+        productSku: row.productSku,
+      }
+    : undefined;
+}
 
 // RBAC (DEF-M06-001): production planning (orders) — supervisor, director only.
 // NOTE: guard is applied PER ROUTE, not via router.use(). The sibling routers
@@ -70,8 +96,13 @@ router.get("/", async (req, res) => {
 
   const [items, [{ total }]] = await Promise.all([
     db
-      .select()
+      .select({
+        order: mfgProductionOrdersTable,
+        productName: masterProductsTable.name,
+        productSku: masterProductsTable.code,
+      })
       .from(mfgProductionOrdersTable)
+      .leftJoin(masterProductsTable, eq(mfgProductionOrdersTable.productId, masterProductsTable.id))
       .where(where)
       .orderBy(desc(mfgProductionOrdersTable.createdAt))
       .limit(pageSize)
@@ -80,7 +111,11 @@ router.get("/", async (req, res) => {
   ]);
 
   res.json({
-    items,
+    items: items.map(({ order, productName, productSku }) => ({
+      ...order,
+      productName,
+      productSku,
+    })),
     meta: {
       total,
       page,
@@ -137,20 +172,17 @@ router.post("/", requireWriteRole("supervisor", "director"), async (req, res) =>
     return { ...order, stages };
   });
 
-  res.status(201).json(result);
+  const enriched = await getOrderWithProduct(result.id);
+  if (!enriched) throw new Error("Created production order could not be reloaded");
+  res.status(201).json({ ...enriched, stages: result.stages });
 });
 
 // GET /manufacturing/orders/:id
 router.get("/:id", async (req, res) => {
   const { id } = GetProductionOrderParams.parse(req.params);
 
-  const order = await db
-    .select()
-    .from(mfgProductionOrdersTable)
-    .where(eq(mfgProductionOrdersTable.id, id))
-    .limit(1);
-
-  if (!order[0]) {
+  const order = await getOrderWithProduct(id);
+  if (!order) {
     res.status(404).json({ error: "Production order not found" });
     return;
   }
@@ -161,7 +193,7 @@ router.get("/:id", async (req, res) => {
     .where(eq(mfgOrderStagesTable.productionOrderId, id))
     .orderBy(mfgOrderStagesTable.stageOrder);
 
-  res.json({ ...order[0], stages });
+  res.json({ ...order, stages });
 });
 
 // PATCH /manufacturing/orders/:id
@@ -233,7 +265,12 @@ router.patch("/:id", requireWriteRole("supervisor", "director"), async (req, res
     .where(eq(mfgOrderStagesTable.productionOrderId, id))
     .orderBy(mfgOrderStagesTable.stageOrder);
 
-  res.json({ ...result.updated, stages });
+  const enriched = await getOrderWithProduct(id);
+  if (!enriched) {
+    res.status(404).json({ error: "Production order not found" });
+    return;
+  }
+  res.json({ ...enriched, stages });
 });
 
 export default router;

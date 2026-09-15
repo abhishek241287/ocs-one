@@ -39,6 +39,8 @@ export interface DirectorDashboardData {
     status: string;
     currentStage: string | null;
     priority: string;
+    productName?: string | null;
+    productSku?: string | null;
     createdAt: string;
     updatedAt: string;
   }>;
