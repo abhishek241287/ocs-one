@@ -67,6 +67,138 @@ export interface LogisticsReport {
   refreshedAt: string;
 }
 
+export interface ValuationValueOnHandFilters {
+  material_id?: string | null;
+  warehouse_id?: string | null;
+  stock_state?: string | null;
+}
+
+export interface ValuationValueOnHandSummary {
+  total_quantity: number;
+  captured_quantity: number;
+  unknown_quantity: number;
+  captured_coverage_pct: number | null;
+  captured_value_by_currency: { currency: string; value_amount: number | null }[];
+  layer_count: number;
+  row_count: number;
+}
+
+export interface ValuationValueOnHandRow {
+  layer_id: string | number;
+  grn_line_id: string | number | null;
+  material_id: string | number;
+  material_code: string | null;
+  material_name: string | null;
+  warehouse_id: string | number | null;
+  warehouse_code: string | null;
+  warehouse_name: string | null;
+  stock_state: string | null;
+  quantity: number | null;
+  uom: string | null;
+  layer_remaining_quantity: number | null;
+  value_status: string | null;
+  receipt_cost_status: string | null;
+  unit_cost: number | null;
+  value_amount: number | null;
+  currency: string | null;
+  policy: string | null;
+  receipt_movement_id: string | number | null;
+  created_at: string | null;
+}
+
+export interface ValuationValueOnHandReport {
+  filters: ValuationValueOnHandFilters;
+  summary: ValuationValueOnHandSummary;
+  rows: ValuationValueOnHandRow[];
+  refreshed_at: string;
+}
+
+export interface ValuationMovementsAtCostFilters {
+  from: string;
+  to: string;
+  material_id?: string | null;
+  movement_id?: string | null;
+  limit?: number | null;
+}
+
+export interface ValuationMovementsAtCostRow {
+  event_id: string | number;
+  layer_id: string | number | null;
+  movement_id: string | number | null;
+  event_at: string | null;
+  event_type: string | null;
+  transaction_type: string | null;
+  material_id: string | number | null;
+  material_code: string | null;
+  material_name: string | null;
+  quantity: number | null;
+  value_status: string | null;
+  unit_cost: number | null;
+  value_amount: number | null;
+  currency: string | null;
+  policy: string | null;
+  allocation_index: number | null;
+  warehouse_id: string | number | null;
+  warehouse_code: string | null;
+  warehouse_name: string | null;
+  source_document_type: string | null;
+  source_document_id: string | number | null;
+  source_line_id: string | number | null;
+}
+
+export interface ValuationMovementsAtCostReport {
+  filters: ValuationMovementsAtCostFilters;
+  rows: ValuationMovementsAtCostRow[];
+  refreshed_at: string;
+}
+
+export interface ValuationLayerTraceFilters {
+  from: string;
+  to: string;
+  movement_id?: string | null;
+  material_id?: string | null;
+  limit?: number | null;
+}
+
+export interface ValuationLayerTraceRow {
+  allocation_id: string | number;
+  event_at: string | null;
+  movement_id: string | number | null;
+  allocation_index: number | null;
+  direction: string | null;
+  quantity: number | null;
+  value_status: string | null;
+  unit_cost: number | null;
+  value_amount: number | null;
+  currency: string | null;
+  policy: string | null;
+  material_id: string | number | null;
+  material_code: string | null;
+  material_name: string | null;
+  source_document_type: string | null;
+  source_document_id: string | number | null;
+  source_line_id: string | number | null;
+  layer_id: string | number | null;
+  grn_line_id: string | number | null;
+  receipt_movement_id: string | number | null;
+  receipt_quantity: number | null;
+  layer_remaining_quantity: number | null;
+  receipt_cost_status: string | null;
+  receipt_unit_cost: number | null;
+  receipt_currency: string | null;
+  layer_created_at: string | null;
+  receipt_document_type: string | null;
+  receipt_document_id: string | number | null;
+  receipt_line_id: string | number | null;
+  receipt_event_at: string | null;
+}
+
+export interface ValuationLayerTraceReport {
+  filters: ValuationLayerTraceFilters;
+  rows: ValuationLayerTraceRow[];
+  refreshed_at: string;
+}
+
 export function useExecutiveReport() {
   return useQuery({ queryKey: ["reports", "executive"], queryFn: () => fetchReport<ExecutiveReport>("executive"), staleTime: 60_000 });
 }
@@ -89,4 +221,39 @@ export function useInventoryReport() {
 
 export function useLogisticsReport() {
   return useQuery({ queryKey: ["reports", "logistics"], queryFn: () => fetchReport<LogisticsReport>("logistics"), staleTime: 60_000 });
+}
+
+function compactParams(params: object): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(params as Record<string, string | number | null | undefined>)
+      .filter(([, value]) => value !== undefined && value !== null && value !== "")
+      .map(([key, value]) => [key, String(value)]),
+  );
+}
+
+export function useValuationValueOnHand(params: ValuationValueOnHandFilters) {
+  const queryParams = compactParams(params);
+  return useQuery({
+    queryKey: ["reports", "valuation", "value-on-hand", queryParams],
+    queryFn: () => fetchReport<ValuationValueOnHandReport>("valuation/value-on-hand", queryParams),
+    staleTime: 60_000,
+  });
+}
+
+export function useValuationMovementsAtCost(params: ValuationMovementsAtCostFilters) {
+  const queryParams = compactParams(params);
+  return useQuery({
+    queryKey: ["reports", "valuation", "movements-at-cost", queryParams],
+    queryFn: () => fetchReport<ValuationMovementsAtCostReport>("valuation/movements-at-cost", queryParams),
+    staleTime: 60_000,
+  });
+}
+
+export function useValuationLayerTrace(params: ValuationLayerTraceFilters) {
+  const queryParams = compactParams(params);
+  return useQuery({
+    queryKey: ["reports", "valuation", "layer-trace", queryParams],
+    queryFn: () => fetchReport<ValuationLayerTraceReport>("valuation/layer-trace", queryParams),
+    staleTime: 60_000,
+  });
 }

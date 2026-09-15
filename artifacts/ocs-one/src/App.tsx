@@ -14,6 +14,7 @@ import QualityAnalyticsPage from "@/features/reports/pages/QualityAnalyticsPage"
 import InventoryAnalyticsPage from "@/features/reports/pages/InventoryAnalyticsPage";
 import LogisticsAnalyticsPage from "@/features/reports/pages/LogisticsAnalyticsPage";
 import ExportCenterPage from "@/features/reports/pages/ExportCenterPage";
+import ValuationReportsPage from "@/features/reports/pages/ValuationReportsPage";
 import DirectorDashboardPage from "@/pages/DirectorDashboardPage";
 import ProductMasterPage from "@/features/masters/pages/ProductMasterPage";
 import ProductCategoryPage from "@/features/masters/pages/ProductCategoryPage";
@@ -203,6 +204,7 @@ function Router() {
       <Route path="/reports/quality" component={QualityAnalyticsPage} />
       <Route path="/reports/inventory" component={InventoryAnalyticsPage} />
       <Route path="/reports/logistics" component={LogisticsAnalyticsPage} />
+      <Route path="/reports/valuation" component={ValuationReportsPage} />
       <Route path="/reports/export" component={ExportCenterPage} />
 
       <Route component={NotFound} />

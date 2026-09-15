@@ -20,6 +20,7 @@ const EXPORTS: ExportConfig[] = [
   { id: "quality", name: "Quality Analytics", description: "Test pass rates, QC approvals, rework tickets, defect Pareto", endpoint: "quality" },
   { id: "inventory", name: "Inventory Analytics", description: "Cell stock, battery WIP, finished goods, lot utilization", endpoint: "inventory" },
   { id: "logistics", name: "Logistics Analytics", description: "Dispatch status, dealer performance, territory breakdown", endpoint: "logistics" },
+  { id: "valuation", name: "Valuation Reports", description: "Value-on-hand layers and persisted material cost evidence", endpoint: "valuation/value-on-hand" },
 ];
 
 type Format = "csv" | "json";

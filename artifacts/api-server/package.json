@@ -35,6 +35,7 @@
     "test:phase8-genealogy-battery": "tsx src/cert/phase8-genealogy.ts",
     "test:phase10-74a": "tsx src/cert/phase10-74a-receipt-valuation-evidence.ts",
     "test:phase10-74b": "tsx src/cert/phase10-74b-layer-engine-evidence.ts",
+    "test:phase10-74c": "tsx src/cert/phase10-74c-valuation-report-evidence.ts",
     "test:phase10-109": "tsx src/cert/phase10-109-endpoint-valuation-evidence.ts",
     "test:task72a-bulk-issue": "tsx src/cert/bulk-issue-suite.ts",
     "test:task72b-min-deprecation": "tsx src/cert/min-deprecation-suite.ts",

@@ -15,6 +15,8 @@ When writing aggregation queries with conditional `filter (where ...)` clauses:
 2. Copy every value literally into the SQL filter
 3. Pay attention to tables with similar-sounding statuses that have different conventions (e.g. cell_status vs cell_match_status)
 
+For `UNION ALL` report queries, cast enum-backed columns to `text` when the sibling branch emits text literals or text-producing `CASE` expressions. PostgreSQL does not implicitly reconcile an enum with `text`, and the failure appears only when the report is executed.
+
 ## Known enums (as of Sprint 9.1)
 - `cell_status`: received | grading | approved | rejected | quarantine | reserved | allocated
 - `cell_match_status`: draft | reserved | allocated | cancelled

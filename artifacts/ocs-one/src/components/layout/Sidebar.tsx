@@ -223,6 +223,7 @@ const navSections: NavSection[] = [
           { label: "Quality Analytics", href: "/reports/quality", icon: ShieldCheck },
           { label: "Inventory Analytics", href: "/reports/inventory", icon: Archive },
           { label: "Logistics Analytics", href: "/reports/logistics", icon: Truck },
+          { label: "Valuation Reports", href: "/reports/valuation", icon: Layers },
           { label: "Export Center", href: "/reports/export", icon: Download },
         ],
       },
