@@ -16,6 +16,7 @@ import {
   ChevronRight,
   ChevronUp,
   ClipboardCheck,
+  Clock3,
   Cpu,
   Download,
   Factory,
@@ -94,7 +95,6 @@ const navSections: NavSection[] = [
         items: [
           { label: "Stock On Hand", href: "/inventory/stock", icon: Package },
           { label: "Product Inventory", href: "/product-inventory", icon: Boxes },
-          { label: "Imported Product Registration", href: "/products/imported", icon: PackagePlus },
         ],
       },
       {
@@ -272,6 +272,14 @@ const QUERY_OWNED_HREFS = navSections
   .map((item) => item.href)
   .filter((href) => href.includes("?"));
 
+const HASH_OWNED_HREFS = navSections
+  .flatMap((section) => [
+    ...(section.items ?? []),
+    ...(section.groups ?? []).flatMap((group) => group.items),
+  ])
+  .map((item) => item.href)
+  .filter((href) => href.includes("#"));
+
 const SIDEBAR_SCROLL_KEY = "ocs.sidebar.scrollTop";
 const SIDEBAR_OPEN_KEY = "ocs.sidebar.openSections";
 const SIDEBAR_UTILITY_KEY = "ocs.sidebar.utilitySections";
@@ -311,13 +319,16 @@ function itemPath(href: string) {
 function itemIsActive(item: NavItem, location: string, search: string) {
   const path = itemPath(item.href);
   const hrefHasQuery = item.href.includes("?");
-  const fullPath = search ? `${location}?${search}` : location;
-  const claimedByQuerySibling = QUERY_OWNED_HREFS.includes(fullPath);
+  const hrefHasHash = item.href.includes("#");
+  const hash = typeof window !== "undefined" ? window.location.hash : "";
+  const fullPath = `${location}${search ? `?${search}` : ""}${hash}`;
+  const claimedBySpecializedSibling =
+    QUERY_OWNED_HREFS.includes(fullPath) || HASH_OWNED_HREFS.includes(fullPath);
 
-  return hrefHasQuery
+  return hrefHasQuery || hrefHasHash
     ? fullPath === item.href
     : (location === path || location.startsWith(`${path}/`)) &&
-        !(location === path && claimedByQuerySibling);
+        !(location === path && claimedBySpecializedSibling);
 }
 
 function itemIsVisible(item: NavItem, role?: string | null) {
