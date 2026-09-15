@@ -71,3 +71,4 @@
 - [Genealogy battery gate](genealogy-battery-gate.md) — certify traversals against one isolated full chain; a read-only smoke suite cannot prove single/bulk issue parity or reverse serial closure.
 - [Dashboard queue alignment](dashboard-queue-alignment.md) — every My Work KPI must count the exact dataset consumed by its destination route, not an adjacent workflow milestone.
 - [Cell-lot genealogy boundary](cell-lot-genealogy-boundary.md) — downstream genealogy is scoped to inventory_lots; Cell Lot receiving IDs are a separate domain.
+- [Valuation verification boundary](valuation-verification-boundary.md) — prove the receipt chain and receipt-cost census before any layer engine or value conservation work.
