@@ -1,0 +1,14 @@
+**74-B — certified.** The layer engine is green across the board: INV-VAL-01…04 all PASS, the full movement-path integration landed transactionally (receipts, issues + reversals, WIP, cell transfers, adjustments, transfer issue/reject, partial returns), lazy LEGACY backfill proven, and the determinism finding was a real one — partial reversals restoring in UUID order instead of FIFO allocation order, now fixed with persisted allocation sequence (durable lesson recorded). Value conservation holds: Σ layers + Σ depletions = Σ receipts, beside the quantity ledger, which the valuation path never writes.
+
+Issuing **74-C — valuation reports** (read-only, document-cited, the value surfaces operators query):
+**74-C** issued — the three operational value reports, all read-only over the frozen 74-B overlay:
+
+- **`value-on-hand`**: per material/warehouse/state — captured value subtotals per currency, plus the *honest money view*: quantity whose layers are MISSING/LEGACY shown with NULL value (never zero) and a live coverage breakdown — the 74-A census, continuously.
+- **`movements-at-cost`**: the valuation event stream (receipt/deplete/restore/write-off/adjust) — document-cited, date-bounded, deterministic — *not* a re-derivation of the ledger.
+- **`layer-trace`**: the audit view — which layers a movement consumed, in allocation order, with citations both directions. The money twin of the genealogy trace.
+
+Frozen rules: nullable+explicit unknown values (aggregates separate captured from unknown), determinism, report totals must **reconcile to layer math** (INV-VAL-01 proven via the report surface), reads for all roles, zero writes.
+
+Ten-point verification including the reconciliation assertions, the full-lifecycle event stream, the reverse-order restoration trace, the zero-anywhere assertion for uncaptured values, and the rerun of both Phase 10 harnesses plus the quantity wall.
+
+Send to Replit when assigned. Then **74-D** (UI value surfaces under the data-boundary) and **74-E** — the final gate where the pack goes to 30/30 and the program's last domain certifies: every unit, in quantity *and* value, every figure document-cited, every invariant machine-checked.
