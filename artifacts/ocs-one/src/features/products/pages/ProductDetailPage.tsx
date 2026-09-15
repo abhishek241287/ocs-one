@@ -15,6 +15,7 @@ import {
   ProductStatus,
   useGetProduct,
   useUpdateProductStatus,
+  usePreviewMaterialIssue,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
@@ -35,6 +36,11 @@ import {
   TabStrip,
   getTraceabilityHref,
 } from "@/components/object-page/ObjectPagePrimitives";
+import {
+  ValuationCostBadge,
+  ValuationEvidenceStatus,
+  useObjectValuationMovements,
+} from "@/features/reports/components/ValuationEvidence";
 
 const STATUS_COLORS: Record<string, string> = {
   manufacturing: "bg-gray-100 text-gray-700",
@@ -56,6 +62,7 @@ const NEXT_STATUS: Record<string, ProductStatus | null> = {
 
 const TABS: ObjectPageTab[] = [
   { id: "overview", label: "Overview", icon: Route },
+  { id: "movements", label: "Movements", icon: Activity },
   { id: "genealogy", label: "Genealogy", icon: GitBranch },
   { id: "attributes", label: "Attributes", icon: Info },
   { id: "audit", label: "Audit", icon: FileText },
@@ -68,6 +75,13 @@ export default function ProductDetailPage() {
   const notify = useOdsNotify();
   const { user } = useAuth();
   const { data: product, isLoading } = useGetProduct(productId);
+  const sourceOrderId = product?.source_production_order_id ?? "";
+  const { data: sourcePreview } = usePreviewMaterialIssue(sourceOrderId, {
+    query: { enabled: !!sourceOrderId },
+  } as any);
+  const productValuation = useObjectValuationMovements({
+    sourceDocumentIds: sourcePreview?.active_min_id ? [sourcePreview.active_min_id] : [],
+  });
   const updateStatus = useUpdateProductStatus();
   const [activeTab, setActiveTab] = useState("overview");
   const [advanceOpen, setAdvanceOpen] = useState(false);
@@ -151,6 +165,43 @@ export default function ProductDetailPage() {
             </div>
           </ObjectPanel>
         </div>
+      )}
+
+      {activeTab === "movements" && (
+        <ObjectPanel
+          title="Material movements"
+          description="Cost badges are read from the certified movements-at-cost report and link to the persisted layer trace."
+        >
+          {!sourceOrderId ? (
+            <p className="text-sm text-muted-foreground">No source production order is recorded; valuation is Unknown / NULL.</p>
+          ) : productValuation.isLoading ? (
+            <div className="flex justify-center py-10"><ValuationEvidenceStatus isLoading hasError={false} isEmpty /></div>
+          ) : productValuation.isError ? (
+            <ValuationEvidenceStatus isLoading={false} hasError isEmpty />
+          ) : productValuation.rows.length === 0 ? (
+            <ValuationEvidenceStatus isLoading={false} hasError={false} isEmpty />
+          ) : (
+            <div className="divide-y">
+              {productValuation.rows.map((row) => (
+                <div key={`${row.event_id}-${row.movement_id ?? "unknown"}`} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                  <div>
+                    <p className="text-sm font-semibold">{row.material_code ?? row.material_name ?? row.material_id ?? "Material"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {row.quantity ?? "—"} {row.currency ? `· ${row.currency}` : ""}
+                      {row.source_document_type ? ` · ${row.source_document_type}` : ""}
+                    </p>
+                  </div>
+                  <ValuationCostBadge
+                    valueAmount={row.value_amount}
+                    valueStatus={row.value_status}
+                    currency={row.currency}
+                    movementId={row.movement_id}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </ObjectPanel>
       )}
 
       {activeTab === "genealogy" && <ObjectProductGenealogyView productId={productId} />}

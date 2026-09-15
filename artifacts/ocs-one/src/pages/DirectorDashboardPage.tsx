@@ -28,6 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { OdsMetricCard, OdsMetricGrid } from "@/components/ods";
 import { useListProductionOrders } from "@workspace/api-client-react";
+import { useValuationValueOnHand } from "@/features/reports/hooks/useReports";
 import {
   getStageProgress,
   MANUFACTURING_STAGE_SEQUENCE,
@@ -265,6 +266,7 @@ function LoadingRows({ count = 3 }: { count?: number }) {
 
 export default function DirectorDashboardPage() {
   const { data, isLoading, isError, refetch } = useDirectorDashboard();
+  const { data: valuation, isLoading: valuationLoading, isError: valuationError } = useValuationValueOnHand({});
   const { data: qcOrders } = useListProductionOrders({
     page: 1,
     pageSize: 1,
@@ -285,6 +287,14 @@ export default function DirectorDashboardPage() {
   const maintenanceTotal =
     (data?.equipmentStatus.chargers.maintenance ?? 0) +
     (data?.equipmentStatus.testEquipment.maintenance ?? 0);
+  const valuationAmounts = valuation?.summary.captured_value_by_currency ?? [];
+  const valuationLabel =
+    valuationAmounts.length > 0
+      ? valuationAmounts
+          .filter((item) => item.value_amount != null)
+          .map((item) => `${item.currency} ${Number(item.value_amount).toFixed(2)}`)
+          .join(" · ") || "Unknown / NULL"
+      : "Unknown / NULL";
 
   const attentionStages =
     pipeline.filter((stage) => stage.blocked > 0).map((stage) => ({
@@ -651,6 +661,23 @@ export default function DirectorDashboardPage() {
                   footer="open tickets"
                   isLoading={isLoading}
                 />
+                <Link
+                  href="/reports/valuation?view=on-hand"
+                  className="rounded-xl opacity-75 transition-opacity hover:opacity-100"
+                  aria-label="Open valuation report"
+                >
+                  <OdsMetricCard
+                    title="Stock valuation"
+                    value={valuationError ? "Unknown / NULL" : valuationLabel}
+                    icon={<Package className="h-4 w-4 text-slate-500" />}
+                    footer={
+                      valuation?.summary.unknown_quantity
+                        ? "partial capture · open value-on-hand"
+                        : "open certified value-on-hand"
+                    }
+                    isLoading={valuationLoading}
+                  />
+                </Link>
               </OdsMetricGrid>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

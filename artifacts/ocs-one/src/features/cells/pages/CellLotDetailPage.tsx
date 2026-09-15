@@ -24,6 +24,11 @@ import {
   TabStrip,
 } from "@/components/object-page/ObjectPagePrimitives";
 import { Button } from "@/components/ui/button";
+import {
+  ValuationCostBadge,
+  ValuationEvidenceStatus,
+  useObjectValuationMovements,
+} from "@/features/reports/components/ValuationEvidence";
 
 const STATUS_COLORS: Record<string, string> = {
   received: "bg-blue-100 text-blue-700",
@@ -48,6 +53,10 @@ export default function CellLotDetailPage() {
     lot?.transferId ?? "",
     { query: { enabled: !!lot?.transferId } } as any,
   );
+  const transferValuation = useObjectValuationMovements({
+    sourceDocumentIds: transfer?.id ? [transfer.id] : [],
+    materialIds: transfer?.material_id ? [transfer.material_id] : [],
+  });
 
   if (isLoading) {
     return <PageShell backHref="/cells/receiving" backLabel="Cell receiving" eyebrow="Cell Lot" title="Loading"><ObjectLoading /></PageShell>;
@@ -135,6 +144,30 @@ export default function CellLotDetailPage() {
                   { label: "Movement", value: `${transfer.from_location} → ${transfer.to_location}` },
                   { label: "Material", value: transfer.material_name ?? transfer.material_code ?? transfer.material_id },
                   { label: "Quantity", value: `${transfer.quantity} ${transfer.uom}` },
+                   {
+                     label: "Cost",
+                     value: (() => {
+                       const row = transferValuation.rows.find(
+                         (item) =>
+                           (item.source_document_id != null && String(item.source_document_id) === String(transfer.id)) ||
+                           (item.material_id != null && String(item.material_id) === String(transfer.material_id)),
+                       );
+                       return row ? (
+                         <ValuationCostBadge
+                           valueAmount={row.value_amount}
+                           valueStatus={row.value_status}
+                           currency={row.currency}
+                           movementId={row.movement_id}
+                         />
+                       ) : (
+                         <ValuationEvidenceStatus
+                           isLoading={transferValuation.isLoading}
+                           hasError={transferValuation.isError}
+                           isEmpty
+                         />
+                       );
+                     })(),
+                   },
                   { label: "GRN", value: transfer.grn_number ?? transfer.grn_id },
                   { label: "Operator", value: transfer.operator_name ?? transfer.transferred_by ?? "—" },
                 ]}

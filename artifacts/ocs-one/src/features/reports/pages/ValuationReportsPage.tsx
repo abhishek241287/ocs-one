@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useLocation } from "wouter";
 import { type ColumnDef } from "@tanstack/react-table";
 import {
   Archive,
@@ -327,6 +328,7 @@ const traceColumns: ColumnDef<ValuationLayerTraceRow>[] = [
 ];
 
 export default function ValuationReportsPage() {
+  const [location] = useLocation();
   const [view, setView] = useState<ReportView>("on-hand");
   const [valueFilters, setValueFilters] = useState({ material_id: "", warehouse_id: "", stock_state: "" });
   const [appliedValueFilters, setAppliedValueFilters] = useState(valueFilters);
@@ -334,6 +336,20 @@ export default function ValuationReportsPage() {
   const [appliedMovementFilters, setAppliedMovementFilters] = useState(movementFilters);
   const [traceFilters, setTraceFilters] = useState({ from: monthAgo(), to: today(), movement_id: "", material_id: "", limit: "250" });
   const [appliedTraceFilters, setAppliedTraceFilters] = useState(traceFilters);
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    const linkedView = query.get("view");
+    const movementId = query.get("movement_id");
+    if (linkedView === "trace" || linkedView === "movements" || linkedView === "on-hand") {
+      setView(linkedView);
+    }
+    if (movementId) {
+      setTraceFilters((current) => ({ ...current, movement_id: movementId }));
+      setAppliedTraceFilters((current) => ({ ...current, movement_id: movementId }));
+      setView("trace");
+    }
+  }, [location]);
 
   const valueParams = useMemo(() => appliedValueFilters, [appliedValueFilters]);
   const movementParams = useMemo(() => ({

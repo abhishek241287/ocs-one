@@ -22,6 +22,12 @@ import {
 } from "lucide-react";
 import { useOdsNotify } from "@/hooks/use-ods-notify";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  ValuationCostBadge,
+  ValuationEvidenceStatus,
+  useObjectValuationMovements,
+  valuationRowsForLine,
+} from "@/features/reports/components/ValuationEvidence";
 
 interface Props { orderId: string; onRefresh: () => void; }
 
@@ -44,6 +50,9 @@ export default function MaterialIssuePanel({ orderId, onRefresh }: Props) {
   const { data: activeMin } = useGetMaterialIssue(orderId, activeMinId ?? "", {
     query: { enabled: !!activeMinId },
   } as any);
+  const valuation = useObjectValuationMovements({
+    sourceDocumentIds: activeMinId ? [activeMinId] : [],
+  });
 
   const issue = useIssueMaterials();
   const reverse = useReverseMaterialIssue();
@@ -171,6 +180,7 @@ export default function MaterialIssuePanel({ orderId, onRefresh }: Props) {
                     <TableHead className="text-xs text-right">Issued</TableHead>
                     <TableHead className="text-xs">UoM</TableHead>
                     <TableHead className="text-xs">Supplier Batch / Lot</TableHead>
+                    <TableHead className="text-xs">Cost</TableHead>
                     <TableHead className="text-xs">Trace</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -186,7 +196,31 @@ export default function MaterialIssuePanel({ orderId, onRefresh }: Props) {
                       <TableCell className="text-sm text-right font-mono">{fmtQty(l.issued_qty)}</TableCell>
                       <TableCell className="text-sm">{l.uom}</TableCell>
                       <TableCell className="text-xs font-mono text-gray-600">{l.supplier_lot_number ?? "—"}</TableCell>
-                      <TableCell>
+                     <TableCell>
+                       {(() => {
+                         const rows = valuationRowsForLine(valuation.rows, l.id);
+                         return rows.length > 0 ? (
+                           <div className="flex flex-col items-start gap-0.5">
+                             {rows.map((row) => (
+                               <ValuationCostBadge
+                                 key={`${row.event_id}-${row.movement_id ?? "unknown"}`}
+                                 valueAmount={row.value_amount}
+                                 valueStatus={row.value_status}
+                                 currency={row.currency}
+                                 movementId={row.movement_id}
+                               />
+                             ))}
+                           </div>
+                         ) : (
+                           <ValuationEvidenceStatus
+                             isLoading={valuation.isLoading}
+                             hasError={valuation.isError}
+                             isEmpty
+                           />
+                         );
+                       })()}
+                     </TableCell>
+                     <TableCell>
                         {l.traceability_required ? (
                           <Badge variant="outline" className="border-orange-200 bg-orange-50 text-orange-700 text-[10px]">
                             required

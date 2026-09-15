@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/select";
 import { ModuleHeader, OdsToolbar, OdsDataTable, OdsDrawer } from "@/components/ods";
 import { AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
+import { useValuationValueOnHand, type ValuationValueOnHandRow } from "@/features/reports/hooks/useReports";
+import { ValuationCostBadge } from "@/features/reports/components/ValuationEvidence";
 
 const STATE_LABEL: Record<string, string> = {
   inspection_pending: "Inspection Pending",
@@ -82,6 +84,18 @@ export default function StockPage() {
     master_type: activeTab.masterType,
     usage_type: activeTab.usageType,
   });
+  // One unfiltered report request covers the complete visible stock projection.
+  // Never fall back to one valuation request per row; unmatched rows stay explicit Unknown.
+  const { data: valuation, isLoading: valuationLoading, isError: valuationError } = useValuationValueOnHand({});
+
+  const valuationByStockKey = useMemo(() => {
+    const result = new Map<string, ValuationValueOnHandRow[]>();
+    for (const row of (valuation?.rows ?? []) as ValuationValueOnHandRow[]) {
+      const key = `${row.material_id}:${row.stock_state ?? ""}`;
+      result.set(key, [...(result.get(key) ?? []), row]);
+    }
+    return result;
+  }, [valuation?.rows]);
 
   const handleSearch = (val: string) => {
     setSearch(val);
@@ -156,6 +170,45 @@ export default function StockPage() {
         ),
       },
       {
+        id: "value",
+        header: "Value",
+        cell: ({ row }) => {
+          const summary = valuationByStockKey.get(`${row.original.material_id}:${row.original.stock_state}`);
+          if (valuationLoading) {
+            return <span className="text-xs text-muted-foreground">Loading…</span>;
+          }
+          if (valuationError || !summary) {
+            return <span className="text-xs text-muted-foreground">Unknown / NULL</span>;
+          }
+          const capturedRows = summary.filter(
+            (item) => item.value_status === "CAPTURED" && item.value_amount != null && item.currency,
+          );
+          const unknownRows = summary.filter(
+            (item) => item.value_status !== "CAPTURED" || item.value_amount == null || !item.currency,
+          );
+          return (
+            <div className="flex flex-col items-start gap-0.5">
+              {capturedRows.length === 0 ? (
+                <ValuationCostBadge valueAmount={null} valueStatus="UNKNOWN" currency={null} />
+              ) : (
+                capturedRows.map((item) => (
+                  <ValuationCostBadge
+                    key={`${item.layer_id}-${item.currency}`}
+                    valueAmount={item.value_amount}
+                    valueStatus="CAPTURED"
+                    currency={item.currency}
+                    movementId={item.receipt_movement_id}
+                  />
+                ))
+              )}
+              {unknownRows.length > 0 && (
+                <span className="text-[10px] text-muted-foreground">+ Unknown / NULL quantity</span>
+              )}
+            </div>
+          );
+        },
+      },
+      {
         accessorKey: "quantity",
         header: "On Hand",
         cell: ({ row }) => {
@@ -174,7 +227,7 @@ export default function StockPage() {
         },
       },
     ],
-    []
+    [valuationByStockKey, valuationError, valuationLoading]
   );
 
   const meta = data?.meta;
@@ -244,17 +297,24 @@ export default function StockPage() {
             onPageChange: (idx) => setPage(idx + 1),
           }}
           toolbar={
-            <OdsToolbar
-              search={{
-                value: search,
-                onChange: handleSearch,
-                placeholder: "Search material code or name…",
-                ref: searchRef,
-              }}
-              filters={filters}
-              onRefresh={() => refetch()}
-              isRefreshing={isFetching}
-            />
+            <div className="space-y-2">
+              {valuation?.rows && items.some((item) => !valuationByStockKey.has(`${item.material_id}:${item.stock_state}`)) && (
+                <p className="text-xs text-amber-700">
+                  Valuation coverage is incomplete for the visible page; unmatched balances remain Unknown / NULL.
+                </p>
+              )}
+              <OdsToolbar
+                search={{
+                  value: search,
+                  onChange: handleSearch,
+                  placeholder: "Search material code or name…",
+                  ref: searchRef,
+                }}
+                filters={filters}
+                onRefresh={() => refetch()}
+                isRefreshing={isFetching}
+              />
+            </div>
           }
         />
       </div>
