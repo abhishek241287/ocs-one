@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -57,6 +57,7 @@ type NavSection = {
   title: string;
   items?: NavItem[];
   groups?: NavGroup[];
+  icon?: any;
   directorOnly?: boolean;
   dividerBefore?: boolean;
   workspaceUtility?: boolean;
@@ -75,6 +76,7 @@ const navSections: NavSection[] = [
   },
   {
     title: "Operations",
+    icon: Factory,
     dividerBefore: true,
     groups: [
       {
@@ -118,6 +120,7 @@ const navSections: NavSection[] = [
   },
   {
     title: "Supply Chain",
+    icon: Truck,
     groups: [
       {
         label: "Procurement",
@@ -134,6 +137,7 @@ const navSections: NavSection[] = [
   },
   {
     title: "Sales",
+    icon: Store,
     groups: [
       {
         label: "Dealers",
@@ -166,6 +170,7 @@ const navSections: NavSection[] = [
   },
   {
     title: "Master Data",
+    icon: Layers,
     groups: [
       {
         label: "Materials",
@@ -207,6 +212,7 @@ const navSections: NavSection[] = [
   },
   {
     title: "Analytics",
+    icon: TrendingUp,
     groups: [
       {
         label: "Reports",
@@ -224,6 +230,7 @@ const navSections: NavSection[] = [
   },
   {
     title: "Admin",
+    icon: Settings,
     groups: [
       {
         label: "Users",
@@ -249,6 +256,7 @@ const navSections: NavSection[] = [
   },
   {
     title: "Developer",
+    icon: Activity,
     directorOnly: true,
     groups: [
       {
@@ -282,6 +290,7 @@ const HASH_OWNED_HREFS = navSections
 
 const SIDEBAR_SCROLL_KEY = "ocs.sidebar.scrollTop";
 const SIDEBAR_OPEN_KEY = "ocs.sidebar.openSections";
+const SIDEBAR_WORKSPACE_KEY = "ocs.sidebar.openWorkspaces";
 const SIDEBAR_UTILITY_KEY = "ocs.sidebar.utilitySections";
 const SIDEBAR_RECENT_KEY = "ocs.sidebar.recent";
 const SIDEBAR_PINNED_KEY = "ocs.sidebar.pinned";
@@ -304,6 +313,37 @@ function readBooleanMap(key: string): Record<string, boolean> {
   } catch {
     return {};
   }
+}
+
+function readWorkspaceMap(
+  activeSectionTitle: string | null,
+  activeWorkspaceLabel: string | null,
+): Record<string, string> {
+  if (typeof window === "undefined") {
+    return activeSectionTitle && activeWorkspaceLabel ? { [activeSectionTitle]: activeWorkspaceLabel } : {};
+  }
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(SIDEBAR_WORKSPACE_KEY) ?? "{}");
+    const result: Record<string, string> = {};
+    if (parsed && typeof parsed === "object") {
+      for (const [section, workspace] of Object.entries(parsed)) {
+        if (typeof workspace === "string") result[section] = workspace;
+      }
+    }
+    if (activeSectionTitle && activeWorkspaceLabel) {
+      result[activeSectionTitle] = activeWorkspaceLabel;
+    }
+    return result;
+  } catch {
+    return activeSectionTitle && activeWorkspaceLabel ? { [activeSectionTitle]: activeWorkspaceLabel } : {};
+  }
+}
+
+function readOpenDomain(activeSectionTitle: string | null): string | null {
+  if (typeof window === "undefined") return activeSectionTitle;
+  if (activeSectionTitle) return activeSectionTitle;
+  const saved = readBooleanMap(SIDEBAR_OPEN_KEY);
+  return navSections.find((section) => !section.workspaceUtility && saved[section.title])?.title ?? null;
 }
 
 function writeLocalStorage(key: string, value: unknown) {
@@ -344,6 +384,26 @@ function collectItems(section: NavSection) {
     ...(section.items ?? []),
     ...(section.groups ?? []).flatMap((group) => group.items),
   ];
+}
+
+function activeSectionTitle(location: string, search: string) {
+  return (
+    navSections.find(
+      (section) =>
+        !section.workspaceUtility &&
+        collectItems(section).some((item) => itemIsActive(item, location, search)),
+    )?.title ?? null
+  );
+}
+
+function activeWorkspaceLabel(sectionTitle: string | null, location: string, search: string) {
+  if (!sectionTitle) return null;
+  const section = navSections.find((candidate) => candidate.title === sectionTitle);
+  return (
+    section?.groups?.find((group) =>
+      group.items.some((item) => itemIsActive(item, location, search)),
+    )?.label ?? null
+  );
 }
 
 function NavItemLink({
@@ -450,6 +510,38 @@ function UtilityDisclosure({
   );
 }
 
+function WorkspaceDisclosure({
+  label,
+  icon: Icon,
+  open,
+  active,
+  onToggle,
+}: {
+  label: string;
+  icon: typeof Package;
+  open: boolean;
+  active: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={cn(
+        "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+        active
+          ? "bg-sidebar-accent/70 text-sidebar-accent-foreground"
+          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+      )}
+      aria-expanded={open}
+    >
+      <Icon className="h-[18px] w-[18px] shrink-0" />
+      <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+      {open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+    </button>
+  );
+}
+
 export function Sidebar({
   collapsed,
   setCollapsed,
@@ -461,8 +553,16 @@ export function Sidebar({
   const search = useSearch();
   const { user } = useAuth();
   const role = user?.role;
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() =>
-    readBooleanMap(SIDEBAR_OPEN_KEY),
+  const currentSectionTitle = useMemo(() => activeSectionTitle(location, search), [location, search]);
+  const currentWorkspaceLabel = useMemo(
+    () => activeWorkspaceLabel(currentSectionTitle, location, search),
+    [currentSectionTitle, location, search],
+  );
+  const [openDomain, setOpenDomain] = useState<string | null>(() =>
+    readOpenDomain(currentSectionTitle),
+  );
+  const [openWorkspaces, setOpenWorkspaces] = useState<Record<string, string>>(() =>
+    readWorkspaceMap(currentSectionTitle, currentWorkspaceLabel),
   );
   const [utilityOpen, setUtilityOpen] = useState<Record<string, boolean>>(() =>
     readBooleanMap(SIDEBAR_UTILITY_KEY),
@@ -477,6 +577,25 @@ export function Sidebar({
     const saved = sessionStorage.getItem(SIDEBAR_SCROLL_KEY);
     if (saved) el.scrollTop = parseInt(saved, 10) || 0;
   }, []);
+
+  useEffect(() => {
+    if (currentSectionTitle) {
+      setOpenDomain((current) => {
+        if (current === currentSectionTitle) return current;
+        writeLocalStorage(SIDEBAR_OPEN_KEY, { [currentSectionTitle]: true });
+        return currentSectionTitle;
+      });
+    }
+
+    if (currentSectionTitle && currentWorkspaceLabel) {
+      setOpenWorkspaces((current) => {
+        if (current[currentSectionTitle] === currentWorkspaceLabel) return current;
+        const next = { ...current, [currentSectionTitle]: currentWorkspaceLabel };
+        writeLocalStorage(SIDEBAR_WORKSPACE_KEY, next);
+        return next;
+      });
+    }
+  }, [currentSectionTitle, currentWorkspaceLabel]);
 
   const visibleSections = useMemo(
     () =>
@@ -508,10 +627,21 @@ export function Sidebar({
     if (el) sessionStorage.setItem(SIDEBAR_SCROLL_KEY, String(el.scrollTop));
   };
 
-  const toggleSection = (title: string) => {
-    setOpenSections((current) => {
-      const next = { ...current, [title]: !(current[title] ?? true) };
-      writeLocalStorage(SIDEBAR_OPEN_KEY, next);
+  const toggleDomain = (title: string) => {
+    setOpenDomain((current) => {
+      const next = current === title ? null : title;
+      writeLocalStorage(SIDEBAR_OPEN_KEY, next ? { [next]: true } : {});
+      return next;
+    });
+  };
+
+  const toggleWorkspace = (sectionTitle: string, workspaceLabel: string) => {
+    setOpenWorkspaces((current) => {
+      const next = {
+        ...current,
+        [sectionTitle]: current[sectionTitle] === workspaceLabel ? "" : workspaceLabel,
+      };
+      writeLocalStorage(SIDEBAR_WORKSPACE_KEY, next);
       return next;
     });
   };
@@ -576,9 +706,10 @@ export function Sidebar({
           const sectionItems = collectItems(section).filter((item) => itemIsVisible(item, role));
           const groups = (section.groups ?? []).filter((group) => groupIsVisible(group, role));
           const hasActive = sectionItems.some((item) => itemIsActive(item, location, search));
-          const open = openSections[section.title] ?? true;
           const recentOpen = utilityOpen.recent ?? false;
           const pinnedOpen = utilityOpen.pinned ?? false;
+          const sectionOpen = openDomain === section.title;
+          const SectionIcon = section.icon ?? Layers;
 
           return (
             <div key={section.title}>
@@ -586,77 +717,109 @@ export function Sidebar({
                 <div className="mx-4 mb-5 mt-1 border-t border-sidebar-border" aria-hidden="true" />
               )}
               <div className={cn("mb-5", section.workspaceUtility && "mb-1")}>
-                {!collapsed && (
-                  <button
-                    type="button"
-                    onClick={() => toggleSection(section.title)}
-                    className={cn(
-                      "mb-2 flex w-full items-center gap-2 px-4 text-left text-xs font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/50 transition-colors hover:text-sidebar-foreground/80",
-                      section.workspaceUtility && "text-primary/80",
-                    )}
-                    aria-expanded={open}
-                  >
-                    <span className="min-w-0 flex-1 truncate">{section.title}</span>
-                    {open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                  </button>
-                )}
-
-                {(open || collapsed || hasActive) && (
-                  <div className="space-y-2 px-2">
-                    {section.items && (
-                      <ul className="space-y-1">{section.items.filter((item) => itemIsVisible(item, role)).map(renderItem)}</ul>
-                    )}
-
-                    {section.title === "My Work" && (
-                      <div className="space-y-1">
-                        <UtilityDisclosure
-                          label="Recently Used"
-                          icon={Clock3}
-                          collapsed={collapsed}
-                          open={recentOpen}
-                          count={recentItems.length}
-                          onToggle={() => toggleUtility("recent")}
-                        />
-                        {!collapsed && recentOpen && (
-                          <ul className="space-y-1 border-l border-sidebar-border pl-2">
-                            {recentItems.length > 0
-                              ? recentItems.map(renderItem)
-                              : <li className="px-3 py-1 text-[11px] text-sidebar-foreground/40">No recent destinations</li>}
-                          </ul>
-                        )}
-                        <UtilityDisclosure
-                          label="Pinned"
-                          icon={Pin}
-                          collapsed={collapsed}
-                          open={pinnedOpen}
-                          count={pinnedItems.length}
-                          onToggle={() => toggleUtility("pinned")}
-                        />
-                        {!collapsed && pinnedOpen && (
-                          <ul className="space-y-1 border-l border-sidebar-border pl-2">
-                            {pinnedItems.length > 0
-                              ? pinnedItems.map(renderItem)
-                              : <li className="px-3 py-1 text-[11px] text-sidebar-foreground/40">No pinned destinations</li>}
-                          </ul>
-                        )}
+                {section.workspaceUtility ? (
+                  <>
+                    {!collapsed && (
+                      <div className="mb-2 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-primary/80">
+                        {section.title}
                       </div>
                     )}
+                    <div className="space-y-2 px-2">
+                      {section.items && (
+                        <ul className="space-y-1">
+                          {section.items.filter((item) => itemIsVisible(item, role)).map(renderItem)}
+                        </ul>
+                      )}
 
-                    {groups.map((group) => {
-                      const items = group.items.filter((item) => itemIsVisible(item, role));
-                      if (items.length === 0) return null;
-                      return (
-                        <div key={group.label} className="space-y-1">
-                          {!collapsed && (
-                            <div className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.13em] text-sidebar-foreground/35">
-                              {group.label}
-                            </div>
+                      {section.title === "My Work" && (
+                        <div className="space-y-1">
+                          <UtilityDisclosure
+                            label="Recently Used"
+                            icon={Clock3}
+                            collapsed={collapsed}
+                            open={recentOpen}
+                            count={recentItems.length}
+                            onToggle={() => toggleUtility("recent")}
+                          />
+                          {!collapsed && recentOpen && (
+                            <ul className="space-y-1 border-l border-sidebar-border pl-2">
+                              {recentItems.length > 0
+                                ? recentItems.map(renderItem)
+                                : <li className="px-3 py-1 text-[11px] text-sidebar-foreground/40">No recent destinations</li>}
+                            </ul>
                           )}
-                          <ul className="space-y-1">{items.map(renderItem)}</ul>
+                          <UtilityDisclosure
+                            label="Pinned"
+                            icon={Pin}
+                            collapsed={collapsed}
+                            open={pinnedOpen}
+                            count={pinnedItems.length}
+                            onToggle={() => toggleUtility("pinned")}
+                          />
+                          {!collapsed && pinnedOpen && (
+                            <ul className="space-y-1 border-l border-sidebar-border pl-2">
+                              {pinnedItems.length > 0
+                                ? pinnedItems.map(renderItem)
+                                : <li className="px-3 py-1 text-[11px] text-sidebar-foreground/40">No pinned destinations</li>}
+                            </ul>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => toggleDomain(section.title)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                        collapsed && "justify-center px-0",
+                        hasActive && "text-primary",
+                      )}
+                      title={collapsed ? section.title : undefined}
+                      aria-expanded={sectionOpen}
+                      aria-label={`${sectionOpen ? "Collapse" : "Expand"} ${section.title}`}
+                    >
+                      <SectionIcon className="h-[18px] w-[18px] shrink-0" />
+                      {!collapsed && (
+                        <>
+                          <span className="min-w-0 flex-1 truncate">{section.title}</span>
+                          {sectionOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                        </>
+                      )}
+                    </button>
+
+                    {!collapsed && sectionOpen && (
+                      <div className="mt-1 space-y-1 border-l border-sidebar-border pl-2">
+                        {groups.map((group) => {
+                          const items = group.items.filter((item) => itemIsVisible(item, role));
+                          if (items.length === 0) return null;
+                          const workspaceActive = items.some((item) => itemIsActive(item, location, search));
+                          if (items.length === 1) {
+                            return renderItem({ ...items[0], label: group.label });
+                          }
+                          const workspaceOpen = openWorkspaces[section.title] === group.label;
+                          return (
+                            <div key={group.label} className="space-y-1">
+                              <WorkspaceDisclosure
+                                label={group.label}
+                                icon={items[0].icon}
+                                open={workspaceOpen}
+                                active={workspaceActive}
+                                onToggle={() => toggleWorkspace(section.title, group.label)}
+                              />
+                              {workspaceOpen && (
+                                <ul className="space-y-1 border-l border-sidebar-border/70 pl-2">
+                                  {items.map(renderItem)}
+                                </ul>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
