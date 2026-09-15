@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   AlertTriangle,
@@ -9,7 +9,7 @@ import {
   CalendarDays,
   Check,
   ClipboardCheck,
-  FileCheck2,
+  Copy,
   GitBranch,
   Hash,
   History,
@@ -59,6 +59,8 @@ import type {
   GenealogyUpstreamAllocation,
 } from "@workspace/api-client-react";
 import { ModuleHeader, OdsDataTable, OdsEmptyState } from "@/components/ods";
+import { CitationBadge } from "@/components/object-page/ObjectPagePrimitives";
+import { useLocation, useSearch } from "wouter";
 
 type Mode = "upstream" | "downstream" | "composition" | "recall";
 
@@ -83,37 +85,6 @@ function isUuid(value: string): boolean {
 function errorMessage(error: unknown, fallback = "The trace could not be loaded.") {
   const candidate = error as { data?: { error?: string }; message?: string } | undefined;
   return candidate?.data?.error ?? candidate?.message ?? fallback;
-}
-
-function CitationBadge({ citation, testId }: { citation?: { type: string; id: string }; testId: string }) {
-  const [copied, setCopied] = useState(false);
-  const citationText = citation ? `${citation.type} ${citation.id}` : "";
-
-  const copyCitation = async () => {
-    if (!citationText) return;
-    try {
-      await navigator.clipboard.writeText(citationText);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
-    } catch {
-      setCopied(false);
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={copyCitation}
-      disabled={!citation}
-      aria-label={citation ? `Copy citation ${citationText}` : "Source document unavailable"}
-      data-testid={testId}
-      title={citation ? `${citationText}${copied ? " — copied" : " — click to copy"}` : "Source document unavailable"}
-      className="inline-flex max-w-[15rem] items-center gap-1 rounded-sm border border-primary/25 bg-primary/8 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary transition-colors hover:bg-primary/15 disabled:cursor-default disabled:opacity-70"
-    >
-      {copied ? <Check className="h-3 w-3 shrink-0" /> : <FileCheck2 className="h-3 w-3 shrink-0" />}
-      <span className="truncate">{citation ? `${citation.type} · ${citation.id}` : "citation unavailable"}</span>
-    </button>
-  );
 }
 
 function KeyValue({ label, value, mono = false, testId }: { label: string; value: unknown; mono?: boolean; testId?: string }) {
@@ -553,6 +524,9 @@ function RecallResults({ data }: { data: GenealogyRecallResponse }) {
 }
 
 export default function TraceabilityPage() {
+  const [location, setLocation] = useLocation();
+  const search = useSearch();
+  const hydratedFromUrl = useRef(false);
   const [mode, setMode] = useState<Mode>("upstream");
   const [upstreamInput, setUpstreamInput] = useState("");
   const [upstreamOrderId, setUpstreamOrderId] = useState("");
@@ -569,6 +543,7 @@ export default function TraceabilityPage() {
   const [recallDateTo, setRecallDateTo] = useState("");
   const [recallParams, setRecallParams] = useState<{ template_id: string; attribute_code: string; min: number; max: number; date_from?: string; date_to?: string } | null>(null);
   const [formError, setFormError] = useState("");
+  const [copiedSummary, setCopiedSummary] = useState(false);
 
   const orderSearchParams = useMemo(() => ({ search: upstreamInput.trim(), page: 1, pageSize: 8 }), [upstreamInput]);
   const orderSearch = useListProductionOrders(orderSearchParams, {
@@ -614,6 +589,63 @@ export default function TraceabilityPage() {
   const lots = lotSearch.data?.items ?? [];
 
   useEffect(() => {
+    if (hydratedFromUrl.current) return;
+    hydratedFromUrl.current = true;
+    const params = new URLSearchParams(search);
+    const requestedMode = params.get("mode");
+    if (requestedMode === "upstream" || requestedMode === "downstream" || requestedMode === "composition" || requestedMode === "recall") {
+      setMode(requestedMode);
+    }
+
+    const orderId = params.get("production_order_id");
+    if (orderId) {
+      setMode("upstream");
+      setUpstreamInput(orderId);
+      setUpstreamOrderId(orderId);
+    }
+    const lotId = params.get("lot_id");
+    if (lotId) {
+      setMode("downstream");
+      setDownstreamInput(lotId);
+      setDownstreamLotId(lotId);
+    }
+    const productId = params.get("product_id");
+    const serialNumber = params.get("serial_number");
+    if (productId || serialNumber) {
+      setMode("composition");
+      setCompositionInput(productId ?? serialNumber ?? "");
+      setCompositionParams(productId ? { product_id: productId } : { serial_number: serialNumber! });
+    }
+    const templateId = params.get("template_id");
+    const attributeCode = params.get("attribute_code");
+    const min = params.get("min");
+    const max = params.get("max");
+    if (templateId && attributeCode && min !== null && max !== null) {
+      const minValue = Number(min);
+      const maxValue = Number(max);
+      if (Number.isFinite(minValue) && Number.isFinite(maxValue)) {
+        const dateFrom = params.get("date_from") ?? "";
+        const dateTo = params.get("date_to") ?? "";
+        setMode("recall");
+        setRecallTemplateId(templateId);
+        setRecallAttribute(attributeCode);
+        setRecallMin(min);
+        setRecallMax(max);
+        setRecallDateFrom(dateFrom);
+        setRecallDateTo(dateTo);
+        setRecallParams({
+          template_id: templateId,
+          attribute_code: attributeCode,
+          min: minValue,
+          max: maxValue,
+          ...(dateFrom ? { date_from: dateFrom } : {}),
+          ...(dateTo ? { date_to: dateTo } : {}),
+        });
+      }
+    }
+  }, [search]);
+
+  useEffect(() => {
     if (mode !== "recall") return;
     if (!recallTemplateId && templates[0]) setRecallTemplateId(templates[0].id);
   }, [mode, recallTemplateId, templates]);
@@ -635,11 +667,20 @@ export default function TraceabilityPage() {
     setFormError("");
   };
 
+  const updateTraceUrl = (nextMode: Mode, params: Record<string, string | number | undefined> = {}) => {
+    const query = new URLSearchParams({ mode: nextMode });
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== "") query.set(key, String(value));
+    });
+    setLocation(`${location.split("?")[0]}?${query.toString()}`);
+  };
+
   const submitUpstream = () => {
     const value = upstreamInput.trim();
     if (!value) return setFormError("Enter a production order ID or order number.");
     const exact = orders.find((order) => order.orderNumber.toLowerCase() === value.toLowerCase());
     setUpstreamOrderId(exact?.id ?? value);
+    updateTraceUrl("upstream", { production_order_id: exact?.id ?? value });
     setFormError("");
   };
 
@@ -648,6 +689,7 @@ export default function TraceabilityPage() {
     if (!value) return setFormError("Scan or enter a lot ID or lot number.");
     const exact = lots.find((lot) => lot.lot_number.toLowerCase() === value.toLowerCase());
     setDownstreamLotId(exact?.id ?? value);
+    updateTraceUrl("downstream", { lot_id: exact?.id ?? value });
     setFormError("");
   };
 
@@ -656,6 +698,7 @@ export default function TraceabilityPage() {
     if (!value) return setFormError("Enter a product serial or product ID.");
     const isId = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(value);
     setCompositionParams(isId ? { product_id: value } : { serial_number: value });
+    updateTraceUrl("composition", isId ? { product_id: value } : { serial_number: value });
     setFormError("");
   };
 
@@ -675,6 +718,14 @@ export default function TraceabilityPage() {
       ...(recallDateFrom ? { date_from: recallDateFrom } : {}),
       ...(recallDateTo ? { date_to: recallDateTo } : {}),
     });
+    updateTraceUrl("recall", {
+      template_id: recallVersionId,
+      attribute_code: recallAttribute,
+      min,
+      max,
+      ...(recallDateFrom ? { date_from: recallDateFrom } : {}),
+      ...(recallDateTo ? { date_to: recallDateTo } : {}),
+    });
     setFormError("");
   };
 
@@ -687,6 +738,32 @@ export default function TraceabilityPage() {
     if (mode === "composition") void composition.refetch();
     if (mode === "recall") void recall.refetch();
   };
+  const traceSummary = useMemo(() => {
+    if (mode === "upstream" && upstream.data) {
+      return `Upstream trace · production order ${upstream.data.order_number} · ${upstream.data.inputs.length} material input(s)`;
+    }
+    if (mode === "downstream" && downstream.data) {
+      return `Downstream trace · lot ${downstream.data.lot_number} · ${downstream.data.outputs.length} output(s)`;
+    }
+    if (mode === "composition" && composition.data) {
+      return `Composition trace · product ${composition.data.product.serial_number ?? composition.data.product.product_id} · ${composition.data.consumed_lots.length} consumed lot(s)`;
+    }
+    if (mode === "recall" && recall.data) {
+      return `Recall trace · ${recall.data.criteria.attribute_code} between ${recall.data.criteria.min} and ${recall.data.criteria.max} · ${recall.data.matches.length} matching lot(s)`;
+    }
+    return "";
+  }, [composition.data, downstream.data, mode, recall.data, upstream.data]);
+
+  const copyTraceSummary = async () => {
+    if (!traceSummary) return;
+    try {
+      await navigator.clipboard.writeText(traceSummary);
+      setCopiedSummary(true);
+      window.setTimeout(() => setCopiedSummary(false), 1400);
+    } catch {
+      setCopiedSummary(false);
+    }
+  };
 
   return (
     <AppLayout>
@@ -698,6 +775,20 @@ export default function TraceabilityPage() {
             description="A cited, read-only chain from finished unit to source records."
             certification="certified"
             meta={[{ label: "Batch", value: "73-E" }, { label: "Mode", value: "read-only" }]}
+             actions={
+               <Button
+                 data-testid="button-copy-trace-summary"
+                 type="button"
+                 variant="outline"
+                 size="sm"
+                 className="gap-2"
+                 disabled={!traceSummary}
+                 onClick={copyTraceSummary}
+               >
+                 <Copy className="h-4 w-4" />
+                 {copiedSummary ? "Copied" : "Copy trace summary"}
+               </Button>
+             }
           />
 
           <div className="grid gap-5 xl:grid-cols-[260px_1fr]">
@@ -712,6 +803,7 @@ export default function TraceabilityPage() {
                     onClick={() => {
                       setMode(id);
                       setFormError("");
+                       updateTraceUrl(id);
                     }}
                     className={`group rounded-md border p-3 text-left transition-transform duration-200 hover:-translate-y-0.5 ${mode === id ? "border-primary/45 bg-primary/9 shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-border bg-card hover:border-primary/25"}`}
                   >

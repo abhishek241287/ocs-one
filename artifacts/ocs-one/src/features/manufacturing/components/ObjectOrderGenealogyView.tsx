@@ -1,6 +1,6 @@
 import { useGetGenealogyUpstream } from "@workspace/api-client-react";
 import { Loader2 } from "lucide-react";
-import { CitationBadge, FeedEmpty, ObjectPanel } from "@/components/object-page/ObjectPagePrimitives";
+import { CitationBadge, FeedEmpty, ObjectPanel, getTraceabilityHref, TraceAction } from "@/components/object-page/ObjectPagePrimitives";
 
 export default function ObjectOrderGenealogyView({ orderId }: { orderId: string }) {
   const { data, isLoading, error } = useGetGenealogyUpstream({ production_order_id: orderId });
@@ -39,7 +39,10 @@ export default function ObjectOrderGenealogyView({ orderId }: { orderId: string 
                     {allocation.supplier_name} · {allocation.quantity} issued · GRN {allocation.grn_number}
                   </p>
                 </div>
-                <CitationBadge citation={allocation.document_cited} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <CitationBadge citation={allocation.document_cited} />
+                  <TraceAction href={getTraceabilityHref("downstream", { lot_id: allocation.lot_id })} />
+                </div>
               </div>
             ))}
             {input.attributes.map((attribute) => (

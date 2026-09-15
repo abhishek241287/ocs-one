@@ -1,6 +1,6 @@
 import { useGetGenealogyComposition } from "@workspace/api-client-react";
 import { Loader2 } from "lucide-react";
-import { CitationBadge, FeedEmpty, ObjectPanel } from "@/components/object-page/ObjectPagePrimitives";
+import { CitationBadge, FeedEmpty, ObjectPanel, getTraceabilityHref, TraceAction } from "@/components/object-page/ObjectPagePrimitives";
 
 export default function ObjectProductGenealogyView({ productId }: { productId: string }) {
   const { data, isLoading, error } = useGetGenealogyComposition(
@@ -35,12 +35,15 @@ export default function ObjectProductGenealogyView({ productId }: { productId: s
         ) : (
           <div className="divide-y">
             {data.consumed_lots.map((lot) => (
-              <div key={lot.lot_id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                <div key={lot.lot_id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
                 <div>
                   <p className="font-mono text-sm font-semibold">{lot.lot_number}</p>
                   <p className="text-xs text-muted-foreground">{lot.quantity} units · material {lot.material_id}</p>
                 </div>
-                <CitationBadge citation={lot.document_cited} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CitationBadge citation={lot.document_cited} />
+                    <TraceAction href={getTraceabilityHref("downstream", { lot_id: lot.lot_id })} />
+                  </div>
               </div>
             ))}
           </div>
