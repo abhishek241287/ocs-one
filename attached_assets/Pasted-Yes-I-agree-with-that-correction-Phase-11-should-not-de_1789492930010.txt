@@ -1,0 +1,129 @@
+Yes. I agree with that correction. Phase 11 should not delay publication.
+The certification tag is already the frozen, proven baseline. The next activity should be Production Readiness → Deployment → Soak, not another certification phase.
+Your immediate next prompt to Replit
+I would send this:
+OCS ONE — PRODUCTION READINESS AUDIT
+CERTIFIED BASELINE: ocs-one-inventory-certified-2026-09-15
+COMMIT: 8feea14ac7510b27e4f3c8b680d1d876c964f6a8
+
+The inventory platform is certified and banked.
+
+Do NOT start Phase 11.
+Do NOT add features.
+Do NOT modify the certified accounting architecture.
+
+We are now preparing the certified platform for its first production deployment and factory soak.
+
+Perform a PRODUCTION-READINESS AUDIT ONLY.
+
+Review these five areas:
+
+1. PRODUCTION DATABASE
+- Identify the production database requirements.
+- Review the current schema and migration history.
+- Pay particular attention to the known 63-character FK-name drift.
+- Determine exactly which migrations are safe for production.
+- Do NOT use blanket drizzle-kit push against production.
+- Identify any targeted migration SQL that must be created/reviewed.
+- Report destructive, irreversible, or data-loss risks.
+
+2. SECRETS AND CONFIGURATION
+Identify every production-required environment variable/configuration item, including:
+- DATABASE_URL
+- authentication/session/JWT secrets
+- application environment
+- CORS/origin configuration
+- storage/file configuration
+- external integrations
+- logging/observability configuration
+
+Separate:
+REQUIRED / OPTIONAL / DEVELOPMENT-ONLY.
+
+Do not expose secret values.
+
+3. STARTING DATA
+Determine the correct initial-data strategy:
+- completely fresh production database, OR
+- migration of existing operational records.
+
+Do not migrate anything yet.
+
+If existing Excel/legacy data is involved, confirm that the certified Phase 6 import pipeline is the intended ingestion path.
+
+Preserve the historical valuation rule:
+MISSING/LEGACY cost remains unknown and must never be converted to zero.
+
+4. BACKUP / ROLLBACK
+Define:
+- database backup procedure
+- pre-migration backup
+- restore verification
+- application rollback
+- database rollback limitations
+- certified release rollback reference
+
+The rollback reference is:
+
+ocs-one-inventory-certified-2026-09-15
+8feea14ac7510b27e4f3c8b680d1d876c964f6a8
+
+5. USERS / FACTORY GO-LIVE
+Define the minimum production roles and access setup required for:
+- administrator
+- management
+- supervisor
+- operator
+- viewer/reporting users
+
+Identify what must be configured before factory users begin using the system.
+
+PRODUCTION SAFETY RULES
+
+- Do not modify product code during this audit.
+- Do not alter certification evidence.
+- Do not alter the certified tag.
+- Do not run destructive operations against production.
+- Do not create production records yet.
+- Do not invent migration success.
+- Clearly distinguish verified facts from recommendations.
+
+DELIVERABLE
+
+Produce:
+
+A. Production readiness status
+B. Database migration plan
+C. Required environment/secrets checklist
+D. Initial-data strategy
+E. Backup/restore and rollback plan
+F. User/role provisioning checklist
+G. Go-live blockers
+H. Non-blocking improvements
+I. Exact commands/actions required for deployment
+J. Recommended deployment sequence
+
+End with exactly one of:
+
+PRODUCTION READY — GO TO DEPLOYMENT
+
+or
+
+PRODUCTION BLOCKED — [specific blockers]
+
+Do not implement anything until the audit is complete.
+Then we follow this sequence
+1. Audit → identify blockers
+2. Production DB → migration reviewed, backup verified
+3. Secrets/config → production environment
+4. Deploy → certified baseline
+5. Create/administer users
+6. Import starting data if required
+7. Factory pilot/soak
+8. Observe real operations
+And importantly, don't contaminate the certified tag with production-specific changes.
+The certified release remains:
+ocs-one-inventory-certified-2026-09-15 → 8feea14
+That's your safety anchor.
+One thing I'd be especially strict about: do not let Replit turn “production readiness” into an excuse to refactor the inventory engine. If the audit finds a genuine production blocker, we address it as a controlled post-certification change. Otherwise, deploy what you certified.
+This is the right moment to get OCS ONE into the factory and let real operations generate the next requirements.
