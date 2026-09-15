@@ -41,6 +41,11 @@ Operations control system for OCS Oorja Green Pvt. Ltd. — end-to-end manufactu
   - `pages/DirectorDashboardPage.tsx` — director KPI + pipeline view
   - `components/ErrorBoundary.tsx` — top-level React error boundary
 
+## Certified production baseline
+
+- **Frozen baseline:** `ocs-one-inventory-certified-2026-09-15` at certified commit `8feea14ac7510b27e4f3c8b680d1d876c964f6a8`.
+- Future development must start as a new change stream after this baseline. Preserve the certification record and use this baseline as the rollback point for later regressions.
+
 ## Architecture decisions
 
 - **JWT in httpOnly cookie** — eliminates XSS token theft; cookie named `ocs_token`, signed with `SESSION_SECRET`. Every non-public route is behind `requireAuth`. Public routes are only `/api/healthz` and `/api/auth/*`. Authenticated requests also validate the JWT's `sessionVersion` against the user row; password, role, active-status, and dealer assignment changes atomically increment that value, so existing sessions fail closed with 401 and must log in again.
