@@ -1,0 +1,209 @@
+UI-IA-01 v2 (SUPERSEDES v1) — Navigation + Dashboard Consolidation
+
+OCS One · 2026-09-15 · FRONTEND ONLY · dev DB only · NO COMMIT.
+
+Authority: Phase 9 guideline (ratified) + Phase 0 audit notes
+
+(certification/fat-evidence/ui-ia-01-phase0-frontend-implementation-audit-
+
+2026-09-15.md — FOLLOW ITS FILE MAP). Amendments per owner review folded in.
+
+═══════════════════════════════════════════════════════════════════════════
+
+DATA / SCOPE BOUNDARY — HARD RULE
+
+═══════════════════════════════════════════════════════════════════════════
+
+UI-IA-01 is a frontend information-architecture and presentation batch.
+
+It may use ONLY: existing frontend hooks · existing generated-client hooks ·
+
+existing API responses · deterministic client-side presentation calculations
+
+· existing localStorage patterns.
+
+It MUST NOT introduce: new backend endpoints · new database queries · new
+
+backend fields · API aggregation · polling infrastructure · new business-
+
+state calculations · inferred production states · fabricated dashboard
+
+metrics.
+
+If a requested dashboard datum cannot be produced deterministically from the
+
+audited existing frontend data sources: DO NOT GUESS. DO NOT PATCH THE
+
+BACKEND. DO NOT INVENT A DERIVATION. Omit the datum and record it in the
+
+UI-IA-02 stop-list.
+
+UI-IA-01 establishes hierarchy and presentation. UI-IA-02 is the authorized
+
+batch for resolving the production-order Product/Progress stop-list and
+
+enriching the production pipeline.
+
+---------------------------------------------------------------------------
+
+PART 1 — NAVIGATION (restructure the existing flat section array per the
+
+audit's file map; do not invent a second nav system)
+
+Visual rhythm: COMMAND + MY WORK are WORKSPACE UTILITIES, separated by a
+
+divider from the business domains:
+
+OCS ONE
+
+COMMAND     › Dashboard
+
+MY WORK     › My Tasks · Recently Used · Pinned
+
+────────────────
+
+OPERATIONS  › Production · Inventory · Quality · Logistics · Traceability
+
+SUPPLY CHAIN› Procurement · Receiving · Transfers
+
+SALES       › Dealers · Dispatch · Customers
+
+MASTER DATA › Materials (→ Cell/BMS/Connector/Cable/Busbar/Cabinet/
+
+Material Master/Material Categories as sub-items) ·
+
+Products (→ Product Master/Product Categories/Imported
+
+Registration) · Suppliers · BOM · Equipment (→ Chargers,
+
+Test Equipment)
+
+ANALYTICS   › Production · Inventory · Quality · Logistics
+
+ADMIN       › Users · Workflows · Configuration
+
+MY WORK RULE (amended): a presentation shell over ONLY the feeds explicitly
+
+verified in audit §2. NO new endpoint, aggregation backend, inference, or
+
+polling. If a feed isn't available from an existing endpoint, OMIT it and
+
+record it in the stop-list.
+
+Mechanics: collapsible sections with persisted open-state; active-route
+
+highlight; role gates copied VERBATIM from current item definitions; dealer
+
+handling preserved. The Production duplication dies per the audit's mapping.
+
+---------------------------------------------------------------------------
+
+PART 2 — DASHBOARD (restructure /dashboard into the hierarchy; spacing + type
+
+scale, not competing card colors)
+
+L1 FACTORY STATUS (amended): render ONLY statuses derivable deterministically
+
+from the audited mapped endpoints. Do NOT invent status classifications
+
+— Waiting/Blocked/Transit especially. Where a requested status cannot be
+
+supported: omit it or use the existing equivalent and record the gap.
+
+L2 MANUFACTURING PIPELINE (amended): primarily a VISUAL stage/navigation
+
+model — the hero element. Per-stage counts displayed ONLY where existing
+
+dashboard/order responses provide them. NO new aggregation queries,
+
+backend fields, or derived lifecycle semantics. If counts aren't
+
+available, show the stage with existing supported information only.
+
+Stage click-through to the existing workspace.
+
+L3 TWO-COLUMN: ATTENTION REQUIRED (actionable) | FACTORY ALERTS
+
+(informational) — populated only from audit-verified feeds; same
+
+omit-and-record rule.
+
+L4 PRODUCTION ORDERS: Order # | Stage | Priority | Age — Age ONLY if
+
+created_at is confirmed present in the current response (audit §6);
+
+computed purely client-side; NO Product/Progress columns (stop-list).
+
+L5 MY WORK strip — same feed rule as Part 1.
+
+WIDGET DISPOSITION (amended): every LIVE/DERIVED widget remains accessible
+
+(demoted into the ONE muted collapsible "Details" strip). STATIC/MOCK/
+
+UNKNOWN widgets are NOT promoted and given no new operational meaning;
+
+retain only where necessary for route/function preservation and RECORD
+
+their disposition in the stop-list.
+
+---------------------------------------------------------------------------
+
+VERIFICATION (§19 battery + amended additions)
+
+1. Route preservation: pre/post route-path set comparison — every
+
+pre-existing path resolves (audit §1 list is the source).
+
+2. Permission preservation: director/viewer/dealer sidebar snapshots; no
+
+item appears/disappears except by its EXISTING gate.
+
+3. Backend diff: zero (openapi/generated/backend paths untouched).
+
+4. Typecheck + production build (PORT/BASE_PATH convention).
+
+5. Manual authenticated smoke (director + viewer): collapse persistence,
+
+My Work feeds render only verified data, pipeline click-through,
+
+deep-link to a legacy URL lands, dashboard zones render.
+
+6. Stop-list file: Product/Progress (confirmed), any unverifiable My-Work
+
+or Factory-Status feeds, widget dispositions — the UI-IA-02 input.
+
+7. git diff --stat: audit-predicted frontend files only. No commit.
+
+8. DATA-SOURCE AUDIT (new): for EVERY new dashboard element, record the
+
+existing hook/endpoint (from the Phase 0 audit) that supplies it. NO
+
+new endpoint may appear in the UI-IA-01 diff. Any newly introduced
+
+hook/query must be an existing endpoint already identified by the
+
+audit — otherwise STOP.
+
+9. NAV COMPLETENESS (new): compare the complete pre-implementation
+
+route/navigation inventory against post-implementation navigation.
+
+Every existing route remains reachable; every permission gate remains
+
+attached to the same functional destination. No route removal, rename,
+
+redirect, or permission change.
+
+WHAT MUST NOT CHANGE: everything in the DATA BOUNDARY block, plus: no
+
+Product/Progress invention · no page redesigns beyond nav + dashboard ·
+
+no commit.
+
+NEXT: owner review of the feel → UI-IA-02 (stop-list micro-decisions:
+
+Product/Progress read-fields + pipeline counts, each ratified separately) →
+
+UI-IA-03 object pattern → UI-IA-04 genealogy embedding. Mobile (UI-IA-05)
+
+stays gated on the deployment decision. Valuation audit follows UI-IA-04.

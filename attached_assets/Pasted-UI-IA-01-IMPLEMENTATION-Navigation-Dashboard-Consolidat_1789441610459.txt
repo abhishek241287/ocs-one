@@ -1,0 +1,163 @@
+UI-IA-01 (IMPLEMENTATION) — Navigation + Dashboard Consolidation
+
+OCS One · 2026-09-15 · FRONTEND ONLY · dev DB only · NO COMMIT.
+
+Authority: Phase 9 guideline (ratified) + the Phase 0 audit notes
+
+(certification/fat-evidence/ui-ia-01-phase0-frontend-implementation-audit-
+
+2026-09-15.md — FOLLOW ITS FILE MAP). Modify ONLY the files it predicts.
+
+The production-order Product/Progress stop-list is OUT OF SCOPE (UI-IA-02
+
+micro-decision). This batch reorganizes; it deletes nothing.
+
+---------------------------------------------------------------------------
+
+PART 1 — NAVIGATION (per guideline §4; the audit found a single flat section
+
+array with nested groups — restructure THAT config; do not invent a second
+
+nav system)
+
+Tiers (collapsible sections, one-level nesting, compact headers):
+
+COMMAND     › Dashboard
+
+MY WORK     › My Tasks · Recently Used · Pinned
+
+(My Tasks = first surface of the §11 concept: a queue fed by
+
+EXISTING endpoints — blocked grading jobs, QC approvals,
+
+rework pending, maintenance flags; recently-used = the
+
+existing localStorage pattern from the audit; Pinned =
+
+user-selected nav items, localStorage. All read-only.)
+
+OPERATIONS  › Production · Inventory · Quality · Logistics ·
+
+Traceability
+
+SUPPLY CHAIN› Procurement · Receiving · Transfers
+
+SALES       › Dealers · Dispatch · Customers
+
+MASTER DATA › Materials (→ Cell/BMS/Connector/Cable/Busbar/Cabinet/
+
+Material Master/Material Categories as SUB-ITEMS)
+
+· Products (→ Product Master/Product Categories/Imported
+
+Registration) · Suppliers · BOM · Equipment (→ Chargers,
+
+Test Equipment)
+
+ANALYTICS   › Production · Inventory · Quality · Logistics (reports)
+
+ADMIN       › Users · Workflows · Configuration
+
+THE PRODUCTION DUPLICATION DIES: every cell-processing/manufacturing item
+
+lands under exactly one parent per the audit's mapping.
+
+Mechanics: collapsible with persisted open-state; active-route highlight
+
+through the section; role gates COPIED VERBATIM from the current item
+
+definitions (audit §4) — zero widening/narrowing; dealer handling preserved.
+
+---------------------------------------------------------------------------
+
+PART 2 — DASHBOARD (the /dashboard Director Command Center, per §6–§9/§11)
+
+Restructure into the hierarchy (spacing + type scale, NOT competing card
+
+colors — §15 visual language):
+
+L1 FACTORY STATUS: four columns (Production Active/Waiting/Blocked ·
+
+Inventory Available/Allocated/Rejected · Quality Pending/Passed/
+
+Failed · Dispatch Ready/Transit/Delivered) — computed from the SAME
+
+endpoints the current widgets use (audit §2 maps them); no new data.
+
+L2 MANUFACTURING PIPELINE: the strongest visual; stages with
+
+Active/Waiting/Blocked/Done-today; stage click-through to the
+
+existing workspace. (Enlarged per §7 but WITHOUT new per-stage counts
+
+the API doesn't provide — use what the audit mapped; flag any gap.)
+
+L3 TWO-COLUMN: ATTENTION REQUIRED (actionable, click-through) |
+
+FACTORY ALERTS (informational). Split the current mixed list per the
+
+audit's widget mapping.
+
+L4 PRODUCTION ORDERS table: Order # | Stage | Priority | Age-from-
+
+created_at (client-computable per §10) — NO Product/Progress columns
+
+(stop-list; UI-IA-02).
+
+L5 MY WORK strip (blocked grading / QC approvals / rework / maintenance
+
+→ each links to its queue). If an item's data source is absent from
+
+the audit's mapping, OMIT the item and record it in the stop-list —
+
+do not fabricate.
+
+Everything currently on the dashboard remains reachable: demoted widgets
+
+(Operator Activity, Equipment, Quality/Logistics summaries) consolidate
+
+into ONE muted "Details" strip (collapsible), per the guideline.
+
+---------------------------------------------------------------------------
+
+VERIFICATION (the §19 battery, evidence-backed)
+
+1. Route preservation: script comparing pre/post route path sets — every
+
+pre-existing path still resolves (audit §1's route list is the source).
+
+2. Permission preservation: director vs viewer vs dealer sidebar snapshots
+
+(screenshots); no item appears/disappears except by its EXISTING gate.
+
+3. Backend diff: zero (git diff backend paths = empty; openapi untouched).
+
+4. Typecheck + production build (PORT/BASE_PATH convention).
+
+5. Manual authenticated smoke (director + viewer): collapse persistence,
+
+My Tasks render with real data, pipeline click-through, deep-link to a
+
+legacy URL lands, dashboard zones render.
+
+6. Stop-list file: every §10/omitted-item gap recorded for UI-IA-02
+
+micro-decisions (Product, Progress, any absent My-Work feeds).
+
+7. git diff --stat: only audit-predicted frontend files. No commit.
+
+WHAT MUST NOT CHANGE: ❌ no route/URL removals · ❌ no backend/spec/generated
+
+files · ❌ no permission changes · ❌ no Product/Progress invention (stop-list)
+
+❌ no page redesigns beyond nav + dashboard · ❌ no commit.
+
+RISK: Medium-low. Safety nets: route-preservation script, verbatim role
+
+gates, audit-file-map constraint, stop-list discipline.
+
+NEXT: owner review of the feel → UI-IA-02 (with the stop-list micro-
+
+decisions ratified) → UI-IA-03 object pattern → UI-IA-04 genealogy
+
+embedding. Mobile (UI-IA-05) stays gated on the deployment decision.
