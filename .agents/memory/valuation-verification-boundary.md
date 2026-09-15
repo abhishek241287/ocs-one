@@ -16,3 +16,9 @@ Receipt-cost scale validation must account for binary floating-point residue whe
 **Why:** a valid API value such as `12.3456` can produce a fractional residue after multiplying by 10,000 in JavaScript and would otherwise be rejected as over-precision.
 
 **How to apply:** use epsilon-safe scale checks at GRN-line boundaries, while keeping the database numeric scale as the final storage constraint.
+
+Valuation layers must preserve explicit unknown value for MISSING/LEGACY receipt-cost evidence: depleting such a layer may reduce quantity, but must never write zero or estimated value.
+
+**Why:** the receipt census shows that most stock quantity currently lacks authoritative cost, so treating unknown cost as zero would silently understate inventory and destroy auditability.
+
+**How to apply:** make MISSING-layer behavior a mandatory acceptance dimension for FIFO/WAVG and event-consumer work, alongside CAPTURED-cost paths; keep the state explicit in layer outputs and downstream observations.
