@@ -33,6 +33,7 @@ import {
   ObjectPageTab,
   PageShell,
   TabStrip,
+  getTraceabilityHref,
 } from "@/components/object-page/ObjectPagePrimitives";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -107,7 +108,7 @@ export default function ProductDetailPage() {
         icon={Package}
         status={product.product_status}
         statusClassName={STATUS_COLORS[product.product_status]}
-        traceHref={`/traceability?mode=composition&product_id=${encodeURIComponent(productId)}`}
+        traceHref={getTraceabilityHref("composition", { product_id: productId })}
         actions={canAdvance && nextStatus ? (
           <Button size="sm" onClick={() => setAdvanceOpen(true)} className="gap-1.5">
             <ArrowRight className="h-4 w-4" />

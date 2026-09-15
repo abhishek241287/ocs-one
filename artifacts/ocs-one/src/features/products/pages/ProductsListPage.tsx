@@ -7,6 +7,7 @@ import {
 import { useListProducts, Product } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { ModuleHeader, OdsToolbar, OdsDataTable } from "@/components/ods";
+import { getTraceabilityHref, TraceAction } from "@/components/object-page/ObjectPagePrimitives";
 
 const STATUS_COLORS: Record<string, string> = {
   manufacturing: "bg-gray-100 text-gray-700",
@@ -31,6 +32,13 @@ const COLUMNS: ColumnDef<Product>[] = [
           {row.original.official_product_serial}
         </span>
       </Link>
+    ),
+  },
+  {
+    id: "trace",
+    header: "Trace",
+    cell: ({ row }) => (
+      <TraceAction href={getTraceabilityHref("composition", { product_id: row.original.id })} />
     ),
   },
   {

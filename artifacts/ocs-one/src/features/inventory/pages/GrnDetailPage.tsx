@@ -27,6 +27,7 @@ import { useOdsNotify } from "@/hooks/use-ods-notify";
 import { OdsStatusBadge } from "@/components/ods";
 import { Link, useParams, useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
+import { getTraceabilityHref, TraceAction } from "@/components/object-page/ObjectPagePrimitives";
 
 const INSPECTION_COLOR: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
@@ -251,6 +252,7 @@ export default function GrnDetailPage() {
                   <th className="px-4 py-3 font-semibold text-right">Rejected</th>
                       <th className="px-4 py-3 font-semibold">Inspection Status</th>
                       <th className="px-4 py-3 font-semibold">Put-away</th>
+                   <th className="px-4 py-3 font-semibold">Trace</th>
                 </tr>
               </thead>
               <tbody>
@@ -318,6 +320,13 @@ export default function GrnDetailPage() {
                           </Button>
                         )}
                       </td>
+                       <td className="px-4 py-3">
+                         {line.lot_id ? (
+                           <TraceAction href={getTraceabilityHref("downstream", { lot_id: line.lot_id })} />
+                         ) : (
+                           <span className="text-xs text-muted-foreground">—</span>
+                         )}
+                       </td>
                     </tr>
                   );
                 })}

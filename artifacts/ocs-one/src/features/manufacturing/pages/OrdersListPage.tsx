@@ -19,6 +19,7 @@ import { useModuleShortcuts } from "@/hooks/use-module-shortcuts";
 import {
   ModuleHeader, OdsToolbar, OdsDataTable, OdsStatusBadge,
 } from "@/components/ods";
+import { getTraceabilityHref, TraceAction } from "@/components/object-page/ObjectPagePrimitives";
 
 const PRIORITY_COLORS: Record<string, string> = {
   low:    "bg-slate-100 text-slate-600",
@@ -53,6 +54,13 @@ const COLUMNS: ColumnDef<ProductionOrder>[] = [
           {row.original.orderNumber}
         </span>
       </Link>
+    ),
+  },
+  {
+    id: "trace",
+    header: "Trace",
+    cell: ({ row }) => (
+      <TraceAction href={getTraceabilityHref("upstream", { production_order_id: row.original.id })} />
     ),
   },
   {

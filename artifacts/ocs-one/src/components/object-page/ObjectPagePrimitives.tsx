@@ -13,6 +13,36 @@ export type ObjectPageTab = {
   icon: LucideIcon;
 };
 
+export type TraceMode = "upstream" | "downstream" | "composition" | "recall";
+
+export function getTraceabilityHref(
+  mode: TraceMode,
+  params: Record<string, string | undefined>,
+) {
+  const search = new URLSearchParams({ mode });
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) search.set(key, value);
+  });
+  return `/traceability?${search.toString()}`;
+}
+
+export function TraceAction({
+  href,
+  className,
+}: {
+  href: string;
+  className?: string;
+}) {
+  return (
+    <Link href={href} aria-label="Trace this record" className={className}>
+      <Button variant="outline" size="sm" className="gap-1.5">
+        <ScanLine className="h-4 w-4" />
+        TRACE
+      </Button>
+    </Link>
+  );
+}
+
 export function PageShell({
   backHref,
   backLabel,
@@ -64,7 +94,7 @@ export function IdentityHeader({
   status?: string;
   statusClassName?: string;
   metadata: Array<{ label: string; value: ReactNode }>;
-  traceHref: string;
+  traceHref?: string;
   actions?: ReactNode;
   icon: LucideIcon;
 }) {
@@ -92,12 +122,7 @@ export function IdentityHeader({
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <Link href={traceHref}>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <ScanLine className="h-4 w-4" />
-                TRACE
-              </Button>
-            </Link>
+            {traceHref && <TraceAction href={traceHref} />}
             {actions}
           </div>
         </div>
@@ -207,11 +232,25 @@ export function FeedEmpty({ message }: { message: string }) {
 
 export function CitationBadge({
   citation,
+  testId,
 }: {
-  citation: { type: string; id: string };
+  citation?: { type: string; id: string };
+  testId?: string;
 }) {
+  if (!citation) {
+    return (
+      <span
+        data-testid={testId}
+        className="inline-flex max-w-full items-center gap-1 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground"
+      >
+        citation unavailable
+      </span>
+    );
+  }
+
   return (
     <span
+      data-testid={testId}
       title={`${citation.type} ${citation.id}`}
       className="inline-flex max-w-full items-center gap-1 rounded border border-primary/25 bg-primary/5 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-primary"
     >

@@ -25,6 +25,7 @@ import {
   ObjectPageTab,
   PageShell,
   TabStrip,
+  getTraceabilityHref,
 } from "@/components/object-page/ObjectPagePrimitives";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -75,7 +76,7 @@ export default function OrderDetailPage() {
         icon={Factory}
         status={order.status}
         statusClassName={STATUS_COLORS[order.status]}
-        traceHref={`/traceability?mode=upstream&production_order_id=${encodeURIComponent(orderId)}`}
+        traceHref={getTraceabilityHref("upstream", { production_order_id: orderId })}
         metadata={[
           { label: "Battery", value: <span className="font-mono">{order.batteryNumber}</span> },
           { label: "Current stage", value: order.currentStage?.replace(/_/g, " ") ?? "Not started" },

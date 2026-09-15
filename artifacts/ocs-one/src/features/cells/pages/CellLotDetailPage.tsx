@@ -75,7 +75,6 @@ export default function CellLotDetailPage() {
         icon={Package}
         status={lot.status}
         statusClassName={STATUS_COLORS[lot.status]}
-        traceHref={`/traceability?mode=downstream&lot_id=${encodeURIComponent(lotId)}`}
         metadata={[
           { label: "Supplier", value: lot.supplier },
           { label: "Cell model", value: lot.cellModel },
