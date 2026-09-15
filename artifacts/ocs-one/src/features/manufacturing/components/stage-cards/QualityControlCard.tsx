@@ -51,7 +51,9 @@ export default function QualityControlCard({ orderId, stage, onRefresh }: Props)
   const [failureReason, setFailureReason] = useState("");
 
   const { data: testResults } = useGetOrderTestResults(orderId);
-  const { data: existingApproval } = useGetQcApproval(orderId);
+  const { data: existingApproval } = useGetQcApproval(orderId, {
+    query: { enabled: stage.status === "approved" || stage.status === "rejected" },
+  } as any);
   const startStage = useStartStage();
   const completeStage = useCompleteStage();
   const createApproval = useCreateQcApproval();

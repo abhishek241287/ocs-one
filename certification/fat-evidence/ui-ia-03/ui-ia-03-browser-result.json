@@ -1,0 +1,139 @@
+{
+  "viewport": "1440x1100",
+  "ids": {
+    "order": {
+      "id": "fa180000-0000-4000-8000-000000000006",
+      "orderNumber": "FAT-E2E-ORD-COMPLETE",
+      "batteryNumber": "FAT-E2E-BAT-COMPLETE",
+      "productId": "fa130000-0000-4000-8000-000000000011",
+      "cellMatchId": null,
+      "chargerUnitId": null,
+      "bomSnapshotId": null,
+      "factoryManager": "FAT E2E Factory Manager",
+      "currentStage": "quality_control",
+      "status": "in_progress",
+      "priority": "high",
+      "plannedStartDate": "2026-09-08",
+      "plannedEndDate": "2026-09-30",
+      "notes": "FAT-E2E- fixture order COMPLETE",
+      "createdAt": "2026-09-08T08:00:00.000Z",
+      "updatedAt": "2026-09-14T18:00:40.749Z",
+      "productName": "FAT E2E 16S 280Ah Battery Pack",
+      "productSku": "FAT-E2E-MODEL-16S280"
+    },
+    "lot": {
+      "id": "fa160000-0000-4000-8000-000000000001",
+      "supplier": "FAT E2E Cell and BMS Supplier",
+      "manufacturer": "FAT Cell Works",
+      "cellModel": "FAT-LFP-280",
+      "cellChemistry": "LiFePO4",
+      "nominalCapacityAh": 280,
+      "lotNumber": "FAT-E2E-LOT-CELL-001",
+      "invoiceNumber": "FAT-E2E-INV-POSTED-001",
+      "supplierLotNumber": "FAT-E2E-SUP-LOT-CELL-001",
+      "dateReceived": "2026-09-08",
+      "quantityReceived": 64,
+      "receivedBy": "fat.operator@fat.local",
+      "remarks": "Complete received lot for grading and matching",
+      "status": "complete",
+      "cellMasterId": "fa130000-0000-4000-8000-000000000003",
+      "transferId": "fa150000-0000-4000-8000-000000000013",
+      "createdAt": "2026-09-14T18:00:40.749Z",
+      "updatedAt": "2026-09-14T18:00:40.749Z"
+    },
+    "product": {
+      "id": "fa190000-0000-4000-8000-000000000001",
+      "category_id": "fa130000-0000-4000-8000-000000000001",
+      "model_id": "fa130000-0000-4000-8000-000000000011",
+      "workflow_code": "FAT-E2E-BATTERY-WORKFLOW",
+      "source_production_order_id": "fa180000-0000-4000-8000-000000000001",
+      "official_product_serial": "FAT-E2E-BATTERY-SERIAL-001",
+      "serial_source": "OCS",
+      "qc_status": "approved",
+      "product_status": "dispatched",
+      "current_location": "FAT E2E Dealer Alpha",
+      "dealer_id": "fa120000-0000-4000-8000-000000000001",
+      "manufacturing_completed_at": "2026-09-14T18:00:40.704Z",
+      "created_at": "2026-09-14T18:00:40.749Z",
+      "updated_at": "2026-09-14T18:00:40.749Z",
+      "category_name": "FAT E2E Battery Pack",
+      "model_code": "FAT-E2E-MODEL-16S280",
+      "model_name": "FAT E2E 16S 280Ah Battery Pack",
+      "dealer_name": "FAT E2E Dealer Alpha"
+    }
+  },
+  "pages": [
+    {
+      "key": "production-order",
+      "label": "Production Order",
+      "path": "/manufacturing/orders/fa180000-0000-4000-8000-000000000006",
+      "url": "http://localhost/manufacturing/orders/fa180000-0000-4000-8000-000000000006",
+      "tabs": [
+        "Overview",
+        "Movements",
+        "Genealogy",
+        "Audit"
+      ],
+      "expectedTabs": {
+        "Overview": true,
+        "Movements": true,
+        "Genealogy": true,
+        "Audit": true
+      },
+      "forbiddenTabsAbsent": {
+        "Attributes": true
+      },
+      "traceVisible": true,
+      "hasIdentityHeader": true
+    },
+    {
+      "key": "lot",
+      "label": "Lot",
+      "path": "/cells/lots/fa160000-0000-4000-8000-000000000001",
+      "url": "http://localhost/cells/lots/fa160000-0000-4000-8000-000000000001",
+      "tabs": [
+        "Movements",
+        "Overview",
+        "Attributes",
+        "Audit"
+      ],
+      "expectedTabs": {
+        "Overview": true,
+        "Attributes": true,
+        "Audit": true
+      },
+      "forbiddenTabsAbsent": {
+        "Genealogy": true
+      },
+      "traceVisible": true,
+      "hasIdentityHeader": true
+    },
+    {
+      "key": "product",
+      "label": "Product",
+      "path": "/products/fa190000-0000-4000-8000-000000000001",
+      "url": "http://localhost/products/fa190000-0000-4000-8000-000000000001",
+      "tabs": [
+        "Overview",
+        "Genealogy",
+        "Attributes",
+        "Audit"
+      ],
+      "expectedTabs": {
+        "Overview": true,
+        "Genealogy": true,
+        "Attributes": true,
+        "Audit": true
+      },
+      "forbiddenTabsAbsent": {
+        "Movements": true
+      },
+      "traceVisible": true,
+      "hasIdentityHeader": true
+    }
+  ],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "requestFailures": [],
+  "responseFailures": []
+}

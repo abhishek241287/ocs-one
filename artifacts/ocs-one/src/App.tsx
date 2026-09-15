@@ -56,6 +56,7 @@ import ChargingDashboardPage from "@/features/manufacturing/pages/ChargingDashbo
 import TestingDashboardPage from "@/features/manufacturing/pages/TestingDashboardPage";
 import ReworkQueuePage from "@/features/manufacturing/pages/ReworkQueuePage";
 import CellReceivingPage from "@/features/cells/pages/CellReceivingPage";
+import CellLotDetailPage from "@/features/cells/pages/CellLotDetailPage";
 import MaterialTransferDetailPage from "@/features/cells/pages/MaterialTransferDetailPage";
 import CellGradingPage from "@/features/cells/pages/CellGradingPage";
 import CellInventoryPage from "@/features/cells/pages/CellInventoryPage";
@@ -168,6 +169,7 @@ function Router() {
 
       {/* Cells */}
       <Route path="/cells/receiving" component={CellReceivingPage} />
+      <Route path="/cells/lots/:id" component={CellLotDetailPage} />
       <Route path="/cells/transfers/:id" component={MaterialTransferDetailPage} />
       <Route path="/cells/grading" component={CellGradingPage} />
       <Route path="/cells/inventory" component={CellInventoryPage} />

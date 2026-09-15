@@ -752,7 +752,15 @@ function CellLotsTab() {
                       setExpandedLot(expandedLot === lot.id ? null : lot.id);
                     }}
                   >
-                    <TableCell className="font-mono font-medium">{lot.lotNumber}</TableCell>
+                    <TableCell className="font-mono font-medium">
+                      <Link
+                        href={`/cells/lots/${lot.id}`}
+                        className="text-primary hover:underline"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        {lot.lotNumber}
+                      </Link>
+                    </TableCell>
                     <TableCell>{lot.supplier}</TableCell>
                     <TableCell>{lot.manufacturer}</TableCell>
                     <TableCell>{lot.cellModel}</TableCell>
