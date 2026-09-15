@@ -18,6 +18,8 @@ import {
   productWorkflowsTable,
 } from "@workspace/db";
 import { classifyOrderProduct } from "./product-creation";
+import { depleteValuationForMovement } from "./valuation-engine";
+import { restoreValuationForMovement } from "./valuation-engine";
 
 // Cell allocation consumes CELL stock via the transfer path, not a MIN — it is the
 // only stage excluded from being the material-issue gate. The gate stage is DERIVED
@@ -550,7 +552,9 @@ export async function issueMaterials(args: IssueMaterialsArgs): Promise<IssueOut
       })
       .returning({ id: materialIssueNoteLinesTable.id });
 
-    await tx.insert(inventoryTransactionsTable).values({
+    const [movement] = await tx
+      .insert(inventoryTransactionsTable)
+      .values({
       transactionType: "PRODUCTION_ISSUE",
       materialId: l.req.materialId,
       quantity: String(-l.issuedQty),
@@ -560,6 +564,17 @@ export async function issueMaterials(args: IssueMaterialsArgs): Promise<IssueOut
       sourceDocumentId: min.id,
       sourceLineId: line.id,
       createdBy: actorId,
+      })
+      .returning({ id: inventoryTransactionsTable.id });
+
+    await depleteValuationForMovement(tx, {
+      movementId: movement.id,
+      materialId: l.req.materialId,
+      quantity: String(l.issuedQty),
+      sourceDocumentType: "MIN",
+      sourceDocumentId: min.id,
+      sourceLineId: line.id,
+      preferredGrnLineId: l.grnLineId,
     });
   }
 
@@ -639,17 +654,43 @@ export async function reverseMaterialIssue(
   await tx.insert(materialIssueReversalsTable).values({ minId, reason, reversedBy: actorId });
 
   for (const l of lines) {
-    await tx.insert(inventoryTransactionsTable).values({
-      transactionType: "PRODUCTION_ISSUE_REVERSAL",
-      materialId: l.materialId,
-      quantity: String(Math.abs(Number(l.issuedQty))),
-      uom: l.uom,
-      stockState: "available",
-      sourceDocumentType: "MIN",
-      sourceDocumentId: minId,
-      sourceLineId: l.id,
-      createdBy: actorId,
-    });
+    const [originalMovement] = await tx
+      .select({ id: inventoryTransactionsTable.id })
+      .from(inventoryTransactionsTable)
+      .where(
+        and(
+          eq(inventoryTransactionsTable.transactionType, "PRODUCTION_ISSUE"),
+          eq(inventoryTransactionsTable.sourceDocumentType, "MIN"),
+          eq(inventoryTransactionsTable.sourceDocumentId, minId),
+          eq(inventoryTransactionsTable.sourceLineId, l.id),
+        ),
+      )
+      .limit(1);
+    const [movement] = await tx
+      .insert(inventoryTransactionsTable)
+      .values({
+        transactionType: "PRODUCTION_ISSUE_REVERSAL",
+        materialId: l.materialId,
+        quantity: String(Math.abs(Number(l.issuedQty))),
+        uom: l.uom,
+        stockState: "available",
+        sourceDocumentType: "MIN",
+        sourceDocumentId: minId,
+        sourceLineId: l.id,
+        createdBy: actorId,
+      })
+      .returning({ id: inventoryTransactionsTable.id });
+    if (originalMovement) {
+      await restoreValuationForMovement(tx, {
+        movementId: movement.id,
+        materialId: l.materialId,
+        sourceDocumentType: "MIN",
+        sourceDocumentId: minId,
+        sourceLineId: l.id,
+        originalMovementId: originalMovement.id,
+        reversedMovementId: movement.id,
+      });
+    }
   }
 
   // Append-only manufacturing-timeline event (same tx — all-or-nothing).

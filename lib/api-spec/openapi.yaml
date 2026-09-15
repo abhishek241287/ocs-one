@@ -7377,6 +7377,10 @@ components:
       type: string
       enum: [INVENTORY_COMPONENT, CONSUMABLE, PACKAGING, SERVICE_ITEM]
 
+    ValuationPolicy:
+      type: string
+      enum: [FIFO, WAVG]
+
     # Resolved summary of the component master a material links to (read-only,
     # derived server-side). Null when the material links to no master.
     LinkedMasterSummary:
@@ -7400,6 +7404,8 @@ components:
             # SOLE driver of whether materials in this category must link a component
             # (engineering) master. Admin-editable; not derived from linked_master_type.
             engineering_master_required: { type: boolean }
+            # Determines how this category's receipt layers are depleted.
+            valuation_policy: { $ref: "#/components/schemas/ValuationPolicy" }
 
     MaterialCategoryInput:
       allOf:
@@ -7408,6 +7414,7 @@ components:
           properties:
             linked_master_type: { type: ["string", "null"] }
             engineering_master_required: { type: boolean }
+            valuation_policy: { $ref: "#/components/schemas/ValuationPolicy" }
 
     MaterialCategoryUpdate:
       allOf:
@@ -7416,6 +7423,7 @@ components:
           properties:
             linked_master_type: { type: ["string", "null"] }
             engineering_master_required: { type: boolean }
+            valuation_policy: { $ref: "#/components/schemas/ValuationPolicy" }
 
     # ─── Inventory Platform — Material Master ──────────────────────────────────
     MaterialMaster:

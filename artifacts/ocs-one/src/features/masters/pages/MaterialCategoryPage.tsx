@@ -25,6 +25,7 @@ const columns: ColumnDef<MaterialCategory>[] = [
     header: "Engineering Master Required",
     accessorFn: (row: any) => (row.engineering_master_required ? "Yes" : "No"),
   },
+  { accessorKey: "valuation_policy", header: "Valuation Policy" },
   { accessorKey: "description", header: "Description" },
 ];
 
@@ -47,6 +48,17 @@ const fields = [
     helpText:
       "When Yes, every material in this category MUST link to a component (engineering) master. When No, the link is optional (imported/finished goods). This flag alone drives the requirement; set the Component Family above so there is a master to link to.",
   },
+  {
+    name: "valuation_policy",
+    label: "Valuation Policy",
+    type: "select",
+    options: [
+      { value: "FIFO", label: "FIFO — oldest layer first" },
+      { value: "WAVG", label: "WAVG — weighted average" },
+    ],
+    helpText:
+      "Controls how captured receipt layers are depleted. Missing or legacy receipt cost remains explicitly unknown under either policy.",
+  },
   { name: "description", label: "Description", type: "textarea", placeholder: "Optional description" },
   { name: "effective_date", label: "Effective Date", type: "date" },
   { name: "notes", label: "Notes", type: "textarea", placeholder: "Additional notes or remarks" },
@@ -64,6 +76,7 @@ const config: MasterConfig<MaterialCategory> = {
     ...data,
     linked_master_type: (data.linked_master_type as string) || null,
     engineering_master_required: Boolean(data.engineering_master_required),
+    valuation_policy: (data.valuation_policy as string) || "FIFO",
   }),
 };
 

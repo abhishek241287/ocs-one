@@ -586,6 +586,16 @@ async function main(): Promise<void> {
     await client.query("BEGIN");
     const ids = [fixture.supervisorId, fixture.directorId];
     if (grnIds.length > 0) {
+      // 74-B adds value-twin rows that cite the receipt movement. Remove those
+      // children before the legacy 74-A fixture deletes its signed ledger rows.
+      await client.query(
+        "DELETE FROM valuation_depletions WHERE valuation_layer_id IN (SELECT id FROM valuation_layers WHERE grn_line_id = ANY($1::uuid[]))",
+        [grnLineIds],
+      );
+      await client.query(
+        "DELETE FROM valuation_layers WHERE grn_line_id = ANY($1::uuid[])",
+        [grnLineIds],
+      );
       await client.query(
         "DELETE FROM inventory_transactions WHERE source_document_id = ANY($1::uuid[])",
         [grnIds],
@@ -677,8 +687,8 @@ function renderReport(input: {
   }));
   return `# Phase 10 / 74-A — Receipt Valuation Evidence (§5)
 
-**Run date:** ${new Date().toISOString()}  
-**Fixture prefix:** \`${fixture.prefix}\`  
+**Run date:** ${new Date().toISOString()}
+**Fixture prefix:** \`${fixture.prefix}\`
 **Scope:** GRN-line receipt-cost evidence only. No FIFO, WAVG, depletion, valuation report, UI, GL, or value-conservation work is included.
 
 ## Verdict and 74-B gate

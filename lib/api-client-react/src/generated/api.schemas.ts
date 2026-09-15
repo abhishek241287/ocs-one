@@ -2591,6 +2591,14 @@ export const MaterialUsageType = {
   SERVICE_ITEM: 'SERVICE_ITEM',
 } as const;
 
+export type ValuationPolicy = typeof ValuationPolicy[keyof typeof ValuationPolicy];
+
+
+export const ValuationPolicy = {
+  FIFO: 'FIFO',
+  WAVG: 'WAVG',
+} as const;
+
 /**
  * @nullable
  */
@@ -2605,18 +2613,21 @@ export type MaterialCategory = MasterCommon & ({
   /** @nullable */
   linked_master_type?: string | null;
   engineering_master_required?: boolean;
+  valuation_policy?: ValuationPolicy;
 });
 
 export type MaterialCategoryInput = MasterCommonInput & ({
   /** @nullable */
   linked_master_type?: string | null;
   engineering_master_required?: boolean;
+  valuation_policy?: ValuationPolicy;
 });
 
 export type MaterialCategoryUpdate = MasterCommonUpdate & ({
   /** @nullable */
   linked_master_type?: string | null;
   engineering_master_required?: boolean;
+  valuation_policy?: ValuationPolicy;
 });
 
 export type MaterialMasterUom = typeof MaterialMasterUom[keyof typeof MaterialMasterUom];

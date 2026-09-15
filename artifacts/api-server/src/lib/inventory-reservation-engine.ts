@@ -11,6 +11,7 @@ import {
   wipIssueLinesTable,
   wipIssueNotesTable,
 } from "@workspace/db";
+import { depleteValuationForMovement } from "./valuation-engine";
 
 export const HOLDING_STATUSES = [
   "active",
@@ -610,11 +611,23 @@ export async function issueToWipInTx(
       createdBy: args.actorId,
     } as const;
 
-    await tx.insert(inventoryTransactionsTable).values({
-      ...ledgerBase,
-      quantity: String(-qty),
-      stockState: "available",
-      transactionType: "PRODUCTION_ISSUE",
+    const [movement] = await tx
+      .insert(inventoryTransactionsTable)
+      .values({
+        ...ledgerBase,
+        quantity: String(-qty),
+        stockState: "available",
+        transactionType: "PRODUCTION_ISSUE",
+      })
+      .returning({ id: inventoryTransactionsTable.id });
+    await depleteValuationForMovement(tx, {
+      movementId: movement.id,
+      materialId: reservation.materialId,
+      quantity: String(qty),
+      sourceDocumentType: "wip_issue_note",
+      sourceDocumentId: note.id,
+      sourceLineId: lot.grnLineId,
+      preferredGrnLineId: lot.grnLineId,
     });
     await tx.insert(inventoryTransactionsTable).values({
       ...ledgerBase,

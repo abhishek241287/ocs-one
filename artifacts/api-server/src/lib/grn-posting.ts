@@ -12,6 +12,7 @@ import {
   outboxEventsTable,
   inventoryLotsTable,
 } from "@workspace/db";
+import { recordReceiptLayer } from "./valuation-engine";
 
 // ─── Inventory Platform — generic GRN posting engine ─────────────────────────
 // Posting a GRN turns a draft receiving document into committed stock movement.
@@ -296,7 +297,9 @@ export async function postGrn(
       })
       .where(eq(grnLineItemsTable.id, line.id));
 
-    await tx.insert(inventoryTransactionsTable).values({
+    const [movement] = await tx
+      .insert(inventoryTransactionsTable)
+      .values({
       transactionType: "GRN_RECEIPT",
       materialId: line.materialId,
       quantity: line.quantityReceived,
@@ -309,6 +312,15 @@ export async function postGrn(
       sourceDocumentId: grnId,
       sourceLineId: line.id,
       createdBy: actorId,
+      })
+      .returning({ id: inventoryTransactionsTable.id });
+
+    await recordReceiptLayer(tx, {
+      grnLineId: line.id,
+      movementId: movement.id,
+      materialId: line.materialId,
+      quantity: line.quantityReceived,
+      uom: line.uom,
     });
   }
 

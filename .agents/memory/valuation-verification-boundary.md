@@ -22,3 +22,12 @@ Valuation layers must preserve explicit unknown value for MISSING/LEGACY receipt
 **Why:** the receipt census shows that most stock quantity currently lacks authoritative cost, so treating unknown cost as zero would silently understate inventory and destroy auditability.
 
 **How to apply:** make MISSING-layer behavior a mandatory acceptance dimension for FIFO/WAVG and event-consumer work, alongside CAPTURED-cost paths; keep the state explicit in layer outputs and downstream observations.
+
+Partial valuation reversals must restore depletion rows in their persisted allocation order,
+not by UUID order; otherwise a partial return can restore a later FIFO layer first.
+
+**Why:** UUIDs are intentionally non-sequential, and multiple layer allocations can share the
+same timestamp. Reversal quantity must map back to the original allocation sequence.
+
+**How to apply:** persist an allocation ordinal on each depletion, order restoration by that
+ordinal, and certify both full and partial reversal behavior.

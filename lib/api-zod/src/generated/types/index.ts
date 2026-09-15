@@ -511,6 +511,7 @@ export * from './upsertMaterialInventoryProfileBodyTrackingMode';
 export * from './userAccount';
 export * from './userAccountRole';
 export * from './userDealerAssignment';
+export * from './valuationPolicy';
 export * from './voidWarrantyInput';
 export * from './warranty';
 export * from './warrantyListResponse';

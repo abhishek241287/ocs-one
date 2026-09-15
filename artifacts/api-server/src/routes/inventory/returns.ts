@@ -23,6 +23,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth, requireWriteRole } from "../../middleware/auth";
 import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
+import { restoreValuationForMovement } from "../../lib/valuation-engine";
 
 const router: IRouter = Router();
 const RETURN_SOURCE_DOCUMENT_TYPE = "return_document";
@@ -425,7 +426,7 @@ router.post(
           actorName,
           createdBy: actorId,
         } as const;
-        await tx.insert(inventoryTransactionsTable).values([
+        const [returnOut, returnIn] = await tx.insert(inventoryTransactionsTable).values([
           {
             ...ledgerBase,
             quantity: String(-take),
@@ -441,7 +442,32 @@ router.post(
             binId: document.destinationBinId,
             transactionType: "RETURN",
           },
-        ]);
+        ]).returning({ id: inventoryTransactionsTable.id });
+        const [originalMovement] = await tx
+          .select({ id: inventoryTransactionsTable.id })
+          .from(inventoryTransactionsTable)
+          .where(
+            and(
+              eq(inventoryTransactionsTable.transactionType, "PRODUCTION_ISSUE"),
+              eq(inventoryTransactionsTable.sourceDocumentType, "wip_issue_note"),
+              eq(inventoryTransactionsTable.sourceDocumentId, document.wipIssueNoteId),
+              eq(inventoryTransactionsTable.sourceLineId, lot.grnLineId),
+              sql`${inventoryTransactionsTable.quantity} < 0`,
+            ),
+          )
+          .limit(1);
+        if (originalMovement) {
+          await restoreValuationForMovement(tx, {
+            movementId: returnIn.id,
+            materialId: document.materialId,
+            sourceDocumentType: RETURN_SOURCE_DOCUMENT_TYPE,
+            sourceDocumentId: document.id,
+            sourceLineId: lot.grnLineId,
+            originalMovementId: originalMovement.id,
+            reversedMovementId: returnIn.id,
+            quantity: String(take),
+          });
+        }
         await tx
           .update(wipInventoryTable)
           .set({

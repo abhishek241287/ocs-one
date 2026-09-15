@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { MasterCommonInput } from './masterCommonInput';
+import type { ValuationPolicy } from './valuationPolicy';
 
 export type MaterialCategoryInput = MasterCommonInput & ({
   /** @nullable */
   linked_master_type?: string | null;
   engineering_master_required?: boolean;
+  valuation_policy?: ValuationPolicy;
 });

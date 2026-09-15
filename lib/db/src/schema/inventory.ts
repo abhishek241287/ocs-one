@@ -60,6 +60,11 @@ export const materialUsageTypeEnum = pgEnum("material_usage_type", [
   "SERVICE_ITEM",
 ]);
 
+// Valuation policy is category configuration, not a material-name convention. The
+// policy is snapshotted onto each receipt layer so later category edits do not rewrite
+// historical valuation behavior.
+export const valuationPolicyEnum = pgEnum("valuation_policy", ["FIFO", "WAVG"]);
+
 // Material Category master — an extensible lookup kept as DATA (a real row table),
 // NOT a pgEnum, so a director can add a new material type live without a code change
 // or migration. Mirrors the Product Category master pattern.
@@ -79,6 +84,7 @@ export const materialCategoriesTable = pgTable("master_material_categories", {
   engineeringMasterRequired: boolean("engineering_master_required")
     .notNull()
     .default(false),
+  valuationPolicy: valuationPolicyEnum("valuation_policy").notNull().default("FIFO"),
 });
 
 // Unit of Measure — the physical unit a material is counted/stocked in. A small,

@@ -19,6 +19,7 @@ import {
 import { CreateMaterialTransferBody } from "@workspace/api-zod";
 import { requireWriteRole } from "../../middleware/auth";
 import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
+import { depleteValuationForMovement } from "../../lib/valuation-engine";
 
 // ─── Material Transfer (Store → Cell Processing) ──────────────────────────────
 // The single PRODUCTION path that moves GRN-received, inspection-passed cell stock
@@ -481,16 +482,28 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       .returning();
 
     // 2. Signed ledger row — decrements the line's available balance.
-    await tx.insert(inventoryTransactionsTable).values({
-      transactionType: "MATERIAL_TRANSFER_TO_CELL_PROCESSING",
+    const [movement] = await tx
+      .insert(inventoryTransactionsTable)
+      .values({
+        transactionType: "MATERIAL_TRANSFER_TO_CELL_PROCESSING",
+        materialId: ctx.materialId,
+        quantity: String(-qty),
+        uom: ctx.uom,
+        stockState: "available",
+        sourceDocumentType: "TRANSFER",
+        sourceDocumentId: transfer.id,
+        sourceLineId: body.grn_line_id,
+        createdBy: actorId,
+      })
+      .returning({ id: inventoryTransactionsTable.id });
+    await depleteValuationForMovement(tx, {
+      movementId: movement.id,
       materialId: ctx.materialId,
-      quantity: String(-qty),
-      uom: ctx.uom,
-      stockState: "available",
+      quantity: String(qty),
       sourceDocumentType: "TRANSFER",
       sourceDocumentId: transfer.id,
       sourceLineId: body.grn_line_id,
-      createdBy: actorId,
+      preferredGrnLineId: body.grn_line_id,
     });
 
     // 3. Cell Lot — spec auto-derived from the cell-master bridge; lot_number = TRF; the

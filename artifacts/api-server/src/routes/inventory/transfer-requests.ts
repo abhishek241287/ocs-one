@@ -20,6 +20,10 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth, requireWriteRole } from "../../middleware/auth";
 import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
+import {
+  depleteValuationForMovement,
+  restoreValuationForMovement,
+} from "../../lib/valuation-engine";
 
 const router: IRouter = Router();
 router.use(requireAuth);
@@ -595,10 +599,19 @@ router.post(
             actorName: req.user?.email ?? null,
             createdBy: actorId,
           };
-          await tx.insert(inventoryTransactionsTable).values([
+          const [transferOut] = await tx.insert(inventoryTransactionsTable).values([
             { ...movement, quantity: String(-requested), stockState: "available", transactionType: "TRANSFER_OUT" },
             { ...movement, quantity: String(requested), stockState: "in_transit", transactionType: "TRANSFER_OUT" },
-          ]);
+          ]).returning({ id: inventoryTransactionsTable.id });
+          await depleteValuationForMovement(tx, {
+            movementId: transferOut.id,
+            materialId: line.materialId,
+            quantity: String(requested),
+            sourceDocumentType: TRANSFER_SOURCE_DOCUMENT_TYPE,
+            sourceDocumentId: request.id,
+            sourceLineId: source?.sourceLineId ?? null,
+            preferredGrnLineId: source?.sourceLineId,
+          });
           await tx
             .update(transferLinesTable)
             .set({ issuedQty: String(requested), status: "issued" })
@@ -889,10 +902,38 @@ router.post(
           actorName: req.user?.email ?? null,
           createdBy: actorId,
         };
-        await tx.insert(inventoryTransactionsTable).values([
+        const [reversalOut] = await tx.insert(inventoryTransactionsTable).values([
           { ...movement, quantity: String(-outstanding), stockState: "in_transit", transactionType: "TRANSFER_REVERSAL" },
           { ...movement, quantity: String(outstanding), stockState: "available", transactionType: "TRANSFER_REVERSAL" },
-        ]);
+        ]).returning({ id: inventoryTransactionsTable.id });
+        const [originalMovement] = await tx
+          .select({ id: inventoryTransactionsTable.id })
+          .from(inventoryTransactionsTable)
+          .where(
+            and(
+              eq(inventoryTransactionsTable.transactionType, "TRANSFER_OUT"),
+              eq(inventoryTransactionsTable.sourceDocumentType, TRANSFER_SOURCE_DOCUMENT_TYPE),
+              eq(inventoryTransactionsTable.sourceDocumentId, request.id),
+              source?.sourceLineId
+                ? eq(inventoryTransactionsTable.sourceLineId, source.sourceLineId)
+                : isNull(inventoryTransactionsTable.sourceLineId),
+              eq(inventoryTransactionsTable.stockState, "available"),
+              sql`${inventoryTransactionsTable.quantity} < 0`,
+            ),
+          )
+          .limit(1);
+        if (originalMovement) {
+          await restoreValuationForMovement(tx, {
+            movementId: reversalOut.id,
+            materialId: line.materialId,
+            quantity: String(outstanding),
+            sourceDocumentType: TRANSFER_SOURCE_DOCUMENT_TYPE,
+            sourceDocumentId: request.id,
+            sourceLineId: source?.sourceLineId ?? null,
+            originalMovementId: originalMovement.id,
+            reversedMovementId: reversalOut.id,
+          });
+        }
         await tx
           .update(transferLinesTable)
           .set({ status: "rejected" })

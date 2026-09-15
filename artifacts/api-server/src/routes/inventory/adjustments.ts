@@ -19,6 +19,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth, requireWriteRole } from "../../middleware/auth";
 import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
+import { depleteValuationForMovement } from "../../lib/valuation-engine";
 
 const router: IRouter = Router();
 const ADJUSTMENT_SOURCE_DOCUMENT_TYPE = "inventory_adjustment";
@@ -460,23 +461,37 @@ router.post(
           .where(eq(inventoryAdjustmentsTable.id, document.id))
           .returning();
 
-        await tx.insert(inventoryTransactionsTable).values({
-          materialId: document.materialId,
-          quantity: document.type === "positive" ? String(quantity) : String(-quantity),
-          uom: document.uom,
-          stockState: "available",
-          transactionType: document.type === "positive" ? "ADJUSTMENT_IN" : "ADJUSTMENT_OUT",
-          sourceDocumentType: ADJUSTMENT_SOURCE_DOCUMENT_TYPE,
-          sourceDocumentId: document.id,
-          sourceLineId,
-          lotId: document.lotId,
-          warehouseId: document.warehouseId,
-          locationId: document.locationId,
-          binId: document.binId,
-          actorId,
-          actorName: req.user?.email ?? null,
-          createdBy: actorId,
-        });
+        const [movement] = await tx
+          .insert(inventoryTransactionsTable)
+          .values({
+            materialId: document.materialId,
+            quantity: document.type === "positive" ? String(quantity) : String(-quantity),
+            uom: document.uom,
+            stockState: "available",
+            transactionType: document.type === "positive" ? "ADJUSTMENT_IN" : "ADJUSTMENT_OUT",
+            sourceDocumentType: ADJUSTMENT_SOURCE_DOCUMENT_TYPE,
+            sourceDocumentId: document.id,
+            sourceLineId,
+            lotId: document.lotId,
+            warehouseId: document.warehouseId,
+            locationId: document.locationId,
+            binId: document.binId,
+            actorId,
+            actorName: req.user?.email ?? null,
+            createdBy: actorId,
+          })
+          .returning({ id: inventoryTransactionsTable.id });
+        if (document.type === "negative") {
+          await depleteValuationForMovement(tx, {
+            movementId: movement.id,
+            materialId: document.materialId,
+            quantity: String(quantity),
+            sourceDocumentType: ADJUSTMENT_SOURCE_DOCUMENT_TYPE,
+            sourceDocumentId: document.id,
+            sourceLineId,
+            preferredGrnLineId: sourceLineId,
+          });
+        }
 
         await tx.insert(outboxEventsTable).values({
           aggregateType: "inventory_adjustment",

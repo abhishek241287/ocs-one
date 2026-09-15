@@ -43,3 +43,4 @@ export * from "./performance-snapshots";
 export * from "./security-events";
 export * from "./inventory-platform";
 export * from "./attribute-engine";
+export * from "./valuation";

@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { MasterCommon } from './masterCommon';
+import type { ValuationPolicy } from './valuationPolicy';
 
 export type MaterialCategory = MasterCommon & ({
   /** @nullable */
   linked_master_type?: string | null;
   engineering_master_required?: boolean;
+  valuation_policy?: ValuationPolicy;
 });
