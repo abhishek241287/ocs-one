@@ -1,0 +1,71 @@
+OCS ONE — BANK THE CERTIFIED RELEASE
+
+The Phase 10 Final Gate is complete and certified:
+
+- VLF-01…08: 40/40 PASS
+- FIFO/WAVG × Captured/Unknown: 4/4 PASS
+- Isolated regression wall: 30/30 PASS
+- FAT smoke: PASS
+- Typecheck: PASS
+- Teardown residue: ZERO
+- Program scorecard: 17 PASS · 0 PARTIAL · 0 FAIL
+- Historical quantity-weighted uncosted baseline: 94.97%, explicitly preserved as MISSING/LEGACY
+
+Canonical certification document:
+
+"certification/OCS-ONE-PROGRAM-COMPLETION-REPORT.md"
+
+Supporting certification evidence:
+
+"certification/phase10-74e-final-gate.md"
+
+Certified baseline begins at:
+
+"a1c0ba4"
+
+TASK
+
+Bank the current repository state as the certified OCS ONE Inventory Platform release.
+
+STRICT RULES
+
+1. Do not change product/application code.
+2. Do not add features.
+3. Do not modify certification results or wording.
+4. Do not rerun or alter the certification harness unless required to verify repository state.
+5. Verify that the working tree contains the canonical completion report and the Phase 10 evidence artifact.
+6. Verify that the current tree corresponds to the state that produced the final Phase 10 PASS.
+7. Review the diff from "a1c0ba4" and identify exactly what certified changes are being banked.
+8. Create the release commit with a clear certification-oriented message.
+9. Create an immutable release tag for this certified baseline.
+10. After committing/tagging, verify:
+
+- commit exists;
+- tag points to the intended commit;
+- certification documents are present;
+- no unexpected files or uncommitted changes remain.
+
+11. Do not silently fix unrelated issues discovered during this process. Report them separately as post-certification follow-ups.
+
+SUGGESTED RELEASE MESSAGE
+
+"chore(release): bank OCS ONE inventory platform certification"
+
+SUGGESTED TAG
+
+"ocs-one-inventory-certified-2026-09-15"
+
+If repository conventions already define a different release/tag format, follow those conventions instead of inventing a new one.
+
+FINAL OUTPUT
+
+Report only:
+
+- Certified commit SHA
+- Release tag
+- Files included in the certification record
+- Working-tree status
+- Confirmation that no product code was changed during release banking
+- Any unexpected findings, if any
+
+Do not begin any new enhancement work.
