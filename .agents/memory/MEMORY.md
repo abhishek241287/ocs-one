@@ -4,6 +4,7 @@
 - [Trust proxy + rate limiter](trust-proxy-rate-limit.md) — must set `app.set("trust proxy", 1)` before express-rate-limit or Replit proxy causes ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
 - [Orval split mode barrel](orval-split-barrel.md) — api-zod barrel must use `export * as types` not `export *` to avoid duplicate identifier conflicts after codegen.
 - [Orval conditional enabled cast](orval-conditional-query-cast.md) — generated useQuery hooks need `} as any` when passing only `{ query: { enabled } }` (TS2741 queryKey required); matches existing frontend convention.
+- [Orval Zod compatibility](orval-zod-compatibility.md) — security-fixed Orval 8.21+ emits Zod 4-style output; do not upgrade from the project’s Zod 3 contract without an explicit migration.
 - [Postgres id-sequence integrity](postgres-sequences.md) — use nextval not MAX+1 (race); AND forward-only setval-to-max at startup or a rollback/restore desync mints duplicate ids → 23505/409 on first insert.
 - [Lucide icon naming v0.511+](lucide-icon-names.md) — PlayCircle does not exist; correct name is CirclePlay in lucide-react ≥0.5.
 - [JWT httpOnly cookie auth](jwt-cookie-auth.md) — cookie `ocs_token`, signed with SESSION_SECRET; trust proxy required; public routes: /api/healthz and /api/auth/* only. Also: requireAuth ≠ authorization — every write route needs its own requireRole (viewer passes requireAuth).
