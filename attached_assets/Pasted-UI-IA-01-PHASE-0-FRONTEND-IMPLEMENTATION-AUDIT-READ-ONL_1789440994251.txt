@@ -1,0 +1,83 @@
+UI-IA-01 PHASE 0 — FRONTEND IMPLEMENTATION AUDIT (READ-ONLY)
+
+OCS One · 2026-09-15 · NO CODE CHANGES · git diff must be EMPTY at the end.
+
+Authority: Phase 9 guideline (ratified). Output feeds the precise UI-IA-01
+
+implementation prompt — nothing here is implemented yet.
+
+AUDIT THE FOLLOWING (cite exact file paths + brief excerpts; where the
+
+guideline's design cannot be met with existing data, say so explicitly):
+
+1. ROUTE/NAV STRUCTURE — every route path and how the sidebar nav is
+
+defined today (the config/array/JSX that renders it); where role gates
+
+per item live; which items belong to the duplicated Production groups.
+
+2. DASHBOARD COMPONENT STRUCTURE — the dashboard page's component tree:
+
+which widgets exist, their data sources (hooks/endpoints), and their
+
+current visual grouping. Map each to guideline §6–§9 levels (Status /
+
+Pipeline / Attention / Alerts / Orders / My Work).
+
+3. RESPONSIVE BEHAVIOR — what happens at mobile/tablet widths today
+
+(tailwind breakpoints used, sidebar behavior, anything already adaptive).
+
+4. ROLE/PERMISSION HANDLING — the useAuth shape, existing nav item gates,
+
+dealer-specific handling (so the tiered nav preserves them verbatim).
+
+5. REUSABLE COMPONENTS — inventory of the ODS layer + ui/ primitives
+
+relevant to the redesign: layout shells, cards, tables, badges, tabs,
+
+drawer, command/menu components. What's missing (e.g., a Tabs primitive?)
+
+that UI-IA-03 will need later.
+
+6. PRODUCTION-ORDER FIELDS AVAILABLE — from the generated client types /
+
+list endpoint response: which fields exist for §10's table (stage,
+
+priority, timestamps for Age computation, any progress signal). Flag
+
+EXACTLY what §10's stop-rule would hit (missing fields → the
+
+stop-and-report list).
+
+7. OBJECT/DETAIL PAGE PATTERNS — how GRN detail / product detail / order
+
+detail are built today (the closest existing analogues to the §12
+
+object-page pattern), so UI-IA-03 builds on convention.
+
+8. GENEALOGY/TraceabilityPage INTEGRATION — current page structure + the
+
+generated hooks it uses (post-73-E), so UI-IA-04's deep-links land clean.
+
+9. UI-IA-01 FILE LIST — the exact files UI-IA-01 would modify, predicted
+
+from the above (nav config, sidebar component, dashboard page + widget
+
+components, any new shared components like SectionNav/MyWorkStrip, routes
+
+config if nav meta lives there). Plus: any file that CANNOT avoid
+
+touching certified-adjacent code (should be none — flag if found).
+
+OUTPUT: a notes file under certification/fat-evidence/ (or task notes) with
+
+the nine sections, exact paths, the §10 stop-list, and the predicted file
+
+list. NO app-source changes. NO code. Empty git diff at the end.
+
+NEXT: Kimi converts this audit + the Phase 9 guideline into the precise
+
+UI-IA-01 implementation prompt (the guideline's closing discipline — real
+
+structure first, then exact instructions, one batch only).
