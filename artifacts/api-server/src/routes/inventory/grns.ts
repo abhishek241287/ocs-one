@@ -365,7 +365,8 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       return { error: `lines[${index}].receipt_currency must be a three-letter uppercase currency code` } as const;
     }
     if (suppliedCost != null) {
-      if (Math.round(suppliedCost * 10000) !== suppliedCost * 10000) {
+      const scaledCost = suppliedCost * 10000;
+      if (Math.abs(Math.round(scaledCost) - scaledCost) > 1e-8) {
         return { error: `lines[${index}].receipt_unit_cost supports at most four decimal places` } as const;
       }
       return {
@@ -394,7 +395,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     };
   });
   const invalidReceiptCost = receiptCostByIndex.find(
-    (cost): cost is { error: string } => "error" in cost,
+    (cost) => "error" in cost,
   );
   if (invalidReceiptCost) {
     res.status(400).json({ error: invalidReceiptCost.error });
@@ -494,7 +495,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     actorRole: req.user?.role ?? null,
     ...reqMeta(req),
     statusCode: 201,
-     detail: `GRN ${grnNumber} created (draft, ${inputLines.length} line(s))`,
+    detail: `GRN ${grnNumber} created (draft, ${inputLines.length} line(s))`,
   });
   if (attributeValues.length > 0) {
     void recordSecurityEvent({
