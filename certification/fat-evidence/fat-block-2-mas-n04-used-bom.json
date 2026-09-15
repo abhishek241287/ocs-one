@@ -2,15 +2,15 @@
   "metadata": {
     "case_id": "MAS-N04",
     "assertion": "Used approved BOM cannot be obsoleted",
-    "generated_at": "2026-09-14T12:37:44.226Z",
-    "target": "http://localhost:8080",
-    "fixture_prefix": "FAT-E2E-MAS-N04-20260914123744",
+    "generated_at": "2026-09-15T16:24:39.815Z",
+    "target": "http://127.0.0.1:8628",
+    "fixture_prefix": "FAT-E2E-MAS-N04-20260915162439",
     "result": "PASS"
   },
   "setup": {
-    "isolated_bom_id": "7489fbac-4a9a-44f8-a771-98047abd818f",
-    "production_order_id": "1459239e-c14a-449c-9704-a835eaecdd98",
-    "material_issue_id": "230c3f6a-241f-46d5-b1e4-dacdbf13e1ae",
+    "isolated_bom_id": "943b2f3d-6299-462d-bb15-77cb5e2e6bf2",
+    "production_order_id": "99700fcb-881c-49a2-a751-55edeeeae204",
+    "material_issue_id": "64df3fc8-a371-4ec1-8f17-aaa5d4d606f4",
     "temporary_stock_setup_id": null,
     "temporary_stock_setup_quantity": 0,
     "setup_required": null,
@@ -22,14 +22,14 @@
       "path": "/api/boms",
       "status": 201,
       "response": {
-        "id": "7489fbac-4a9a-44f8-a771-98047abd818f",
-        "bom_number": "BOM-20260914-000004",
+        "id": "943b2f3d-6299-462d-bb15-77cb5e2e6bf2",
+        "bom_number": "BOM-20260915-000010",
         "model_id": "fa130000-0000-4000-8000-000000000011",
         "model_code": "FAT-E2E-MODEL-16S280",
         "model_name": "FAT E2E 16S 280Ah Battery Pack",
         "revision": 2,
         "status": "draft",
-        "name": "FAT-E2E-MAS-N04-20260914123744 isolated used BOM",
+        "name": "FAT-E2E-MAS-N04-20260915162439 isolated used BOM",
         "yield_percent": 100,
         "effective_from": null,
         "effective_to": null,
@@ -37,13 +37,13 @@
         "created_by": "fat.director@fat.local",
         "approved_by": null,
         "approved_at": null,
-        "created_at": "2026-09-14T12:37:44.626Z",
-        "updated_at": "2026-09-14T12:37:44.626Z",
+        "created_at": "2026-09-15T16:24:40.246Z",
+        "updated_at": "2026-09-15T16:24:40.246Z",
         "line_count": 1,
         "lines": [
           {
-            "id": "f5b9489b-d8ba-4979-9594-a35ed3aebf7f",
-            "bom_id": "7489fbac-4a9a-44f8-a771-98047abd818f",
+            "id": "83e65ae0-2f54-4d22-9ce3-5eb6863dedd7",
+            "bom_id": "943b2f3d-6299-462d-bb15-77cb5e2e6bf2",
             "material_id": "fa130000-0000-4000-8000-000000000017",
             "material_code": "FAT-E2E-MATERIAL-BMS",
             "material_name": "FAT E2E BMS Material",
@@ -62,31 +62,31 @@
     },
     {
       "method": "POST",
-      "path": "/api/boms/7489fbac-4a9a-44f8-a771-98047abd818f/approve",
+      "path": "/api/boms/943b2f3d-6299-462d-bb15-77cb5e2e6bf2/approve",
       "status": 200,
       "response": {
-        "id": "7489fbac-4a9a-44f8-a771-98047abd818f",
-        "bom_number": "BOM-20260914-000004",
+        "id": "943b2f3d-6299-462d-bb15-77cb5e2e6bf2",
+        "bom_number": "BOM-20260915-000010",
         "model_id": "fa130000-0000-4000-8000-000000000011",
         "model_code": "FAT-E2E-MODEL-16S280",
         "model_name": "FAT E2E 16S 280Ah Battery Pack",
         "revision": 2,
         "status": "approved",
-        "name": "FAT-E2E-MAS-N04-20260914123744 isolated used BOM",
+        "name": "FAT-E2E-MAS-N04-20260915162439 isolated used BOM",
         "yield_percent": 100,
         "effective_from": null,
         "effective_to": null,
         "notes": "MAS-N04 isolated manufacturing-use candidate",
         "created_by": "fat.director@fat.local",
         "approved_by": "fat.director@fat.local",
-        "approved_at": "2026-09-14T12:37:44.653Z",
-        "created_at": "2026-09-14T12:37:44.626Z",
-        "updated_at": "2026-09-14T12:37:44.653Z",
+        "approved_at": "2026-09-15T16:24:40.311Z",
+        "created_at": "2026-09-15T16:24:40.246Z",
+        "updated_at": "2026-09-15T16:24:40.311Z",
         "line_count": 1,
         "lines": [
           {
-            "id": "f5b9489b-d8ba-4979-9594-a35ed3aebf7f",
-            "bom_id": "7489fbac-4a9a-44f8-a771-98047abd818f",
+            "id": "83e65ae0-2f54-4d22-9ce3-5eb6863dedd7",
+            "bom_id": "943b2f3d-6299-462d-bb15-77cb5e2e6bf2",
             "material_id": "fa130000-0000-4000-8000-000000000017",
             "material_code": "FAT-E2E-MATERIAL-BMS",
             "material_name": "FAT E2E BMS Material",
@@ -108,9 +108,9 @@
       "path": "/api/manufacturing/orders",
       "status": 201,
       "response": {
-        "id": "1459239e-c14a-449c-9704-a835eaecdd98",
-        "orderNumber": "PO-20260914-000004",
-        "batteryNumber": "BAT-20260914-000004",
+        "id": "99700fcb-881c-49a2-a751-55edeeeae204",
+        "orderNumber": "PO-20260915-000010",
+        "batteryNumber": "BAT-20260915-000010",
         "productId": "fa130000-0000-4000-8000-000000000011",
         "cellMatchId": null,
         "chargerUnitId": null,
@@ -121,13 +121,15 @@
         "priority": "medium",
         "plannedStartDate": null,
         "plannedEndDate": null,
-        "notes": "FAT-E2E-MAS-N04-20260914123744 isolated production-use order",
-        "createdAt": "2026-09-14T12:37:44.666Z",
-        "updatedAt": "2026-09-14T12:37:44.666Z",
+        "notes": "FAT-E2E-MAS-N04-20260915162439 isolated production-use order",
+        "createdAt": "2026-09-15T16:24:40.323Z",
+        "updatedAt": "2026-09-15T16:24:40.323Z",
+        "productName": "FAT E2E 16S 280Ah Battery Pack",
+        "productSku": "FAT-E2E-MODEL-16S280",
         "stages": [
           {
-            "id": "fa2041cb-d7ba-41c8-913d-643ded07219b",
-            "productionOrderId": "1459239e-c14a-449c-9704-a835eaecdd98",
+            "id": "b879e3df-6132-4ae7-9a23-759f4a6ae032",
+            "productionOrderId": "99700fcb-881c-49a2-a751-55edeeeae204",
             "stageType": "cell_allocation",
             "stageOrder": 1,
             "status": "pending",
@@ -141,12 +143,12 @@
             "notes": null,
             "photos": [],
             "stageData": {},
-            "createdAt": "2026-09-14T12:37:44.666Z",
-            "updatedAt": "2026-09-14T12:37:44.666Z"
+            "createdAt": "2026-09-15T16:24:40.323Z",
+            "updatedAt": "2026-09-15T16:24:40.323Z"
           },
           {
-            "id": "75fa4414-7e43-46a4-b6d7-cc379a78882d",
-            "productionOrderId": "1459239e-c14a-449c-9704-a835eaecdd98",
+            "id": "3f26a879-7cad-4e3b-8bb5-c3e8180f7e0d",
+            "productionOrderId": "99700fcb-881c-49a2-a751-55edeeeae204",
             "stageType": "assembly",
             "stageOrder": 2,
             "status": "pending",
@@ -160,12 +162,12 @@
             "notes": null,
             "photos": [],
             "stageData": {},
-            "createdAt": "2026-09-14T12:37:44.666Z",
-            "updatedAt": "2026-09-14T12:37:44.666Z"
+            "createdAt": "2026-09-15T16:24:40.323Z",
+            "updatedAt": "2026-09-15T16:24:40.323Z"
           },
           {
-            "id": "c11a1a58-2952-4e2c-a510-89da285659a5",
-            "productionOrderId": "1459239e-c14a-449c-9704-a835eaecdd98",
+            "id": "cae74dba-81a2-4d6e-becc-21bec4754aee",
+            "productionOrderId": "99700fcb-881c-49a2-a751-55edeeeae204",
             "stageType": "compression",
             "stageOrder": 3,
             "status": "pending",
@@ -179,12 +181,12 @@
             "notes": null,
             "photos": [],
             "stageData": {},
-            "createdAt": "2026-09-14T12:37:44.666Z",
-            "updatedAt": "2026-09-14T12:37:44.666Z"
+            "createdAt": "2026-09-15T16:24:40.323Z",
+            "updatedAt": "2026-09-15T16:24:40.323Z"
           },
           {
-            "id": "7605f9cd-711d-43d7-99a4-5e9f1531af5b",
-            "productionOrderId": "1459239e-c14a-449c-9704-a835eaecdd98",
+            "id": "2b7f57a2-b7c7-44d8-b528-b2a01e95ab83",
+            "productionOrderId": "99700fcb-881c-49a2-a751-55edeeeae204",
             "stageType": "bms_allocation",
             "stageOrder": 4,
             "status": "pending",
@@ -198,12 +200,12 @@
             "notes": null,
             "photos": [],
             "stageData": {},
-            "createdAt": "2026-09-14T12:37:44.666Z",
-            "updatedAt": "2026-09-14T12:37:44.666Z"
+            "createdAt": "2026-09-15T16:24:40.323Z",
+            "updatedAt": "2026-09-15T16:24:40.323Z"
           },
           {
-            "id": "9f60c05c-0958-421d-bb53-f900fd0ebfa5",
-            "productionOrderId": "1459239e-c14a-449c-9704-a835eaecdd98",
+            "id": "77496420-9482-4064-acd4-20a309efacd2",
+            "productionOrderId": "99700fcb-881c-49a2-a751-55edeeeae204",
             "stageType": "bms_programming",
             "stageOrder": 5,
             "status": "pending",
@@ -217,12 +219,12 @@
             "notes": null,
             "photos": [],
             "stageData": {},
-            "createdAt": "2026-09-14T12:37:44.666Z",
-            "updatedAt": "2026-09-14T12:37:44.666Z"
+            "createdAt": "2026-09-15T16:24:40.323Z",
+            "updatedAt": "2026-09-15T16:24:40.323Z"
           },
           {
-            "id": "3f245242-d3b5-4a45-854b-bb785e7c208a",
-            "productionOrderId": "1459239e-c14a-449c-9704-a835eaecdd98",
+            "id": "4267e49d-7339-4826-9f0c-94b57200a104",
+            "productionOrderId": "99700fcb-881c-49a2-a751-55edeeeae204",
             "stageType": "charging",
             "stageOrder": 6,
             "status": "pending",
@@ -236,12 +238,12 @@
             "notes": null,
             "photos": [],
             "stageData": {},
-            "createdAt": "2026-09-14T12:37:44.666Z",
-            "updatedAt": "2026-09-14T12:37:44.666Z"
+            "createdAt": "2026-09-15T16:24:40.323Z",
+            "updatedAt": "2026-09-15T16:24:40.323Z"
           },
           {
-            "id": "a5beaa9a-9af7-4cbf-98f4-0da6591da119",
-            "productionOrderId": "1459239e-c14a-449c-9704-a835eaecdd98",
+            "id": "577a1c3c-4551-4777-baec-5a92e28b0b0c",
+            "productionOrderId": "99700fcb-881c-49a2-a751-55edeeeae204",
             "stageType": "testing",
             "stageOrder": 7,
             "status": "pending",
@@ -255,12 +257,12 @@
             "notes": null,
             "photos": [],
             "stageData": {},
-            "createdAt": "2026-09-14T12:37:44.666Z",
-            "updatedAt": "2026-09-14T12:37:44.666Z"
+            "createdAt": "2026-09-15T16:24:40.323Z",
+            "updatedAt": "2026-09-15T16:24:40.323Z"
           },
           {
-            "id": "f41c4e09-10c0-4d20-bb88-81198e6f17f7",
-            "productionOrderId": "1459239e-c14a-449c-9704-a835eaecdd98",
+            "id": "8ce9e62d-52e3-48c3-8877-14d53a52a8ff",
+            "productionOrderId": "99700fcb-881c-49a2-a751-55edeeeae204",
             "stageType": "quality_control",
             "stageOrder": 8,
             "status": "pending",
@@ -274,12 +276,12 @@
             "notes": null,
             "photos": [],
             "stageData": {},
-            "createdAt": "2026-09-14T12:37:44.666Z",
-            "updatedAt": "2026-09-14T12:37:44.666Z"
+            "createdAt": "2026-09-15T16:24:40.323Z",
+            "updatedAt": "2026-09-15T16:24:40.323Z"
           },
           {
-            "id": "6e189f17-c528-4866-bf90-5cba0eaf1f68",
-            "productionOrderId": "1459239e-c14a-449c-9704-a835eaecdd98",
+            "id": "837a64d8-2fb9-4d90-a51a-759c765a96b8",
+            "productionOrderId": "99700fcb-881c-49a2-a751-55edeeeae204",
             "stageType": "packing",
             "stageOrder": 9,
             "status": "pending",
@@ -293,20 +295,20 @@
             "notes": null,
             "photos": [],
             "stageData": {},
-            "createdAt": "2026-09-14T12:37:44.666Z",
-            "updatedAt": "2026-09-14T12:37:44.666Z"
+            "createdAt": "2026-09-15T16:24:40.323Z",
+            "updatedAt": "2026-09-15T16:24:40.323Z"
           }
         ]
       }
     },
     {
       "method": "GET",
-      "path": "/api/manufacturing/orders/1459239e-c14a-449c-9704-a835eaecdd98/material-issues/preview",
+      "path": "/api/manufacturing/orders/99700fcb-881c-49a2-a751-55edeeeae204/material-issues/preview",
       "status": 200,
       "response": {
-        "production_order_id": "1459239e-c14a-449c-9704-a835eaecdd98",
-        "bom_header_id": "7489fbac-4a9a-44f8-a771-98047abd818f",
-        "bom_number": "BOM-20260914-000004",
+        "production_order_id": "99700fcb-881c-49a2-a751-55edeeeae204",
+        "bom_header_id": "943b2f3d-6299-462d-bb15-77cb5e2e6bf2",
+        "bom_number": "BOM-20260915-000010",
         "bom_revision": 2,
         "has_approved_bom": true,
         "has_active_min": false,
@@ -314,7 +316,7 @@
         "active_min_number": null,
         "requirements": [
           {
-            "bom_line_id": "f5b9489b-d8ba-4979-9594-a35ed3aebf7f",
+            "bom_line_id": "83e65ae0-2f54-4d22-9ce3-5eb6863dedd7",
             "material_id": "fa130000-0000-4000-8000-000000000017",
             "material_code": "FAT-E2E-MATERIAL-BMS",
             "material_name": "FAT E2E BMS Material",
@@ -335,7 +337,7 @@
     },
     {
       "method": "POST",
-      "path": "/api/manufacturing/orders/1459239e-c14a-449c-9704-a835eaecdd98/material-issues",
+      "path": "/api/manufacturing/orders/99700fcb-881c-49a2-a751-55edeeeae204/material-issues",
       "status": 410,
       "response": {
         "error": "DEPRECATED",
@@ -346,7 +348,7 @@
     },
     {
       "method": "POST",
-      "path": "/api/boms/7489fbac-4a9a-44f8-a771-98047abd818f/obsolete",
+      "path": "/api/boms/943b2f3d-6299-462d-bb15-77cb5e2e6bf2/obsolete",
       "status": 422,
       "response": {
         "error": "BOMs used by production cannot be made obsolete"
@@ -355,17 +357,17 @@
   ],
   "database": {
     "isolated_before_obsoletion": {
-      "id": "7489fbac-4a9a-44f8-a771-98047abd818f",
+      "id": "943b2f3d-6299-462d-bb15-77cb5e2e6bf2",
       "status": "approved",
       "revision": 2,
-      "bom_number": "BOM-20260914-000004",
+      "bom_number": "BOM-20260915-000010",
       "material_issue_count": 1
     },
     "isolated_after_obsoletion": {
-      "id": "7489fbac-4a9a-44f8-a771-98047abd818f",
+      "id": "943b2f3d-6299-462d-bb15-77cb5e2e6bf2",
       "status": "approved",
       "revision": 2,
-      "bom_number": "BOM-20260914-000004",
+      "bom_number": "BOM-20260915-000010",
       "material_issue_count": 1
     },
     "canonical_before": {

@@ -1,7 +1,7 @@
 # Phase 10 / Task 109 — Endpoint Valuation Evidence
 
-**Run:** 2026-09-15T13:01:00.108Z
-**Fixture prefix:** `VAL109-MU2OK1XF-D34706D3`
+**Run:** 2026-09-15T16:30:21.085Z
+**Fixture prefix:** `VAL109-MU2W1A1S-D043B048`
 **Verdict:** PASS
 
 ## Scope
@@ -33,69 +33,69 @@ and teardown.
 ```json
 {
   "receive": {
-    "requestId": "bd7375b8-2a14-4ea9-b2b6-6c8ec9a11072",
+    "requestId": "d8dc597d-a080-4017-93b1-e37515cb21a2",
     "receiveBefore": [
       {
-        "id": "e063d808-b26c-4be2-957b-6360af554287",
+        "id": "c31395a6-cd3f-4110-8080-e71fe897adb0",
         "quantity": "-6.000",
         "value_status": "CAPTURED",
         "value_amount": "-60.0000000",
-        "movement_id": "63750435-b7bb-4808-8b87-a325bd8e7900",
+        "movement_id": "5286adb4-1bb2-4970-9938-f33adff9325d",
         "source_document_type": "transfer_request",
-        "source_document_id": "bd7375b8-2a14-4ea9-b2b6-6c8ec9a11072",
-        "source_line_id": "706e1068-061b-41d0-8182-aad6cce7142a"
+        "source_document_id": "d8dc597d-a080-4017-93b1-e37515cb21a2",
+        "source_line_id": "8653de2e-bf26-4e40-ab47-bd6c5154ddd8"
       }
     ],
     "receiveAfter": [
       {
-        "id": "e063d808-b26c-4be2-957b-6360af554287",
+        "id": "c31395a6-cd3f-4110-8080-e71fe897adb0",
         "quantity": "-6.000",
         "value_status": "CAPTURED",
         "value_amount": "-60.0000000",
-        "movement_id": "63750435-b7bb-4808-8b87-a325bd8e7900",
+        "movement_id": "5286adb4-1bb2-4970-9938-f33adff9325d",
         "source_document_type": "transfer_request",
-        "source_document_id": "bd7375b8-2a14-4ea9-b2b6-6c8ec9a11072",
-        "source_line_id": "706e1068-061b-41d0-8182-aad6cce7142a"
+        "source_document_id": "d8dc597d-a080-4017-93b1-e37515cb21a2",
+        "source_line_id": "8653de2e-bf26-4e40-ab47-bd6c5154ddd8"
       }
     ],
     "receiveMovements": [
       {
-        "id": "2734b5b7-0ebf-497d-a8ba-8d7ef74c7669",
-        "transaction_type": "TRANSFER_IN",
-        "quantity": "6.000",
-        "source_line_id": "706e1068-061b-41d0-8182-aad6cce7142a"
-      },
-      {
-        "id": "3c2d44d7-b968-4165-9def-29294391ec73",
-        "transaction_type": "TRANSFER_OUT",
-        "quantity": "6.000",
-        "source_line_id": "706e1068-061b-41d0-8182-aad6cce7142a"
-      },
-      {
-        "id": "63750435-b7bb-4808-8b87-a325bd8e7900",
-        "transaction_type": "TRANSFER_OUT",
-        "quantity": "-6.000",
-        "source_line_id": "706e1068-061b-41d0-8182-aad6cce7142a"
-      },
-      {
-        "id": "fc348639-c50b-4781-9a22-7b556fa42e73",
+        "id": "2810cde2-508c-407e-85ba-855ad3f277d9",
         "transaction_type": "TRANSFER_IN",
         "quantity": "-6.000",
-        "source_line_id": "706e1068-061b-41d0-8182-aad6cce7142a"
+        "source_line_id": "8653de2e-bf26-4e40-ab47-bd6c5154ddd8"
+      },
+      {
+        "id": "5286adb4-1bb2-4970-9938-f33adff9325d",
+        "transaction_type": "TRANSFER_OUT",
+        "quantity": "-6.000",
+        "source_line_id": "8653de2e-bf26-4e40-ab47-bd6c5154ddd8"
+      },
+      {
+        "id": "bb025ad5-df39-4249-b452-b55cf093bdf4",
+        "transaction_type": "TRANSFER_OUT",
+        "quantity": "6.000",
+        "source_line_id": "8653de2e-bf26-4e40-ab47-bd6c5154ddd8"
+      },
+      {
+        "id": "eec23389-350a-4999-b83d-0fb9122d7189",
+        "transaction_type": "TRANSFER_IN",
+        "quantity": "6.000",
+        "source_line_id": "8653de2e-bf26-4e40-ab47-bd6c5154ddd8"
       }
     ]
   },
   "reject": {
-    "requestId": "dfa2c2f9-fab5-4234-bd9c-5f1ca38d8fbd",
+    "requestId": "af2bf0c4-7d0c-42d6-9be9-2b0de185d822",
     "rejectDepletions": [
       {
         "quantity": "-5.000",
         "value_status": "CAPTURED",
         "value_amount": "-55.0000000",
-        "movement_id": "15222a2b-a136-48f5-8193-930e618b2ecb",
+        "movement_id": "3bd24c65-3ba8-4b79-aa76-c0aed04305c6",
         "source_document_type": "transfer_request",
-        "source_document_id": "dfa2c2f9-fab5-4234-bd9c-5f1ca38d8fbd",
-        "source_line_id": "44bdad63-d896-47b1-9a0e-838a9d08e511",
+        "source_document_id": "af2bf0c4-7d0c-42d6-9be9-2b0de185d822",
+        "source_line_id": "7660580d-353a-42cf-aedc-fe9f89203ed8",
         "transaction_type": "TRANSFER_OUT",
         "movement_quantity": "-5.000"
       },
@@ -103,10 +103,10 @@ and teardown.
         "quantity": "5.000",
         "value_status": "CAPTURED",
         "value_amount": "55.0000000",
-        "movement_id": "5abc8c5f-8ff9-4431-9ed8-b8e81b753919",
+        "movement_id": "1bda9788-680f-4c03-ae19-63893d9caa6b",
         "source_document_type": "transfer_request",
-        "source_document_id": "dfa2c2f9-fab5-4234-bd9c-5f1ca38d8fbd",
-        "source_line_id": "44bdad63-d896-47b1-9a0e-838a9d08e511",
+        "source_document_id": "af2bf0c4-7d0c-42d6-9be9-2b0de185d822",
+        "source_line_id": "7660580d-353a-42cf-aedc-fe9f89203ed8",
         "transaction_type": "TRANSFER_REVERSAL",
         "movement_quantity": "-5.000"
       }
@@ -116,26 +116,26 @@ and teardown.
     }
   },
   "capturedReturn": {
-    "issueId": "9949c4cf-8907-4ed6-900a-7406f3af262d",
-    "returnId": "9136ba84-c8df-4779-bb2d-d40049e6b2f9",
+    "issueId": "dcc7c4b2-c3a5-4c48-bfa6-bffc3f42767c",
+    "returnId": "3ea6096f-f942-46ab-88f1-67010bb48b29",
     "capturedReturnDepletions": [
       {
         "quantity": "-10.000",
         "value_status": "CAPTURED",
         "value_amount": "-120.0000000",
-        "movement_id": "3da39ed1-8208-4f8c-a720-9440dc72f94a",
+        "movement_id": "4a3532bc-15bd-4b5f-a456-961494fc5684",
         "source_document_type": "wip_issue_note",
-        "source_document_id": "9949c4cf-8907-4ed6-900a-7406f3af262d",
-        "source_line_id": "d3166b7a-3b4f-46ba-962e-51a0c2e91c92"
+        "source_document_id": "dcc7c4b2-c3a5-4c48-bfa6-bffc3f42767c",
+        "source_line_id": "a0c7e16d-e6bc-4aaf-9dc2-6baa9be5ad53"
       },
       {
         "quantity": "4.000",
         "value_status": "CAPTURED",
         "value_amount": "48.0000000",
-        "movement_id": "d1e8482a-4b88-4793-ab57-26eafe1ade6a",
+        "movement_id": "e7740860-0e0c-4525-b677-824f41939cca",
         "source_document_type": "return_document",
-        "source_document_id": "9136ba84-c8df-4779-bb2d-d40049e6b2f9",
-        "source_line_id": "d3166b7a-3b4f-46ba-962e-51a0c2e91c92"
+        "source_document_id": "3ea6096f-f942-46ab-88f1-67010bb48b29",
+        "source_line_id": "a0c7e16d-e6bc-4aaf-9dc2-6baa9be5ad53"
       }
     ],
     "capturedReturnLayer": {
@@ -143,8 +143,8 @@ and teardown.
     }
   },
   "unknownReturn": {
-    "issueId": "cbe54ea7-d7bc-43be-b9ef-710f3f03a14e",
-    "returnId": "df073c7b-a1ab-4b77-b7a8-639cad80598d",
+    "issueId": "939a16b6-0635-488d-8240-1aa328ed74fe",
+    "returnId": "47767988-def4-4bcf-ba32-3fd9c10bbfcf",
     "unknownReturnDepletions": [
       {
         "quantity": "-8.000",
@@ -152,10 +152,10 @@ and teardown.
         "unit_cost": null,
         "value_amount": null,
         "currency": null,
-        "movement_id": "bcf13548-b9a5-4e79-97c8-4e484ef2f619",
+        "movement_id": "9a81a1df-e35e-4c71-b620-05cad779c8cc",
         "source_document_type": "wip_issue_note",
-        "source_document_id": "cbe54ea7-d7bc-43be-b9ef-710f3f03a14e",
-        "source_line_id": "956a31c1-4fc0-47b4-ba02-1a5e7541276c"
+        "source_document_id": "939a16b6-0635-488d-8240-1aa328ed74fe",
+        "source_line_id": "d69c2439-b820-4e4d-b066-d9c960353039"
       },
       {
         "quantity": "3.000",
@@ -163,10 +163,10 @@ and teardown.
         "unit_cost": null,
         "value_amount": null,
         "currency": null,
-        "movement_id": "a7810e34-8922-41cf-9978-c1a1812a31a4",
+        "movement_id": "00101044-bce6-4a7d-9243-cbeffa2133f0",
         "source_document_type": "return_document",
-        "source_document_id": "df073c7b-a1ab-4b77-b7a8-639cad80598d",
-        "source_line_id": "956a31c1-4fc0-47b4-ba02-1a5e7541276c"
+        "source_document_id": "47767988-def4-4bcf-ba32-3fd9c10bbfcf",
+        "source_line_id": "d69c2439-b820-4e4d-b066-d9c960353039"
       }
     ],
     "unknownReturnLayer": {

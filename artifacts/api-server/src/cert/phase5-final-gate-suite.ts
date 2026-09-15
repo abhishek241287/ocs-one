@@ -358,6 +358,17 @@ async function cleanup(): Promise<void> {
   await pool.query("BEGIN");
   try {
     const docs = [...returnIds, ...scrapIds, ...adjustmentIds, ...transferIds, ...confirmationIds, ...noteIds];
+    if (materialIds.length) {
+      await pool.query(
+        `DELETE FROM valuation_depletions
+          WHERE material_id = ANY($1::uuid[])
+             OR valuation_layer_id IN (
+            SELECT id FROM valuation_layers WHERE material_id = ANY($1::uuid[])
+          )`,
+        [materialIds],
+      );
+      await pool.query("DELETE FROM valuation_layers WHERE material_id = ANY($1::uuid[])", [materialIds]);
+    }
     if (docs.length) {
       await pool.query("DELETE FROM outbox_events WHERE aggregate_id = ANY($1::uuid[])", [docs]);
       await pool.query("DELETE FROM inventory_transactions WHERE source_document_id = ANY($1::uuid[])", [docs]);

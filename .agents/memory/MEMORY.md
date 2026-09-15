@@ -72,3 +72,4 @@
 - [Dashboard queue alignment](dashboard-queue-alignment.md) — every My Work KPI must count the exact dataset consumed by its destination route, not an adjacent workflow milestone.
 - [Cell-lot genealogy boundary](cell-lot-genealogy-boundary.md) — downstream genealogy is scoped to inventory_lots; Cell Lot receiving IDs are a separate domain.
 - [Valuation verification boundary](valuation-verification-boundary.md) — prove the receipt chain and receipt-cost census before any layer engine or value conservation work.
+- [Isolated certification targets](isolated-cert-targets.md) — every wall suite must honor the fresh process base URL, or shared-port rate limits create false failures.

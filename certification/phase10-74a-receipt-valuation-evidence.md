@@ -1,14 +1,14 @@
 # Phase 10 / 74-A — Receipt Valuation Evidence (§5)
 
-**Run date:** 2026-09-15T12:36:00.115Z
-**Fixture prefix:** `VAL74A-MU2NNWUL-47E8CA8E`
+**Run date:** 2026-09-15T16:29:55.128Z
+**Fixture prefix:** `VAL74A-MU2W0QDR-783A3942`
 **Scope:** GRN-line receipt-cost evidence only. No FIFO, WAVG, depletion, valuation report, UI, GL, or value-conservation work is included.
 
 ## Verdict and 74-B gate
 
 | Gate | Verdict | Evidence |
 |---|---|---|
-| H1 — valuation observation writes zero inventory ledger rows | **PASS** | inventory_transactions count 19 before and 19 after the read-only cost + movement observation |
+| H1 — valuation observation writes zero inventory ledger rows | **PASS** | inventory_transactions count 500 before and 500 after the read-only cost + movement observation |
 | H2 — quantity behavior is unchanged | **PASS** | every certified GRN line has signed movement quantity equal to quantity_received; one GRN_RECEIPT row per line |
 | H3 — cost evidence is honest and explicit | **PASS** | manual, PO_DEFAULT, and MISSING examples; zero and partial cost inputs rejected with HTTP 400/400; posted cost unchanged |
 | H4 — scope remains bounded | **PASS** | this batch adds only the GRN-line receipt-cost contract, generated contracts, and executable evidence/reporting; no valuation engine or downstream value behavior |
@@ -38,7 +38,7 @@ The receipt document is the `POST /api/inventory/grns` response. Its `id` is the
  | PO_DEFAULT CAPTURED | HTTP 201 | HTTP 200 | CAPTURED / PO_DEFAULT | 17.25 | INR | 1 | 
  | MISSING | HTTP 201 | HTTP 200 | MISSING / NONE | null | null | 1 | 
 
-PO provenance: `purchase_orders.id=700fcd3c-4633-444d-aec9-e0993a311920`, `purchase_order_lines.id=d980d0e5-0bb2-4611-b5f4-706e7805753a`, PO line `unit_price=17.25`, PO `currency=INR`; the GRN line records `CAPTURED / PO_DEFAULT / 17.25 / INR` rather than relabeling the value as manual.
+PO provenance: `purchase_orders.id=6a0ef08e-2b79-4505-bafa-c56f58f35af1`, `purchase_order_lines.id=b01711fa-1288-49ff-aaeb-88e038ac6a18`, PO line `unit_price=17.25`, PO `currency=INR`; the GRN line records `CAPTURED / PO_DEFAULT / 17.25 / INR` rather than relabeling the value as manual.
 
 ### Endpoint response excerpts
 
@@ -47,13 +47,13 @@ PO provenance: `purchase_orders.id=700fcd3c-4633-444d-aec9-e0993a311920`, `purch
 `POST /api/inventory/grns` → HTTP 201
 ```json
 {
-  "id": "64d1780f-fb7b-4181-b9e0-b98aa72dd3b9",
-  "grn_number": "GRN-20260915-0311",
+  "id": "b7bc7005-45b2-477a-8ded-5ce31ee3b323",
+  "grn_number": "GRN-20260915-0467",
   "status": "draft",
   "lines": [
     {
-      "id": "ebdc8737-f113-4a14-b254-c53c8ca1b9d0",
-      "material_id": "94add8d9-aad4-4012-a09c-cd7db44cf4e7",
+      "id": "147477e8-4468-4eb2-a165-c5087f249023",
+      "material_id": "9f1aa89e-98df-4794-a3c0-45fa8c0a089e",
       "quantity_received": 2.5,
       "receipt_unit_cost": 12.3456,
       "receipt_currency": "INR",
@@ -64,15 +64,15 @@ PO provenance: `purchase_orders.id=700fcd3c-4633-444d-aec9-e0993a311920`, `purch
 }
 ```
 
-`POST /api/inventory/grns/64d1780f-fb7b-4181-b9e0-b98aa72dd3b9/post` → HTTP 200; subsequent `GET /api/inventory/grns/64d1780f-fb7b-4181-b9e0-b98aa72dd3b9` → HTTP 200
+`POST /api/inventory/grns/b7bc7005-45b2-477a-8ded-5ce31ee3b323/post` → HTTP 200; subsequent `GET /api/inventory/grns/b7bc7005-45b2-477a-8ded-5ce31ee3b323` → HTTP 200
 ```json
 {
-  "id": "64d1780f-fb7b-4181-b9e0-b98aa72dd3b9",
+  "id": "b7bc7005-45b2-477a-8ded-5ce31ee3b323",
   "status": "posted",
   "lines": [
     {
-      "id": "ebdc8737-f113-4a14-b254-c53c8ca1b9d0",
-      "lot_id": "3fc9e302-3425-42e1-9c6a-309e4df8546c",
+      "id": "147477e8-4468-4eb2-a165-c5087f249023",
+      "lot_id": "ebab7a95-54c0-40b0-8019-9576a82a9331",
       "quantity_received": 2.5,
       "receipt_unit_cost": 12.3456,
       "receipt_currency": "INR",
@@ -83,22 +83,22 @@ PO provenance: `purchase_orders.id=700fcd3c-4633-444d-aec9-e0993a311920`, `purch
 }
 ```
 
-`GET /api/inventory/grns/64d1780f-fb7b-4181-b9e0-b98aa72dd3b9/transactions` → HTTP 200
+`GET /api/inventory/grns/b7bc7005-45b2-477a-8ded-5ce31ee3b323/transactions` → HTTP 200
 ```json
 {
   "items": [
     {
-      "id": "c83c7abf-f443-4fee-b5a4-a5544c360828",
+      "id": "b3cc6d3b-95a7-435b-adce-7dfce18fa51c",
       "transaction_type": "GRN_RECEIPT",
-      "material_id": "94add8d9-aad4-4012-a09c-cd7db44cf4e7",
+      "material_id": "9f1aa89e-98df-4794-a3c0-45fa8c0a089e",
       "quantity": 2.5,
       "uom": "KG",
       "stock_state": "available",
       "source_document_type": "GRN",
-      "source_document_id": "64d1780f-fb7b-4181-b9e0-b98aa72dd3b9",
-      "source_line_id": "ebdc8737-f113-4a14-b254-c53c8ca1b9d0",
-      "created_by": "daf8728a-f5ce-483b-b2b3-9b27f0d94738",
-      "created_at": "2026-09-15T12:35:59.881Z"
+      "source_document_id": "b7bc7005-45b2-477a-8ded-5ce31ee3b323",
+      "source_line_id": "147477e8-4468-4eb2-a165-c5087f249023",
+      "created_by": "17cf9e14-3be3-4eea-a73a-db6c9eeaf2ce",
+      "created_at": "2026-09-15T16:29:54.906Z"
     }
   ]
 }
@@ -108,13 +108,13 @@ PO provenance: `purchase_orders.id=700fcd3c-4633-444d-aec9-e0993a311920`, `purch
 `POST /api/inventory/grns` → HTTP 201
 ```json
 {
-  "id": "923818e4-213a-4153-9779-1234dcb67215",
-  "grn_number": "GRN-20260915-0312",
+  "id": "f71da3cb-c87b-4c5f-a61f-06f42b5d8ee4",
+  "grn_number": "GRN-20260915-0468",
   "status": "draft",
   "lines": [
     {
-      "id": "ac14bf1e-0431-414c-b321-2570a6fae5bf",
-      "material_id": "94add8d9-aad4-4012-a09c-cd7db44cf4e7",
+      "id": "25100af7-3dcb-47bf-a8be-a62613f30a84",
+      "material_id": "9f1aa89e-98df-4794-a3c0-45fa8c0a089e",
       "quantity_received": 1.25,
       "receipt_unit_cost": 17.25,
       "receipt_currency": "INR",
@@ -125,15 +125,15 @@ PO provenance: `purchase_orders.id=700fcd3c-4633-444d-aec9-e0993a311920`, `purch
 }
 ```
 
-`POST /api/inventory/grns/923818e4-213a-4153-9779-1234dcb67215/post` → HTTP 200; subsequent `GET /api/inventory/grns/923818e4-213a-4153-9779-1234dcb67215` → HTTP 200
+`POST /api/inventory/grns/f71da3cb-c87b-4c5f-a61f-06f42b5d8ee4/post` → HTTP 200; subsequent `GET /api/inventory/grns/f71da3cb-c87b-4c5f-a61f-06f42b5d8ee4` → HTTP 200
 ```json
 {
-  "id": "923818e4-213a-4153-9779-1234dcb67215",
+  "id": "f71da3cb-c87b-4c5f-a61f-06f42b5d8ee4",
   "status": "posted",
   "lines": [
     {
-      "id": "ac14bf1e-0431-414c-b321-2570a6fae5bf",
-      "lot_id": "2b489d2b-a23b-435c-9ab5-98ee656cbacc",
+      "id": "25100af7-3dcb-47bf-a8be-a62613f30a84",
+      "lot_id": "995356e7-ba63-40ee-80a1-a234c4c7a6c1",
       "quantity_received": 1.25,
       "receipt_unit_cost": 17.25,
       "receipt_currency": "INR",
@@ -144,22 +144,22 @@ PO provenance: `purchase_orders.id=700fcd3c-4633-444d-aec9-e0993a311920`, `purch
 }
 ```
 
-`GET /api/inventory/grns/923818e4-213a-4153-9779-1234dcb67215/transactions` → HTTP 200
+`GET /api/inventory/grns/f71da3cb-c87b-4c5f-a61f-06f42b5d8ee4/transactions` → HTTP 200
 ```json
 {
   "items": [
     {
-      "id": "4254c133-74db-4610-a21a-8b1c8cd97eda",
+      "id": "9838334b-f93a-484b-887e-42ef2b920958",
       "transaction_type": "GRN_RECEIPT",
-      "material_id": "94add8d9-aad4-4012-a09c-cd7db44cf4e7",
+      "material_id": "9f1aa89e-98df-4794-a3c0-45fa8c0a089e",
       "quantity": 1.25,
       "uom": "KG",
       "stock_state": "available",
       "source_document_type": "GRN",
-      "source_document_id": "923818e4-213a-4153-9779-1234dcb67215",
-      "source_line_id": "ac14bf1e-0431-414c-b321-2570a6fae5bf",
-      "created_by": "daf8728a-f5ce-483b-b2b3-9b27f0d94738",
-      "created_at": "2026-09-15T12:35:59.946Z"
+      "source_document_id": "f71da3cb-c87b-4c5f-a61f-06f42b5d8ee4",
+      "source_line_id": "25100af7-3dcb-47bf-a8be-a62613f30a84",
+      "created_by": "17cf9e14-3be3-4eea-a73a-db6c9eeaf2ce",
+      "created_at": "2026-09-15T16:29:54.964Z"
     }
   ]
 }
@@ -169,13 +169,13 @@ PO provenance: `purchase_orders.id=700fcd3c-4633-444d-aec9-e0993a311920`, `purch
 `POST /api/inventory/grns` → HTTP 201
 ```json
 {
-  "id": "50603271-1c87-44b9-901d-600cd105314e",
-  "grn_number": "GRN-20260915-0313",
+  "id": "2e9fd81d-b615-47cf-8624-0879fda9a1a6",
+  "grn_number": "GRN-20260915-0469",
   "status": "draft",
   "lines": [
     {
-      "id": "e50d1f72-1243-4959-8144-86e6fb7a1599",
-      "material_id": "94add8d9-aad4-4012-a09c-cd7db44cf4e7",
+      "id": "029524b7-4116-46e1-a3db-aad5f814e4f6",
+      "material_id": "9f1aa89e-98df-4794-a3c0-45fa8c0a089e",
       "quantity_received": 3.75,
       "receipt_unit_cost": null,
       "receipt_currency": null,
@@ -186,15 +186,15 @@ PO provenance: `purchase_orders.id=700fcd3c-4633-444d-aec9-e0993a311920`, `purch
 }
 ```
 
-`POST /api/inventory/grns/50603271-1c87-44b9-901d-600cd105314e/post` → HTTP 200; subsequent `GET /api/inventory/grns/50603271-1c87-44b9-901d-600cd105314e` → HTTP 200
+`POST /api/inventory/grns/2e9fd81d-b615-47cf-8624-0879fda9a1a6/post` → HTTP 200; subsequent `GET /api/inventory/grns/2e9fd81d-b615-47cf-8624-0879fda9a1a6` → HTTP 200
 ```json
 {
-  "id": "50603271-1c87-44b9-901d-600cd105314e",
+  "id": "2e9fd81d-b615-47cf-8624-0879fda9a1a6",
   "status": "posted",
   "lines": [
     {
-      "id": "e50d1f72-1243-4959-8144-86e6fb7a1599",
-      "lot_id": "a8ef6721-d531-41b2-9f13-24cc334ffca3",
+      "id": "029524b7-4116-46e1-a3db-aad5f814e4f6",
+      "lot_id": "01edd0b1-230c-4e6c-bc25-19626738e291",
       "quantity_received": 3.75,
       "receipt_unit_cost": null,
       "receipt_currency": null,
@@ -205,22 +205,22 @@ PO provenance: `purchase_orders.id=700fcd3c-4633-444d-aec9-e0993a311920`, `purch
 }
 ```
 
-`GET /api/inventory/grns/50603271-1c87-44b9-901d-600cd105314e/transactions` → HTTP 200
+`GET /api/inventory/grns/2e9fd81d-b615-47cf-8624-0879fda9a1a6/transactions` → HTTP 200
 ```json
 {
   "items": [
     {
-      "id": "9baa3387-e9eb-4de7-986e-fbf6ae028874",
+      "id": "1d938747-1e82-4085-8c5e-629a3fd67a2a",
       "transaction_type": "GRN_RECEIPT",
-      "material_id": "94add8d9-aad4-4012-a09c-cd7db44cf4e7",
+      "material_id": "9f1aa89e-98df-4794-a3c0-45fa8c0a089e",
       "quantity": 3.75,
       "uom": "KG",
       "stock_state": "available",
       "source_document_type": "GRN",
-      "source_document_id": "50603271-1c87-44b9-901d-600cd105314e",
-      "source_line_id": "e50d1f72-1243-4959-8144-86e6fb7a1599",
-      "created_by": "daf8728a-f5ce-483b-b2b3-9b27f0d94738",
-      "created_at": "2026-09-15T12:36:00.008Z"
+      "source_document_id": "2e9fd81d-b615-47cf-8624-0879fda9a1a6",
+      "source_line_id": "029524b7-4116-46e1-a3db-aad5f814e4f6",
+      "created_by": "17cf9e14-3be3-4eea-a73a-db6c9eeaf2ce",
+      "created_at": "2026-09-15T16:29:55.022Z"
     }
   ]
 }
@@ -235,61 +235,61 @@ The cited columns are:
 ```json
 [
   {
-    "grn_number": "GRN-20260915-0311",
-    "grn_header_id": "64d1780f-fb7b-4181-b9e0-b98aa72dd3b9",
-    "grn_line_id": "ebdc8737-f113-4a14-b254-c53c8ca1b9d0",
+    "grn_number": "GRN-20260915-0467",
+    "grn_header_id": "b7bc7005-45b2-477a-8ded-5ce31ee3b323",
+    "grn_line_id": "147477e8-4468-4eb2-a165-c5087f249023",
     "quantity_received": "2.500",
     "receipt_unit_cost": "12.3456",
     "receipt_currency": "INR",
     "receipt_cost_status": "CAPTURED",
     "receipt_cost_source": "MANUAL",
-    "inventory_lot_id": "3fc9e302-3425-42e1-9c6a-309e4df8546c",
-    "lot_number": "LOT-20260915-0289",
-    "movement_id": "c83c7abf-f443-4fee-b5a4-a5544c360828",
+    "inventory_lot_id": "ebab7a95-54c0-40b0-8019-9576a82a9331",
+    "lot_number": "LOT-20260915-0474",
+    "movement_id": "b3cc6d3b-95a7-435b-adce-7dfce18fa51c",
     "transaction_type": "GRN_RECEIPT",
     "movement_quantity": "2.500",
     "stock_state": "available",
     "source_document_type": "GRN",
-    "source_document_id": "64d1780f-fb7b-4181-b9e0-b98aa72dd3b9",
-    "source_line_id": "ebdc8737-f113-4a14-b254-c53c8ca1b9d0"
+    "source_document_id": "b7bc7005-45b2-477a-8ded-5ce31ee3b323",
+    "source_line_id": "147477e8-4468-4eb2-a165-c5087f249023"
   },
   {
-    "grn_number": "GRN-20260915-0312",
-    "grn_header_id": "923818e4-213a-4153-9779-1234dcb67215",
-    "grn_line_id": "ac14bf1e-0431-414c-b321-2570a6fae5bf",
+    "grn_number": "GRN-20260915-0468",
+    "grn_header_id": "f71da3cb-c87b-4c5f-a61f-06f42b5d8ee4",
+    "grn_line_id": "25100af7-3dcb-47bf-a8be-a62613f30a84",
     "quantity_received": "1.250",
     "receipt_unit_cost": "17.2500",
     "receipt_currency": "INR",
     "receipt_cost_status": "CAPTURED",
     "receipt_cost_source": "PO_DEFAULT",
-    "inventory_lot_id": "2b489d2b-a23b-435c-9ab5-98ee656cbacc",
-    "lot_number": "LOT-20260915-0290",
-    "movement_id": "4254c133-74db-4610-a21a-8b1c8cd97eda",
+    "inventory_lot_id": "995356e7-ba63-40ee-80a1-a234c4c7a6c1",
+    "lot_number": "LOT-20260915-0475",
+    "movement_id": "9838334b-f93a-484b-887e-42ef2b920958",
     "transaction_type": "GRN_RECEIPT",
     "movement_quantity": "1.250",
     "stock_state": "available",
     "source_document_type": "GRN",
-    "source_document_id": "923818e4-213a-4153-9779-1234dcb67215",
-    "source_line_id": "ac14bf1e-0431-414c-b321-2570a6fae5bf"
+    "source_document_id": "f71da3cb-c87b-4c5f-a61f-06f42b5d8ee4",
+    "source_line_id": "25100af7-3dcb-47bf-a8be-a62613f30a84"
   },
   {
-    "grn_number": "GRN-20260915-0313",
-    "grn_header_id": "50603271-1c87-44b9-901d-600cd105314e",
-    "grn_line_id": "e50d1f72-1243-4959-8144-86e6fb7a1599",
+    "grn_number": "GRN-20260915-0469",
+    "grn_header_id": "2e9fd81d-b615-47cf-8624-0879fda9a1a6",
+    "grn_line_id": "029524b7-4116-46e1-a3db-aad5f814e4f6",
     "quantity_received": "3.750",
     "receipt_unit_cost": null,
     "receipt_currency": null,
     "receipt_cost_status": "MISSING",
     "receipt_cost_source": "NONE",
-    "inventory_lot_id": "a8ef6721-d531-41b2-9f13-24cc334ffca3",
-    "lot_number": "LOT-20260915-0291",
-    "movement_id": "9baa3387-e9eb-4de7-986e-fbf6ae028874",
+    "inventory_lot_id": "01edd0b1-230c-4e6c-bc25-19626738e291",
+    "lot_number": "LOT-20260915-0476",
+    "movement_id": "1d938747-1e82-4085-8c5e-629a3fd67a2a",
     "transaction_type": "GRN_RECEIPT",
     "movement_quantity": "3.750",
     "stock_state": "available",
     "source_document_type": "GRN",
-    "source_document_id": "50603271-1c87-44b9-901d-600cd105314e",
-    "source_line_id": "e50d1f72-1243-4959-8144-86e6fb7a1599"
+    "source_document_id": "2e9fd81d-b615-47cf-8624-0879fda9a1a6",
+    "source_line_id": "029524b7-4116-46e1-a3db-aad5f814e4f6"
   }
 ]
 ```
@@ -299,18 +299,18 @@ This proves the receipt document/header, line, internal lot, and movement histor
 ## §5.4 Posted immutability
 
 - Re-posting the first posted GRN returned HTTP 409.
-- A mutation attempt against `PATCH /api/inventory/grns/64d1780f-fb7b-4181-b9e0-b98aa72dd3b9` returned HTTP 404; no PATCH handler exists.
+- A mutation attempt against `PATCH /api/inventory/grns/b7bc7005-45b2-477a-8ded-5ce31ee3b323` returned HTTP 404; no PATCH handler exists.
 - The posted line projection before and after the rejected attempts was unchanged:
 
 Before:
 ```json
 {
-  "id": "64d1780f-fb7b-4181-b9e0-b98aa72dd3b9",
+  "id": "b7bc7005-45b2-477a-8ded-5ce31ee3b323",
   "status": "posted",
   "lines": [
     {
-      "id": "ebdc8737-f113-4a14-b254-c53c8ca1b9d0",
-      "lot_id": "3fc9e302-3425-42e1-9c6a-309e4df8546c",
+      "id": "147477e8-4468-4eb2-a165-c5087f249023",
+      "lot_id": "ebab7a95-54c0-40b0-8019-9576a82a9331",
       "quantity_received": 2.5,
       "receipt_unit_cost": 12.3456,
       "receipt_currency": "INR",
@@ -324,12 +324,12 @@ Before:
 After:
 ```json
 {
-  "id": "64d1780f-fb7b-4181-b9e0-b98aa72dd3b9",
+  "id": "b7bc7005-45b2-477a-8ded-5ce31ee3b323",
   "status": "posted",
   "lines": [
     {
-      "id": "ebdc8737-f113-4a14-b254-c53c8ca1b9d0",
-      "lot_id": "3fc9e302-3425-42e1-9c6a-309e4df8546c",
+      "id": "147477e8-4468-4eb2-a165-c5087f249023",
+      "lot_id": "ebab7a95-54c0-40b0-8019-9576a82a9331",
       "quantity_received": 2.5,
       "receipt_unit_cost": 12.3456,
       "receipt_currency": "INR",
@@ -348,34 +348,34 @@ Denominator: all posted GRN lines in the development database at certification t
 
 | Basis | Gap | Total | Gap percentage |
 |---|---:|---:|---:|
-| Lines | 5 | 9 | 55.56% |
-| Received quantity | 74.5 | 82 | 90.85% |
-| Lot quantity (`inventory_lots.total_received_qty`, falling back to line quantity when no lot exists) | 74.5 | 82 | 90.85% |
+| Lines | 102 | 128 | 79.69% |
+| Received quantity | 2109.5 | 2327 | 90.65% |
+| Lot quantity (`inventory_lots.total_received_qty`, falling back to line quantity when no lot exists) | 2109.5 | 2327 | 90.65% |
 
 The three bases are reported separately so a small number of high-quantity or high-lot receipts cannot be hidden by line-count coverage.
 
 ## §5.6 H1 zero-write proof and unchanged quantity invariant
 
-The valuation observation selected only GRN-line receipt-cost fields and the signed movement sum, then reread the three GRN detail and transaction endpoints. The `inventory_transactions` row count stayed at **19 → 19**.
+The valuation observation selected only GRN-line receipt-cost fields and the signed movement sum, then reread the three GRN detail and transaction endpoints. The `inventory_transactions` row count stayed at **500 → 500**.
 
 ```json
 [
   {
-    "grn_line_id": "ac14bf1e-0431-414c-b321-2570a6fae5bf",
-    "quantity_received": "1.250",
-    "signed_movement_quantity": "1.250",
-    "movement_count": 1
-  },
-  {
-    "grn_line_id": "e50d1f72-1243-4959-8144-86e6fb7a1599",
+    "grn_line_id": "029524b7-4116-46e1-a3db-aad5f814e4f6",
     "quantity_received": "3.750",
     "signed_movement_quantity": "3.750",
     "movement_count": 1
   },
   {
-    "grn_line_id": "ebdc8737-f113-4a14-b254-c53c8ca1b9d0",
+    "grn_line_id": "147477e8-4468-4eb2-a165-c5087f249023",
     "quantity_received": "2.500",
     "signed_movement_quantity": "2.500",
+    "movement_count": 1
+  },
+  {
+    "grn_line_id": "25100af7-3dcb-47bf-a8be-a62613f30a84",
+    "quantity_received": "1.250",
+    "signed_movement_quantity": "1.250",
     "movement_count": 1
   }
 ]

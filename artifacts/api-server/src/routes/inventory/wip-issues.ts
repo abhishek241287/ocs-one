@@ -15,6 +15,7 @@ import {
 import { ReverseWipIssueBody } from "@workspace/api-zod";
 import { requireWriteRole } from "../../middleware/auth";
 import { recordSecurityEvent, reqMeta } from "../../lib/security-events";
+import { restoreValuationForMovement } from "../../lib/valuation-engine";
 
 const router: IRouter = Router();
 const REVERSAL_SOURCE_DOCUMENT_TYPE = "ISSUE_REVERSAL";
@@ -189,6 +190,18 @@ router.post("/:id/reverse", async (req: Request, res: Response): Promise<void> =
       if (!originalWipLedger) {
         return { status: "ledger_unavailable" as const };
       }
+      const [originalIssueMovement] = await tx
+        .select({ id: inventoryTransactionsTable.id })
+        .from(inventoryTransactionsTable)
+        .where(
+          and(
+            eq(inventoryTransactionsTable.sourceDocumentId, note.id),
+            eq(inventoryTransactionsTable.sourceLineId, sourceLineId),
+            eq(inventoryTransactionsTable.stockState, "available"),
+            eq(inventoryTransactionsTable.transactionType, "PRODUCTION_ISSUE"),
+          ),
+        )
+        .limit(1);
 
       const ledgerBase = {
         materialId: reservation.materialId,
@@ -207,7 +220,9 @@ router.post("/:id/reverse", async (req: Request, res: Response): Promise<void> =
         createdBy: actorId,
       } as const;
 
-      await tx.insert(inventoryTransactionsTable).values([
+      const reversalMovements = await tx
+        .insert(inventoryTransactionsTable)
+        .values([
         {
           ...ledgerBase,
           quantity: String(-quantity),
@@ -220,7 +235,24 @@ router.post("/:id/reverse", async (req: Request, res: Response): Promise<void> =
           stockState: "available",
           transactionType: "PRODUCTION_ISSUE_REVERSAL",
         },
-      ]);
+        ])
+        .returning({
+          id: inventoryTransactionsTable.id,
+          stockState: inventoryTransactionsTable.stockState,
+        });
+      const availableReversal = reversalMovements.find((movement) => movement.stockState === "available");
+      if (originalIssueMovement && availableReversal) {
+        await restoreValuationForMovement(tx, {
+          movementId: availableReversal.id,
+          reversedMovementId: availableReversal.id,
+          originalMovementId: originalIssueMovement.id,
+          materialId: reservation.materialId,
+          sourceDocumentType: REVERSAL_SOURCE_DOCUMENT_TYPE,
+          sourceDocumentId: note.id,
+          sourceLineId,
+          quantity: String(quantity),
+        });
+      }
 
       // The row is no longer an issued WIP balance. Zero issued_qty keeps the
       // live remaining_qty formula valid while the immutable ledger preserves

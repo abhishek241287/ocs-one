@@ -214,6 +214,7 @@ async function cleanup(): Promise<void> {
   try {
     if (requestIds.length) {
       await pool.query("DELETE FROM outbox_events WHERE aggregate_id = ANY($1::uuid[])", [requestIds]);
+      await pool.query("DELETE FROM transfer_lines WHERE transfer_request_id = ANY($1::uuid[])", [requestIds]);
       await pool.query("DELETE FROM transfer_requests WHERE id = ANY($1::uuid[])", [requestIds]);
     }
     if (reservationIds.length) {
@@ -228,7 +229,23 @@ async function cleanup(): Promise<void> {
       await pool.query("DELETE FROM mfg_production_orders WHERE id = ANY($1::uuid[])", [productionOrderIds]);
     }
     if (materialIds.length) {
+      await pool.query(
+        `DELETE FROM valuation_depletions
+          WHERE material_id = ANY($1::uuid[])
+             OR valuation_layer_id IN (
+            SELECT id FROM valuation_layers WHERE material_id = ANY($1::uuid[])
+          )`,
+        [materialIds],
+      );
+      await pool.query("DELETE FROM valuation_layers WHERE material_id = ANY($1::uuid[])", [materialIds]);
       await pool.query("DELETE FROM inventory_transactions WHERE material_id = ANY($1::uuid[])", [materialIds]);
+      await pool.query(
+        `DELETE FROM inventory_reservation_allocations
+          WHERE lot_id IN (
+            SELECT id FROM inventory_lots WHERE material_id = ANY($1::uuid[])
+          )`,
+        [materialIds],
+      );
       await pool.query("DELETE FROM inventory_lots WHERE id = ANY($1::uuid[])", [lotIds]);
       await pool.query("DELETE FROM grn_line_items WHERE id = ANY($1::uuid[])", [lineIds]);
       await pool.query("DELETE FROM grn_headers WHERE id = ANY($1::uuid[])", [grnIds]);
@@ -250,10 +267,53 @@ async function cleanup(): Promise<void> {
         .map((row) => row.category_id)
         .filter((id): id is string => Boolean(id));
       await pool.query(
+        `DELETE FROM valuation_depletions
+          WHERE material_id = ANY($1::uuid[])
+             OR valuation_layer_id IN (
+            SELECT id FROM valuation_layers WHERE material_id = ANY($1::uuid[])
+          )`,
+        [namespaceMaterialIds],
+      );
+      await pool.query("DELETE FROM valuation_layers WHERE material_id = ANY($1::uuid[])", [namespaceMaterialIds]);
+      await pool.query(
         "DELETE FROM inventory_transactions WHERE material_id = ANY($1::uuid[])",
         [namespaceMaterialIds],
       );
+      await pool.query(
+        `DELETE FROM transfer_lines
+          WHERE lot_id IN (
+            SELECT id FROM inventory_lots WHERE material_id = ANY($1::uuid[])
+          )`,
+        [namespaceMaterialIds],
+      );
+      await pool.query(
+        `DELETE FROM inventory_reservation_allocations
+          WHERE lot_id IN (
+            SELECT id FROM inventory_lots WHERE material_id = ANY($1::uuid[])
+          )`,
+        [namespaceMaterialIds],
+      );
       await pool.query("DELETE FROM inventory_lots WHERE material_id = ANY($1::uuid[])", [namespaceMaterialIds]);
+      await pool.query(
+        "DELETE FROM grn_line_items WHERE material_id = ANY($1::uuid[])",
+        [namespaceMaterialIds],
+      );
+      await pool.query(
+        "DELETE FROM transfer_lines WHERE material_id = ANY($1::uuid[])",
+        [namespaceMaterialIds],
+      );
+      await pool.query(
+        `DELETE FROM inventory_reservation_allocations
+          WHERE reservation_id IN (
+            SELECT id FROM inventory_reservations
+             WHERE material_id = ANY($1::uuid[])
+          )`,
+        [namespaceMaterialIds],
+      );
+      await pool.query(
+        "DELETE FROM inventory_reservations WHERE material_id = ANY($1::uuid[])",
+        [namespaceMaterialIds],
+      );
       await pool.query("DELETE FROM master_materials WHERE id = ANY($1::uuid[])", [namespaceMaterialIds]);
       if (namespaceCategoryIds.length) {
         await pool.query(
@@ -308,18 +368,22 @@ async function main(): Promise<void> {
     // receipt is represented by a warehouse-level signed ledger row.
     await pool.query("DELETE FROM inventory_transactions WHERE material_id = $1", [unlotFlow.materialId]);
     await pool.query("DELETE FROM inventory_lots WHERE id = $1", [unlotFlow.lotId]);
-    await pool.query("DELETE FROM grn_line_items WHERE id = $1", [unlotFlow.lineId]);
-    await pool.query("DELETE FROM grn_headers WHERE id = $1", [grnIds[grnIds.length - 1]]);
     lotIds.pop();
-    lineIds.pop();
-    grnIds.pop();
-    await pool.query(
+    const replacementReceipt = await pool.query<{ id: string }>(
       `INSERT INTO inventory_transactions
          (transaction_type, material_id, quantity, uom, stock_state,
           source_document_type, source_document_id, source_line_id,
           warehouse_id, location_id, created_by)
-       VALUES ('GRN_RECEIPT', $1, 20, 'PCS', 'available', '70J_SEED', $2, NULL, $3, $4, $5)`,
+       VALUES ('GRN_RECEIPT', $1, 20, 'PCS', 'available', '70J_SEED', $2, NULL, $3, $4, $5)
+       RETURNING id`,
       [unlotFlow.materialId, randomUUID(), source.warehouseId, source.locationId, userIds[1]],
+    );
+    await pool.query(
+      `INSERT INTO valuation_layers
+        (id, grn_line_id, material_id, receipt_quantity, remaining_quantity, uom,
+         receipt_unit_cost, receipt_currency, receipt_cost_status, policy, receipt_movement_id)
+       VALUES ($1, $2, $3, 20, 20, 'PCS', NULL, NULL, 'MISSING', 'FIFO', $4)`,
+      [randomUUID(), unlotFlow.lineId, unlotFlow.materialId, replacementReceipt.rows[0].id],
     );
 
     const flow = await createRequest(

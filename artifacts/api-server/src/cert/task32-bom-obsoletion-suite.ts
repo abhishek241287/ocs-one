@@ -13,7 +13,10 @@ import { resolve } from "node:path";
 import { pool } from "@workspace/db";
 import { FAT_IDS, actorEmail } from "./fat-fixture-manifest";
 
-const BASE = process.env.CERT_TARGET ?? "http://localhost:8080";
+const BASE =
+  process.env.CERT_BASE_URL ??
+  process.env.CERT_TARGET ??
+  "http://localhost:8080";
 const PASSWORD = process.env.FAT_TEST_PASSWORD;
 const OUTPUT = resolve(
   process.env.FAT_EVIDENCE_DIR ?? "../../certification/fat-evidence",
@@ -36,6 +39,7 @@ const runAt = new Date().toISOString();
 const runKey = runAt.replace(/\D/g, "").slice(0, 14);
 const prefix = `FAT-E2E-MAS-N04-${runKey}`;
 const evidence: HttpEvidence[] = [];
+const sleep = (ms: number) => new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 
 function redact(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redact);
@@ -51,15 +55,26 @@ function redact(value: unknown): unknown {
 }
 
 async function login(): Promise<string> {
-  const response = await fetch(`${BASE}/api/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: actorEmail("director"), password: PASSWORD }),
-  });
-  if (!response.ok) throw new Error(`Director login failed: HTTP ${response.status}`);
-  const cookie = response.headers.get("set-cookie")?.split(";")[0];
-  if (!cookie) throw new Error("Director login did not return a session cookie");
-  return cookie;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const response = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: actorEmail("director"), password: PASSWORD }),
+    });
+    if (response.status === 429 && attempt < 3) {
+      const reset = Number(response.headers.get("ratelimit-reset") ?? response.headers.get("retry-after"));
+      const waitMs = Math.min(Number.isFinite(reset) && reset > 0 ? reset * 1000 + 500 : 2_000, 65_000);
+      await response.text().catch(() => undefined);
+      console.log(`Rate limited during Task 32 login; waiting ${Math.round(waitMs / 1000)}s before retry`);
+      await sleep(waitMs);
+      continue;
+    }
+    if (!response.ok) throw new Error(`Director login failed: HTTP ${response.status}`);
+    const cookie = response.headers.get("set-cookie")?.split(";")[0];
+    if (!cookie) throw new Error("Director login did not return a session cookie");
+    return cookie;
+  }
+  throw new Error("Director login remained rate limited after retries");
 }
 
 async function api(

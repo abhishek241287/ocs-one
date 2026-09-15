@@ -267,6 +267,15 @@ async function cleanup(): Promise<void> {
       await pool.query("DELETE FROM inventory_reservations WHERE id = ANY($1::uuid[])", [reservationIds]);
     }
     if (materialIds.length) {
+      await pool.query(
+        `DELETE FROM valuation_depletions
+          WHERE material_id = ANY($1::uuid[])
+             OR valuation_layer_id IN (
+            SELECT id FROM valuation_layers WHERE material_id = ANY($1::uuid[])
+          )`,
+        [materialIds],
+      );
+      await pool.query("DELETE FROM valuation_layers WHERE material_id = ANY($1::uuid[])", [materialIds]);
       await pool.query("DELETE FROM inventory_transactions WHERE material_id = ANY($1::uuid[])", [materialIds]);
       await pool.query("DELETE FROM inventory_lots WHERE id = ANY($1::uuid[])", [lotIds]);
       await pool.query("DELETE FROM grn_line_items WHERE id = ANY($1::uuid[])", [lineIds]);
@@ -592,10 +601,11 @@ async function main(): Promise<void> {
       `SELECT count(*) FROM (
         SELECT material_id, warehouse_id, sum(quantity) AS balance
           FROM inventory_transactions
-         WHERE stock_state = 'available'
+         WHERE material_id = ANY($1::uuid[]) AND stock_state = 'available'
          GROUP BY material_id, warehouse_id
         HAVING sum(quantity) < 0
       ) x`,
+      [materialIds],
     );
     check(
       "70I-11",

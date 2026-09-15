@@ -232,9 +232,27 @@ async function cleanupCellFixture(fixture: CellFixture): Promise<void> {
       await pool.query("DELETE FROM cells WHERE lot_id = $1", [lot.id]);
       await pool.query("DELETE FROM cell_lots WHERE id = $1", [lot.id]);
     }
+    await pool.query(
+      `DELETE FROM valuation_depletions
+        WHERE movement_id IN (
+          SELECT id FROM inventory_transactions WHERE source_document_id = $1
+        )`,
+      [transfer.id],
+    );
     await pool.query("DELETE FROM inventory_transactions WHERE source_document_id = $1", [transfer.id]);
     await pool.query("DELETE FROM material_transfers WHERE id = $1", [transfer.id]);
   }
+  await pool.query(
+    `DELETE FROM valuation_depletions
+      WHERE movement_id IN (
+        SELECT id FROM inventory_transactions WHERE source_line_id = $1
+      )
+         OR valuation_layer_id IN (
+        SELECT id FROM valuation_layers WHERE grn_line_id = $1
+      )`,
+    [fixture.lineId],
+  );
+  await pool.query("DELETE FROM valuation_layers WHERE grn_line_id = $1", [fixture.lineId]);
   await pool.query("DELETE FROM inventory_transactions WHERE source_line_id = $1", [fixture.lineId]);
   await pool.query("DELETE FROM inventory_lots WHERE id = $1", [fixture.lotId]);
   await pool.query("DELETE FROM grn_line_items WHERE id = $1", [fixture.lineId]);
@@ -258,6 +276,19 @@ async function cleanup(orderId: string, grnId: string | null, lineId: string | n
   const reservationIds = reservations.map((row) => row.id);
   const batchIds = batches.map((row) => row.id);
   if (issueIds.length) {
+    await pool.query(
+      `DELETE FROM valuation_depletions
+        WHERE material_id IN (
+          SELECT material_id FROM wip_issue_lines
+           WHERE wip_issue_note_id = ANY($1::uuid[])
+        )
+           OR movement_id IN (
+          SELECT id FROM inventory_transactions
+           WHERE source_document_type = 'wip_issue_note'
+             AND source_document_id = ANY($1::uuid[])
+        )`,
+      [issueIds],
+    );
     await pool.query("DELETE FROM inventory_transactions WHERE source_document_type = 'wip_issue_note' AND source_document_id = ANY($1::uuid[])", [issueIds]);
     await pool.query("DELETE FROM wip_inventory WHERE wip_issue_note_id = ANY($1::uuid[])", [issueIds]);
     await pool.query("DELETE FROM bulk_batch_lines WHERE wip_issue_note_id = ANY($1::uuid[])", [issueIds]);
@@ -276,6 +307,20 @@ async function cleanup(orderId: string, grnId: string | null, lineId: string | n
     await pool.query("DELETE FROM bulk_batches WHERE id = ANY($1::uuid[])", [batchIds]);
   }
   if (grnId) {
+    await pool.query(
+      `DELETE FROM valuation_depletions
+        WHERE material_id = (SELECT material_id FROM grn_line_items WHERE id = $1)
+           OR movement_id IN (
+          SELECT id FROM inventory_transactions WHERE source_document_id = $2
+        )`,
+      [lineId, grnId],
+    );
+    await pool.query(
+      `DELETE FROM valuation_layers
+        WHERE grn_line_id = $1
+           OR material_id = (SELECT material_id FROM grn_line_items WHERE id = $1)`,
+      [lineId],
+    );
     await pool.query("DELETE FROM inventory_transactions WHERE source_document_id = $1", [grnId]);
     await pool.query("DELETE FROM inventory_lots WHERE id = $1", [lotId]);
     await pool.query("DELETE FROM grn_line_items WHERE id = $1", [lineId]);
@@ -479,6 +524,18 @@ async function main(): Promise<void> {
     await pool.query("DELETE FROM material_issue_notes WHERE min_number = $1", [`${prefix}-MIN`]);
     await pool.query("DELETE FROM bom_lines WHERE bom_id = $1", [bomId]);
     await pool.query("DELETE FROM bom_headers WHERE id = $1", [bomId]);
+    await pool.query(
+      `DELETE FROM valuation_depletions
+        WHERE material_id = $1
+           OR movement_id IN (
+          SELECT id FROM inventory_transactions WHERE material_id = $1
+        )`,
+      [materialId],
+    );
+    await pool.query("DELETE FROM valuation_layers WHERE material_id = $1", [materialId]);
+    await pool.query("DELETE FROM inventory_transactions WHERE material_id = $1", [materialId]);
+    await pool.query("DELETE FROM inventory_lots WHERE material_id = $1", [materialId]);
+    await pool.query("DELETE FROM grn_line_items WHERE material_id = $1", [materialId]);
     await pool.query("DELETE FROM master_materials WHERE id = $1", [materialId]);
     await pool.query("DELETE FROM master_material_categories WHERE id = $1", [categoryId]);
     await pool.end();

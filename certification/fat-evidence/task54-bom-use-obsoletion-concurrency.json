@@ -2,9 +2,9 @@
   "metadata": {
     "case_id": "TASK-54",
     "assertion": "BOM use and obsoletion serialize on the BOM lifecycle lock",
-    "generated_at": "2026-09-14T12:39:12.571Z",
+    "generated_at": "2026-09-15T16:24:44.925Z",
     "tested_revision": "uncommitted-working-tree",
-    "target": "http://localhost:80",
+    "target": "http://127.0.0.1:8628",
     "result": "PASS",
     "failure": null
   },
@@ -101,7 +101,7 @@
     "prevented": true
   },
   "cleanup": {
-    "temporary_stock_setup_id": "c25c208b-d8f1-491c-9c9d-649be5eac199",
+    "temporary_stock_setup_id": "eb340d38-1f2e-46aa-8467-c6186dcc05b5",
     "result": "PASS"
   }
 }

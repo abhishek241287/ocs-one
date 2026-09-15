@@ -452,6 +452,27 @@ async function main(): Promise<void> {
       await client.query(`DELETE FROM cells WHERE lot_id = $1`, [cellLotId]);
       await client.query(`DELETE FROM cell_lots WHERE id = $1`, [cellLotId]);
     }
+    // Phase 10 adds an append-only value twin that cites every signed movement.
+    // Remove those children before deleting the quantity-ledger rows.
+    await client.query(
+      `DELETE FROM valuation_depletions
+        WHERE valuation_layer_id IN (
+          SELECT id FROM valuation_layers WHERE grn_line_id = $1
+        )
+           OR movement_id IN (
+          SELECT id FROM inventory_transactions
+           WHERE source_document_id = $2 OR source_line_id = $1
+        )`,
+      [fixture.grnLineId, transferId ?? fixture.grnId],
+    );
+    await client.query(
+      `DELETE FROM valuation_layers
+        WHERE grn_line_id = $1
+           OR receipt_movement_id IN (
+          SELECT id FROM inventory_transactions WHERE source_line_id = $1
+        )`,
+      [fixture.grnLineId],
+    );
     if (transferId) {
       await client.query(`DELETE FROM inventory_transactions WHERE source_document_id = $1`, [transferId]);
       await client.query(`DELETE FROM material_transfers WHERE id = $1`, [transferId]);

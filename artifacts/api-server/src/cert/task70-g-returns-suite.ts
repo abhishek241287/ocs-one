@@ -271,6 +271,15 @@ async function cleanup(): Promise<void> {
       );
     }
     if (materialIds.length) {
+      await pool.query(
+        `DELETE FROM valuation_depletions
+          WHERE material_id = ANY($1::uuid[])
+             OR valuation_layer_id IN (
+            SELECT id FROM valuation_layers WHERE material_id = ANY($1::uuid[])
+          )`,
+        [materialIds],
+      );
+      await pool.query("DELETE FROM valuation_layers WHERE material_id = ANY($1::uuid[])", [materialIds]);
       await pool.query("DELETE FROM inventory_transactions WHERE material_id = ANY($1::uuid[])", [materialIds]);
       await pool.query("DELETE FROM inventory_lots WHERE id = ANY($1::uuid[])", [lotIds]);
       await pool.query("DELETE FROM grn_line_items WHERE id = ANY($1::uuid[])", [lineIds]);

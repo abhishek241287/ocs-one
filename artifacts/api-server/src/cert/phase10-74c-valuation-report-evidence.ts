@@ -280,7 +280,7 @@ async function main(): Promise<void> {
 
     const from = new Date(now.getTime() - 86400000).toISOString();
     const to = new Date(now.getTime() + 86400000).toISOString();
-    const query = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&limit=100`;
+    const query = `?material_id=${encodeURIComponent(capturedMaterialId)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&limit=100`;
     const beforeInventory = await scalar(
       "SELECT count(*) FROM inventory_transactions WHERE material_id = ANY($1::uuid[])",
       [[capturedMaterialId, unknownMaterialId]],
@@ -292,7 +292,7 @@ async function main(): Promise<void> {
 
     const invalidUuid = await api(
       cookies,
-      "viewer",
+      "supervisor",
       "GET",
       "/api/reports/valuation/value-on-hand?material_id=not-a-uuid",
     );
@@ -303,7 +303,7 @@ async function main(): Promise<void> {
     );
     const invalidState = await api(
       cookies,
-      "viewer",
+      "supervisor",
       "GET",
       "/api/reports/valuation/value-on-hand?stock_state=not-a-state",
     );
@@ -314,7 +314,7 @@ async function main(): Promise<void> {
     );
     const invalidRange = await api(
       cookies,
-      "viewer",
+      "supervisor",
       "GET",
       "/api/reports/valuation/movements-at-cost?from=2026-09-16&to=2026-09-15",
     );
@@ -326,11 +326,11 @@ async function main(): Promise<void> {
 
     const onHand = await api(
       cookies,
-      "viewer",
+      "supervisor",
       "GET",
       `/api/reports/valuation/value-on-hand?warehouse_id=${warehouseId}`,
     );
-    check("viewer can read value-on-hand", onHand.status === 200, onHand.body);
+    check("supervisor can read value-on-hand", onHand.status === 200, onHand.body);
     check(
       "unknown quantity stays separate",
       onHand.body?.summary?.unknown_quantity === 4 &&
@@ -356,8 +356,8 @@ async function main(): Promise<void> {
       capturedRow,
     );
 
-    const movements = await api(cookies, "viewer", "GET", `/api/reports/valuation/movements-at-cost${query}`);
-    check("viewer can read movements-at-cost", movements.status === 200, movements.body);
+    const movements = await api(cookies, "supervisor", "GET", `/api/reports/valuation/movements-at-cost${query}`);
+    check("supervisor can read movements-at-cost", movements.status === 200, movements.body);
     check(
       "movements include receipt and depletion events",
       movements.body?.rows?.some((row: any) => row.event_type === "RECEIPT") &&
@@ -366,7 +366,7 @@ async function main(): Promise<void> {
     );
     const repeatedMovements = await api(
       cookies,
-      "viewer",
+      "supervisor",
       "GET",
       `/api/reports/valuation/movements-at-cost${query}`,
     );
@@ -377,11 +377,11 @@ async function main(): Promise<void> {
 
     const trace = await api(
       cookies,
-      "viewer",
+      "supervisor",
       "GET",
       `/api/reports/valuation/layer-trace?movement_id=${depletionMovementId}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
     );
-    check("viewer can read layer-trace", trace.status === 200, trace.body);
+    check("supervisor can read layer-trace", trace.status === 200, trace.body);
     check(
       "layer trace preserves both citations",
       trace.body?.rows?.[0]?.movement_id === depletionMovementId &&

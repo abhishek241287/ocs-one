@@ -466,6 +466,19 @@ async function main(): Promise<void> {
         [fixture.directorId],
       );
       await client.query(`DELETE FROM security_events WHERE actor_id = $1`, [fixture.directorId]);
+      await client.query(
+        `DELETE FROM valuation_depletions
+          WHERE material_id IN ($1, $2)
+             OR valuation_layer_id IN (
+            SELECT id FROM valuation_layers WHERE material_id IN ($1, $2)
+          )`,
+        [fixture.materialId, fixture.noTemplateMaterialId],
+      );
+      await client.query(
+        `DELETE FROM valuation_layers
+          WHERE material_id IN ($1, $2)`,
+        [fixture.materialId, fixture.noTemplateMaterialId],
+      );
       await client.query(`DELETE FROM inventory_transactions WHERE created_by = $1`, [fixture.directorId]);
       await client.query(
         `DELETE FROM inventory_lots

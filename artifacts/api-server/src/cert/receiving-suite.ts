@@ -386,6 +386,45 @@ async function main(): Promise<void> {
     await client.query("BEGIN");
     const ids = [fixture.supervisorId, fixture.directorId];
     await client.query(`DELETE FROM security_events WHERE actor_id = ANY($1::uuid[])`, [ids]);
+    // Valuation is an append-only child of the signed receipt movement. Remove
+    // depletion rows and receipt layers before deleting the quantity ledger.
+    await client.query(
+      `DELETE FROM valuation_depletions
+        WHERE valuation_layer_id IN (
+          SELECT id FROM valuation_layers
+           WHERE grn_line_id IN (
+             SELECT id FROM grn_line_items
+              WHERE grn_id IN (SELECT id FROM grn_headers WHERE supplier_id = $1)
+           )
+        )
+           OR movement_id IN (
+          SELECT id FROM inventory_transactions
+           WHERE source_document_id IN (
+             SELECT id FROM grn_headers WHERE supplier_id = $1
+             UNION
+             SELECT id FROM incoming_inspections
+              WHERE grn_id IN (SELECT id FROM grn_headers WHERE supplier_id = $1)
+           )
+        )`,
+      [fixture.supplierId],
+    );
+    await client.query(
+      `DELETE FROM valuation_layers
+        WHERE grn_line_id IN (
+          SELECT id FROM grn_line_items
+           WHERE grn_id IN (SELECT id FROM grn_headers WHERE supplier_id = $1)
+        )
+           OR receipt_movement_id IN (
+          SELECT id FROM inventory_transactions
+           WHERE source_document_id IN (
+             SELECT id FROM grn_headers WHERE supplier_id = $1
+             UNION
+             SELECT id FROM incoming_inspections
+              WHERE grn_id IN (SELECT id FROM grn_headers WHERE supplier_id = $1)
+           )
+        )`,
+      [fixture.supplierId],
+    );
     await client.query(
       `DELETE FROM inventory_transactions
        WHERE source_document_id IN (
