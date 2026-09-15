@@ -193,6 +193,8 @@ export * from './grnLineCaptureProjectionFieldsItemValueOrigin';
 export * from './grnLineCaptureValues';
 export * from './grnLineItem';
 export * from './grnLineItemInput';
+export * from './grnLineItemReceiptCostSource';
+export * from './grnReceiptCostStatus';
 export * from './grnStatus';
 export * from './healthStatus';
 export * from './idempotencyKeyHeaderParameter';

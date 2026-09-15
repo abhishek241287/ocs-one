@@ -7,6 +7,8 @@
  */
 import type { GrnInspectionStatus } from './grnInspectionStatus';
 import type { GrnLineCaptureProjection } from './grnLineCaptureProjection';
+import type { GrnLineItemReceiptCostSource } from './grnLineItemReceiptCostSource';
+import type { GrnReceiptCostStatus } from './grnReceiptCostStatus';
 import type { InventoryUom } from './inventoryUom';
 import type { LinkedMasterSummary } from './linkedMasterSummary';
 
@@ -33,6 +35,19 @@ export interface GrnLineItem {
   accepted_qty: number;
   rejected_qty: number;
   put_away_qty: number;
+  /**
+     * @minimum 0
+     * @exclusiveMinimum
+     * @nullable
+     */
+  receipt_unit_cost?: number | null;
+  /**
+     * @nullable
+     * @pattern ^[A-Z]{3}$
+     */
+  receipt_currency?: string | null;
+  receipt_cost_status: GrnReceiptCostStatus;
+  receipt_cost_source: GrnLineItemReceiptCostSource;
   inspection_status?: GrnInspectionStatus | null;
   /** @nullable */
   remarks?: string | null;

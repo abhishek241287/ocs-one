@@ -95,6 +95,10 @@ function serializeLine(
     accepted_qty: numify(l.acceptedQty),
     rejected_qty: numify(l.rejectedQty),
     put_away_qty: numify(l.putAwayQty),
+    receipt_unit_cost: numify(l.receiptUnitCost),
+    receipt_currency: l.receiptCurrency ?? null,
+    receipt_cost_status: l.receiptCostStatus,
+    receipt_cost_source: l.receiptCostSource,
     inspection_status: l.inspectionStatus ?? null,
     remarks: l.remarks,
     created_at: l.createdAt,
@@ -223,6 +227,15 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     return;
   }
   const body = parsed.data;
+  const inputLines = body.lines as Array<{
+    material_id: string;
+    purchase_order_line_id?: string | null;
+    quantity_received: number;
+    supplier_lot_number?: string | null;
+    remarks?: string | null;
+    receipt_unit_cost?: number | null;
+    receipt_currency?: string | null;
+  }>;
   const rawAttributeValues = (req.body as Record<string, unknown> | null)?.attribute_values;
   const captureValuesParsed =
     rawAttributeValues === undefined
@@ -281,7 +294,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ error: "GRN supplier must match the purchase-order supplier" });
       return;
     }
-    if (body.lines.some((line) => !line.purchase_order_line_id)) {
+    if (inputLines.some((line) => !line.purchase_order_line_id)) {
       res.status(400).json({ error: "Every line on a PO-linked GRN requires purchase_order_line_id" });
       return;
     }
@@ -294,7 +307,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       .from(purchaseOrderLinesTable)
       .where(eq(purchaseOrderLinesTable.purchaseOrderId, po.id));
     const linkedById = new Map(linkedLines.map((line) => [line.id, line]));
-    const mismatch = body.lines.find((line) => {
+    const mismatch = inputLines.find((line) => {
       const linked = linkedById.get(line.purchase_order_line_id!);
       return !linked || linked.materialId !== line.material_id;
     });
@@ -304,10 +317,87 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
-  } else if (body.lines.some((line) => line.purchase_order_line_id)) {
+  } else if (inputLines.some((line) => line.purchase_order_line_id)) {
     res.status(400).json({
       error: "purchase_order_line_id requires a purchase_order_id on the GRN",
     });
+    return;
+  }
+
+  const poPricing = new Map<
+    string,
+    { unitPrice: string | null; currency: string }
+  >();
+  if (body.purchase_order_id) {
+    const poLines = await db
+      .select({
+        id: purchaseOrderLinesTable.id,
+        unitPrice: purchaseOrderLinesTable.unitPrice,
+      })
+      .from(purchaseOrderLinesTable)
+      .where(eq(purchaseOrderLinesTable.purchaseOrderId, body.purchase_order_id));
+    const [po] = await db
+      .select({ currency: purchaseOrdersTable.currency })
+      .from(purchaseOrdersTable)
+      .where(eq(purchaseOrdersTable.id, body.purchase_order_id))
+      .limit(1);
+    for (const line of poLines) {
+      poPricing.set(line.id, {
+        unitPrice: line.unitPrice == null ? null : String(line.unitPrice),
+        currency: po?.currency ?? "INR",
+      });
+    }
+  }
+
+  const receiptCostByIndex = inputLines.map((line, index) => {
+    const suppliedCost = line.receipt_unit_cost;
+    const suppliedCurrency = line.receipt_currency;
+    if (suppliedCost != null && (!Number.isFinite(suppliedCost) || suppliedCost <= 0)) {
+      return { error: `lines[${index}].receipt_unit_cost must be greater than zero` } as const;
+    }
+    if (suppliedCost != null && suppliedCurrency == null) {
+      return { error: `lines[${index}].receipt_currency is required with receipt_unit_cost` } as const;
+    }
+    if (suppliedCost == null && suppliedCurrency != null) {
+      return { error: `lines[${index}].receipt_currency requires receipt_unit_cost` } as const;
+    }
+    if (suppliedCurrency != null && !/^[A-Z]{3}$/.test(suppliedCurrency)) {
+      return { error: `lines[${index}].receipt_currency must be a three-letter uppercase currency code` } as const;
+    }
+    if (suppliedCost != null) {
+      if (Math.round(suppliedCost * 10000) !== suppliedCost * 10000) {
+        return { error: `lines[${index}].receipt_unit_cost supports at most four decimal places` } as const;
+      }
+      return {
+        unitCost: suppliedCost,
+        currency: suppliedCurrency!,
+        status: "CAPTURED" as const,
+        source: "MANUAL" as const,
+      };
+    }
+    const poPrice = line.purchase_order_line_id
+      ? poPricing.get(line.purchase_order_line_id)
+      : undefined;
+    if (poPrice?.unitPrice != null && Number(poPrice.unitPrice) > 0) {
+      return {
+        unitCost: Number(poPrice.unitPrice),
+        currency: poPrice.currency,
+        status: "CAPTURED" as const,
+        source: "PO_DEFAULT" as const,
+      };
+    }
+    return {
+      unitCost: null,
+      currency: null,
+      status: "MISSING" as const,
+      source: "NONE" as const,
+    };
+  });
+  const invalidReceiptCost = receiptCostByIndex.find(
+    (cost): cost is { error: string } => "error" in cost,
+  );
+  if (invalidReceiptCost) {
+    res.status(400).json({ error: invalidReceiptCost.error });
     return;
   }
 
@@ -341,13 +431,17 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
         receivedDate: body.received_date,
         remarks: body.remarks ?? null,
         actorId,
-        lines: body.lines.map((line) => ({
+        lines: inputLines.map((line, index) => ({
           materialId: line.material_id,
           quantityReceived: line.quantity_received,
           uom: uomById.get(line.material_id)!,
           purchaseOrderLineId: line.purchase_order_line_id ?? null,
           supplierLotNumber: line.supplier_lot_number ?? null,
           remarks: line.remarks ?? null,
+          receiptUnitCost: receiptCostByIndex[index].unitCost,
+          receiptCurrency: receiptCostByIndex[index].currency,
+          receiptCostStatus: receiptCostByIndex[index].status,
+          receiptCostSource: receiptCostByIndex[index].source,
         })),
       });
 
@@ -400,7 +494,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     actorRole: req.user?.role ?? null,
     ...reqMeta(req),
     statusCode: 201,
-    detail: `GRN ${grnNumber} created (draft, ${body.lines.length} line(s))`,
+     detail: `GRN ${grnNumber} created (draft, ${inputLines.length} line(s))`,
   });
   if (attributeValues.length > 0) {
     void recordSecurityEvent({

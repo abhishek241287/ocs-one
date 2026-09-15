@@ -16,4 +16,15 @@ export interface GrnLineItemInput {
   supplier_lot_number?: string | null;
   /** @nullable */
   remarks?: string | null;
+  /**
+     * @minimum 0
+     * @exclusiveMinimum
+     * @nullable
+     */
+  receipt_unit_cost?: number | null;
+  /**
+     * @nullable
+     * @pattern ^[A-Z]{3}$
+     */
+  receipt_currency?: string | null;
 }

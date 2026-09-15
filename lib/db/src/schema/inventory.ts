@@ -255,6 +255,16 @@ export const grnInspectionStatusEnum = pgEnum("grn_inspection_status", [
   "partial",
 ]);
 
+// Receipt-cost evidence is deliberately separate from the quantity ledger. CAPTURED
+// means an explicit unit cost was recorded, MISSING means a new receipt has no valid
+// cost yet, and LEGACY identifies rows that predate this contract. Zero is never a
+// missing-cost sentinel.
+export const grnReceiptCostStatusEnum = pgEnum("grn_receipt_cost_status", [
+  "CAPTURED",
+  "MISSING",
+  "LEGACY",
+]);
+
 export const grnHeadersTable = pgTable(
   "grn_headers",
   {
@@ -319,6 +329,19 @@ export const grnLineItemsTable = pgTable(
     acceptedQty: numeric("accepted_qty", { precision: 14, scale: 3 }).notNull().default("0"),
     rejectedQty: numeric("rejected_qty", { precision: 14, scale: 3 }).notNull().default("0"),
     putAwayQty: numeric("put_away_qty", { precision: 14, scale: 3 }).notNull().default("0"),
+    // Phase 10 / 74-A: historical receipt valuation evidence belongs to the GRN line,
+    // never to inventory_transactions. Existing rows default to LEGACY; all new API
+    // drafts set MISSING or CAPTURED explicitly.
+    receiptUnitCost: numeric("receipt_unit_cost", { precision: 14, scale: 4 }),
+    receiptCurrency: varchar("receipt_currency", { length: 3 }),
+    receiptCostStatus: grnReceiptCostStatusEnum("receipt_cost_status")
+      .notNull()
+      .default("LEGACY"),
+    // Provenance of the draft-time cost decision. This is descriptive evidence, not a
+    // live price: MANUAL, PO_DEFAULT, NONE, or LEGACY.
+    receiptCostSource: varchar("receipt_cost_source", { length: 20 })
+      .notNull()
+      .default("LEGACY"),
     // Per-line — set on post from the line's workflow; NULL until posted, and NULL for
     // DIRECT_TO_INVENTORY lines (no inspection process).
     inspectionStatus: grnInspectionStatusEnum("inspection_status"),

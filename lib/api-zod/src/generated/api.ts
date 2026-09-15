@@ -8588,6 +8588,10 @@ export const ListGrnsResponse = zod.object({
 
 export const createGrnBodyLinesItemQuantityReceivedExclusiveMin = 0;
 
+export const createGrnBodyLinesItemReceiptUnitCostExclusiveMin = 0;
+export const createGrnBodyLinesItemReceiptUnitCostMultipleOf = 0.0001;
+
+export const createGrnBodyLinesItemReceiptCurrencyRegExp = new RegExp('^[A-Z]{3}$');
 
 
 export const createGrnBodyAttributeValuesItemAttributesItemAttributeCodeMax = 60;
@@ -8607,7 +8611,9 @@ export const CreateGrnBody = zod.object({
   "purchase_order_line_id": zod.string().uuid().nullish(),
   "quantity_received": zod.number().gt(createGrnBodyLinesItemQuantityReceivedExclusiveMin),
   "supplier_lot_number": zod.string().nullish(),
-  "remarks": zod.string().nullish()
+  "remarks": zod.string().nullish(),
+  "receipt_unit_cost": zod.number().gt(createGrnBodyLinesItemReceiptUnitCostExclusiveMin).multipleOf(createGrnBodyLinesItemReceiptUnitCostMultipleOf).nullish(),
+  "receipt_currency": zod.string().regex(createGrnBodyLinesItemReceiptCurrencyRegExp).nullish()
 })).min(1),
   "attribute_values": zod.array(zod.object({
   "line_number": zod.number().min(1),
@@ -8619,6 +8625,11 @@ export const CreateGrnBody = zod.object({
 }))
 })).optional()
 })
+
+export const createGrnResponseTwoLinesItemReceiptUnitCostExclusiveMin = 0;
+
+export const createGrnResponseTwoLinesItemReceiptCurrencyRegExp = new RegExp('^[A-Z]{3}$');
+
 
 export const CreateGrnResponse = zod.object({
   "id": zod.string().uuid(),
@@ -8658,6 +8669,10 @@ export const CreateGrnResponse = zod.object({
   "accepted_qty": zod.number(),
   "rejected_qty": zod.number(),
   "put_away_qty": zod.number(),
+  "receipt_unit_cost": zod.number().gt(createGrnResponseTwoLinesItemReceiptUnitCostExclusiveMin).nullish(),
+  "receipt_currency": zod.string().regex(createGrnResponseTwoLinesItemReceiptCurrencyRegExp).nullish(),
+  "receipt_cost_status": zod.enum(['CAPTURED', 'MISSING', 'LEGACY']),
+  "receipt_cost_source": zod.enum(['MANUAL', 'PO_DEFAULT', 'NONE', 'LEGACY']),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
   "capture": zod.union([zod.object({
@@ -8686,6 +8701,11 @@ export const CreateGrnResponse = zod.object({
 export const GetGrnParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
+
+export const getGrnResponseTwoLinesItemReceiptUnitCostExclusiveMin = 0;
+
+export const getGrnResponseTwoLinesItemReceiptCurrencyRegExp = new RegExp('^[A-Z]{3}$');
+
 
 export const GetGrnResponse = zod.object({
   "id": zod.string().uuid(),
@@ -8725,6 +8745,10 @@ export const GetGrnResponse = zod.object({
   "accepted_qty": zod.number(),
   "rejected_qty": zod.number(),
   "put_away_qty": zod.number(),
+  "receipt_unit_cost": zod.number().gt(getGrnResponseTwoLinesItemReceiptUnitCostExclusiveMin).nullish(),
+  "receipt_currency": zod.string().regex(getGrnResponseTwoLinesItemReceiptCurrencyRegExp).nullish(),
+  "receipt_cost_status": zod.enum(['CAPTURED', 'MISSING', 'LEGACY']),
+  "receipt_cost_source": zod.enum(['MANUAL', 'PO_DEFAULT', 'NONE', 'LEGACY']),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
   "capture": zod.union([zod.object({
@@ -8760,6 +8784,11 @@ export const DeleteGrnResponse = zod.void()
 export const PostGrnParams = zod.object({
   "id": zod.coerce.string().uuid()
 })
+
+export const postGrnResponseTwoLinesItemReceiptUnitCostExclusiveMin = 0;
+
+export const postGrnResponseTwoLinesItemReceiptCurrencyRegExp = new RegExp('^[A-Z]{3}$');
+
 
 export const PostGrnResponse = zod.object({
   "id": zod.string().uuid(),
@@ -8799,6 +8828,10 @@ export const PostGrnResponse = zod.object({
   "accepted_qty": zod.number(),
   "rejected_qty": zod.number(),
   "put_away_qty": zod.number(),
+  "receipt_unit_cost": zod.number().gt(postGrnResponseTwoLinesItemReceiptUnitCostExclusiveMin).nullish(),
+  "receipt_currency": zod.string().regex(postGrnResponseTwoLinesItemReceiptCurrencyRegExp).nullish(),
+  "receipt_cost_status": zod.enum(['CAPTURED', 'MISSING', 'LEGACY']),
+  "receipt_cost_source": zod.enum(['MANUAL', 'PO_DEFAULT', 'NONE', 'LEGACY']),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
   "capture": zod.union([zod.object({
@@ -8844,6 +8877,11 @@ export const InspectGrnBody = zod.object({
 })).min(1)
 })
 
+export const inspectGrnResponseDataTwoLinesItemReceiptUnitCostExclusiveMin = 0;
+
+export const inspectGrnResponseDataTwoLinesItemReceiptCurrencyRegExp = new RegExp('^[A-Z]{3}$');
+
+
 export const InspectGrnResponse = zod.object({
   "inspection_id": zod.string().uuid(),
   "data": zod.object({
@@ -8884,6 +8922,10 @@ export const InspectGrnResponse = zod.object({
   "accepted_qty": zod.number(),
   "rejected_qty": zod.number(),
   "put_away_qty": zod.number(),
+  "receipt_unit_cost": zod.number().gt(inspectGrnResponseDataTwoLinesItemReceiptUnitCostExclusiveMin).nullish(),
+  "receipt_currency": zod.string().regex(inspectGrnResponseDataTwoLinesItemReceiptCurrencyRegExp).nullish(),
+  "receipt_cost_status": zod.enum(['CAPTURED', 'MISSING', 'LEGACY']),
+  "receipt_cost_source": zod.enum(['MANUAL', 'PO_DEFAULT', 'NONE', 'LEGACY']),
   "inspection_status": zod.union([zod.literal('pending'),zod.literal('passed'),zod.literal('rejected'),zod.literal('partial'),zod.literal(null)]).nullish(),
   "remarks": zod.string().nullish(),
   "capture": zod.union([zod.object({

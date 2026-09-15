@@ -3652,6 +3652,25 @@ export const GrnInspectionStatus = {
   partial: 'partial',
 } as const;
 
+export type GrnLineItemReceiptCostSource = typeof GrnLineItemReceiptCostSource[keyof typeof GrnLineItemReceiptCostSource];
+
+
+export const GrnLineItemReceiptCostSource = {
+  MANUAL: 'MANUAL',
+  PO_DEFAULT: 'PO_DEFAULT',
+  NONE: 'NONE',
+  LEGACY: 'LEGACY',
+} as const;
+
+export type GrnReceiptCostStatus = typeof GrnReceiptCostStatus[keyof typeof GrnReceiptCostStatus];
+
+
+export const GrnReceiptCostStatus = {
+  CAPTURED: 'CAPTURED',
+  MISSING: 'MISSING',
+  LEGACY: 'LEGACY',
+} as const;
+
 export interface GrnLineItem {
   id: string;
   grn_id: string;
@@ -3675,6 +3694,19 @@ export interface GrnLineItem {
   accepted_qty: number;
   rejected_qty: number;
   put_away_qty: number;
+  /**
+     * @minimum 0
+     * @exclusiveMinimum
+     * @nullable
+     */
+  receipt_unit_cost?: number | null;
+  /**
+     * @nullable
+     * @pattern ^[A-Z]{3}$
+     */
+  receipt_currency?: string | null;
+  receipt_cost_status: GrnReceiptCostStatus;
+  receipt_cost_source: GrnLineItemReceiptCostSource;
   inspection_status?: GrnInspectionStatus | null;
   /** @nullable */
   remarks?: string | null;
@@ -3692,6 +3724,17 @@ export interface GrnLineItemInput {
   supplier_lot_number?: string | null;
   /** @nullable */
   remarks?: string | null;
+  /**
+     * @minimum 0
+     * @exclusiveMinimum
+     * @nullable
+     */
+  receipt_unit_cost?: number | null;
+  /**
+     * @nullable
+     * @pattern ^[A-Z]{3}$
+     */
+  receipt_currency?: string | null;
 }
 
 export interface Grn {

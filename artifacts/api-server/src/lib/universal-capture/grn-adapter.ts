@@ -43,6 +43,10 @@ export interface GrnDraftLine {
   purchaseOrderLineId?: string | null;
   supplierLotNumber?: string | null;
   remarks?: string | null;
+  receiptUnitCost?: number | string | null;
+  receiptCurrency?: string | null;
+  receiptCostStatus?: "CAPTURED" | "MISSING" | "LEGACY";
+  receiptCostSource?: "MANUAL" | "PO_DEFAULT" | "NONE" | "LEGACY";
 }
 
 export interface GrnDraftInput {
@@ -93,6 +97,10 @@ export async function insertGrnDraft(tx: Transaction, input: GrnDraftInput): Pro
       uom: line.uom as any,
       supplierLotNumber: line.supplierLotNumber ?? null,
       remarks: line.remarks ?? null,
+      receiptUnitCost: line.receiptUnitCost == null ? null : String(line.receiptUnitCost),
+      receiptCurrency: line.receiptCurrency ?? null,
+      receiptCostStatus: line.receiptCostStatus ?? "MISSING",
+      receiptCostSource: line.receiptCostSource ?? "NONE",
     })),
   );
   return header.id;

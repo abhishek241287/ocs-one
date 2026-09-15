@@ -8168,7 +8168,7 @@ components:
     GrnLineItem:
       type: object
       required:
-        [id, grn_id, line_number, material_id, quantity_received, uom, accepted_qty, rejected_qty, put_away_qty, created_at]
+        [id, grn_id, line_number, material_id, quantity_received, uom, accepted_qty, rejected_qty, put_away_qty, receipt_cost_status, receipt_cost_source, created_at]
       properties:
         id: { type: string, format: uuid }
         grn_id: { type: string, format: uuid }
@@ -8188,6 +8188,10 @@ components:
         accepted_qty: { type: number }
         rejected_qty: { type: number }
         put_away_qty: { type: number }
+        receipt_unit_cost: { type: ["number", "null"], minimum: 0, exclusiveMinimum: true }
+        receipt_currency: { type: ["string", "null"], pattern: "^[A-Z]{3}$" }
+        receipt_cost_status: { $ref: "#/components/schemas/GrnReceiptCostStatus" }
+        receipt_cost_source: { type: string, enum: [MANUAL, PO_DEFAULT, NONE, LEGACY] }
         inspection_status: { $ref: "#/components/schemas/GrnInspectionStatus" }
         remarks: { type: ["string", "null"] }
         capture:
@@ -8205,6 +8209,8 @@ components:
         quantity_received: { type: number, exclusiveMinimum: 0 }
         supplier_lot_number: { type: ["string", "null"] }
         remarks: { type: ["string", "null"] }
+        receipt_unit_cost: { type: ["number", "null"], minimum: 0, exclusiveMinimum: true, multipleOf: 0.0001 }
+        receipt_currency: { type: ["string", "null"], pattern: "^[A-Z]{3}$" }
 
     Grn:
       type: object
@@ -8235,6 +8241,10 @@ components:
             lines:
               type: array
               items: { $ref: "#/components/schemas/GrnLineItem" }
+
+    GrnReceiptCostStatus:
+      type: string
+      enum: [CAPTURED, MISSING, LEGACY]
 
     GrnInput:
       type: object
