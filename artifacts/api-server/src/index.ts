@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { seedDatabase } from "./lib/seed";
 import { backfillProducts } from "./lib/product-backfill";
+import { startAfterBootstrap } from "./startup";
 
 const rawPort = process.env["PORT"];
 
@@ -28,13 +29,11 @@ function listen(): void {
 // Seed DB (create sequences, admin user), backfill Products for already-passed
 // orders (idempotent), then start listening. Production must not serve a
 // partially bootstrapped database; development keeps its previous behavior.
-seedDatabase()
-  .then(() => backfillProducts())
-  .then(listen)
-  .catch((err) => {
-    logger.error({ err }, "Seed/backfill failed");
-    if (process.env.NODE_ENV === "production") {
-      process.exit(1);
-    }
-    listen();
-  });
+void startAfterBootstrap({
+  seedDatabase,
+  backfillProducts,
+  listen,
+  isProduction: process.env.NODE_ENV === "production",
+  exit: (code) => process.exit(code),
+  onError: (err) => logger.error({ err }, "Seed/backfill failed"),
+});
