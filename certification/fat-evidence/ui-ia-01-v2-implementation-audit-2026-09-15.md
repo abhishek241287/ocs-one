@@ -11,10 +11,11 @@ Application source changed only:
 
 - `artifacts/ocs-one/src/components/layout/Sidebar.tsx`
 - `artifacts/ocs-one/src/pages/DirectorDashboardPage.tsx`
+- `artifacts/ocs-one/src/layouts/AppLayout.tsx` — acceptance-proven collapse persistence fix
 
 This evidence note is the accompanying certification record.
-No route declarations, authentication shell, backend, database, OpenAPI,
-generated client, or genealogy files changed. No commit was made.
+No authentication/dealer rule, route declaration, backend, database, OpenAPI,
+generated client, or genealogy behavior changed. No commit was made.
 
 ## Navigation evidence
 
@@ -35,6 +36,231 @@ generated client, or genealogy files changed. No commit was made.
   details. This remains a navigation inventory gap for a later scope.
 - The `My Tasks` hash destination is treated as a specialized dashboard
   destination so it does not incorrectly highlight the plain Dashboard item.
+- The acceptance run initially found that the shell collapse state reset after
+  reload. The smallest fix was to persist the existing shell boolean under the
+  existing sidebar local-storage namespace in `AppLayout`; the auth and dealer
+  checks were not changed. The director and viewer reload checks now pass.
+
+## Artifact 1 — Route-preservation proof
+
+The pre-implementation set was extracted from the Phase 0 audit route table.
+The post-implementation set was extracted from the live `App.tsx` `<Route>`
+declarations. Both sets contain 79 paths.
+
+```text
+PRE_ROUTE_SET
+/
+/administration/users
+/after-sales/registrations
+/after-sales/warranties
+/cells/config
+/cells/grading
+/cells/inventory
+/cells/matching
+/cells/receiving
+/cells/transfers/:id
+/dashboard
+/design-system
+/developer/architecture
+/developer/configuration
+/developer/performance
+/developer/security
+/fulfillment/dealers
+/fulfillment/dispatch
+/fulfillment/dispatch/:id
+/fulfillment/dispatch/list
+/fulfillment/packing
+/inventory
+/inventory/grns
+/inventory/grns/:id
+/inventory/grns/new
+/inventory/inspections
+/inventory/inspections/:id
+/inventory/inspections/new
+/inventory/stock
+/inventory/workflow-assignments
+/login
+/logistics
+/logistics/dealers
+/logistics/dispatch-orders
+/logistics/dispatch-orders/:id
+/logistics/packing-dashboard
+/manufacturing
+/manufacturing/chargers
+/manufacturing/charging-dashboard
+/manufacturing/orders
+/manufacturing/orders/:id
+/manufacturing/rework
+/manufacturing/testing-dashboard
+/masters/bms
+/masters/boms
+/masters/boms/:id
+/masters/boms/:id/edit
+/masters/boms/new
+/masters/busbars
+/masters/cabinets
+/masters/cables
+/masters/cells
+/masters/chargers
+/masters/connectors
+/masters/material-categories
+/masters/material-workflows
+/masters/materials
+/masters/product-categories
+/masters/product-workflows
+/masters/products
+/masters/suppliers
+/masters/test-equipment
+/procurement
+/procurement/purchase-orders
+/procurement/purchase-orders/:id
+/procurement/purchase-orders/new
+/product-inventory
+/product-inventory/list
+/products
+/products/:id
+/products/imported
+/reports/cells
+/reports/executive
+/reports/export
+/reports/inventory
+/reports/logistics
+/reports/production
+/reports/quality
+/traceability
+```
+
+```text
+POST_ROUTE_SET
+/
+/administration/users
+/after-sales/registrations
+/after-sales/warranties
+/cells/config
+/cells/grading
+/cells/inventory
+/cells/matching
+/cells/receiving
+/cells/transfers/:id
+/dashboard
+/design-system
+/developer/architecture
+/developer/configuration
+/developer/performance
+/developer/security
+/fulfillment/dealers
+/fulfillment/dispatch
+/fulfillment/dispatch/:id
+/fulfillment/dispatch/list
+/fulfillment/packing
+/inventory
+/inventory/grns
+/inventory/grns/:id
+/inventory/grns/new
+/inventory/inspections
+/inventory/inspections/:id
+/inventory/inspections/new
+/inventory/stock
+/inventory/workflow-assignments
+/login
+/logistics
+/logistics/dealers
+/logistics/dispatch-orders
+/logistics/dispatch-orders/:id
+/logistics/packing-dashboard
+/manufacturing
+/manufacturing/chargers
+/manufacturing/charging-dashboard
+/manufacturing/orders
+/manufacturing/orders/:id
+/manufacturing/rework
+/manufacturing/testing-dashboard
+/masters/bms
+/masters/boms
+/masters/boms/:id
+/masters/boms/:id/edit
+/masters/boms/new
+/masters/busbars
+/masters/cabinets
+/masters/cables
+/masters/cells
+/masters/chargers
+/masters/connectors
+/masters/material-categories
+/masters/material-workflows
+/masters/materials
+/masters/product-categories
+/masters/product-workflows
+/masters/products
+/masters/suppliers
+/masters/test-equipment
+/procurement
+/procurement/purchase-orders
+/procurement/purchase-orders/:id
+/procurement/purchase-orders/new
+/product-inventory
+/product-inventory/list
+/products
+/products/:id
+/products/imported
+/reports/cells
+/reports/executive
+/reports/export
+/reports/inventory
+/reports/logistics
+/reports/production
+/reports/quality
+/traceability
+```
+
+```text
+DIFF_ONLY_PRE
+<empty>
+DIFF_ONLY_POST
+<empty>
+IDENTICAL true
+```
+
+The pre/post navigation-destination sets were also extracted from the
+baseline and current Sidebar source:
+
+```text
+PRE_SIDEBAR_DESTINATIONS 58
+POST_SIDEBAR_DESTINATIONS 58
+SIDEBAR_ONLY_PRE <empty>
+SIDEBAR_ONLY_POST <empty>
+CURRENT_SIDEBAR_DESTINATIONS_WITHOUT_EXACT_ROUTER_PATH <empty>
+```
+
+This proves that removing the duplicate navigation entry did not remove its
+destination. Direct authenticated checks passed:
+
+- `/products/imported` — Imported Product Registration rendered for Director and
+  Viewer. Screenshots:
+  [Director](ui-ia-01-v2/director-imported-product.png),
+  [Viewer](ui-ia-01-v2/viewer-imported-product.png).
+- `/masters/materials` — legacy deep link rendered Material Master for Director
+  and Viewer. Screenshots:
+  [Director](ui-ia-01-v2/director-legacy-materials.png),
+  [Viewer](ui-ia-01-v2/viewer-legacy-materials.png).
+- Pipeline stage click-through — the first rendered stage opened
+  `/cells/receiving` for Director and Viewer.
+
+## Artifact 2 — Manual acceptance matrix
+
+Authenticated sessions were exercised through the actual login form using the
+seeded FAT accounts. The dashboard response was live during the run.
+
+| Role | Collapse persistence | My Tasks / My Work honesty | Pipeline click-through | Legacy deep-link | Dashboard zones | Role-correct navigation |
+|---|---|---|---|---|---|---|
+| Director | **PASS** — collapse persisted after reload; [collapsed screenshot](ui-ia-01-v2/director-sidebar-collapsed.png) | **PASS** — only verified QC approvals, Rework queue, Production in progress, and Dispatch ready feeds rendered; [dashboard](ui-ia-01-v2/director-dashboard.png) | **PASS** — opened `/cells/receiving` | **PASS** — `/masters/materials`; [screenshot](ui-ia-01-v2/director-legacy-materials.png) | **PASS** — Factory Status, Manufacturing Pipeline, Attention/Alerts, Production Orders, and My Work rendered with live data | **PASS** — direct section query found Admin and Developer; [scrolled navigation](ui-ia-01-v2/director-admin-developer-nav.png); owner-only Dispatch Orders was absent |
+| Viewer | **PASS** — the same shell collapse state persisted after reload | **PASS** — same verified feeds only; no submit controls in My Work | **PASS** — opened `/cells/receiving` | **PASS** — `/masters/materials`; [screenshot](ui-ia-01-v2/viewer-legacy-materials.png) | **PASS** — all dashboard zones rendered; [dashboard](ui-ia-01-v2/viewer-dashboard.png) | **PASS** — Developer and User Accounts were absent; My Work contained no submit buttons |
+| Dealer | **N/A** — dealer remains on the dedicated portal surface | **N/A** — factory My Work is not exposed | **N/A** — dealer is not exposed to factory pipeline | **N/A** — dealer is not exposed to factory deep links | **N/A** — factory dashboard is blocked by the existing shell gate | **PASS** — dealer landed on `/fulfillment/dealers` with factory navigation hidden; [screenshot](ui-ia-01-v2/dealer-surface.png) |
+
+Visual review: **PASS**. The dashboard reads in the intended order, the pipeline
+is the visual hero, Attention and Alerts are distinct, the production-order
+table is restrained to supported fields, and the Details strip keeps secondary
+live feeds accessible without competing with the primary hierarchy.
 
 ## Dashboard data-source audit
 

@@ -5,10 +5,30 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { TopNavbar } from "@/components/layout/TopNavbar";
 import { useAuth } from "@/hooks/use-auth";
 
+const SIDEBAR_COLLAPSED_KEY = "ocs.sidebar.collapsed";
+
+function readSidebarCollapsed() {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(readSidebarCollapsed);
   const { user, isLoading, isAuthenticated } = useAuth();
   const [location, setLocation] = useLocation();
+
+  const setSidebarCollapsed = (value: boolean) => {
+    setCollapsed(value);
+    try {
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(value));
+    } catch {
+      // Keep the shell usable when browser storage is unavailable.
+    }
+  };
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -45,9 +65,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+      <Sidebar collapsed={collapsed} setCollapsed={setSidebarCollapsed} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <TopNavbar toggleSidebar={() => setCollapsed(!collapsed)} />
+        <TopNavbar toggleSidebar={() => setSidebarCollapsed(!collapsed)} />
         <main className="flex-1 overflow-auto bg-muted/20">
           <div className="p-6 md:p-8 max-w-7xl mx-auto">{children}</div>
         </main>
